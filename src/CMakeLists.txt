@@ -2,6 +2,9 @@
 
 add_library(${PROJECT_NAME}
 		cellogram/common.cpp
+		cellogram/common.h
+		cellogram/convex_hull.cpp
+		cellogram/convex_hull.h
 )
 
 # Include directory
@@ -34,6 +37,10 @@ set_target_properties(${PROJECT_NAME}_viewer
 	PROPERTIES
 	RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
 )
+
+# Data folder
+set(DATA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../data/")
+target_compile_definitions(${PROJECT_NAME}_viewer PRIVATE -DDATA_DIR=\"${DATA_DIR}\")
 
 # Dependencies
 target_link_libraries(${PROJECT_NAME}_viewer ${PROJECT_NAME} tinyfiledialogs geogram_gfx)
