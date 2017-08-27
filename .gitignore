@@ -30,3 +30,46 @@
 *.exe
 *.out
 *.app
+
+# Images
+*.png
+*.jpg
+*.gif
+
+# Meshes and point clouds
+*.obj
+*.stl
+*.ply
+*.xyz
+
+# Extra directories
+.idea/
+.vscode/
+build/
+cmake-build-*
+latex.out/
+3rdparty/eigen
+3rdparty/geogram
+Win32
+x64
+yimg.dir
+
+# Mac OS
+.DS_Store
+
+# Config stuff
+*.ini
+*.json
+
+# Latex stuff
+*.bbl
+*.blg
+*.log
+*.out
+*.pdf
+*.aux
+*.synctex.gz
+*.fdb_latexmk
+*.fls
+*.run.xml
+*-blx.bib
