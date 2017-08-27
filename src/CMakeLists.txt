@@ -5,6 +5,8 @@ add_library(${PROJECT_NAME}
 		cellogram/common.h
 		cellogram/convex_hull.cpp
 		cellogram/convex_hull.h
+		cellogram/voronoi.cpp
+		cellogram/voronoi.h
 )
 
 # Include directory
@@ -13,6 +15,10 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 # C++11
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 11)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD_REQUIRED ON)
+
+# Let's get a little bit paranoid
+include(SetWarnings)
+target_compile_options(${PROJECT_NAME} PRIVATE ${ALL_WARNINGS})
 
 # Dependencies
 target_link_libraries(${PROJECT_NAME} geogram)
@@ -31,6 +37,10 @@ target_include_directories(${PROJECT_NAME}_viewer PUBLIC ${CMAKE_CURRENT_SOURCE_
 # C++11
 set_target_properties(${PROJECT_NAME}_viewer PROPERTIES CXX_STANDARD 11)
 set_target_properties(${PROJECT_NAME}_viewer PROPERTIES CXX_STANDARD_REQUIRED ON)
+
+# Let's get a little bit paranoid
+include(SetWarnings)
+target_compile_options(${PROJECT_NAME}_viewer PRIVATE ${ALL_WARNINGS})
 
 # Output directory for binary
 set_target_properties(${PROJECT_NAME}_viewer

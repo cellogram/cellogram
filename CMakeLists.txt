@@ -32,6 +32,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 # Generate position independent code
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
+
 ################################################################################
 # 3rd party libraries
 ################################################################################

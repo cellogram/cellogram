@@ -6,8 +6,7 @@
 
 namespace cellogram {
 
-std::vector<int> convex_hull(const std::vector<GEO::vec2> &points);
-
-void triangulate_hull(std::vector<GEO::vec2> &hull, GEO::Mesh &M);
+void lloyd_relaxation(std::vector<GEO::vec2> &points, const std::vector<bool> &fixed, int num_iter,
+	GEO::Mesh *domain = nullptr);
 
 } // namespace cellogram
