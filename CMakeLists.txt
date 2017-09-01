@@ -47,3 +47,4 @@ add_subdirectory(${THIRD_PARTY_DIR}/tinyfiledialogs tinyfiledialogs)
 ################################################################################
 
 add_subdirectory(src)
+add_subdirectory(tests)
