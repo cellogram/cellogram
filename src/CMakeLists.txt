@@ -53,6 +53,6 @@ set(DATA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../data/")
 target_compile_definitions(${PROJECT_NAME}_viewer PRIVATE -DDATA_DIR=\"${DATA_DIR}\")
 
 # Dependencies
-target_link_libraries(${PROJECT_NAME}_viewer ${PROJECT_NAME} tinyfiledialogs geogram_gfx)
+target_link_libraries(${PROJECT_NAME}_viewer ${PROJECT_NAME} tinyfiledialogs geogram geogram_gfx)
 
 ################################################################################

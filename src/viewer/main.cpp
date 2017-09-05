@@ -153,7 +153,9 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 
 int main(int argc, char** argv) {
+	#ifndef WIN32
 	setenv("GEO_NO_SIGNAL_HANDLERS", "1", 1);
+	#endif
 	GEO::initialize();
 	GEO::CmdLine::import_arg_group("standard");
 	GEO::CmdLine::import_arg_group("algo");

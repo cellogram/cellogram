@@ -129,7 +129,7 @@ set(MY_FLAGS
 )
 
 # Flags above don't make sense for MSVC
-if(${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
+if(MSVC)
 	set(MY_FLAGS)
 endif()
 

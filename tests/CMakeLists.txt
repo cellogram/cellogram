@@ -23,6 +23,6 @@ set(DATA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../data/")
 target_compile_definitions(delaunay PRIVATE -DDATA_DIR=\"${DATA_DIR}\")
 
 # Dependencies
-target_link_libraries(delaunay ${PROJECT_NAME} tinyfiledialogs geogram_gfx)
+target_link_libraries(delaunay tinyfiledialogs geogram geogram_gfx)
 
 ################################################################################
