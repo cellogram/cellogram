@@ -3,8 +3,6 @@ project(example)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
-
 find_package(LIBIGL QUIET)
 
 if (NOT LIBIGL_FOUND)
@@ -94,7 +92,7 @@ set(DATA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Data/")
 target_compile_definitions(${PROJECT_NAME}_bin PUBLIC -DDATA_DIR=\"${DATA_DIR}\")
 
 # Gurobi
-find(GUROBI)
+find_package(GUROBI)
 if(GUROBI_FOUND)
   target_include_directories(${PROJECT_NAME}_bin PUBLIC ${GUROBI_INCLUDE_DIRS})
   target_link_libraries(${PROJECT_NAME}_bin PUBLIC ${GUROBI_LIBRARIES})
