@@ -20,12 +20,13 @@ public:
 	MatrixXi A; // Adjacency matrix
 	MatrixXi L; // Laplacian matrix
 
+	MatrixXi IDX; //Matrix containing indices of closest neighbors
 
 	// Generate Laplacian
 	void adjacencyMatrix(const MatrixXi &triangles);
 	void laplacianMatrix();
 
 	// Generate Q
-	void QforOptimization(const MatrixXd &V0, int K);
+	void QforOptimization(const MatrixXd &Vperfect, const MatrixXd &Vdeformed, int K);
 };
 
