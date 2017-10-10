@@ -11,15 +11,15 @@ if (NOT LIBIGL_FOUND)
    message(FATAL_ERROR "libigl not found --- You can download it using: \n git clone --recursive https://github.com/libigl/libigl.git ${PROJECT_SOURCE_DIR}/../libigl")
 endif()
 
-# Compilation flags: adapt to your needs 
+# Compilation flags: adapt to your needs
 if(MSVC)
   # Enable parallel compilation
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /bigobj") 
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /bigobj")
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR} )
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR} )
 else()
   # Libigl requires a modern C++ compiler that supports c++11
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11") 
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "." )
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
 endif()
@@ -34,7 +34,7 @@ option(LIBIGL_USE_STATIC_LIBRARY "Use LibIGL as static library" OFF)
 # add a customizable menu bar
 option(LIBIGL_WITH_NANOGUI     "Use Nanogui menu"   OFF)
 
-# libigl options: choose your dependencies (by default everything is OFF except opengl) 
+# libigl options: choose your dependencies (by default everything is OFF except opengl)
 option(LIBIGL_WITH_VIEWER      "Use OpenGL viewer"  ON)
 option(LIBIGL_WITH_OPENGL      "Use OpenGL"         ON)
 option(LIBIGL_WITH_OPENGL_GLFW "Use GLFW"           ON)
@@ -59,12 +59,12 @@ endif()
 option(GLFW_INSTALL         "Use PNG"            OFF)
 option(GEOGRAM_WITH_GRAPHICS        "Use PNG"            OFF)
 
-# Adding libigl: choose the path to your local copy libigl 
-# This is going to compile everything you requested 
+# Adding libigl: choose the path to your local copy libigl
+# This is going to compile everything you requested
 #message(FATAL_ERROR "${PROJECT_SOURCE_DIR}/../libigl/cmake")
 add_subdirectory("${LIBIGL_INCLUDE_DIR}/../shared/cmake" "libigl")
 
-# libigl information 
+# libigl information
 message("libigl includes: ${LIBIGL_INCLUDE_DIRS}")
 message("libigl libraries: ${LIBIGL_LIBRARIES}")
 message("libigl extra sources: ${LIBIGL_EXTRA_SOURCES}")
@@ -76,14 +76,19 @@ include_directories(${LIBIGL_INCLUDE_DIRS})
 add_definitions(${LIBIGL_DEFINITIONS})
 
 # tobi's addition
-set(THIRD_PARTY_DIR C:/Users/letobias/Documents/cellogram/3rdparty/)
-list(APPEND CMAKE_MODULE_PATH C:/Users/letobias/Documents/cellogram/cmake)
+set(THIRD_PARTY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../3rdparty)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../cmake)
+message(${THIRD_PARTY_DIR})
 include(geogram)
 include_directories(C:/Users/letobias/Documents/cellogram/3rdparty/geogram/src/lib)
 #include_directories(C:/Users/letobias/Documents/cellogram/3rdparty/geogram/include)
 
 # Add your project files
-FILE(GLOB SRCFILES *.cpp)
-#FILE(GLOB SRCFILES "MyFolderName/"*.cpp)
+file(GLOB SRCFILES *.cpp)
+#file(GLOB SRCFILES "MyFolderName/"*.cpp)
 add_executable(${PROJECT_NAME}_bin ${SRCFILES} ${LIBIGL_EXTRA_SOURCES})
 target_link_libraries(${PROJECT_NAME}_bin ${LIBIGL_LIBRARIES} ${LIBIGL_EXTRA_LIBRARIES} geogram)
+
+# Folder where data files are stored (meshes & stuff)
+set(DATA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Data/")
+target_compile_definitions(${PROJECT_NAME}_bin PUBLIC -DDATA_DIR=\"${DATA_DIR}\")

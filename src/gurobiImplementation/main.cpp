@@ -5,7 +5,9 @@
 #include "state.h"
 #include "generateQ.h"
 #include <Eigen/Dense>
+#ifdef WIN32
 #include "C:/gurobi751/win64/include/gurobi_c++.h"
+#endif
 #include <geogram/basic/common.h>
 
 using namespace std;
@@ -17,7 +19,7 @@ generateQ Q;
 int main()
 {
   GEO::initialize();
-  string path = "C:\\Users\\letobias\\Documents\\cellogram\\src\\gurobiImplementation\\Data\\1";
+  string path = DATA_DIR "1";
 
   cout << path << endl;
 
@@ -88,5 +90,5 @@ int main()
 	  cout << "Exception during optimization" << endl;
   }
   */
-  system("pause");
+  cin.get();
 }

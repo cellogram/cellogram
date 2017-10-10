@@ -73,6 +73,8 @@ yimg.dir
 *.fls
 *.run.xml
 *-blx.bib
+
+# Project specifics
 src/gurobiImplementation/Data/
 src/gurobiImplementation/_main.txt
 src/gurobiImplementation/LICENSE
