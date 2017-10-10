@@ -94,7 +94,6 @@ void generateQ::QforOptimization(const MatrixXd &Vperfect, const MatrixXd &Vdefo
 			Vy(i*K + j) = Vdeformed(nearest[j], 1);
 			IDX(j,i) = nearest[j];
 		}
-		cout << endl;
 
 	}
 	cout << "IDX: " << endl << IDX << endl;
