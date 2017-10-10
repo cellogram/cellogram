@@ -92,3 +92,10 @@ target_link_libraries(${PROJECT_NAME}_bin ${LIBIGL_LIBRARIES} ${LIBIGL_EXTRA_LIB
 # Folder where data files are stored (meshes & stuff)
 set(DATA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Data/")
 target_compile_definitions(${PROJECT_NAME}_bin PUBLIC -DDATA_DIR=\"${DATA_DIR}\")
+
+# Gurobi
+find(GUROBI)
+if(GUROBI_FOUND)
+  target_include_directories(${PROJECT_NAME}_bin PUBLIC ${GUROBI_INCLUDE_DIRS})
+  target_link_libraries(${PROJECT_NAME}_bin PUBLIC ${GUROBI_LIBRARIES})
+endif()
