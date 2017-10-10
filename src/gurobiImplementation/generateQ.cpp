@@ -37,7 +37,7 @@ void generateQ::adjacencyMatrix(const MatrixXi &triangles)
 	{
 		A(i, i) = 0;
 	}
-	
+
 	//cout << "A: " << A << endl;
 }
 
@@ -64,15 +64,12 @@ void generateQ::QforOptimization(const MatrixXd &Vperfect, const MatrixXd &Vdefo
 	// generate a kdtree object with the original (deformed) coordinates
 	GEO::NearestNeighborSearch_var nnsearch =
 		GEO::NearestNeighborSearch::create((GEO::coord_index_t) 2, "BNN");
-	{
-		MatrixXd B = Vdeformed.transpose();
 
-		cout << "B: " << endl << B << endl;
-		cout << Vperfect.transpose() << endl;
+	MatrixXd B = Vdeformed.transpose();
+	cout << "B: " << endl << B << endl;
+	cout << Vperfect.transpose() << endl;
+	nnsearch->set_points((GEO::index_t)Vdeformed.rows(), B.data());
 
-		nnsearch->set_points((GEO::index_t)Vdeformed.rows(), B.data());
-	}
-	
 	// Query
 	vector<GEO::index_t> nearest(K);
 	vector<double> dist(K);
@@ -88,7 +85,6 @@ void generateQ::QforOptimization(const MatrixXd &Vperfect, const MatrixXd &Vdefo
 		cout << "x: " << x.transpose() << endl;
 
 		nnsearch->get_nearest_neighbors((GEO::index_t)K, x.data(), nearest.data(), dist.data());
-		cout << nearest[0] << " " << dist[0] << endl;
 		// Save query results
 		for (int j = 0; j < K; j++)
 		{
@@ -98,6 +94,7 @@ void generateQ::QforOptimization(const MatrixXd &Vperfect, const MatrixXd &Vdefo
 			Vy(i*K + j) = Vdeformed(nearest[j], 1);
 			IDX(j,i) = nearest[j];
 		}
+		cout << endl;
 
 	}
 	cout << "IDX: " << endl << IDX << endl;
@@ -105,7 +102,7 @@ void generateQ::QforOptimization(const MatrixXd &Vperfect, const MatrixXd &Vdefo
 	//VK_x = sparse(Q1, Q2, Vx);
 	//VK_y = sparse(Q1, Q2, Vy);
 	//Q = VK_x'*(L')*L*VK_x + VK_y'*(L')*L*VK_y;
-	
+
 }
 
 /*
@@ -113,7 +110,7 @@ void generateQ::QforOptimization(const MatrixXd &Vperfect, const MatrixXd &Vdefo
   //
   VectorXd Qind1(K*iNrV), Qind2(K*iNrV), Vx(K*iNrV), Vy(K*iNrV);
   MatrixXd IDX(K,iNrV);
-  
+
   for (int i = 0; i < iNrV; i++)
   {
 	  // K_closest = knnsearch(KDTree_iV,[V(i,1),V(i,2)],'k',K);

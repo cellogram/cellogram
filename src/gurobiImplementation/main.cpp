@@ -24,7 +24,7 @@ int main()
   cout << path << endl;
 
   // Load the data from text files
-  s.load(string(string(path)));
+  s.load(path);
 
   // Merge V_boundary and V_internal to contain all original coordinates in a matrix
   MatrixXd Vdeformed(s.V_boundary.rows() + s.V_internal.rows(), 2);
@@ -33,7 +33,7 @@ int main()
   // Generate perfect mesh in void
   s.fill_hole();
 
-  s.save(string(string(path)));
+  s.save(path);
 
   cout << "T: " << endl << s.F << endl;
 
@@ -90,5 +90,7 @@ int main()
 	  cout << "Exception during optimization" << endl;
   }
   */
+  #ifdef WIN32
   cin.get();
+  #endif
 }
