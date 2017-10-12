@@ -38,9 +38,10 @@ int main()
   Q.adjacencyMatrix(s.F);
   Q.laplacianMatrix();
 
-  // Deriving Q for optimization
-  Q.QforOptimization(s.Vperfect, s.Vdeformed, 15);
-  
+  // Deriving Q and constraints for optimization
+  Q.QforOptimization(s.Vperfect, s.Vdeformed, 6);
+  //Q.optimizationConstraints(s.V_boundary.rows());
+
   #ifdef WIN32
   cin.get();
   #endif

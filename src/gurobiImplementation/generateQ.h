@@ -1,4 +1,5 @@
 #include <Eigen/Dense>
+#include <Eigen/Sparse>
 #include <set>
 
 using namespace Eigen;
@@ -20,7 +21,10 @@ public:
 	MatrixXi A; // Adjacency matrix
 	MatrixXi L; // Laplacian matrix
 
+	int K;
 	MatrixXi IDX; //Matrix containing indices of closest neighbors
+
+	SparseMatrix<double> Q;
 
 	// Generate Laplacian
 	void adjacencyMatrix(const MatrixXi &triangles);
@@ -28,5 +32,8 @@ public:
 
 	// Generate Q
 	void QforOptimization(const MatrixXd &Vperfect, const MatrixXd &Vdeformed, int K);
+
+	// Compile constraints for opimization
+	void optimizationConstraints(int nrBoundaryV);
 };
 

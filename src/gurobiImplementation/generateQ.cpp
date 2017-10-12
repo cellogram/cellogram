@@ -53,8 +53,9 @@ void generateQ::laplacianMatrix()
 	// cout << "L: " << L << endl;
 }
 
-void generateQ::QforOptimization(const MatrixXd &Vperfect, const MatrixXd &Vdeformed, int K)
+void generateQ::QforOptimization(const MatrixXd &Vperfect, const MatrixXd &Vdeformed, int nrNeigh)
 {
+	K = nrNeigh;
 	// first check the number of closest neighbors taken into account for meshing and adjust if larger than the available number
 	if (iNrV < K)
 	{
@@ -66,8 +67,6 @@ void generateQ::QforOptimization(const MatrixXd &Vperfect, const MatrixXd &Vdefo
 		GEO::NearestNeighborSearch::create((GEO::coord_index_t) 2, "BNN");
 
 	MatrixXd B = Vdeformed.transpose();
-	cout << "B: " << endl << B << endl;
-	cout << Vperfect.transpose() << endl;
 	nnsearch->set_points((GEO::index_t)Vdeformed.rows(), B.data());
 
 	// Query
@@ -82,49 +81,88 @@ void generateQ::QforOptimization(const MatrixXd &Vperfect, const MatrixXd &Vdefo
 	{
 		Vector2d x(Vperfect(i,0), Vperfect(i,1));
 
-		cout << "x: " << x.transpose() << endl;
-
 		nnsearch->get_nearest_neighbors((GEO::index_t)K, x.data(), nearest.data(), dist.data());
 		// Save query results
 		for (int j = 0; j < K; j++)
 		{
-			Qind1(i*K + j) = nearest[j];
-			Qind2(i*K + j) = i;
+			Qind1(i*K + j) = i;
+			Qind2(i*K + j) = i*K + j;
 			Vx(i*K + j) = Vdeformed(nearest[j], 0);
 			Vy(i*K + j) = Vdeformed(nearest[j], 1);
 			IDX(j,i) = nearest[j];
 		}
 
 	}
-	cout << "IDX: " << endl << IDX << endl;
+	
+	/* Checked with working code in matlab:
+	Qind1,Qind2,Vx,Vy,IDX are all correctly assembled */
 
-	//VK_x = sparse(Q1, Q2, Vx);
-	//VK_y = sparse(Q1, Q2, Vy);
-	//Q = VK_x'*(L')*L*VK_x + VK_y'*(L')*L*VK_y;
+	// generate triplets for sparse matrices
+	typedef Eigen::Triplet<double> T;
+	std::vector<T> VxList,VyList;
+	VxList.reserve(Qind1.rows());
+	VyList.reserve(Qind1.rows());
+
+	for (int i = 0; i < Qind1.rows(); i++)
+	{
+		VxList.push_back(T(Qind1(i), Qind2(i), Vx(i)));
+		VyList.push_back(T(Qind1(i), Qind2(i), Vy(i)));
+	}
+
+	// generate sparse matrices
+	SparseMatrix<double> VK_x(iNrV, Qind1.rows());
+	SparseMatrix<double> VK_y(iNrV, Qind1.rows());
+	SparseMatrix<double> Ls(L.rows(), L.cols());
+	VK_x.setFromTriplets(VxList.begin(), VxList.end());
+	VK_y.setFromTriplets(VyList.begin(), VyList.end());
+	
+	{
+		MatrixXd B = L.cast<double>();
+		Ls = B.sparseView();
+	}
+	
+	/* Checked with working code in matlab:
+	VK_x and VK_y are correct */
+	
+	// Calculate Q for the optimization:
+	// Q = VK_x'*(L')*L*VK_x + VK_y'*(L')*L*VK_y
+	Q = VK_x.transpose()*Ls.transpose()*Ls*VK_x + VK_y.transpose()*Ls.transpose()*Ls*VK_y;
+	
+	/* Checked with working code in matlab:
+	Q ist mostly correct with differences of <<1%  */
 
 }
 
-/*
+void generateQ::optimizationConstraints(int nrBoundaryV)
+{
+	// Aeq x = beq
+	// constraint 1: only one entry per row of M
+	// constraint 2: only one entry per column of M
 
-  //
-  VectorXd Qind1(K*iNrV), Qind2(K*iNrV), Vx(K*iNrV), Vy(K*iNrV);
-  MatrixXd IDX(K,iNrV);
-
-  for (int i = 0; i < iNrV; i++)
-  {
-	  // K_closest = knnsearch(KDTree_iV,[V(i,1),V(i,2)],'k',K);
-
-  }
-  Triplet<double> T;
-  vector<T> tripletListX, tripletListY;
-
-  for (int i = 0; i < Qind1.cols(); i++)
-  {
-	  tripletListX.push_back(T(Qind1(i), Qind2(i), Vx(i)));
-	  tripletListY.push_back(T(Qind1(i), Qind2(i), Vy(i)));
-  }
+	// generate triplets for sparse matrices
+	typedef Eigen::Triplet<double> T;
+	std::vector<T> AeqList;
+	AeqList.reserve(2*K*iNrV + nrBoundaryV);
 
 
-  SparseMatrix<double> VK_x.setFromTriplet(tripletListX.begin(), tripletListX.end());
-  SparseMatrix<double> VK_y.setFromTriplet(tripletListY.begin(), tripletListY.end());
-  */
+	for (int i = 0; i < iNrV; i++)
+	{
+		for (int j = 0; j < K; j++)
+		{
+			AeqList.push_back(T(i, i*K + j, 1));
+			AeqList.push_back(T(IDX(j, i) + K*iNrV,i*K+j, 1));
+		}
+	}
+
+	// constraint 3 : vertices on cluster edge remain unmoved
+	for (int i = 0; i < nrBoundaryV; i++)
+	{
+		AeqList.push_back(T(i + 2*K*iNrV, i*K, 1));
+	}
+
+	//Concatenate all Aeq into single sparse matrix
+	SparseMatrix<int> Aeq(iNrV, K*iNrV);
+	Aeq.setFromTriplets(AeqList.begin(), AeqList.end());
+
+	cout << "Aeq: " << endl << Aeq << endl;
+}
