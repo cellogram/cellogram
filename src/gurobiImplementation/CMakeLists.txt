@@ -76,7 +76,7 @@ add_definitions(${LIBIGL_DEFINITIONS})
 # tobi's addition
 set(THIRD_PARTY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../3rdparty)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../cmake)
-message(${THIRD_PARTY_DIR})
+#message(${THIRD_PARTY_DIR})
 include(geogram)
 include_directories(C:/Users/letobias/Documents/cellogram/3rdparty/geogram/src/lib)
 #include_directories(C:/Users/letobias/Documents/cellogram/3rdparty/geogram/include)
