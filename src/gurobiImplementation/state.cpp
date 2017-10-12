@@ -49,6 +49,10 @@ void State::load(std::string path)
   V_boundary = readVertices(path + "/V_border.txt");
   V_internal = readVertices(path + "/V_internals.txt");
   neigh = readIntegers(path + "/neigh.txt");
+
+  // Merge V_boundary and V_internal to contain all original coordinates in a matrix
+  Vdeformed = MatrixXd(V_boundary.rows() + V_internal.rows(), 2);
+  Vdeformed << V_boundary, V_internal;
 }
 
 void State::save(std::string path)
@@ -326,7 +330,7 @@ void State::fit_triangulation()
 
   // Compute the new positions
   V = compute_new_positions(V, F, fixed);
-
+  Vperfect = V;
 }
 
 MatrixXd State::compute_new_positions(const MatrixXd &V, const MatrixXi &F, const MatrixXi &fixed)

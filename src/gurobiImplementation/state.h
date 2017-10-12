@@ -24,6 +24,11 @@ public:
 
     bool view_vertex_ids = false;
 
+	// added by tobi to be used later and not change data for any subsequent steps by Daniele
+	MatrixXd Vdeformed;
+	MatrixXd Vperfect;
+
+
     // IO
     void load(std::string path);
     void save(std::string path);
@@ -40,6 +45,7 @@ public:
 
 
     // Phase 3 Data
+
 
     // Phase 4 Data
     std::set<int> to_snap;
@@ -64,7 +70,7 @@ public:
     MatrixXd compute_new_positions(const MatrixXd &V, const MatrixXi &F, const MatrixXi &fixed);
 
     // Phase 3
-    void snap_closest();
+	void snap_closest();
     bool is_mesh_valid(const MatrixXd& V, const MatrixXi& F, const VectorXi& fixed, const MatrixXd& P, const VectorXi& fixed_P);
 
     void unfreeze_overlapping();
