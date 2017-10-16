@@ -4,8 +4,6 @@
 
 using namespace Eigen;
 
-// Important convenction to store a hex grid in a matrix (see scheme.png)
-
 class generateQ
 {
 public:
@@ -25,6 +23,7 @@ public:
 	MatrixXi IDX; //Matrix containing indices of closest neighbors
 
 	SparseMatrix<double> Q;
+	SparseMatrix<int> Aeq;
 
 	// Generate Laplacian
 	void adjacencyMatrix(const MatrixXi &triangles);

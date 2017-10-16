@@ -150,19 +150,27 @@ void generateQ::optimizationConstraints(int nrBoundaryV)
 		for (int j = 0; j < K; j++)
 		{
 			AeqList.push_back(T(i, i*K + j, 1));
-			AeqList.push_back(T(IDX(j, i) + K*iNrV,i*K+j, 1));
+			AeqList.push_back(T(IDX(j, i) + iNrV,i*K+j, 1));
 		}
 	}
 
 	// constraint 3 : vertices on cluster edge remain unmoved
 	for (int i = 0; i < nrBoundaryV; i++)
 	{
-		AeqList.push_back(T(i + 2*K*iNrV, i*K, 1));
+		AeqList.push_back(T(i + 2*iNrV, i*K, 1));
 	}
 
+	/* AeqList is correct*/
+	//for (int i = 0; i < AeqList.size(); i++)
+	//{
+	//	cout << AeqList[i].row() << "," << AeqList[i].col() << "," << AeqList[i].value() << endl;
+	//}
+
 	//Concatenate all Aeq into single sparse matrix
-	SparseMatrix<int> Aeq(iNrV, K*iNrV);
+	Aeq = SparseMatrix<int>(2*iNrV + nrBoundaryV, K*iNrV);
+
 	Aeq.setFromTriplets(AeqList.begin(), AeqList.end());
 
-	cout << "Aeq: " << endl << Aeq << endl;
+	/*constraints are correct, checked with working code in matlab*/
+	//cout << "Aeq: " << endl << Aeq << endl;
 }

@@ -4,17 +4,15 @@
 #include <fstream>
 #include "state.h"
 #include "generateQ.h"
-#include <Eigen/Dense>
-#ifdef WIN32
-#include "C:/gurobi751/win64/include/gurobi_c++.h"
-#endif
+#include "gurobiModel.h"
 #include <geogram/basic/common.h>
 
 using namespace std;
 using namespace Eigen;
 
 State s;
-generateQ Q;
+generateQ q;
+gurobiModel g;
 
 int main()
 {
@@ -35,12 +33,15 @@ int main()
   cout << "deformed: " << endl << s.Vdeformed << endl;
 
   // Generate adjacency matrix and the laplacian
-  Q.adjacencyMatrix(s.F);
-  Q.laplacianMatrix();
+  q.adjacencyMatrix(s.F);
+  q.laplacianMatrix();
 
   // Deriving Q and constraints for optimization
-  Q.QforOptimization(s.Vperfect, s.Vdeformed, 6);
-  //Q.optimizationConstraints(s.V_boundary.rows());
+  q.QforOptimization(s.Vperfect, s.Vdeformed, 6);
+  q.optimizationConstraints(s.V_boundary.rows());
+
+  // Generate and solve model for gurobi
+  g.model(q.Q, q.Aeq);
 
   #ifdef WIN32
   cin.get();
