@@ -85,7 +85,7 @@ include_directories(C:/Users/letobias/Documents/cellogram/3rdparty/geogram/src/l
 file(GLOB SRCFILES *.cpp)
 #file(GLOB SRCFILES "MyFolderName/"*.cpp)
 add_executable(${PROJECT_NAME}_bin ${SRCFILES} ${LIBIGL_EXTRA_SOURCES})
-target_link_libraries(${PROJECT_NAME}_bin ${LIBIGL_LIBRARIES} ${LIBIGL_EXTRA_LIBRARIES} geogram)
+target_link_libraries(${PROJECT_NAME}_bin PUBLIC ${LIBIGL_LIBRARIES} ${LIBIGL_EXTRA_LIBRARIES} geogram)
 
 # Folder where data files are stored (meshes & stuff)
 set(DATA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Data/")
