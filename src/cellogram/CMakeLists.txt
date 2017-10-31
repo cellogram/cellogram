@@ -12,7 +12,7 @@ add_library(${PROJECT_NAME}
 target_include_directories(${PROJECT_NAME} PUBLIC ..)
 
 # Dependencies
-target_link_libraries(${PROJECT_NAME} geogram)
+target_link_libraries(${PROJECT_NAME} geogram gurobi_solver)
 
 # Enable extra warnings
 target_compile_options(${PROJECT_NAME} PRIVATE ${ALL_WARNINGS})
