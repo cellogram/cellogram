@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "cellogram/convex_hull.h"
 #include "cellogram/voronoi.h"
-#include "viewer/file_dialog.h"
+#include "file_dialog.h"
 #include <geogram/basic/file_system.h>
 #include <geogram/basic/command_line.h>
 #include <geogram/basic/command_line_args.h>
