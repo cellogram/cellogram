@@ -25,6 +25,8 @@ public:
 	SparseMatrix<double> Q;
 	SparseMatrix<int> Aeq;
 
+	VectorXi vMapping; // Vector containing Vdeformed and Vperfect
+
 	// Generate Laplacian
 	void adjacencyMatrix(const MatrixXi &triangles);
 	void laplacianMatrix();
@@ -34,5 +36,8 @@ public:
 
 	// Compile constraints for opimization
 	void optimizationConstraints(int nrBoundaryV);
+
+	// Map the results from gurobi back to the indices of the coordinates
+	void mapBack(const VectorXd &x);
 };
 

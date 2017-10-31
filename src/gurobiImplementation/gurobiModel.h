@@ -12,14 +12,11 @@ class gurobiModel
 {
 public:
 
-    // Input
-	//MatrixXd V;
+    // Output
+	VectorXd resultX;
 
-	// Generate Model
+	// Generate and solve Model
 	void model(const SparseMatrix<double> &Q, const SparseMatrix<int> &Aeq);
-
-	// Solve Model
-	void solve(const SparseMatrix<double> &Q, const SparseMatrix<int> &Aeq);
 
 };
 

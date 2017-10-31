@@ -174,3 +174,21 @@ void generateQ::optimizationConstraints(int nrBoundaryV)
 	/*constraints are correct, checked with working code in matlab*/
 	//cout << "Aeq: " << endl << Aeq << endl;
 }
+
+void generateQ::mapBack(const VectorXd &x)
+{
+	vMapping = VectorXi::Zero(iNrV);
+	VectorXd temp;
+	for (int i = 0; i < iNrV; i++)
+	{
+		temp = x.segment(i*K, K);
+		for (int j = 0; j < K; j++)
+		{
+			if (temp(j)==1)
+			{
+				vMapping(i) = IDX(j, i);
+			}
+		}
+	}
+	cout << endl << vMapping << endl;
+}

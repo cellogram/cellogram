@@ -734,10 +734,11 @@ void State::fill_hole()
   
   fit_triangulation();
 
+  /* commented by Tobi - snapping is pointless if solved by gurobi
   for (unsigned i = 0; i < V_internal.rows(); ++i)
 
     snap_closest();
-	
+	*/
 //  timer.stop();
 
 //  cerr << "Total time (ms):" << timer.getElapsedTimeInMilliSec() << endl;

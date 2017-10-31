@@ -56,3 +56,4 @@ target_compile_definitions(${PROJECT_NAME}_viewer PRIVATE -DDATA_DIR=\"${DATA_DI
 target_link_libraries(${PROJECT_NAME}_viewer ${PROJECT_NAME} tinyfiledialogs geogram geogram_gfx)
 
 ################################################################################
+add_subdirectory(gurobiImplementation)

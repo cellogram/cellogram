@@ -17,7 +17,7 @@ gurobiModel g;
 int main()
 {
   GEO::initialize();
-  string path = DATA_DIR "1";
+  string path = DATA_DIR "5";
 
   cout << path << endl;
 
@@ -37,11 +37,14 @@ int main()
   q.laplacianMatrix();
 
   // Deriving Q and constraints for optimization
-  q.QforOptimization(s.Vperfect, s.Vdeformed, 6);
+  q.QforOptimization(s.Vperfect, s.Vdeformed, 8);
   q.optimizationConstraints(s.V_boundary.rows());
 
   // Generate and solve model for gurobi
   g.model(q.Q, q.Aeq);
+
+  // Map back to indices of coordinates
+  q.mapBack(g.resultX);
 
   #ifdef WIN32
   cin.get();
