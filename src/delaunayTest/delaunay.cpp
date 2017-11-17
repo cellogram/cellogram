@@ -56,10 +56,16 @@
 #include <geogram/mesh/mesh_io.h>
 #include <fstream>
 
+#include "../gurobiImplementation/state.h"
+#include "../gurobiImplementation/generateQ.h"
+#include "../gurobiImplementation/gurobiModel.h"
+
 /*********************************************************************/
 
 #include <algorithm>
 #include <numeric>
+
+
 
 struct Compare {
 	const std::vector<GEO::vec2> &points;
@@ -125,9 +131,15 @@ namespace {
 
 	using namespace GEO;
 
-	std::vector<std::string> filenames;
+	State s;
+	generateQ q;
+	gurobiModel g;
 
+	std::vector<std::string> filenames;
+	typedef std::complex<double> Point;
 	std::vector<bool> fixed;
+	std::vector<bool> roi;
+	std::vector<bool> roiInternal;
 	std::vector<vec2> points;
 	std::vector<vec2> detected;
 	std::vector<vec2> reference;
@@ -138,6 +150,7 @@ namespace {
 	float interpolation = 0.0;
 
 	void Lloyd_relaxation();
+	void solve_ROI();
 
 	void convex_clip_polygon(
 		const Polygon& P, const Polygon& clip, Polygon& result
@@ -207,6 +220,8 @@ namespace {
 			target.push_back(vec2(p[0], p[1]));
 		}
 		fixed.resize(target.size());
+		roi.resize(target.size());
+		roiInternal.resize(target.size());
 		update_Delaunay();
 	}
 
@@ -368,8 +383,12 @@ namespace {
 		for(index_t i=0; i<_points.size(); ++i) {
 			if (ref) {
 				glupColor3f(1.0f, 1.0f, 0.0f);
+			} else if (i < roi.size() && roi[i]) {
+				glupColor3f(1.0f, 1.0f, 0.0f);
 			} else if (i < fixed.size() && fixed[i]) {
 				glupColor3f(0.0f, 1.0f, 0.0f);
+			} else if (i < degree.size() && roiInternal[i]) {
+				glupColor3f(0.0f, 0.0f, 1.0f);
 			} else if (i < degree.size() && degree[i] != 6) {
 				glupColor3f(1.0f, 0.0f, 0.0f);
 			} else {
@@ -600,7 +619,7 @@ namespace {
 	bool show_border = true;
 	bool move_vertices = false;
 	bool select_fixed = false;
-
+	bool select_roi = false;
 	/**
 	 * \brief Draws all the elements of the Delaunay triangulation /
 	 *  Voronoi diagram.
@@ -665,6 +684,12 @@ namespace {
 		);
 		ImGui::Checkbox("move points", &move_vertices);
 		ImGui::Checkbox("select fixed", &select_fixed);
+		// TOBI
+		ImGui::Checkbox("select ROI", &select_roi);
+		if (ImGui::Button("Solve ROI")) {
+			solve_ROI();
+		}
+		//
 		ImGui::PushItemWidth(-60);
 		ImGui::DragFloat("advect", &interpolation, 0.01f, 0.f, 1.f);
 		ImGui::PopItemWidth();
@@ -751,6 +776,15 @@ namespace {
 				}
 				return GL_TRUE;
 			}
+			// TOBI
+			if (event == GLUP_VIEWER_MOVE && select_roi) {
+				picked_point = get_picked_point(p);
+				if (picked_point != NO_POINT) {
+					roi[picked_point] = true;
+				}
+				return GL_TRUE;
+			}
+
 			return GL_FALSE;
 
 		} else {
@@ -791,6 +825,15 @@ namespace {
 				}
 				return GL_TRUE;
 			}
+			// TOBI
+			if (event == GLUP_VIEWER_MOVE && select_roi) {
+				picked_point = get_picked_point(p);
+				if (picked_point != NO_POINT) {
+					roi[picked_point] = true;
+				}
+				return GL_TRUE;
+			}
+
 			return GL_FALSE;
 		}
 	}
@@ -818,6 +861,99 @@ namespace {
 		}
 		update_Delaunay();
 	}
+
+
+	double inline det(const Point &u, const Point &v) {
+		return imag(conj(u) * v);
+	}
+	// Return true iff [a,b] intersects [c,d], and store the intersection in ans
+	bool intersect_segment(const Point &a, const Point &b, const Point &c, const Point &d, Point &ans) {
+		const double eps = 1e-10; // small epsilon for numerical precision
+		double x = det(c - a, d - c);
+		double y = det(b - a, a - c);
+		double z = det(b - a, d - c);
+		// ab and cd are parallel || 
+		if (std::abs(z) < eps || x*z < 0 || x*z > z*z || y*z < 0 || y*z > z*z) return false;
+		ans = c + (d - c) * y / z;
+		return true;
+	}
+
+	void solve_ROI() {
+		/*
+		1. check if roi contains at least 6 points
+		2. find all vertices in polygon
+		3. from these find the outermost and connected vertices
+		   along with the connectivity -> V_boundary, neigh
+		4. Call gurobi solver with V_boundary,V_internal,neigh
+		*/
+		// 1
+		int nPolygon = 0;
+		std::vector<int> vBoundaryInd;
+		std::vector<int> vInternalInd;
+		for (int i = 0; i < roi.size(); i++)
+		{
+			if (roi[i] == true)
+			{
+				nPolygon++;
+				vBoundaryInd.push_back(i);
+			}
+		}
+
+		if (nPolygon < 6)
+		{
+			return;
+		}
+		
+		// 2.1 Find vertices in polygon
+		Point outside(-1, -1); // A point outside the workspace, must have "random" coordinates
+		bool tmp;
+		bool ans = false;
+		for (int i = 0; i < roi.size(); i++)
+		{
+			int nIntersection = 0;
+			for (int j = 0; j < nPolygon; j++)
+			{
+				Point m; // Coordinates of intersection point
+				Point query(points[i][0], points[i][1]); //
+				Point j0(points[vBoundaryInd[j]][0], points[vBoundaryInd[j]][1]);
+				Point j1(points[vBoundaryInd[(j+1) % nPolygon]][0], points[vBoundaryInd[(j+1) % nPolygon]][1]);
+				tmp = intersect_segment(query, outside, j0, j1, m);
+				if (tmp == true) {
+					nIntersection++;
+				}	
+				//ans = (ans != tmp);
+			}
+			if (nIntersection % 2 == 1)
+			{
+				// Point is inside ROI
+				vInternalInd.push_back(i);
+				roiInternal[i] = true;
+			}
+		}
+
+		// Determine number of connections into the cluster to determine "neigh"
+		for (int i = 0; i < vBoundaryInd.size(); i++)
+		{
+
+		}
+
+		/*Polygon ROIpolygon;
+		for (int i = 0; i < roi.size(); i++)
+		{
+			ROIpolygon.push_back( points[roi[i]] );
+		}
+		// 2.2 
+		// 3
+
+		// 4
+		s.V_boundary = MatrixXd;
+		s.V_internal = MatrixXd;
+		s.neigh = VectorXi;
+		s.fill_hole();
+		*/
+
+	}
+
 
 }
 
