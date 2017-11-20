@@ -140,13 +140,16 @@ namespace {
 	std::vector<bool> fixed;
 	std::vector<bool> roi;
 	std::vector<bool> roiInternal;
+	std::vector<int> vBoundaryInd;
 	std::vector<vec2> points;
+	std::vector<vec2> vInternal;
 	std::vector<vec2> detected;
 	std::vector<vec2> reference;
 	Delaunay_var delaunay;
 	std::vector<int> degree;
 	typedef std::vector<vec2> Polygon;
 	Polygon border;
+	Polygon vBoundary;
 	float interpolation = 0.0;
 
 	void Lloyd_relaxation();
@@ -383,12 +386,12 @@ namespace {
 		for(index_t i=0; i<_points.size(); ++i) {
 			if (ref) {
 				glupColor3f(1.0f, 1.0f, 0.0f);
+			} else if (i < degree.size() && roiInternal[i]) {
+				glupColor3f(0.0f, 0.0f, 1.0f);
 			} else if (i < roi.size() && roi[i]) {
 				glupColor3f(1.0f, 1.0f, 0.0f);
 			} else if (i < fixed.size() && fixed[i]) {
 				glupColor3f(0.0f, 1.0f, 0.0f);
-			} else if (i < degree.size() && roiInternal[i]) {
-				glupColor3f(0.0f, 0.0f, 1.0f);
 			} else if (i < degree.size() && degree[i] != 6) {
 				glupColor3f(1.0f, 0.0f, 0.0f);
 			} else {
@@ -781,6 +784,17 @@ namespace {
 				picked_point = get_picked_point(p);
 				if (picked_point != NO_POINT) {
 					roi[picked_point] = true;
+					//prevent duplicates:
+					if (vBoundaryInd.size() == 0)
+					{
+						vBoundary.push_back(vec2(points[picked_point][0], points[picked_point][1]));
+						vBoundaryInd.push_back(picked_point);
+					}
+					else if (vBoundaryInd.back() != picked_point)
+					{
+						vBoundary.push_back(vec2(points[picked_point][0], points[picked_point][1]));
+						vBoundaryInd.push_back(picked_point);
+					}
 				}
 				return GL_TRUE;
 			}
@@ -830,6 +844,17 @@ namespace {
 				picked_point = get_picked_point(p);
 				if (picked_point != NO_POINT) {
 					roi[picked_point] = true;
+					//prevent duplicates:
+					if (vBoundaryInd.size() == 0)
+					{
+						vBoundary.push_back(vec2(points[picked_point][0], points[picked_point][1]));
+						vBoundaryInd.push_back(picked_point);
+					}
+					else if (vBoundaryInd.back() != picked_point)
+					{
+						vBoundary.push_back(vec2(points[picked_point][0], points[picked_point][1]));
+						vBoundaryInd.push_back(picked_point);
+					}
 				}
 				return GL_TRUE;
 			}
@@ -878,80 +903,120 @@ namespace {
 		return true;
 	}
 
+	bool is_inside(const Polygon &poly, const Point &query) {
+		Point outside(-1000, -1000);
+		size_t n = poly.size();
+		bool tmp, ans = false;
+		for (size_t i = 0; i < poly.size(); ++i) {
+			Point m; // Coordinates of intersection point
+			Point p0(poly[i][0], poly[i][1]);
+			Point p1(poly[(i + 1) % n][0], poly[(i + 1) % n][1]);
+			tmp = intersect_segment(query, outside, p0, p1, m);
+			ans = (ans != tmp);
+		}
+		return ans;
+	}
+
 	void solve_ROI() {
 		/*
-		1. check if roi contains at least 6 points
-		2. find all vertices in polygon
+		1. check if roi contains at least 6 points -> vBoundary
+		2. find all vertices in polygon -> vInternal
 		3. from these find the outermost and connected vertices
-		   along with the connectivity -> V_boundary, neigh
-		4. Call gurobi solver with V_boundary,V_internal,neigh
+		   along with the connectivity -> neigh
+		4. Call gurobi solver with vBoundary,vInternal,neigh
 		*/
 		// 1
-		int nPolygon = 0;
-		std::vector<int> vBoundaryInd;
+		size_t nPolygon = vBoundary.size();
+		nPolygon = vBoundary.size();
 		std::vector<int> vInternalInd;
-		for (int i = 0; i < roi.size(); i++)
-		{
-			if (roi[i] == true)
-			{
-				nPolygon++;
-				vBoundaryInd.push_back(i);
-			}
-		}
 
 		if (nPolygon < 6)
 		{
 			return;
 		}
 		
-		// 2.1 Find vertices in polygon
-		Point outside(-1, -1); // A point outside the workspace, must have "random" coordinates
-		bool tmp;
-		bool ans = false;
-		for (int i = 0; i < roi.size(); i++)
+		// 2 Find vertices in polygon
+		for (int i = 0; i < points.size(); i++)
 		{
-			int nIntersection = 0;
-			for (int j = 0; j < nPolygon; j++)
+			Point query(points[i][0], points[i][1]);
+			bool candidate = true;
+			for (size_t j = 0; j < nPolygon; j++)
 			{
-				Point m; // Coordinates of intersection point
-				Point query(points[i][0], points[i][1]); //
-				Point j0(points[vBoundaryInd[j]][0], points[vBoundaryInd[j]][1]);
-				Point j1(points[vBoundaryInd[(j+1) % nPolygon]][0], points[vBoundaryInd[(j+1) % nPolygon]][1]);
-				tmp = intersect_segment(query, outside, j0, j1, m);
-				if (tmp == true) {
-					nIntersection++;
-				}	
-				//ans = (ans != tmp);
+				if (vBoundaryInd[j] == i) { candidate = false; }
+
 			}
-			if (nIntersection % 2 == 1)
+			if (is_inside(vBoundary, query) && candidate)
 			{
-				// Point is inside ROI
-				vInternalInd.push_back(i);
 				roiInternal[i] = true;
+				vInternal.push_back(points[i]);
+				vInternalInd.push_back(i);
 			}
 		}
+		
 
-		// Determine number of connections into the cluster to determine "neigh"
+		// 3 Determine number of connections into the cluster to determine "neigh"
+		std::vector<int> internalNeigh;
+		VectorXi neigh;
+		internalNeigh.resize(nPolygon);
+		neigh.resize(nPolygon);
+
 		for (int i = 0; i < vBoundaryInd.size(); i++)
 		{
-
+			internalNeigh[i] = 0;
+			for (index_t c = 0; c<delaunay->nb_cells(); ++c) {
+				const signed_index_t* cell = delaunay->cell_to_v() + 3 * c;
+				for (index_t e = 0; e<3; ++e) {
+					signed_index_t v1 = cell[e];
+					signed_index_t v2 = cell[(e + 1) % 3];
+					for (int j = 0; j < vInternal.size(); j++)
+					{
+						if ((int(v1) == vBoundaryInd[i]) && (int(v2) == vInternalInd[j]))
+						{
+							internalNeigh[i]++;
+						}
+					}
+					
+				}
+			}
+			neigh[i] = 6 - internalNeigh[i];
 		}
 
-		/*Polygon ROIpolygon;
-		for (int i = 0; i < roi.size(); i++)
+
+		// 4 Call gubori solver
+		MatrixXd vB(nPolygon,2);
+		MatrixXd vI(vInternalInd.size(),2);
+		for (size_t i = 0; i < nPolygon; i++)
 		{
-			ROIpolygon.push_back( points[roi[i]] );
+			vB(i, 0) = detected[vBoundaryInd[i]][0];
+			vB(i, 1) = detected[vBoundaryInd[i]][1];
+
+			//std::cout << vB(i, 0) << ',' << vB(i, 1) << std::endl;
 		}
-		// 2.2 
-		// 3
+		for (size_t i = 0; i < vInternalInd.size(); i++)
+		{
+			vI(i, 0) = detected[vInternalInd[i]][0];
+			vI(i, 1) = detected[vInternalInd[i]][1];
 
-		// 4
-		s.V_boundary = MatrixXd;
-		s.V_internal = MatrixXd;
-		s.neigh = VectorXi;
+			//std::cout << vI(i, 0) << ',' << vI(i, 1) << std::endl;
+		}
+
+		// Generate perfect mesh in ROI
+		s.init(vB, vI, neigh);
 		s.fill_hole();
-		*/
+		
+		// Generate adjacency matrix and the laplacian
+		q.adjacencyMatrix(s.F);
+		q.laplacianMatrix();
 
+		// Deriving Q and constraints for optimization
+		q.QforOptimization(s.Vperfect, s.Vdeformed, 8);
+		q.optimizationConstraints(s.V_boundary.rows());
+
+		// Generate and solve model for gurobi
+		g.model(q.Q, q.Aeq);
+
+		// Map back to indices of coordinates
+		q.mapBack(g.resultX);
 	}
 
 
