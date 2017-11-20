@@ -31,6 +31,7 @@ public:
 
     // IO
     void load(std::string path);
+	void init(const MatrixXd &vB, const MatrixXd &vI, const VectorXi &n);
     void save(std::string path);
 
 

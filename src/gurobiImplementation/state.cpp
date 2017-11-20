@@ -55,6 +55,17 @@ void State::load(std::string path)
   Vdeformed << V_boundary, V_internal;
 }
 
+void State::init(const MatrixXd &vB, const MatrixXd &vI, const VectorXi &n)
+{
+	V_boundary = vB;
+	V_internal = vI;
+	neigh = n;
+
+	// Merge V_boundary and V_internal to contain all original coordinates in a matrix
+	Vdeformed = MatrixXd(V_boundary.rows() + V_internal.rows(), 2);
+	Vdeformed << V_boundary, V_internal;
+}
+
 void State::save(std::string path)
 {
   igl::writeOBJ(path + "/out.obj",V,F);
