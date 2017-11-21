@@ -17,7 +17,7 @@ gurobiModel g;
 int main()
 {
   GEO::initialize();
-  string path = DATA_DIR "5";
+  string path = DATA_DIR "1";
 
   cout << path << endl;
 

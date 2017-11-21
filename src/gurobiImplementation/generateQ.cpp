@@ -190,5 +190,16 @@ void generateQ::mapBack(const VectorXd &x)
 			}
 		}
 	}
-	cout << endl << vMapping << endl;
+	
+	T = MatrixXi::Zero(F.rows(), 3);
+	for (int i = 0; i < F.rows(); i++)
+	{
+		for (size_t j = 0; j < 3; j++)
+		{
+			T(i, j) = vMapping(F(i, j));
+		}
+	}
+	
+	cout << F << endl << endl;
+	cout << T << endl;
 }

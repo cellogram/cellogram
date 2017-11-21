@@ -135,6 +135,7 @@ namespace {
 	generateQ q;
 	gurobiModel g;
 
+	MatrixXi TGlobal;
 	std::vector<std::string> filenames;
 	typedef std::complex<double> Point;
 	std::vector<bool> fixed;
@@ -1017,6 +1018,28 @@ namespace {
 
 		// Map back to indices of coordinates
 		q.mapBack(g.resultX);
+
+		// Map q.T back to global indices
+		VectorXi vGlobalInd = VectorXi::Zero(vBoundaryInd.size() + vInternalInd.size());
+		for (size_t i = 0; i < vBoundaryInd.size(); i++)
+		{
+			vGlobalInd(i) = vBoundaryInd[i];
+		}
+		for (size_t i = 0; i < vInternalInd.size(); i++)
+		{
+			vGlobalInd(i + vBoundaryInd.size()) = vInternalInd[i];
+		}
+		
+		TGlobal = MatrixXi(q.T.rows(), 3);
+		for (size_t i = 0; i < q.T.rows(); i++)
+		{
+			for (size_t j = 0; j < 3; j++)
+			{
+				TGlobal(i, j) = vGlobalInd(q.T(i, j));
+			}
+
+		}
+		std::cout << TGlobal << std::endl;
 	}
 
 

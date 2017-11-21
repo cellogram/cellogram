@@ -25,7 +25,8 @@ public:
 	SparseMatrix<double> Q;
 	SparseMatrix<int> Aeq;
 
-	VectorXi vMapping; // Vector containing Vdeformed and Vperfect
+	VectorXi vMapping; // Vector containing mapping from F (perfect triangles) to input indices (V)
+	MatrixXi T; // triangular connectivity of V
 
 	// Generate Laplacian
 	void adjacencyMatrix(const MatrixXi &triangles);
