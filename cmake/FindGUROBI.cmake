@@ -34,7 +34,7 @@ find_library(GUROBI_LIBRARY
 					"C:\\gurobi752\\win64\\lib"
 )
 
-find_library(GUROBI_CXX_LIBRARY
+find_library(GUROBI_CXX_LIBRARY_DEBUG
 			NAMES gurobi_c++
 					gurobi_c++mtd2017
 					gurobi_c++mtd2015
@@ -45,16 +45,28 @@ find_library(GUROBI_CXX_LIBRARY
 					"C:\\gurobi752\\win64\\lib"
 )
 
+find_library(GUROBI_CXX_LIBRARY_RELEASE
+			NAMES gurobi_c++
+					gurobi_c++mt2017
+					gurobi_c++mt2015
+			PATHS "$ENV{GUROBI_HOME}/lib"
+					"/Library/gurobi502/mac64/lib"
+					"C:\\libs\\gurobi502\\lib"
+					"C:\\gurobi751\\win64\\lib"
+					"C:\\gurobi752\\win64\\lib"
+)
+
 set(GUROBI_INCLUDE_DIRS "${GUROBI_INCLUDE_DIR}")
-set(GUROBI_LIBRARIES "${GUROBI_LIBRARY};${GUROBI_CXX_LIBRARY}")
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(GUROBI DEFAULT_MSG
-	GUROBI_LIBRARY GUROBI_CXX_LIBRARY GUROBI_INCLUDE_DIR)
+	GUROBI_LIBRARY GUROBI_CXX_LIBRARY_DEBUG GUROBI_CXX_LIBRARY_RELEASE GUROBI_INCLUDE_DIR)
 
-mark_as_advanced(GUROBI_INCLUDE_DIR GUROBI_LIBRARY GUROBI_CXX_LIBRARY)
+mark_as_advanced(GUROBI_INCLUDE_DIR GUROBI_LIBRARY GUROBI_CXX_LIBRARY_DEBUG GUROBI_CXX_LIBRARY_RELEASE)
 
 # Interface target
 add_library(gurobi INTERFACE)
 target_include_directories(gurobi INTERFACE ${GUROBI_INCLUDE_DIRS})
-target_link_libraries(gurobi INTERFACE ${GUROBI_LIBRARIES})
+target_link_libraries(gurobi INTERFACE
+	debug ${GUROBI_CXX_LIBRARY_DEBUG} ${GUROBI_LIBRARY}
+	optimized ${GUROBI_CXX_LIBRARY_RELEASE} ${GUROBI_LIBRARY})
