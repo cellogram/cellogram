@@ -135,7 +135,8 @@ namespace {
 	generateQ q;
 	gurobiModel g;
 
-	MatrixXi TGlobal;
+	MatrixXi tGlobal;
+	MatrixXi triangles;
 	std::vector<std::string> filenames;
 	typedef std::complex<double> Point;
 	std::vector<bool> fixed;
@@ -781,7 +782,7 @@ namespace {
 				return GL_TRUE;
 			}
 			// TOBI
-			if (event == GLUP_VIEWER_MOVE && select_roi) {
+			if (event == GLUP_VIEWER_DOWN && select_roi) {
 				picked_point = get_picked_point(p);
 				if (picked_point != NO_POINT) {
 					roi[picked_point] = true;
@@ -918,6 +919,23 @@ namespace {
 		return ans;
 	}
 
+
+	void createTriangles()
+	{
+		for (index_t c = 0; c<delaunay->nb_cells(); ++c) {
+			const signed_index_t* cell = delaunay->cell_to_v() + 3 * c;
+			
+			signed_index_t v1 = cell[0];
+			signed_index_t v2 = cell[1];
+			signed_index_t v3 = cell[2];
+
+			if ((v1 < v2) && (v2 < v3))
+			{
+				triangles
+			}
+		}
+	}
+
 	void solve_ROI() {
 		/*
 		1. check if roi contains at least 6 points -> vBoundary
@@ -1000,7 +1018,7 @@ namespace {
 
 			//std::cout << vI(i, 0) << ',' << vI(i, 1) << std::endl;
 		}
-
+		/*
 		// Generate perfect mesh in ROI
 		s.init(vB, vI, neigh);
 		s.fill_hole();
@@ -1030,16 +1048,19 @@ namespace {
 			vGlobalInd(i + vBoundaryInd.size()) = vInternalInd[i];
 		}
 		
-		TGlobal = MatrixXi(q.T.rows(), 3);
+		tGlobal = MatrixXi(q.T.rows(), 3);
 		for (size_t i = 0; i < q.T.rows(); i++)
 		{
 			for (size_t j = 0; j < 3; j++)
 			{
-				TGlobal(i, j) = vGlobalInd(q.T(i, j));
+				tGlobal(i, j) = vGlobalInd(q.T(i, j));
 			}
 
-		}
-		std::cout << TGlobal << std::endl;
+		} */
+		//std::cout << tGlobal << std::endl;
+
+		createTriangles();
+
 	}
 
 
@@ -1201,6 +1222,7 @@ namespace {
 		result = *src ;
 	}
 }
+
 
 /*********************************************************************/
 
