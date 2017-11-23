@@ -59,6 +59,7 @@
 #include "../gurobiImplementation/state.h"
 #include "../gurobiImplementation/generateQ.h"
 #include "../gurobiImplementation/gurobiModel.h"
+#include "igl/unique.h"
 
 /*********************************************************************/
 
@@ -130,10 +131,6 @@ void mark_fixed(const std::vector<GEO::vec2> &points, std::vector<bool> &fixed, 
 namespace {
 
 	using namespace GEO;
-
-	State s;
-	generateQ q;
-	gurobiModel g;
 
 	MatrixXi tGlobal;
 	MatrixXi triangles;
@@ -272,7 +269,7 @@ namespace {
 	/**
 	 * \brief The size of all the displayed points.
 	 */
-	GLint point_size = 20;
+	GLint point_size = 10;
 
 	void set_border_as_polygon(index_t nb_sides) {
 		border.clear();
@@ -615,7 +612,7 @@ namespace {
 	}
 
 
-	bool show_Voronoi_cells = true;
+	bool show_Voronoi_cells = false;
 	bool show_Delaunay_triangles = true;
 	bool show_Voronoi_edges = false;
 	bool show_points = true;
@@ -919,21 +916,86 @@ namespace {
 		return ans;
 	}
 
+	void sort(int &a, int &b, int &c) {
+		if (a > b) {
+			std::swap(a, b);
+		}
+		if (a > c) {
+			std::swap(a, c);
+		}
+		if (b > c) {
+			std::swap(b, c);
+		}
+	}
 
 	void createTriangles()
 	{
-		for (index_t c = 0; c<delaunay->nb_cells(); ++c) {
+		triangles = MatrixXi::Zero(delaunay->nb_cells(), 3);
+		for (index_t c = 0; c<delaunay->nb_cells(); ++c) 
+		{
 			const signed_index_t* cell = delaunay->cell_to_v() + 3 * c;
 			
 			signed_index_t v1 = cell[0];
 			signed_index_t v2 = cell[1];
 			signed_index_t v3 = cell[2];
 
-			if ((v1 < v2) && (v2 < v3))
+			sort(v1, v2, v3);
+
+			triangles(c, 0) = v1;
+			triangles(c, 1) = v2;
+			triangles(c, 2) = v3;
+
+			/*if ((v1 == 110) || (v2 == 110) || (v3 == 110))
 			{
-				triangles
+				std::cout << v1 << ',' << v2 << ',' << v3 << std::endl;
+			}*/
+			
+		}
+	}
+
+	void removeRow(MatrixXi& matrix, unsigned int rowToRemove)
+	{
+		unsigned int numRows = matrix.rows() - 1;
+		unsigned int numCols = matrix.cols();
+
+		if (rowToRemove < numRows)
+			matrix.block(rowToRemove, 0, numRows - rowToRemove, numCols) = matrix.bottomRows(numRows - rowToRemove);
+
+		matrix.conservativeResize(numRows, numCols);
+	}
+
+	void replaceTriangles(const MatrixXi tNew)
+	{
+		// find any triangles that connect to the internal of ROI
+		std::vector<int> removeIdx;
+
+		for (size_t i = 0; i < roiInternal.size(); i++)
+		{
+			if (roiInternal[i])
+			{
+				for (size_t j = 0; j < triangles.rows(); j++)
+				{
+					if ((triangles(j,0) == i)|| (triangles(j, 1) == i) || (triangles(j, 2) == i) )
+					{
+						removeIdx.push_back(j);
+					}
+				}
 			}
 		}
+
+
+		// remove all the triangles that connect to the internal of ROI
+		for (size_t i = 0; i < removeIdx.size(); i++)
+		{
+			removeRow(triangles, removeIdx[i]);
+		}
+
+		// add new rows at the end of triangles
+		MatrixXi tmp = triangles;
+		triangles.resize(triangles.rows() + tNew.rows(),3);
+		
+		triangles << tmp, tNew;
+		
 	}
 
 	void solve_ROI() {
@@ -944,6 +1006,19 @@ namespace {
 		   along with the connectivity -> neigh
 		4. Call gurobi solver with vBoundary,vInternal,neigh
 		*/
+
+		/* 0 At this point we assume that lloyd's has finished
+		 It is ok to produce the matrix triangles, if it does
+		 not already exist */
+		State s;
+		generateQ q;
+		gurobiModel g;
+		if (triangles.size() == 0)
+		{
+			createTriangles();
+			//std::cout << triangles;
+		}
+
 		// 1
 		size_t nPolygon = vBoundary.size();
 		nPolygon = vBoundary.size();
@@ -1018,7 +1093,7 @@ namespace {
 
 			//std::cout << vI(i, 0) << ',' << vI(i, 1) << std::endl;
 		}
-		/*
+		
 		// Generate perfect mesh in ROI
 		s.init(vB, vI, neigh);
 		s.fill_hole();
@@ -1056,11 +1131,19 @@ namespace {
 				tGlobal(i, j) = vGlobalInd(q.T(i, j));
 			}
 
-		} */
-		//std::cout << tGlobal << std::endl;
-
-		createTriangles();
-
+		} 
+		
+		// Replace tGlobal in triangles
+		replaceTriangles(tGlobal);
+		
+		// Reset ROI
+		vBoundaryInd.clear();
+		vInternalInd.clear();
+		for (size_t i = 0; i < roi.size(); i++)
+		{
+			roi[i] = false;
+			roiInternal[i] = false;
+		}
 	}
 
 

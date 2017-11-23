@@ -200,6 +200,6 @@ void generateQ::mapBack(const VectorXd &x)
 		}
 	}
 	
-	cout << F << endl << endl;
-	cout << T << endl;
+	//cout << F << endl << endl;
+	//cout << T << endl;
 }
