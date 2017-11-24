@@ -153,6 +153,7 @@ namespace {
 
 	void Lloyd_relaxation();
 	void solve_ROI();
+	void relaxLaplacian();
 
 	void convex_clip_polygon(
 		const Polygon& P, const Polygon& clip, Polygon& result
@@ -686,20 +687,24 @@ namespace {
 		);
 		ImGui::Checkbox("move points", &move_vertices);
 		ImGui::Checkbox("select fixed", &select_fixed);
-		// TOBI
-		ImGui::Checkbox("select ROI", &select_roi);
-		if (ImGui::Button("Solve ROI")) {
-			solve_ROI();
-		}
+
 		//
 		ImGui::PushItemWidth(-60);
 		ImGui::DragFloat("advect", &interpolation, 0.01f, 0.f, 1.f);
 		ImGui::PopItemWidth();
 
 		ImGui::Separator();
-		ImGui::Text("Border");
+		ImGui::Text("Gurobi");
 		ImGui::PushItemWidth(-60);
-		ImGui::Combo("", &border_shape, "square\0triangle\0pentagon\0circle\0bbox\0\0");
+		//ImGui::Combo("", &border_shape, "square\0triangle\0pentagon\0circle\0bbox\0\0");
+		// TOBI
+		ImGui::Checkbox("select ROI", &select_roi);
+		if (ImGui::Button("Solve ROI")) {
+			solve_ROI();
+		}
+		if (ImGui::Button("relax Laplacian")) {
+			relaxLaplacian();
+		}
 		ImGui::PopItemWidth();
 
 		ImGui::Separator();
@@ -1146,6 +1151,100 @@ namespace {
 		}
 	}
 
+	void relaxLaplacian()
+	{
+		// Find vertices that have lower connectivity than 6
+		VectorXi neighCount = VectorXi::Zero(points.size());
+		for (size_t i = 0; i < triangles.rows(); i++)
+		{
+			for (size_t j = 0; j < 3; j++)
+			{
+				neighCount(triangles(i, j))++;
+			}
+
+		}
+		
+		// Rearrange coordinates and triangle indices to have free vertices first...
+		MatrixXd xRearranged = MatrixXd::Zero(points.size(), 1);
+		MatrixXd yRearranged = MatrixXd::Zero(points.size(), 1);
+		MatrixXi trianglesRearranged = MatrixXi::Zero(triangles.rows(), 3);
+		
+		int c = 0;
+		for (size_t i = 0; i < points.size(); i++)
+		{
+			if (neighCount(i) >= 5)
+			{
+				xRearranged(c, 0) = points[i][0];
+				yRearranged(c, 0) = points[i][1];
+				c++;
+
+				for (size_t j = 0; j < triangles.rows(); j++)
+				{
+					for (size_t k = 0; k < 3; k++)
+					{
+						if (triangles(j, k) == i) { 
+							trianglesRearranged(j, k) = c;
+						}
+					}
+				}
+			}
+		}
+		int nFree = c;
+		
+		// and then the fixed vertices
+		for (size_t i = 0; i < points.size(); i++)
+		{
+			if (neighCount(i) < 5)
+			{
+				xRearranged(c, 0) = points[i][0];
+				yRearranged(c, 0) = points[i][1];
+				c++;
+
+				for (size_t j = 0; j < triangles.rows(); j++)
+				{
+					for (size_t k = 0; k < 3; k++)
+					{
+						if (triangles(j, k) == i) {
+							trianglesRearranged(j, k) = c + nFree;
+						}
+					}
+				}
+			}
+		}
+		
+		// Generate Laplacian
+		MatrixXd L = MatrixXd::Zero(points.size(), points.size());
+		for (size_t i = 0; i < trianglesRearranged.rows(); i++)
+		{
+			for (size_t j = 0; j < 3; j++)
+			{
+				L(trianglesRearranged(j), trianglesRearranged((j + 1) % 3)) = 1.0;
+			}
+		}
+		for (size_t i = 0; i < neighCount.rows(); i++)
+		{
+			L(i, i) = double(-neighCount(i));
+		}
+		
+		// Solve for xNew and yNew
+		MatrixXd Li = L.block(1, 1, nFree, nFree);
+		MatrixXd Lb = L.block(1, nFree + 1, nFree, L.rows());
+		
+		MatrixXd Lii = Li.inverse();
+		
+		MatrixXd tmp = -Lb*xRearranged.block(nFree + 1, 1, L.rows(), 1);
+		MatrixXd xNew = Lii*tmp;
+		
+		tmp = -Lb*yRearranged.block(nFree + 1, 1, L.rows(), 1);
+		MatrixXd yNew = Lii*tmp;
+
+		// Overwrite the free vertices of xRearranged and yRearranged
+		for (size_t i = 0; i < nFree; i++)
+		{
+			xRearranged(i, 1) = xNew(i, 1);
+			yRearranged(i, 1) = yNew(i, 1);
+		}
+	}
 
 }
 
