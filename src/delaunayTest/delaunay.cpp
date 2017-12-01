@@ -1153,6 +1153,13 @@ namespace {
 
 	void relaxLaplacian()
 	{
+
+		if (triangles.size() == 0)
+		{
+			createTriangles();
+			//std::cout << triangles;
+		}
+
 		// Find vertices that have lower connectivity than 6
 		VectorXi neighCount = VectorXi::Zero(points.size());
 		for (size_t i = 0; i < triangles.rows(); i++)
@@ -1172,12 +1179,11 @@ namespace {
 		int c = 0;
 		for (size_t i = 0; i < points.size(); i++)
 		{
-			if (neighCount(i) >= 5)
+			if (neighCount(i) == 6)
 			{
 				xRearranged(c, 0) = points[i][0];
 				yRearranged(c, 0) = points[i][1];
-				c++;
-
+				
 				for (size_t j = 0; j < triangles.rows(); j++)
 				{
 					for (size_t k = 0; k < 3; k++)
@@ -1187,6 +1193,7 @@ namespace {
 						}
 					}
 				}
+				c++;
 			}
 		}
 		int nFree = c;
@@ -1194,23 +1201,24 @@ namespace {
 		// and then the fixed vertices
 		for (size_t i = 0; i < points.size(); i++)
 		{
-			if (neighCount(i) < 5)
+			if (neighCount(i) != 6)
 			{
 				xRearranged(c, 0) = points[i][0];
 				yRearranged(c, 0) = points[i][1];
-				c++;
-
+				
 				for (size_t j = 0; j < triangles.rows(); j++)
 				{
 					for (size_t k = 0; k < 3; k++)
 					{
 						if (triangles(j, k) == i) {
-							trianglesRearranged(j, k) = c + nFree;
+							trianglesRearranged(j, k) = c;
 						}
 					}
 				}
+				c++;
 			}
 		}
+		
 		
 		// Generate Laplacian
 		MatrixXd L = MatrixXd::Zero(points.size(), points.size());
@@ -1218,31 +1226,38 @@ namespace {
 		{
 			for (size_t j = 0; j < 3; j++)
 			{
-				L(trianglesRearranged(j), trianglesRearranged((j + 1) % 3)) = 1.0;
+				L(trianglesRearranged(i, j), trianglesRearranged(i, (j + 1) % 3)) = -1.0;
 			}
 		}
 		for (size_t i = 0; i < neighCount.rows(); i++)
 		{
-			L(i, i) = double(-neighCount(i));
+			L(i, i) = double(neighCount(i));
 		}
 		
 		// Solve for xNew and yNew
-		MatrixXd Li = L.block(1, 1, nFree, nFree);
-		MatrixXd Lb = L.block(1, nFree + 1, nFree, L.rows());
+		MatrixXd Li = L.block(0, 0, nFree, nFree);
+
+		MatrixXd Lb = L.block(0, nFree, nFree, L.rows() - nFree);
 		
+		/* somewhere here it goes downhill... not sure the inverse is correct */
+
 		MatrixXd Lii = Li.inverse();
-		
-		MatrixXd tmp = -Lb*xRearranged.block(nFree + 1, 1, L.rows(), 1);
+
+		MatrixXd tmp = -Lb*xRearranged.block(nFree, 0, L.rows() - nFree, 1);
+
 		MatrixXd xNew = Lii*tmp;
 		
-		tmp = -Lb*yRearranged.block(nFree + 1, 1, L.rows(), 1);
+		tmp = -Lb*yRearranged.block(nFree, 0, L.rows() - nFree, 1);
 		MatrixXd yNew = Lii*tmp;
 
+		//std::cout << xNew.transpose() << std::endl << std::endl;
+		//std::cout << yNew.transpose() << std::endl << std::endl;
+	
 		// Overwrite the free vertices of xRearranged and yRearranged
 		for (size_t i = 0; i < nFree; i++)
 		{
-			xRearranged(i, 1) = xNew(i, 1);
-			yRearranged(i, 1) = yNew(i, 1);
+			xRearranged(i, 0) = xNew(i, 0);
+			yRearranged(i, 0) = yNew(i, 0);
 		}
 	}
 
