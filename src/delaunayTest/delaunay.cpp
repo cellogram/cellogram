@@ -142,8 +142,8 @@ namespace {
 	std::vector<int> vBoundaryInd;
 	std::vector<vec2> points;
 	std::vector<vec2> vInternal;
-	std::vector<vec2> detected;
-	std::vector<vec2> reference;
+	std::vector<vec2> detected;  // same as reference below, i.e. the distorted mesh.
+	std::vector<vec2> reference; // same as input, i.e. the distorted mesh.
 	Delaunay_var delaunay;
 	std::vector<int> degree;
 	typedef std::vector<vec2> Polygon;
@@ -1155,6 +1155,7 @@ namespace {
 	{
 		// Find vertices that have lower connectivity than 6
 		VectorXi neighCount = VectorXi::Zero(points.size());
+
 		for (size_t i = 0; i < triangles.rows(); i++)
 		{
 			for (size_t j = 0; j < 3; j++)
@@ -1164,86 +1165,113 @@ namespace {
 
 		}
 		
+		/*
+		//std::cout << "triangles" << std::endl << triangles.transpose() << std::endl;
+		//std::cout << "neighCount" << std::endl << neighCount << std::endl;
+		std::cout << "points" << std::endl;
+		for (size_t i = 0; i < points.size(); i++)
+		{
+			std::cout << points[i][0] << " " << points[i][1] << " " << reference[i][0] << " " << reference[i][1] << " " << detected[i][0] << " " << detected[i][1] << std::endl;
+		}
+		*/
+
 		// Rearrange coordinates and triangle indices to have free vertices first...
 		MatrixXd xRearranged = MatrixXd::Zero(points.size(), 1);
 		MatrixXd yRearranged = MatrixXd::Zero(points.size(), 1);
+		VectorXi indicesMapping = VectorXi::Zero(points.size());
 		MatrixXi trianglesRearranged = MatrixXi::Zero(triangles.rows(), 3);
-		
+
 		int c = 0;
 		for (size_t i = 0; i < points.size(); i++)
 		{
-			if (neighCount(i) >= 5)
+			if (neighCount(i) == 6)
 			{
+				indicesMapping(i) = c;
 				xRearranged(c, 0) = points[i][0];
 				yRearranged(c, 0) = points[i][1];
-				c++;
 
-				for (size_t j = 0; j < triangles.rows(); j++)
-				{
-					for (size_t k = 0; k < 3; k++)
-					{
-						if (triangles(j, k) == i) { 
-							trianglesRearranged(j, k) = c;
-						}
-					}
-				}
+				c++;
 			}
 		}
 		int nFree = c;
-		
+
 		// and then the fixed vertices
 		for (size_t i = 0; i < points.size(); i++)
 		{
-			if (neighCount(i) < 5)
+			if (neighCount(i) != 6)
 			{
+				indicesMapping(i) = c;
 				xRearranged(c, 0) = points[i][0];
 				yRearranged(c, 0) = points[i][1];
-				c++;
 
-				for (size_t j = 0; j < triangles.rows(); j++)
-				{
-					for (size_t k = 0; k < 3; k++)
-					{
-						if (triangles(j, k) == i) {
-							trianglesRearranged(j, k) = c + nFree;
-						}
-					}
-				}
+				c++;
 			}
 		}
-		
+
+		// rearrange triangles such that it is congruent with the newly arranged coordinates
+		for (size_t j = 0; j < triangles.rows(); j++)
+		{
+			for (size_t k = 0; k < 3; k++)
+			{
+				trianglesRearranged(j, k) = indicesMapping(triangles(j, k));
+			}
+		}
+
+		/*
+		//This seems to be correct so far. Checked with matlab
+		std::cout << "xRearranged" << std::endl << xRearranged.transpose() << std::endl;
+		std::cout << "yRearranged" << std::endl << yRearranged.transpose() << std::endl;
+		std::cout << "triRearranged" << std::endl << trianglesRearranged.transpose()  << std::endl;
+		*/
+
 		// Generate Laplacian
 		MatrixXd L = MatrixXd::Zero(points.size(), points.size());
 		for (size_t i = 0; i < trianglesRearranged.rows(); i++)
 		{
 			for (size_t j = 0; j < 3; j++)
 			{
-				L(trianglesRearranged(j), trianglesRearranged((j + 1) % 3)) = 1.0;
+				L(trianglesRearranged(i,j), trianglesRearranged(i,(j + 1) % 3)) = -1.0;
+				L(trianglesRearranged(i, (j + 1) % 3), trianglesRearranged(i, j) ) = -1.0;
 			}
 		}
+		VectorXd diag = L.colwise().sum();
 		for (size_t i = 0; i < neighCount.rows(); i++)
 		{
-			L(i, i) = double(-neighCount(i));
+			L(i, i) = -diag(i);
 		}
-		
+
 		// Solve for xNew and yNew
-		MatrixXd Li = L.block(1, 1, nFree, nFree);
-		MatrixXd Lb = L.block(1, nFree + 1, nFree, L.rows());
+		MatrixXd Li = L.block(0, 0, nFree, nFree);
+		MatrixXd Lb = L.block(0, nFree, nFree, L.rows() - nFree);
 		
+		/*
+		std::cout << "L" << std::endl << L << std::endl;
+		std::cout << "Lii" << std::endl << Li << std::endl;
+		std::cout << "Lib" << std::endl << Lb << std::endl;
+		std::cout << "nFree" << std::endl << nFree << std::endl;
+		*/
+
 		MatrixXd Lii = Li.inverse();
-		
-		MatrixXd tmp = -Lb*xRearranged.block(nFree + 1, 1, L.rows(), 1);
+
+		MatrixXd tmp = -Lb*xRearranged.block(nFree, 0, L.rows() - nFree, 1);
+
+		//MatrixXd xNew = L.householderQr().solve(tmp);
 		MatrixXd xNew = Lii*tmp;
 		
-		tmp = -Lb*yRearranged.block(nFree + 1, 1, L.rows(), 1);
+		tmp = -Lb*yRearranged.block(nFree, 0, L.rows() - nFree, 1);
 		MatrixXd yNew = Lii*tmp;
 
 		// Overwrite the free vertices of xRearranged and yRearranged
 		for (size_t i = 0; i < nFree; i++)
 		{
-			xRearranged(i, 1) = xNew(i, 1);
-			yRearranged(i, 1) = yNew(i, 1);
+			xRearranged(i, 0) = xNew(i, 0);
+			yRearranged(i, 0) = yNew(i, 0);
 		}
+		
+		std::cout << "xNew" << std::endl << xRearranged.transpose() << std::endl;
+		std::cout << "yNew" << std::endl << yRearranged.transpose() << std::endl;
+		std::cout << "triRearranged" << std::endl << trianglesRearranged.transpose() << std::endl;
+		
 	}
 
 }
@@ -1426,7 +1454,7 @@ int main(int argc, char** argv) {
 	if (filenames.size() == 1) {
 		filenames.push_back(filenames.front());
 	} else if (filenames.empty()) {
-		std::string input_filename = DATA_DIR "1.xyz";
+		std::string input_filename = DATA_DIR "1.xyz";  // 4 does not work
 		filenames.push_back(input_filename);
 		filenames.push_back(input_filename);
 	}
