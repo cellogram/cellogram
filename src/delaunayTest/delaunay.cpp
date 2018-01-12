@@ -1454,7 +1454,7 @@ int main(int argc, char** argv) {
 	if (filenames.size() == 1) {
 		filenames.push_back(filenames.front());
 	} else if (filenames.empty()) {
-		std::string input_filename = DATA_DIR "1.xyz";  // 4 does not work
+		std::string input_filename = DATA_DIR "small.xyz";  // 4 does not work
 		filenames.push_back(input_filename);
 		filenames.push_back(input_filename);
 	}
