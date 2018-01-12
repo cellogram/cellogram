@@ -1153,13 +1153,6 @@ namespace {
 
 	void relaxLaplacian()
 	{
-
-		if (triangles.size() == 0)
-		{
-			createTriangles();
-			//std::cout << triangles;
-		}
-
 		// Find vertices that have lower connectivity than 6
 		VectorXi neighCount = VectorXi::Zero(points.size());
 
@@ -1196,20 +1189,7 @@ namespace {
 				indicesMapping(i) = c;
 				xRearranged(c, 0) = points[i][0];
 				yRearranged(c, 0) = points[i][1];
-<<<<<<< HEAD
 
-=======
-				
-				for (size_t j = 0; j < triangles.rows(); j++)
-				{
-					for (size_t k = 0; k < 3; k++)
-					{
-						if (triangles(j, k) == i) { 
-							trianglesRearranged(j, k) = c;
-						}
-					}
-				}
->>>>>>> 4c59887ad2a79aa607405a3b3aa198f6d6b6a765
 				c++;
 			}
 		}
@@ -1223,7 +1203,6 @@ namespace {
 				indicesMapping(i) = c;
 				xRearranged(c, 0) = points[i][0];
 				yRearranged(c, 0) = points[i][1];
-<<<<<<< HEAD
 
 				c++;
 			}
@@ -1245,50 +1224,24 @@ namespace {
 		std::cout << "triRearranged" << std::endl << trianglesRearranged.transpose()  << std::endl;
 		*/
 
-=======
-				
-				for (size_t j = 0; j < triangles.rows(); j++)
-				{
-					for (size_t k = 0; k < 3; k++)
-					{
-						if (triangles(j, k) == i) {
-							trianglesRearranged(j, k) = c;
-						}
-					}
-				}
-				c++;
-			}
-		}
-		
-		
->>>>>>> 4c59887ad2a79aa607405a3b3aa198f6d6b6a765
 		// Generate Laplacian
 		MatrixXd L = MatrixXd::Zero(points.size(), points.size());
 		for (size_t i = 0; i < trianglesRearranged.rows(); i++)
 		{
 			for (size_t j = 0; j < 3; j++)
 			{
-<<<<<<< HEAD
 				L(trianglesRearranged(i,j), trianglesRearranged(i,(j + 1) % 3)) = -1.0;
 				L(trianglesRearranged(i, (j + 1) % 3), trianglesRearranged(i, j) ) = -1.0;
-=======
-				L(trianglesRearranged(i, j), trianglesRearranged(i, (j + 1) % 3)) = -1.0;
->>>>>>> 4c59887ad2a79aa607405a3b3aa198f6d6b6a765
 			}
 		}
 		VectorXd diag = L.colwise().sum();
 		for (size_t i = 0; i < neighCount.rows(); i++)
 		{
-<<<<<<< HEAD
 			L(i, i) = -diag(i);
-=======
-			L(i, i) = double(neighCount(i));
->>>>>>> 4c59887ad2a79aa607405a3b3aa198f6d6b6a765
 		}
 
 		// Solve for xNew and yNew
 		MatrixXd Li = L.block(0, 0, nFree, nFree);
-<<<<<<< HEAD
 		MatrixXd Lb = L.block(0, nFree, nFree, L.rows() - nFree);
 		
 		/*
@@ -1297,29 +1250,17 @@ namespace {
 		std::cout << "Lib" << std::endl << Lb << std::endl;
 		std::cout << "nFree" << std::endl << nFree << std::endl;
 		*/
-=======
-
-		MatrixXd Lb = L.block(0, nFree, nFree, L.rows() - nFree);
-		
-		/* somewhere here it goes downhill... not sure the inverse is correct */
->>>>>>> 4c59887ad2a79aa607405a3b3aa198f6d6b6a765
 
 		MatrixXd Lii = Li.inverse();
 
 		MatrixXd tmp = -Lb*xRearranged.block(nFree, 0, L.rows() - nFree, 1);
 
-<<<<<<< HEAD
 		//MatrixXd xNew = L.householderQr().solve(tmp);
-=======
->>>>>>> 4c59887ad2a79aa607405a3b3aa198f6d6b6a765
 		MatrixXd xNew = Lii*tmp;
 		
 		tmp = -Lb*yRearranged.block(nFree, 0, L.rows() - nFree, 1);
 		MatrixXd yNew = Lii*tmp;
 
-		//std::cout << xNew.transpose() << std::endl << std::endl;
-		//std::cout << yNew.transpose() << std::endl << std::endl;
-	
 		// Overwrite the free vertices of xRearranged and yRearranged
 		for (size_t i = 0; i < nFree; i++)
 		{
