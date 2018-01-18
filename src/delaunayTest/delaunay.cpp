@@ -949,22 +949,17 @@ namespace {
 			triangles(c, 0) = v1;
 			triangles(c, 1) = v2;
 			triangles(c, 2) = v3;
-
-			/*if ((v1 == 110) || (v2 == 110) || (v3 == 110))
-			{
-				std::cout << v1 << ',' << v2 << ',' << v3 << std::endl;
-			}*/
 			
 		}
 	}
 
 	void removeRow(MatrixXi& matrix, unsigned int rowToRemove)
 	{
-		unsigned int numRows = matrix.rows() - 1;
+		unsigned int numRows = matrix.rows()-1;
 		unsigned int numCols = matrix.cols();
 
 		if (rowToRemove < numRows)
-			matrix.block(rowToRemove, 0, numRows - rowToRemove, numCols) = matrix.bottomRows(numRows - rowToRemove);
+			matrix.block(rowToRemove, 0, numRows - rowToRemove , numCols) = matrix.bottomRows(numRows - rowToRemove);
 
 		matrix.conservativeResize(numRows, numCols);
 	}
@@ -974,33 +969,41 @@ namespace {
 		// find any triangles that connect to the internal of ROI
 		std::vector<int> removeIdx;
 
-		for (size_t i = 0; i < roiInternal.size(); i++)
+		for (size_t i = 0; i < triangles.rows(); i++)
 		{
-			if (roiInternal[i])
+			for (size_t j = 0; j < roiInternal.size(); j++)
 			{
-				for (size_t j = 0; j < triangles.rows(); j++)
+				if (roiInternal[j])
 				{
-					if ((triangles(j,0) == i)|| (triangles(j, 1) == i) || (triangles(j, 2) == i) )
+					if ((triangles(i, 0) == j) || (triangles(i, 1) == j) || (triangles(i, 2) == j))
 					{
-						removeIdx.push_back(j);
+						std::cout << j << " " << i << " " << triangles(i, 0) << " " << triangles(i, 1) << " " << triangles(i, 2) << std::endl;
+						removeIdx.push_back(i);
 					}
 				}
 			}
 		}
 
+		// using default comparison:
+		std::vector<int>::iterator it;
+		it = std::unique(removeIdx.begin(), removeIdx.end());
+		removeIdx.resize(std::distance(removeIdx.begin(), it));
 
+		std::cout << "removeIdx\n";
 		// remove all the triangles that connect to the internal of ROI
-		for (size_t i = 0; i < removeIdx.size(); i++)
+		for (size_t i = removeIdx.size()-1; i > 0; i--)
 		{
 			removeRow(triangles, removeIdx[i]);
 		}
+
+		std::cout << "triangles\n" << triangles.transpose() << std::endl;
+		std::cout << "tNew\n" << tNew.transpose() << std::endl;
 
 		// add new rows at the end of triangles
 		MatrixXi tmp = triangles;
 		triangles.resize(triangles.rows() + tNew.rows(),3);
 		
 		triangles << tmp, tNew;
-		
 	}
 
 	void solve_ROI() {
@@ -1138,10 +1141,21 @@ namespace {
 
 		} 
 		
+		std::cout << "triangles" << std::endl << triangles.transpose() << std::endl;
+
 		// Replace tGlobal in triangles
 		replaceTriangles(tGlobal);
 		
+
+		for (size_t i = 0; i < 168; i++)
+		{
+			std::cout << points[i][0] << " " << points[i][1] << " " << roiInternal[i] << std::endl;
+		}
+
+		std::cout << "triangles" << std::endl << triangles.transpose() << std::endl;
+
 		// Reset ROI
+		/*
 		vBoundaryInd.clear();
 		vInternalInd.clear();
 		for (size_t i = 0; i < roi.size(); i++)
@@ -1149,6 +1163,7 @@ namespace {
 			roi[i] = false;
 			roiInternal[i] = false;
 		}
+		*/
 	}
 
 	void relaxLaplacian()
@@ -1268,9 +1283,22 @@ namespace {
 			yRearranged(i, 0) = yNew(i, 0);
 		}
 		
+		/*
 		std::cout << "xNew" << std::endl << xRearranged.transpose() << std::endl;
 		std::cout << "yNew" << std::endl << yRearranged.transpose() << std::endl;
 		std::cout << "triRearranged" << std::endl << trianglesRearranged.transpose() << std::endl;
+		*/
+
+		// use indices mapping to overwrite "points" with the newly calculated coordinates
+		for (size_t i = 0; i < indicesMapping.rows(); i++)
+		{
+			points[i][0] = xRearranged(indicesMapping(i));
+			points[i][1] = yRearranged(indicesMapping(i));
+
+			std::cout << points[i][0] << " "<< points[i][1] << std::endl;
+		}
+
+		std::cout << "triangles" << std::endl << triangles.transpose() << std::endl;
 		
 	}
 
@@ -1454,7 +1482,7 @@ int main(int argc, char** argv) {
 	if (filenames.size() == 1) {
 		filenames.push_back(filenames.front());
 	} else if (filenames.empty()) {
-		std::string input_filename = DATA_DIR "small.xyz";  // 4 does not work
+		std::string input_filename = DATA_DIR "small2.xyz";  // 4 does not work
 		filenames.push_back(input_filename);
 		filenames.push_back(input_filename);
 	}
