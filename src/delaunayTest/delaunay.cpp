@@ -144,6 +144,7 @@ namespace {
 	std::vector<vec2> vInternal;
 	std::vector<vec2> detected;  // same as reference below, i.e. the distorted mesh.
 	std::vector<vec2> reference; // same as input, i.e. the distorted mesh.
+	bool showCellogramDelaunay = true;
 	Delaunay_var delaunay;
 	std::vector<int> degree;
 	typedef std::vector<vec2> Polygon;
@@ -435,15 +436,31 @@ namespace {
 		glupSetColor3f(GLUP_FRONT_AND_BACK_COLOR, 0.7f, 0.7f, 0.7f);
 		glupSetMeshWidth(1);
 		glupBegin(GLUP_LINES);
-		for(index_t c=0; c<delaunay->nb_cells(); ++c) {
-			const signed_index_t* cell = delaunay->cell_to_v() + 3*c;
-			for(index_t e=0; e<3; ++e) {
-				signed_index_t v1 = cell[e];
-				signed_index_t v2 = cell[(e+1)%3];
-				vec2 p1 = points[v1] * (1.f - interpolation) + interpolation * reference[v1];
-				vec2 p2 = points[v2] * (1.f - interpolation) + interpolation * reference[v2];
-				glupVertex(p1);
-				glupVertex(p2);
+		if (showCellogramDelaunay)
+		{
+			for (index_t c = 0; c<delaunay->nb_cells(); ++c) {
+				const signed_index_t* cell = delaunay->cell_to_v() + 3 * c;
+				for (index_t e = 0; e<3; ++e) {
+					signed_index_t v1 = cell[e];
+					signed_index_t v2 = cell[(e + 1) % 3];
+					vec2 p1 = points[v1] * (1.f - interpolation) + interpolation * reference[v1];
+					vec2 p2 = points[v2] * (1.f - interpolation) + interpolation * reference[v2];
+					glupVertex(p1);
+					glupVertex(p2);
+				}
+			}
+		}
+		else
+		{
+			for (index_t i = 0; i<triangles.rows(); ++i) {
+				for (index_t j = 0; j<3; ++j) {
+					signed_index_t v1 = triangles(i, j);
+					signed_index_t v2 = triangles(i, (j + 1) % 3);
+					vec2 p1 = points[v1] * (1.f - interpolation) + interpolation * reference[v1];
+					vec2 p2 = points[v2] * (1.f - interpolation) + interpolation * reference[v2];
+					glupVertex(p1);
+					glupVertex(p2);
+				}
 			}
 		}
 		glupEnd();
@@ -977,7 +994,6 @@ namespace {
 				{
 					if ((triangles(i, 0) == j) || (triangles(i, 1) == j) || (triangles(i, 2) == j))
 					{
-						std::cout << j << " " << i << " " << triangles(i, 0) << " " << triangles(i, 1) << " " << triangles(i, 2) << std::endl;
 						removeIdx.push_back(i);
 					}
 				}
@@ -989,15 +1005,11 @@ namespace {
 		it = std::unique(removeIdx.begin(), removeIdx.end());
 		removeIdx.resize(std::distance(removeIdx.begin(), it));
 
-		std::cout << "removeIdx\n";
 		// remove all the triangles that connect to the internal of ROI
-		for (size_t i = removeIdx.size()-1; i > 0; i--)
+		for (int i = removeIdx.size()-1; i >= 0; i--)
 		{
 			removeRow(triangles, removeIdx[i]);
 		}
-
-		std::cout << "triangles\n" << triangles.transpose() << std::endl;
-		std::cout << "tNew\n" << tNew.transpose() << std::endl;
 
 		// add new rows at the end of triangles
 		MatrixXi tmp = triangles;
@@ -1024,7 +1036,6 @@ namespace {
 		if (triangles.size() == 0)
 		{
 			createTriangles();
-			//std::cout << triangles;
 		}
 
 		// 1
@@ -1091,15 +1102,11 @@ namespace {
 		{
 			vB(i, 0) = detected[vBoundaryInd[i]][0];
 			vB(i, 1) = detected[vBoundaryInd[i]][1];
-
-			//std::cout << vB(i, 0) << ',' << vB(i, 1) << std::endl;
 		}
 		for (size_t i = 0; i < vInternalInd.size(); i++)
 		{
 			vI(i, 0) = detected[vInternalInd[i]][0];
 			vI(i, 1) = detected[vInternalInd[i]][1];
-
-			//std::cout << vI(i, 0) << ',' << vI(i, 1) << std::endl;
 		}
 		
 		// Generate perfect mesh in ROI
@@ -1141,18 +1148,9 @@ namespace {
 
 		} 
 		
-		std::cout << "triangles" << std::endl << triangles.transpose() << std::endl;
-
 		// Replace tGlobal in triangles
 		replaceTriangles(tGlobal);
-		
 
-		for (size_t i = 0; i < 168; i++)
-		{
-			std::cout << points[i][0] << " " << points[i][1] << " " << roiInternal[i] << std::endl;
-		}
-
-		std::cout << "triangles" << std::endl << triangles.transpose() << std::endl;
 
 		// Reset ROI
 		/*
@@ -1179,16 +1177,17 @@ namespace {
 			}
 
 		}
-		
-		/*
-		//std::cout << "triangles" << std::endl << triangles.transpose() << std::endl;
-		//std::cout << "neighCount" << std::endl << neighCount << std::endl;
-		std::cout << "points" << std::endl;
+
+		// Determine fixed vertices based on connectivity and bounding box
+		VectorXi indFixed = VectorXi::Zero(points.size());
+
 		for (size_t i = 0; i < points.size(); i++)
 		{
-			std::cout << points[i][0] << " " << points[i][1] << " " << reference[i][0] << " " << reference[i][1] << " " << detected[i][0] << " " << detected[i][1] << std::endl;
+			if (neighCount(i) != 6 || fixed[i])
+			{
+				indFixed(i) = 1;
+			}
 		}
-		*/
 
 		// Rearrange coordinates and triangle indices to have free vertices first...
 		MatrixXd xRearranged = MatrixXd::Zero(points.size(), 1);
@@ -1196,10 +1195,11 @@ namespace {
 		VectorXi indicesMapping = VectorXi::Zero(points.size());
 		MatrixXi trianglesRearranged = MatrixXi::Zero(triangles.rows(), 3);
 
+
 		int c = 0;
 		for (size_t i = 0; i < points.size(); i++)
 		{
-			if (neighCount(i) == 6)
+			if (indFixed(i) == 0)
 			{
 				indicesMapping(i) = c;
 				xRearranged(c, 0) = points[i][0];
@@ -1213,7 +1213,7 @@ namespace {
 		// and then the fixed vertices
 		for (size_t i = 0; i < points.size(); i++)
 		{
-			if (neighCount(i) != 6)
+			if (indFixed(i) == 1)
 			{
 				indicesMapping(i) = c;
 				xRearranged(c, 0) = points[i][0];
@@ -1231,13 +1231,6 @@ namespace {
 				trianglesRearranged(j, k) = indicesMapping(triangles(j, k));
 			}
 		}
-
-		/*
-		//This seems to be correct so far. Checked with matlab
-		std::cout << "xRearranged" << std::endl << xRearranged.transpose() << std::endl;
-		std::cout << "yRearranged" << std::endl << yRearranged.transpose() << std::endl;
-		std::cout << "triRearranged" << std::endl << trianglesRearranged.transpose()  << std::endl;
-		*/
 
 		// Generate Laplacian
 		MatrixXd L = MatrixXd::Zero(points.size(), points.size());
@@ -1258,13 +1251,6 @@ namespace {
 		// Solve for xNew and yNew
 		MatrixXd Li = L.block(0, 0, nFree, nFree);
 		MatrixXd Lb = L.block(0, nFree, nFree, L.rows() - nFree);
-		
-		/*
-		std::cout << "L" << std::endl << L << std::endl;
-		std::cout << "Lii" << std::endl << Li << std::endl;
-		std::cout << "Lib" << std::endl << Lb << std::endl;
-		std::cout << "nFree" << std::endl << nFree << std::endl;
-		*/
 
 		MatrixXd Lii = Li.inverse();
 
@@ -1282,24 +1268,16 @@ namespace {
 			xRearranged(i, 0) = xNew(i, 0);
 			yRearranged(i, 0) = yNew(i, 0);
 		}
-		
-		/*
-		std::cout << "xNew" << std::endl << xRearranged.transpose() << std::endl;
-		std::cout << "yNew" << std::endl << yRearranged.transpose() << std::endl;
-		std::cout << "triRearranged" << std::endl << trianglesRearranged.transpose() << std::endl;
-		*/
 
 		// use indices mapping to overwrite "points" with the newly calculated coordinates
 		for (size_t i = 0; i < indicesMapping.rows(); i++)
 		{
 			points[i][0] = xRearranged(indicesMapping(i));
 			points[i][1] = yRearranged(indicesMapping(i));
-
-			std::cout << points[i][0] << " "<< points[i][1] << std::endl;
 		}
 
-		std::cout << "triangles" << std::endl << triangles.transpose() << std::endl;
-		
+		// switch to show newly calculated mesh
+		showCellogramDelaunay = false;		
 	}
 
 }
