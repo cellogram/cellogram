@@ -1190,8 +1190,9 @@ namespace {
 		}
 
 		// Rearrange coordinates and triangle indices to have free vertices first...
-		MatrixXd xRearranged = MatrixXd::Zero(points.size(), 1);
-		MatrixXd yRearranged = MatrixXd::Zero(points.size(), 1);
+		//MatrixXd xRearranged = MatrixXd::Zero(points.size(), 1);
+		SparseVector<double> xRearranged(points.size());
+		SparseVector<double> yRearranged(points.size());
 		VectorXi indicesMapping = VectorXi::Zero(points.size());
 		MatrixXi trianglesRearranged = MatrixXi::Zero(triangles.rows(), 3);
 
@@ -1202,8 +1203,8 @@ namespace {
 			if (indFixed(i) == 0)
 			{
 				indicesMapping(i) = c;
-				xRearranged(c, 0) = points[i][0];
-				yRearranged(c, 0) = points[i][1];
+				xRearranged.fill(c) = points[i][0];
+				yRearranged.fill(c) = points[i][1];
 
 				c++;
 			}
@@ -1216,8 +1217,8 @@ namespace {
 			if (indFixed(i) == 1)
 			{
 				indicesMapping(i) = c;
-				xRearranged(c, 0) = points[i][0];
-				yRearranged(c, 0) = points[i][1];
+				xRearranged.fill(c) = points[i][0];
+				yRearranged.fill(c) = points[i][1];
 
 				c++;
 			}
@@ -1232,52 +1233,84 @@ namespace {
 			}
 		}
 
-		// Generate Laplacian
-		MatrixXd L = MatrixXd::Zero(points.size(), points.size());
+		// Generate Laplacian	
+		VectorXd diag = VectorXd::Zero(points.size());
+		SparseMatrix<double> L(points.size(), points.size());
+		typedef Triplet<int> Trip;
+		std::vector< Trip > tripletList;
+		tripletList.reserve(points.size() * 7);
+		
 		for (size_t i = 0; i < trianglesRearranged.rows(); i++)
 		{
 			for (size_t j = 0; j < 3; j++)
 			{
-				L(trianglesRearranged(i,j), trianglesRearranged(i,(j + 1) % 3)) = -1.0;
-				L(trianglesRearranged(i, (j + 1) % 3), trianglesRearranged(i, j) ) = -1.0;
+				tripletList.push_back(Trip(trianglesRearranged(i, j), trianglesRearranged(i, (j + 1) % 3), -1));
+				tripletList.push_back(Trip(trianglesRearranged(i, (j + 1) % 3), trianglesRearranged(i, j), -1));
+				diag(trianglesRearranged(i, j))++;
 			}
 		}
-		VectorXd diag = L.colwise().sum();
-		for (size_t i = 0; i < neighCount.rows(); i++)
+
+		for (size_t i = 0; i < diag.rows(); i++)
 		{
-			L(i, i) = -diag(i);
+			tripletList.push_back(Trip(i,i, diag(i)));
+		}
+
+		L.setFromTriplets(tripletList.begin(), tripletList.end());
+
+		// Force all non-zeros to be one
+		for (int k = 0; k<L.outerSize(); ++k)
+		{
+			for (SparseMatrix<double>::InnerIterator it(L, k); it; ++it)
+			{
+				if (it.value() < 0) 
+				{
+					L.coeffRef(it.row(), it.col()) = -1;
+				}
+			}
 		}
 
 		// Solve for xNew and yNew
-		MatrixXd Li = L.block(0, 0, nFree, nFree);
-		MatrixXd Lb = L.block(0, nFree, nFree, L.rows() - nFree);
+		SparseMatrix<double>  Li = L.block(0, 0, nFree, nFree);
+		SparseMatrix<double>  Lb = L.block(0, nFree, nFree, L.rows() - nFree);
 
-		MatrixXd Lii = Li.inverse();
+		//SparseMatrix<int>  Lii = Li.inverse();
+		SimplicialLDLT<SparseMatrix<double> > solver;
+		solver.compute(Li);
+		if (solver.info() != Success) {
+			// decomposition failed
+			return;
+		}
 
-		MatrixXd tmp = -Lb*xRearranged.block(nFree, 0, L.rows() - nFree, 1);
+		SparseVector<double> xB(L.rows() - nFree);
+		SparseVector<double> yB(L.rows() - nFree);
+		for (size_t i = 0; i < L.rows() - nFree; i++)
+		{
+			xB.fill(i) = xRearranged.coeffRef(nFree + i);
+			yB.fill(i) = yRearranged.coeffRef(nFree + i);
+		}
+		SparseVector<double> tmp = -Lb*xB;
 
-		//MatrixXd xNew = L.householderQr().solve(tmp);
-		MatrixXd xNew = Lii*tmp;
-		
-		tmp = -Lb*yRearranged.block(nFree, 0, L.rows() - nFree, 1);
-		MatrixXd yNew = Lii*tmp;
+		VectorXd xNew = solver.solve(VectorXd(tmp));
+
+		tmp = -Lb*yB;
+		VectorXd yNew = solver.solve(VectorXd(tmp));
 
 		// Overwrite the free vertices of xRearranged and yRearranged
 		for (size_t i = 0; i < nFree; i++)
 		{
-			xRearranged(i, 0) = xNew(i, 0);
-			yRearranged(i, 0) = yNew(i, 0);
+			xRearranged.coeffRef(i) = xNew(i);
+			yRearranged.coeffRef(i) = yNew(i);
 		}
 
 		// use indices mapping to overwrite "points" with the newly calculated coordinates
 		for (size_t i = 0; i < indicesMapping.rows(); i++)
 		{
-			points[i][0] = xRearranged(indicesMapping(i));
-			points[i][1] = yRearranged(indicesMapping(i));
+			points[i][0] = xRearranged.coeffRef(indicesMapping(i));
+			points[i][1] = yRearranged.coeffRef(indicesMapping(i));
 		}
 
 		// switch to show newly calculated mesh
-		showCellogramDelaunay = false;		
+		showCellogramDelaunay = false;	
 	}
 
 }
@@ -1460,7 +1493,7 @@ int main(int argc, char** argv) {
 	if (filenames.size() == 1) {
 		filenames.push_back(filenames.front());
 	} else if (filenames.empty()) {
-		std::string input_filename = DATA_DIR "small2.xyz";  // 4 does not work
+		std::string input_filename = DATA_DIR "1.xyz";  // 4 does not work
 		filenames.push_back(input_filename);
 		filenames.push_back(input_filename);
 	}
