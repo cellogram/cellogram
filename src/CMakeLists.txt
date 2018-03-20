@@ -1,0 +1,2 @@
+add_subdirectory(gurobi_solver)
+add_subdirectory(cellogram)

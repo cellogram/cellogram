@@ -1,14 +1,19 @@
-project(delaunayTest)
+project(old_cellogram_viewer)
 
 add_executable(${PROJECT_NAME}
-	delaunay.cpp
+	main.cpp
+	file_dialog.cpp
+	file_dialog.h
 )
 
 # Dependencies
-target_link_libraries(${PROJECT_NAME} tinyfiledialogs geogram geogram_gfx gurobi_solver)
+target_link_libraries(${PROJECT_NAME} cellogram tinyfiledialogs geogram geogram_gfx)
 
-# Enable extra warnings
+# Extra warnings
 target_compile_options(${PROJECT_NAME} PRIVATE ${ALL_WARNINGS})
+
+# Use C++14
+target_compile_features(${PROJECT_NAME} PUBLIC ${CXX14_FEATURES})
 
 # Output directory for binary
 set_target_properties(${PROJECT_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")

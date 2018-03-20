@@ -12,10 +12,14 @@ add_library(${PROJECT_NAME}
 target_include_directories(${PROJECT_NAME} PUBLIC ..)
 
 # Dependencies
-target_link_libraries(${PROJECT_NAME} geogram gurobi_solver)
+target_link_libraries(${PROJECT_NAME}
+	geogram
+	gurobi_solver
+)
 
-# Enable extra warnings
+# Extra warnings
 target_compile_options(${PROJECT_NAME} PRIVATE ${ALL_WARNINGS})
 
-# Output directory for binary
-set_target_properties(${PROJECT_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
+# Use C++14
+target_compile_features(${PROJECT_NAME} PUBLIC ${CXX14_FEATURES})
+

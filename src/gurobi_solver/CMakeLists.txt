@@ -8,6 +8,8 @@ add_library(gurobi_solver
 	state.h
 )
 
+target_include_directories(gurobi_solver PUBLIC ..)
+
 target_link_libraries(gurobi_solver igl::core geogram gurobi)
 
 # Example test

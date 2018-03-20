@@ -1,13 +1,16 @@
-project(cellogramViewer)
+project(delaunay_test)
 
 add_executable(${PROJECT_NAME}
-	main.cpp
-	file_dialog.cpp
-	file_dialog.h
+	delaunay.cpp
 )
 
 # Dependencies
-target_link_libraries(${PROJECT_NAME} cellogram tinyfiledialogs geogram geogram_gfx)
+target_link_libraries(${PROJECT_NAME}
+	tinyfiledialogs
+	geogram
+	geogram_gfx
+	gurobi_solver
+)
 
 # Enable extra warnings
 target_compile_options(${PROJECT_NAME} PRIVATE ${ALL_WARNINGS})

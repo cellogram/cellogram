@@ -56,10 +56,10 @@
 #include <geogram/mesh/mesh_io.h>
 #include <fstream>
 
-#include "../gurobiImplementation/state.h"
-#include "../gurobiImplementation/generateQ.h"
-#include "../gurobiImplementation/gurobiModel.h"
-#include "igl/unique.h"
+#include <gurobi_solver/state.h>
+#include <gurobi_solver/generateQ.h>
+#include <gurobi_solver/gurobiModel.h>
+#include <igl/unique.h>
 
 /*********************************************************************/
 
@@ -918,7 +918,7 @@ namespace {
 		double x = det(c - a, d - c);
 		double y = det(b - a, a - c);
 		double z = det(b - a, d - c);
-		// ab and cd are parallel || 
+		// ab and cd are parallel ||
 		if (std::abs(z) < eps || x*z < 0 || x*z > z*z || y*z < 0 || y*z > z*z) return false;
 		ans = c + (d - c) * y / z;
 		return true;
@@ -953,10 +953,10 @@ namespace {
 	void createTriangles()
 	{
 		triangles = MatrixXi::Zero(delaunay->nb_cells(), 3);
-		for (index_t c = 0; c<delaunay->nb_cells(); ++c) 
+		for (index_t c = 0; c<delaunay->nb_cells(); ++c)
 		{
 			const signed_index_t* cell = delaunay->cell_to_v() + 3 * c;
-			
+
 			signed_index_t v1 = cell[0];
 			signed_index_t v2 = cell[1];
 			signed_index_t v3 = cell[2];
@@ -966,7 +966,7 @@ namespace {
 			triangles(c, 0) = v1;
 			triangles(c, 1) = v2;
 			triangles(c, 2) = v3;
-			
+
 		}
 	}
 
@@ -1014,7 +1014,7 @@ namespace {
 		// add new rows at the end of triangles
 		MatrixXi tmp = triangles;
 		triangles.resize(triangles.rows() + tNew.rows(),3);
-		
+
 		triangles << tmp, tNew;
 	}
 
@@ -1047,7 +1047,7 @@ namespace {
 		{
 			return;
 		}
-		
+
 		// 2 Find vertices in polygon
 		for (int i = 0; i < points.size(); i++)
 		{
@@ -1065,7 +1065,7 @@ namespace {
 				vInternalInd.push_back(i);
 			}
 		}
-		
+
 
 		// 3 Determine number of connections into the cluster to determine "neigh"
 		std::vector<int> internalNeigh;
@@ -1088,7 +1088,7 @@ namespace {
 							internalNeigh[i]++;
 						}
 					}
-					
+
 				}
 			}
 			neigh[i] = 6 - internalNeigh[i];
@@ -1108,11 +1108,11 @@ namespace {
 			vI(i, 0) = detected[vInternalInd[i]][0];
 			vI(i, 1) = detected[vInternalInd[i]][1];
 		}
-		
+
 		// Generate perfect mesh in ROI
 		s.init(vB, vI, neigh);
 		s.fill_hole();
-		
+
 		// Generate adjacency matrix and the laplacian
 		q.adjacencyMatrix(s.F);
 		q.laplacianMatrix();
@@ -1137,7 +1137,7 @@ namespace {
 		{
 			vGlobalInd(i + vBoundaryInd.size()) = vInternalInd[i];
 		}
-		
+
 		tGlobal = MatrixXi(q.T.rows(), 3);
 		for (size_t i = 0; i < q.T.rows(); i++)
 		{
@@ -1146,8 +1146,8 @@ namespace {
 				tGlobal(i, j) = vGlobalInd(q.T(i, j));
 			}
 
-		} 
-		
+		}
+
 		// Replace tGlobal in triangles
 		replaceTriangles(tGlobal);
 
@@ -1233,13 +1233,13 @@ namespace {
 			}
 		}
 
-		// Generate Laplacian	
+		// Generate Laplacian
 		VectorXd diag = VectorXd::Zero(points.size());
 		SparseMatrix<double> L(points.size(), points.size());
 		typedef Triplet<int> Trip;
 		std::vector< Trip > tripletList;
 		tripletList.reserve(points.size() * 7);
-		
+
 		for (size_t i = 0; i < trianglesRearranged.rows(); i++)
 		{
 			for (size_t j = 0; j < 3; j++)
@@ -1262,7 +1262,7 @@ namespace {
 		{
 			for (SparseMatrix<double>::InnerIterator it(L, k); it; ++it)
 			{
-				if (it.value() < 0) 
+				if (it.value() < 0)
 				{
 					L.coeffRef(it.row(), it.col()) = -1;
 				}
@@ -1310,7 +1310,7 @@ namespace {
 		}
 
 		// switch to show newly calculated mesh
-		showCellogramDelaunay = false;	
+		showCellogramDelaunay = false;
 	}
 
 }

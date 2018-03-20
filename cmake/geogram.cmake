@@ -60,11 +60,11 @@ target_include_directories(geogram SYSTEM PUBLIC ${GEOGRAM_SOURCE_INCLUDE_DIR})
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 	# remove warning for multiply defined symbols (caused by multiple
 	# instanciations of STL templates)
-	target_compile_options(geogram INTERFACE /wd4251)
+	#target_compile_options(geogram INTERFACE /wd4251)
 
 	# remove all unused stuff from windows.h
-	target_compile_definitions(geogram INTERFACE -DWIN32_LEAN_AND_MEAN)
-	target_compile_definitions(geogram INTERFACE -DVC_EXTRALEAN)
+	# target_compile_definitions(geogram INTERFACE -DWIN32_LEAN_AND_MEAN)
+	# target_compile_definitions(geogram INTERFACE -DVC_EXTRALEAN)
 
 	# do not define a min() and a max() macro, breaks
 	# std::min() and std::max() !!

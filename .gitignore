@@ -48,8 +48,6 @@
 build/
 cmake-build-*
 latex.out/
-3rdparty/eigen
-3rdparty/geogram
 Win32
 x64
 yimg.dir
