@@ -27,14 +27,27 @@ public:
 	// Scene
 	State &state;
 
+	// Multiple meshes ids
+	int hull_id;
+	int points_id;
+
 	// UI options
+	// double foo;
 
 public:
 	void launch();
 
+	igl::opengl::ViewerData & mesh_by_id(int id);
+
 	virtual bool load(std::string name) override;
 
 	virtual bool save(std::string name) override;
+
+	void compute_hull();
+
+public:
+	igl::opengl::ViewerData & points_data() { return mesh_by_id(points_id); }
+	igl::opengl::ViewerData & hull_data() { return mesh_by_id(hull_id); }
 
 public:
 	// Menu stuff

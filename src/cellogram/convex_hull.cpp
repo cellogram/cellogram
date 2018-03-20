@@ -5,6 +5,10 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
+namespace cellogram {
+
+// -----------------------------------------------------------------------------
+
 namespace {
 
 struct Compare {
@@ -31,7 +35,7 @@ bool inline salientAngle(const GEO::vec2 &a, const GEO::vec2 &b, const GEO::vec2
 
 ////////////////////////////////////////////////////////////////////////////////
 
-std::vector<int> cellogram::convex_hull(const std::vector<GEO::vec2> &points) {
+std::vector<int> convex_hull(const std::vector<GEO::vec2> &points) {
 	Compare order(points);
 	order.leftmost = 0;
 	for(int i = 1; i < (int) points.size(); ++i) {
@@ -61,7 +65,7 @@ std::vector<int> cellogram::convex_hull(const std::vector<GEO::vec2> &points) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void cellogram::triangulate_hull(std::vector<GEO::vec2> &hull, GEO::Mesh &M) {
+void triangulate_hull(std::vector<GEO::vec2> &hull, GEO::Mesh &M) {
 	auto n = (GEO::index_t) hull.size();
 	M.clear();
 	M.vertices.create_vertices((int) hull.size());
@@ -75,3 +79,33 @@ void cellogram::triangulate_hull(std::vector<GEO::vec2> &hull, GEO::Mesh &M) {
 		M.facets.set_vertex(i-1, 2, i+1);
 	}
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+void convex_hull(const Eigen::MatrixXd &V, Eigen::VectorXi &P) {
+	std::vector<GEO::vec2> pts(V.rows());
+	for (int i = 0; i < V.rows(); ++i) {
+		pts[i] = GEO::vec2(V(i, 0), V(i, 1));
+	}
+	auto hull = convex_hull(pts);
+	P.resize(hull.size());
+	for (int i = 0; i < P.size(); ++i) {
+		P(i) = hull[i];
+	}
+	P.reverseInPlace();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void triangulate_convex_polygon(const Eigen::MatrixXd &P, Eigen::MatrixXd &V, Eigen::MatrixXi &F) {
+	int n = (int) P.rows();
+	V = P;
+	F.resize(n - 2, 3);
+	for (int i = 1; i + 1 < n; ++i) {
+		F.row(i-1) << 0, i, i+1;
+	}
+}
+
+// -----------------------------------------------------------------------------
+
+} // namespace cellogram

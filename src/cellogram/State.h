@@ -14,6 +14,8 @@ public:
 public:
 	Eigen::MatrixXd points; // displaced points
 
+	Eigen::MatrixXd hull;
+
 public:
 	// void foo();
 };
