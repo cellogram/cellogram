@@ -5,6 +5,14 @@ add_library(${PROJECT_NAME}
 	common.h
 	convex_hull.cpp
 	convex_hull.h
+	load_points.cpp
+	load_points.h
+	MeshUtils.cpp
+	MeshUtils.h
+	State.cpp
+	State.h
+	StringUtils.cpp
+	StringUtils.h
 	voronoi.cpp
 	voronoi.h
 )
@@ -15,6 +23,10 @@ target_include_directories(${PROJECT_NAME} PUBLIC ..)
 target_link_libraries(${PROJECT_NAME}
 	geogram
 	gurobi_solver
+	igl::core
+	json
+	polyclipping
+	tinyformat
 )
 
 # Extra warnings

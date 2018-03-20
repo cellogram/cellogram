@@ -1,13 +1,21 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "common.h"
 #include <vector>
-#include <geogram/basic/geometry.h>
-#include <geogram/mesh/mesh.h>
+#include <Eigen/Dense>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
 
-void lloyd_relaxation(std::vector<GEO::vec2> &points, const std::vector<bool> &fixed, int num_iter,
-	GEO::Mesh *domain = nullptr);
+struct State {
+public:
+	static State &state();
+	~State() = default;
+
+public:
+	Eigen::MatrixXd points; // displaced points
+
+public:
+	// void foo();
+};
 
 } // namespace cellogram

@@ -1,4 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////////
+#include "common.h"
 #include <vector>
 #include <geogram/basic/geometry.h>
 #include <geogram/mesh/mesh.h>
