@@ -19,7 +19,7 @@ UIState &UIState::ui_state() {
 	return instance;
 }
 
-void UIState::launch() {
+void UIState::initialize() {
 	viewer.plugins.push_back(this);
 
 	// Setup viewer parameters
@@ -32,8 +32,14 @@ void UIState::launch() {
 	viewer.core.is_animating = true;
 
 	// Setup viewer data
-	hull_id = viewer.data().id;
-	points_id = viewer.append_mesh();
+	viewer.append_mesh();
+	viewer.data_list[0].id = hull_id = 0;
+	viewer.data_list[1].id = points_id = 1;
+}
+
+void UIState::launch() {
+	std::cout << hull_id << std::endl;
+	std::cout << points_id << std::endl;
 
 	// Launch viewer
 	viewer.launch();

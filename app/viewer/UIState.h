@@ -35,6 +35,8 @@ public:
 	// double foo;
 
 public:
+	void initialize();
+
 	void launch();
 
 	igl::opengl::ViewerData & mesh_by_id(int id);

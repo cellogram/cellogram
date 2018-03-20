@@ -14,7 +14,7 @@ int main(int argc, char *argv[]) {
 
 	GEO::initialize();
 
-    // Import standard command line arguments, and custom ones
+	// Import standard command line arguments, and custom ones
 	GEO::CmdLine::import_arg_group("standard");
 	GEO::CmdLine::import_arg_group("pre");
 	GEO::CmdLine::import_arg_group("algo");
@@ -33,6 +33,7 @@ int main(int argc, char *argv[]) {
 		return app.exit(e);
 	}
 
+	UIState::ui_state().initialize();
 	UIState::ui_state().load(args.input);
 	UIState::ui_state().launch();
 

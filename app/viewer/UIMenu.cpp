@@ -1,6 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "UIState.h"
 #include "FileDialog.h"
+#include <cellogram/voronoi.h>
 #include <igl/opengl/glfw/imgui/ImGuiHelpers.h>
 #include <imgui/imgui_internal.h>
 #include <imgui/imgui.h>
@@ -111,7 +112,10 @@ void UIState::draw_viewer_menu() {
 // -----------------------------------------------------------------------------
 
 void UIState::draw_custom_window() {
-
+	if (ImGui::Button("Lloyd")) {
+		lloyd_relaxation(state.points, Eigen::VectorXi(1), 1, state.hull, state.hull_faces);
+		points_data().set_points(state.points, Eigen::RowVector3d(1, 0, 0));
+	}
 }
 
 // -----------------------------------------------------------------------------

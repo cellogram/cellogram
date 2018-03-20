@@ -1,9 +1,14 @@
 ////////////////////////////////////////////////////////////////////////////////
-#include "cellogram/voronoi.h"
+#include "voronoi.h"
+#include "MeshUtils.h"
 #include <geogram/mesh/mesh.h>
 #include <geogram/delaunay/delaunay.h>
 #include <geogram/voronoi/CVT.h>
 ////////////////////////////////////////////////////////////////////////////////
+
+namespace cellogram {
+
+// -----------------------------------------------------------------------------
 
 namespace {
 
@@ -21,7 +26,7 @@ void create_bbox_mesh(GEO::vec2 xy_min, GEO::vec2 xy_max, GEO::Mesh &M) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void cellogram::lloyd_relaxation(
+void lloyd_relaxation(
 	std::vector<GEO::vec2> &points, const std::vector<bool> &fixed, int num_iter,
 	GEO::Mesh *domain)
 {
@@ -51,3 +56,23 @@ void cellogram::lloyd_relaxation(
 	//cvt.Newton_iterations(num_iter);
 	std::copy_n(cvt.embedding(0), 2*points.size(), reinterpret_cast<double *>(&points[0]));
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+void lloyd_relaxation(Eigen::MatrixXd &P, const Eigen::VectorXi &fixed, int num_iter,
+	const Eigen::MatrixXd &V, const Eigen::MatrixXi &F)
+{
+	std::vector<GEO::vec2> pts(P.rows());
+	std::vector<bool> fixed2(P.rows(), false);
+	for (int i = 0; i < P.rows(); ++i) {
+		pts[i] = GEO::vec2(P(i, 0), P(i, 1));
+	}
+	lloyd_relaxation(pts, fixed2, num_iter, nullptr);
+	for (int i = 0; i < P.rows(); ++i) {
+		P.row(i) << pts[i][0], pts[i][1];
+	}
+}
+
+// -----------------------------------------------------------------------------
+
+} // namespace cellogram
