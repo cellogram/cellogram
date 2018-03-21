@@ -2,6 +2,8 @@
 #include "UIState.h"
 #include <cellogram/load_points.h>
 #include <cellogram/convex_hull.h>
+#include <cellogram/delaunay.h>
+#include <cellogram/PolygonUtils.h>
 #include <igl/slice.h>
 #include <igl/colon.h>
 ////////////////////////////////////////////////////////////////////////////////
@@ -38,9 +40,6 @@ void UIState::initialize() {
 }
 
 void UIState::launch() {
-	std::cout << hull_id << std::endl;
-	std::cout << points_id << std::endl;
-
 	// Launch viewer
 	viewer.launch();
 }
@@ -56,14 +55,20 @@ igl::opengl::ViewerData & UIState::mesh_by_id(int id) {
 bool UIState::load(std::string name) {
 	if (name.empty()) { return true; }
 
+	// Load points
 	load_points(name, state.points);
+	state.detected = state.points;
+
+	// Show points and align camera
+	points_data().clear();
 	points_data().set_points(state.points, Eigen::RowVector3d(1, 0, 0));
 	viewer.core.align_camera_center(state.points);
-
 	double extent = (state.points.colwise().maxCoeff() - state.points.colwise().minCoeff()).maxCoeff();
 	points_data().point_size = float(0.008 * extent);
 
+	// Compute and show convex hull + triangulation
 	compute_hull();
+	compute_triangulation();
 
 	return false;
 }
@@ -81,28 +86,46 @@ bool UIState::save(std::string name) {
 ////////////////////////////////////////////////////////////////////////////////
 
 void UIState::compute_hull() {
-	Eigen::VectorXi I, J;
-	convex_hull(state.points, I);
-	int dims = (int) state.points.cols();
-	J = Eigen::VectorXi::LinSpaced(dims, 0, dims-1);
-	igl::slice(state.points, I, J, state.hull);
-
-	int n = (int) state.hull.rows();
+	// Compute polygon of the convex hull
 	Eigen::MatrixXd P;
-	P.resizeLike(state.hull);
-	P.topRows(n-1) = state.hull.bottomRows(n-1);
-	P.row(n-1) = state.hull.row(0);
-	hull_data().add_edges(state.hull, P, Eigen::RowVector3d(0, 0, 0));
+	Eigen::VectorXi I, J;
+	convex_hull(state.points, state.boundary);
+	int dims = (int) state.points.cols();
+	I = state.boundary;
+	J = Eigen::VectorXi::LinSpaced(dims, 0, dims-1);
+	igl::slice(state.points, I, J, P);
 
-	Eigen::MatrixXd V;
-	Eigen::MatrixXi F;
-	triangulate_convex_polygon(state.hull, V, F);
-	hull_data().set_mesh(V, F);
+	// Offset by epsilon
+	// offset_polygon(P, P, 1);
+
+	hull_data().clear();
+
+	// Draw edges
+	int n = (int) P.rows();
+	Eigen::MatrixXd P2;
+	P2.resizeLike(P);
+	P2.topRows(n-1) = P.bottomRows(n-1);
+	P2.row(n-1) = P.row(0);
+	hull_data().add_edges(P, P2, Eigen::RowVector3d(0, 0, 0));
+
+	// Draw filled polygon
+	triangulate_convex_polygon(P, state.hull_vertices, state.hull_faces);
+	hull_data().set_mesh(state.hull_vertices, state.hull_faces);
+
+	// Set viewer options
 	hull_data().set_colors(Eigen::RowVector3d(52, 152, 219)/255.0);
 	hull_data().show_lines = false;
 	hull_data().shininess = 0;
-
 	hull_data().line_width = 2.0;
+}
+
+// -----------------------------------------------------------------------------
+
+void UIState::compute_triangulation() {
+	delaunay_triangulation(state.points, state.triangles);
+	points_data().clear();
+	points_data().set_points(state.points, Eigen::RowVector3d(1, 0, 0));
+	points_data().set_mesh(state.points, state.triangles);
 }
 
 // -----------------------------------------------------------------------------

@@ -46,6 +46,7 @@ public:
 	virtual bool save(std::string name) override;
 
 	void compute_hull();
+	void compute_triangulation();
 
 public:
 	igl::opengl::ViewerData & points_data() { return mesh_by_id(points_id); }

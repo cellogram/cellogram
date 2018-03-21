@@ -1,2 +1,4 @@
 add_subdirectory(cellogram_viewer)
-add_subdirectory(delaunay_test)
+if(TARGET gurobi)
+	add_subdirectory(delaunay_test)
+endif()

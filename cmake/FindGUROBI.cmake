@@ -65,8 +65,10 @@ find_package_handle_standard_args(GUROBI DEFAULT_MSG
 mark_as_advanced(GUROBI_INCLUDE_DIR GUROBI_LIBRARY GUROBI_CXX_LIBRARY_DEBUG GUROBI_CXX_LIBRARY_RELEASE)
 
 # Interface target
-add_library(gurobi INTERFACE)
-target_include_directories(gurobi INTERFACE ${GUROBI_INCLUDE_DIRS})
-target_link_libraries(gurobi INTERFACE
-	debug ${GUROBI_CXX_LIBRARY_DEBUG} ${GUROBI_LIBRARY}
-	optimized ${GUROBI_CXX_LIBRARY_RELEASE} ${GUROBI_LIBRARY})
+if(GUROBI_FOUND)
+	add_library(gurobi INTERFACE)
+	target_include_directories(gurobi INTERFACE ${GUROBI_INCLUDE_DIRS})
+	target_link_libraries(gurobi INTERFACE
+		debug ${GUROBI_CXX_LIBRARY_DEBUG} ${GUROBI_LIBRARY}
+		optimized ${GUROBI_CXX_LIBRARY_RELEASE} ${GUROBI_LIBRARY})
+endif()

@@ -100,7 +100,10 @@ add_library(tinyformat INTERFACE)
 target_include_directories(tinyformat SYSTEM INTERFACE ${THIRD_PARTY_DIR}/tinyformat)
 
 # Gurobi library
-find_package(GUROBI REQUIRED)
+find_package(GUROBI)
+if(NOT GUROBI_FOUND)
+	message(WARNING "Gurobi was not found on this computer, some features will be disabled.")
+endif()
 
 ################################################################################
 

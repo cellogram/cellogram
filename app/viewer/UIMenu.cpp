@@ -113,8 +113,9 @@ void UIState::draw_viewer_menu() {
 
 void UIState::draw_custom_window() {
 	if (ImGui::Button("Lloyd")) {
-		lloyd_relaxation(state.points, Eigen::VectorXi(1), 1, state.hull, state.hull_faces);
+		lloyd_relaxation(state.points, state.boundary, 1, state.hull_vertices, state.hull_faces);
 		points_data().set_points(state.points, Eigen::RowVector3d(1, 0, 0));
+		compute_triangulation();
 	}
 }
 

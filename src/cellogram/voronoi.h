@@ -9,7 +9,7 @@
 namespace cellogram {
 
 void lloyd_relaxation(std::vector<GEO::vec2> &points, const std::vector<bool> &fixed, int num_iter,
-	GEO::Mesh *domain = nullptr);
+	const GEO::Mesh *domain = nullptr);
 
 ///
 /// @brief         { Perform Lloyd relaxation on the vertices }

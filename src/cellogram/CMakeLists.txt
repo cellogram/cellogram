@@ -5,10 +5,14 @@ add_library(${PROJECT_NAME}
 	common.h
 	convex_hull.cpp
 	convex_hull.h
+	delaunay.cpp
+	delaunay.h
 	load_points.cpp
 	load_points.h
 	MeshUtils.cpp
 	MeshUtils.h
+	PolygonUtils.cpp
+	PolygonUtils.h
 	State.cpp
 	State.h
 	StringUtils.cpp
@@ -22,7 +26,6 @@ target_include_directories(${PROJECT_NAME} PUBLIC ..)
 # Dependencies
 target_link_libraries(${PROJECT_NAME}
 	geogram
-	gurobi_solver
 	igl::core
 	json
 	polyclipping

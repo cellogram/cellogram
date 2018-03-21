@@ -2,6 +2,7 @@
 #include "voronoi.h"
 #include "MeshUtils.h"
 #include <geogram/mesh/mesh.h>
+#include <geogram/mesh/mesh_io.h>
 #include <geogram/delaunay/delaunay.h>
 #include <geogram/voronoi/CVT.h>
 ////////////////////////////////////////////////////////////////////////////////
@@ -28,7 +29,7 @@ void create_bbox_mesh(GEO::vec2 xy_min, GEO::vec2 xy_max, GEO::Mesh &M) {
 
 void lloyd_relaxation(
 	std::vector<GEO::vec2> &points, const std::vector<bool> &fixed, int num_iter,
-	GEO::Mesh *domain)
+	const GEO::Mesh *domain)
 {
 	using namespace GEO;
 	GEO::vec2 xy_min = points[0];
@@ -42,7 +43,8 @@ void lloyd_relaxation(
 	GEO::Mesh M;
 	if (!domain) {
 		create_bbox_mesh(xy_min, xy_max, M);
-		domain = &M;
+	} else {
+		M.copy(*domain);
 	}
 
 	GEO::CentroidalVoronoiTesselation cvt(&M, 2);
@@ -52,6 +54,7 @@ void lloyd_relaxation(
 			cvt.lock_point((int) i);
 		}
 	}
+
 	cvt.Lloyd_iterations(num_iter);
 	//cvt.Newton_iterations(num_iter);
 	std::copy_n(cvt.embedding(0), 2*points.size(), reinterpret_cast<double *>(&points[0]));
@@ -67,7 +70,9 @@ void lloyd_relaxation(Eigen::MatrixXd &P, const Eigen::VectorXi &fixed, int num_
 	for (int i = 0; i < P.rows(); ++i) {
 		pts[i] = GEO::vec2(P(i, 0), P(i, 1));
 	}
-	lloyd_relaxation(pts, fixed2, num_iter, nullptr);
+	GEO::Mesh M;
+	to_geogram_mesh(V, F, M);
+	lloyd_relaxation(pts, fixed2, num_iter, &M);
 	for (int i = 0; i < P.rows(); ++i) {
 		P.row(i) << pts[i][0], pts[i][1];
 	}
