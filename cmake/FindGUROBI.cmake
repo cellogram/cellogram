@@ -12,6 +12,7 @@ find_path(GUROBI_INCLUDE_DIR
 		NAMES gurobi_c++.h
 		PATHS "$ENV{GUROBI_HOME}/include"
 				"/Library/gurobi502/mac64/include"
+				"/Library/gurobi752/mac64/include"
 				"C:\\libs\\gurobi502\\include"
 				"C:\\gurobi751\\win64\\include"
 				"C:\\gurobi752\\win64\\include"
@@ -29,6 +30,7 @@ find_library(GUROBI_LIBRARY
 					gurobi75
 			PATHS "$ENV{GUROBI_HOME}/lib"
 					"/Library/gurobi502/mac64/lib"
+					"/Library/gurobi752/mac64/lib"
 					"C:\\libs\\gurobi502\\lib"
 					"C:\\gurobi751\\win64\\lib"
 					"C:\\gurobi752\\win64\\lib"
@@ -40,6 +42,7 @@ find_library(GUROBI_CXX_LIBRARY_DEBUG
 					gurobi_c++mtd2015
 			PATHS "$ENV{GUROBI_HOME}/lib"
 					"/Library/gurobi502/mac64/lib"
+					"/Library/gurobi752/mac64/lib"
 					"C:\\libs\\gurobi502\\lib"
 					"C:\\gurobi751\\win64\\lib"
 					"C:\\gurobi752\\win64\\lib"
@@ -51,6 +54,7 @@ find_library(GUROBI_CXX_LIBRARY_RELEASE
 					gurobi_c++mt2015
 			PATHS "$ENV{GUROBI_HOME}/lib"
 					"/Library/gurobi502/mac64/lib"
+					"/Library/gurobi752/mac64/lib"
 					"C:\\libs\\gurobi502\\lib"
 					"C:\\gurobi751\\win64\\lib"
 					"C:\\gurobi752\\win64\\lib"

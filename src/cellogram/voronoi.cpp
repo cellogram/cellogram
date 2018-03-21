@@ -74,7 +74,7 @@ void lloyd_relaxation(Eigen::MatrixXd &P, const Eigen::VectorXi &fixed, int num_
 	to_geogram_mesh(V, F, M);
 	lloyd_relaxation(pts, fixed2, num_iter, &M);
 	for (int i = 0; i < P.rows(); ++i) {
-		P.row(i) << pts[i][0], pts[i][1];
+		P.row(i) << pts[i][0], pts[i][1], 0;
 	}
 }
 
