@@ -7,7 +7,7 @@
 namespace cellogram {
 
 ///
-/// @brief      { Computes a Delaunay tiangulation of the a point cloud in 2d }
+/// @brief      { Computes a Delaunay tiangulation of a point cloud in 2d }
 ///
 /// @param[in]  V     { #V x dims input point positions }
 /// @param[out] F     { #F x 3 output triangle indices }
