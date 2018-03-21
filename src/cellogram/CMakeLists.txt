@@ -7,6 +7,8 @@ add_library(${PROJECT_NAME}
 	convex_hull.h
 	delaunay.cpp
 	delaunay.h
+	laplace_energy.cpp
+	laplace_energy.h
 	load_points.cpp
 	load_points.h
 	MeshUtils.cpp

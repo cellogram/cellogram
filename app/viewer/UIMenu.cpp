@@ -2,10 +2,12 @@
 #include "UIState.h"
 #include "FileDialog.h"
 #include <cellogram/voronoi.h>
+#include <cellogram/laplace_energy.h>
 #include <igl/opengl/glfw/imgui/ImGuiHelpers.h>
 #include <imgui/imgui_internal.h>
 #include <imgui/imgui.h>
 #include <algorithm>
+#include <igl/jet.h>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
@@ -116,6 +118,17 @@ void UIState::draw_custom_window() {
 		lloyd_relaxation(state.points, state.boundary, 1, state.hull_vertices, state.hull_faces);
 		points_data().set_points(state.points, Eigen::RowVector3d(1, 0, 0));
 		compute_triangulation();
+	}
+	if (ImGui::Button("Laplace Energy")) {
+		laplace_energy(state.points, state.triangles, state.laplace_energy);
+		Eigen::MatrixXd C;
+		igl::jet(state.laplace_energy, true, C);
+
+		// Plot the mesh with pseudocolors
+		//igl::opengl::glfw::Viewer viewer;
+		hull_data().clear();
+		hull_data().set_mesh(state.points, state.triangles);
+		hull_data().set_colors(C);
 	}
 }
 

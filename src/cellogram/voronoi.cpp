@@ -65,6 +65,7 @@ void lloyd_relaxation(
 void lloyd_relaxation(Eigen::MatrixXd &P, const Eigen::VectorXi &fixed, int num_iter,
 	const Eigen::MatrixXd &V, const Eigen::MatrixXi &F)
 {
+	assert(P.cols() == 2 || P.cols() == 3);
 	std::vector<GEO::vec2> pts(P.rows());
 	std::vector<bool> fixed2(P.rows(), false);
 	for (int i = 0; i < P.rows(); ++i) {
@@ -74,7 +75,7 @@ void lloyd_relaxation(Eigen::MatrixXd &P, const Eigen::VectorXi &fixed, int num_
 	to_geogram_mesh(V, F, M);
 	lloyd_relaxation(pts, fixed2, num_iter, &M);
 	for (int i = 0; i < P.rows(); ++i) {
-		P.row(i) << pts[i][0], pts[i][1], 0;
+		P.row(i).head<2>() << pts[i][0], pts[i][1];
 	}
 }
 
