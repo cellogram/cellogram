@@ -22,6 +22,8 @@ public:
 	Eigen::MatrixXd hull_vertices;
 	Eigen::MatrixXi hull_faces;
 
+	Eigen::VectorXd laplace_energy;
+
 public:
 	// void foo();
 };
