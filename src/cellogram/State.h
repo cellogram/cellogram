@@ -22,7 +22,8 @@ public:
 	Eigen::MatrixXd hull_vertices;
 	Eigen::MatrixXi hull_faces;
 
-	Eigen::VectorXd laplace_energy;
+	Eigen::VectorXd original_laplace_energy; // Laplace energy at vertices for the ORIGINAL positions with CURRENT mesh
+	Eigen::VectorXd current_laplace_energy; // Laplace energy at vertices for the CURRENT positions with CURRENT mesh
 
 public:
 	// void foo();

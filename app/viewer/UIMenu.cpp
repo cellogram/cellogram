@@ -119,10 +119,21 @@ void UIState::draw_custom_window() {
 		points_data().set_points(state.points, Eigen::RowVector3d(1, 0, 0));
 		compute_triangulation();
 	}
-	if (ImGui::Button("Laplace Energy")) {
-		laplace_energy(state.points, state.triangles, state.laplace_energy);
+	if (ImGui::Button("Current Laplace Energy")) {
+		laplace_energy(state.points, state.triangles, state.current_laplace_energy);
 		Eigen::MatrixXd C;
-		igl::jet(state.laplace_energy, true, C);
+		igl::jet(state.current_laplace_energy, true, C);
+
+		// Plot the mesh with pseudocolors
+		//igl::opengl::glfw::Viewer viewer;
+		hull_data().clear();
+		hull_data().set_mesh(state.points, state.triangles);
+		hull_data().set_colors(C);
+	}
+	if (ImGui::Button("Original Laplace Energy")) {
+		laplace_energy(state.detected, state.triangles, state.original_laplace_energy);
+		Eigen::MatrixXd C;
+		igl::jet(state.original_laplace_energy, true, C);
 
 		// Plot the mesh with pseudocolors
 		//igl::opengl::glfw::Viewer viewer;
