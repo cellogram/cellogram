@@ -69,6 +69,9 @@ bool UIState::load(std::string name) {
 	double extent = (state.points.colwise().maxCoeff() - state.points.colwise().minCoeff()).maxCoeff();
 	points_data().point_size = float(0.008 * extent);
 
+	points_data().show_faces = false;
+	points_data().show_texture = false;
+
 	// Compute and show convex hull + triangulation
 	compute_hull();
 	compute_triangulation();
@@ -117,6 +120,7 @@ void UIState::compute_hull() {
 
 	// Set viewer options
 	hull_data().set_colors(Eigen::RowVector3d(52, 152, 219)/255.0);
+	hull_data().show_faces = false;
 	hull_data().show_lines = false;
 	hull_data().shininess = 0;
 	hull_data().line_width = 2.0;
@@ -158,14 +162,10 @@ void UIState::load_image(std::string fname) {
 
 	img_data().set_mesh(V, F);
 	img_data().set_uv(UV);
-	img_data().show_texture = true;
-
+	img_data().show_faces = true;
+	img_data().show_lines = false;
 	// Use the image as a texture
-	img_data().set_texture(R, R, R);
-
-	// Turn of texture of other meshes
-	hull_data().show_texture = false;
-	points_data().show_texture = false;
+	img_data().set_texture(R,G,B);
 }
 
 // -----------------------------------------------------------------------------

@@ -19,6 +19,8 @@ add_library(${PROJECT_NAME}
 	State.h
 	StringUtils.cpp
 	StringUtils.h
+	vertex.cpp
+	vertex.h
 	voronoi.cpp
 	voronoi.h
 )

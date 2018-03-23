@@ -3,11 +3,12 @@
 #include "FileDialog.h"
 #include <cellogram/voronoi.h>
 #include <cellogram/laplace_energy.h>
+#include <cellogram/vertex.h>
 #include <igl/opengl/glfw/imgui/ImGuiHelpers.h>
 #include <imgui/imgui_internal.h>
 #include <imgui/imgui.h>
 #include <algorithm>
-#include <igl/jet.h>
+#include <igl/parula.h>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
@@ -115,7 +116,11 @@ void UIState::draw_viewer_menu() {
 
 void UIState::draw_custom_window() {
 	ImGui::SetNextWindowPos(ImVec2(190.f * menu_scaling(), 0), ImGuiSetCond_FirstUseEver);
-	
+	ImGui::SetNextWindowSize(ImVec2(300, 600), ImGuiSetCond_FirstUseEver);
+	ImGui::Begin(
+		"Debug", nullptr,
+		ImGuiWindowFlags_NoSavedSettings
+	);
 	// Lloyds relaxation panel
 	if (ImGui::CollapsingHeader("Lloyds Relaxation", ImGuiTreeNodeFlags_DefaultOpen)) {
 		float w = ImGui::GetContentRegionAvailWidth();
@@ -141,29 +146,82 @@ void UIState::draw_custom_window() {
 		if (ImGui::Button("Current pos", ImVec2((w - p) / 2.f, 0))) {
 			laplace_energy(state.points, state.triangles, state.current_laplace_energy);
 			Eigen::MatrixXd C;
-			igl::jet(state.current_laplace_energy, true, C);
+			igl::parula(state.current_laplace_energy, true, C);
 
 			// Plot the mesh with pseudocolors
+			points_data().show_faces = true;
 			points_data().set_mesh(state.points, state.triangles);
 			points_data().set_colors(C);
+
+			
 		}
 		ImGui::SameLine(0, p);
 		if (ImGui::Button("Original pos", ImVec2((w - p) / 2.f, 0))) {
 			laplace_energy(state.detected, state.triangles, state.original_laplace_energy);
 			Eigen::MatrixXd C;
-			igl::jet(state.original_laplace_energy, true, C);
+			igl::parula(state.original_laplace_energy, true, C);
 
 			// Plot the mesh with pseudocolors
+			points_data().show_faces = true;
 			points_data().set_mesh(state.points, state.triangles);
 			points_data().set_colors(C);
 		}
 	}
-	
-	if (ImGui::Button("Load Image")) {
-		std::string fname = FileDialog::openFileName(DATA_DIR, { "*.png" });
-		if (!fname.empty()) { 
-			load_image(fname);
+	// Image Control Panel
+	if (ImGui::CollapsingHeader("Image", ImGuiTreeNodeFlags_DefaultOpen)) {
+		if (ImGui::Button("Load Image")) {
+			std::string fname = FileDialog::openFileName(DATA_DIR, { "*.png" });
+			if (!fname.empty()) {
+				load_image(fname);
+				img_data().show_texture = true;
+				img_data().show_faces = true;
+				// now that image is loaded, menu for image handling can be called
+				image_loaded = true;
+			}
 		}
+
+		// Generate new submenu to handle the image
+		/*
+		It should be able to
+		- turn on and off the image
+		- change the contrast
+		-
+		*/
+		if (image_loaded) {
+			ImGui::Checkbox("Show image", &(img_data().show_faces));
+			// Brightness
+			ImGui::PushItemWidth(80 * menu_scaling());
+			ImGui::DragFloat("Brightness", &(viewer.core.camera_zoom), 0.05f, 0.1f, 20.0f);
+		}
+	}
+	// Node control panel
+	/* This menu will include:
+		- adding/removing nodes
+		- moving points
+		- changing color of nodes
+			. with meaning, e.g. valence
+			. color picked by user
+	*/
+	if (ImGui::CollapsingHeader("Vertices", ImGuiTreeNodeFlags_DefaultOpen)) {
+		float w = ImGui::GetContentRegionAvailWidth();
+		float p = ImGui::GetStyle().FramePadding.x;
+		if (ImGui::Button("Add node", ImVec2((w - p) / 2.f, 0))) {
+			add_vertex(state.points);
+		}
+		ImGui::SameLine(0, p);
+		if (ImGui::Button("Delete Node", ImVec2((w - p) / 2.f, 0))) {
+			delete_vertex(state.points);
+		}
+	}
+	// Mesh
+	/* This menu will include:
+	- show face
+	- changing color of mesh
+	*/
+	if (ImGui::CollapsingHeader("Mesh", ImGuiTreeNodeFlags_DefaultOpen)) {
+		ImGui::Checkbox("Mesh Fill", &(points_data().show_faces));
+		ImGui::ColorEdit4("Mesh color", points_data().line_color.data(),
+			ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueWheel);
 	}
 }
 
@@ -173,11 +231,12 @@ bool UIState::pre_draw() {
 	ImGuiMenu::pre_draw();
 
 	// perform lloyd if necessary
-	if (continuous_lloyd)
+	if (continuous_lloyd) {
 		lloyd_relaxation(state.points, state.boundary, 1, state.hull_vertices, state.hull_faces);
 		points_data().set_points(state.points, Eigen::RowVector3d(1, 0, 0));
 		compute_triangulation();
-
+	}
+	
 	return false;
 }
 

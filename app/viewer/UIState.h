@@ -36,6 +36,7 @@ public:
 	// double foo;
 
 	bool continuous_lloyd;
+	bool image_loaded;
 
 
 public:
