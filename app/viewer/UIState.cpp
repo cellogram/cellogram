@@ -6,6 +6,7 @@
 #include <cellogram/PolygonUtils.h>
 #include <igl/slice.h>
 #include <igl/colon.h>
+#include <igl/png/readPNG.h>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
@@ -35,8 +36,10 @@ void UIState::initialize() {
 
 	// Setup viewer data
 	viewer.append_mesh();
+	viewer.append_mesh();
 	viewer.data_list[0].id = hull_id = 0;
 	viewer.data_list[1].id = points_id = 1;
+	viewer.data_list[2].id = img_id = 2;
 }
 
 void UIState::launch() {
@@ -126,6 +129,43 @@ void UIState::compute_triangulation() {
 	points_data().clear();
 	points_data().set_points(state.points, Eigen::RowVector3d(1, 0, 0));
 	points_data().set_mesh(state.points, state.triangles);
+}
+
+void UIState::load_image(std::string fname) {
+	Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> R, G, B, A; // Image
+
+	igl::png::readPNG(fname, R, G, B, A);
+	int xMax = R.cols();
+	int yMax = R.rows();
+
+	// Replace the mesh with a triangulated square
+	Eigen::MatrixXd V(4, 3);
+	V <<
+		0, 0, 0,
+		xMax, 0, 0,
+		xMax, yMax, 0,
+		0, xMax, 0;
+	Eigen::MatrixXi F(2, 3);
+	F <<
+		0, 1, 2,
+		2, 3, 0;
+	Eigen::MatrixXd UV(4, 2);
+	UV <<
+		0, 1,
+		1, 1,
+		1, 0,
+		0, 0;
+
+	img_data().set_mesh(V, F);
+	img_data().set_uv(UV);
+	img_data().show_texture = true;
+
+	// Use the image as a texture
+	img_data().set_texture(R, R, R);
+
+	// Turn of texture of other meshes
+	hull_data().show_texture = false;
+	points_data().show_texture = false;
 }
 
 // -----------------------------------------------------------------------------

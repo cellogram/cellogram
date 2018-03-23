@@ -114,33 +114,71 @@ void UIState::draw_viewer_menu() {
 // -----------------------------------------------------------------------------
 
 void UIState::draw_custom_window() {
-	if (ImGui::Button("Lloyd")) {
+	ImGui::SetNextWindowPos(ImVec2(190.f * menu_scaling(), 0), ImGuiSetCond_FirstUseEver);
+	
+	// Lloyds relaxation panel
+	if (ImGui::CollapsingHeader("Lloyds Relaxation", ImGuiTreeNodeFlags_DefaultOpen)) {
+		float w = ImGui::GetContentRegionAvailWidth();
+		float p = ImGui::GetStyle().FramePadding.x;
+		if (ImGui::Button("Lloyd", ImVec2((w - p) / 2.f, 0))) {
+			lloyd_relaxation(state.points, state.boundary, 1, state.hull_vertices, state.hull_faces);
+			points_data().set_points(state.points, Eigen::RowVector3d(1, 0, 0));
+			compute_triangulation();
+		}
+		ImGui::SameLine(0, p);
+		if (ImGui::Button("Animate", ImVec2((w - p) / 2.f, 0))) {
+			if (continuous_lloyd)
+				continuous_lloyd = false;
+			else
+				continuous_lloyd = true;
+		}
+	}
+
+	// Laplace energy panel
+	if (ImGui::CollapsingHeader("Laplace Energy", ImGuiTreeNodeFlags_DefaultOpen)) {
+		float w = ImGui::GetContentRegionAvailWidth();
+		float p = ImGui::GetStyle().FramePadding.x;
+		if (ImGui::Button("Current pos", ImVec2((w - p) / 2.f, 0))) {
+			laplace_energy(state.points, state.triangles, state.current_laplace_energy);
+			Eigen::MatrixXd C;
+			igl::jet(state.current_laplace_energy, true, C);
+
+			// Plot the mesh with pseudocolors
+			points_data().set_mesh(state.points, state.triangles);
+			points_data().set_colors(C);
+		}
+		ImGui::SameLine(0, p);
+		if (ImGui::Button("Original pos", ImVec2((w - p) / 2.f, 0))) {
+			laplace_energy(state.detected, state.triangles, state.original_laplace_energy);
+			Eigen::MatrixXd C;
+			igl::jet(state.original_laplace_energy, true, C);
+
+			// Plot the mesh with pseudocolors
+			points_data().set_mesh(state.points, state.triangles);
+			points_data().set_colors(C);
+		}
+	}
+	
+	if (ImGui::Button("Load Image")) {
+		std::string fname = FileDialog::openFileName(DATA_DIR, { "*.png" });
+		if (!fname.empty()) { 
+			load_image(fname);
+		}
+	}
+}
+
+// -----------------------------------------------------------------------------
+
+bool UIState::pre_draw() {
+	ImGuiMenu::pre_draw();
+
+	// perform lloyd if necessary
+	if (continuous_lloyd)
 		lloyd_relaxation(state.points, state.boundary, 1, state.hull_vertices, state.hull_faces);
 		points_data().set_points(state.points, Eigen::RowVector3d(1, 0, 0));
 		compute_triangulation();
-	}
-	if (ImGui::Button("Current Laplace Energy")) {
-		laplace_energy(state.points, state.triangles, state.current_laplace_energy);
-		Eigen::MatrixXd C;
-		igl::jet(state.current_laplace_energy, true, C);
 
-		// Plot the mesh with pseudocolors
-		//igl::opengl::glfw::Viewer viewer;
-		hull_data().clear();
-		hull_data().set_mesh(state.points, state.triangles);
-		hull_data().set_colors(C);
-	}
-	if (ImGui::Button("Original Laplace Energy")) {
-		laplace_energy(state.detected, state.triangles, state.original_laplace_energy);
-		Eigen::MatrixXd C;
-		igl::jet(state.original_laplace_energy, true, C);
-
-		// Plot the mesh with pseudocolors
-		//igl::opengl::glfw::Viewer viewer;
-		hull_data().clear();
-		hull_data().set_mesh(state.points, state.triangles);
-		hull_data().set_colors(C);
-	}
+	return false;
 }
 
 // -----------------------------------------------------------------------------

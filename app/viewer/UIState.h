@@ -30,9 +30,13 @@ public:
 	// Multiple meshes ids
 	int hull_id;
 	int points_id;
+	int img_id;
 
 	// UI options
 	// double foo;
+
+	bool continuous_lloyd;
+
 
 public:
 	void initialize();
@@ -45,12 +49,16 @@ public:
 
 	virtual bool save(std::string name) override;
 
+	virtual bool pre_draw() override;
+
+	void load_image(std::string name);
 	void compute_hull();
 	void compute_triangulation();
 
 public:
 	igl::opengl::ViewerData & points_data() { return mesh_by_id(points_id); }
 	igl::opengl::ViewerData & hull_data() { return mesh_by_id(hull_id); }
+	igl::opengl::ViewerData & img_data() { return mesh_by_id(img_id); }
 
 public:
 	// Menu stuff
