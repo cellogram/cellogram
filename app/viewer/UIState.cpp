@@ -96,6 +96,7 @@ void UIState::compute_hull() {
 	Eigen::MatrixXd P;
 	Eigen::VectorXi I, J;
 	convex_hull(state.points, state.boundary);
+	// loose_convex_hull(state.points, state.boundary);
 	int dims = (int) state.points.cols();
 	I = state.boundary;
 	J = Eigen::VectorXi::LinSpaced(dims, 0, dims-1);

@@ -62,4 +62,10 @@ void delaunay_triangulation(const Eigen::MatrixXd &V, Eigen::MatrixXi &F) {
 
 // -----------------------------------------------------------------------------
 
+void constrained_delaunay_triangulation(const Eigen::MatrixXd &V, const Eigen::VectorXi &L, Eigen::MatrixXi &F) {
+	// TODO
+}
+
+// -----------------------------------------------------------------------------
+
 } // namespace cellogram

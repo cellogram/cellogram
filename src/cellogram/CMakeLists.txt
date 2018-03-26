@@ -13,6 +13,8 @@ add_library(${PROJECT_NAME}
 	load_points.h
 	MeshUtils.cpp
 	MeshUtils.h
+	navigation.cpp
+	navigation.h
 	PolygonUtils.cpp
 	PolygonUtils.h
 	State.cpp
