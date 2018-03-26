@@ -15,7 +15,8 @@ public:
 	Eigen::MatrixXd detected; // detected (unmoved) point positions
 	Eigen::MatrixXd points; // relaxed point positions
 
-	Eigen::MatrixXi triangles;
+	Eigen::MatrixXi triangles; // triangular mesh
+	Eigen::MatrixXi Graph; // adjaceny matrix of triangluar mesh
 
 	Eigen::VectorXi boundary; // list of vertices on the boundary
 

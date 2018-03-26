@@ -7,6 +7,8 @@ add_library(${PROJECT_NAME}
 	convex_hull.h
 	delaunay.cpp
 	delaunay.h
+	region_grow.cpp
+	region_grow.h
 	laplace_energy.cpp
 	laplace_energy.h
 	load_points.cpp
@@ -19,6 +21,8 @@ add_library(${PROJECT_NAME}
 	State.h
 	StringUtils.cpp
 	StringUtils.h
+	tri2hex.cpp
+	tri2hex.h
 	vertex.cpp
 	vertex.h
 	voronoi.cpp

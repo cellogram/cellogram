@@ -3,12 +3,15 @@
 #include "FileDialog.h"
 #include <cellogram/voronoi.h>
 #include <cellogram/laplace_energy.h>
+#include <cellogram/tri2hex.h>
 #include <cellogram/vertex.h>
+#include <cellogram/region_grow.h>
 #include <igl/opengl/glfw/imgui/ImGuiHelpers.h>
 #include <imgui/imgui_internal.h>
 #include <imgui/imgui.h>
 #include <algorithm>
 #include <igl/parula.h>
+#include <vector>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
@@ -222,6 +225,21 @@ void UIState::draw_custom_window() {
 		ImGui::Checkbox("Mesh Fill", &(points_data().show_faces));
 		ImGui::ColorEdit4("Mesh color", points_data().line_color.data(),
 			ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueWheel);
+	}
+	
+	// Button to call any function for testing
+	if (ImGui::CollapsingHeader("Test foo", ImGuiTreeNodeFlags_DefaultOpen)) {
+		if (ImGui::Button("Test function")) {
+			tri2hex(state.hull_faces, state.Graph);
+			Eigen::VectorXi Vertex_Value = Eigen::VectorXi::Zero(state.points.rows());
+			for (int i = 0; i < state.points.rows(); i++)
+			{
+				Vertex_Value(i) = i;
+			}
+			double criterium = 1000;
+			Eigen::VectorXi region;
+			region_grow(state.Graph, Vertex_Value, criterium, region);
+		}
 	}
 }
 
