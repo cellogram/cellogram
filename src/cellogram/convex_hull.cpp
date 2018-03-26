@@ -1,8 +1,16 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "convex_hull.h"
+#include "delaunay.h"
+#include "navigation.h"
+#include <igl/edges.h>
+#include <igl/boundary_loop.h>
+#include <igl/triangle/cdt.h>
 #include <algorithm>
 #include <numeric>
+#include <stack>
 #include <geogram/basic/geometry.h>
+#undef IGL_STATIC_LIBRARY
+#include <igl/edge_lengths.h>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
@@ -103,6 +111,87 @@ void triangulate_convex_polygon(const Eigen::MatrixXd &P, Eigen::MatrixXd &V, Ei
 	F.resize(n - 2, 3);
 	for (int i = 1; i + 1 < n; ++i) {
 		F.row(i-1) << 0, i, i+1;
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void loose_convex_hull(const Eigen::MatrixXd &V, Eigen::VectorXi &L, double edge_length_ratio) {
+	// Compute initial Delaunay triangulation
+	Eigen::MatrixXi F;
+	delaunay_triangulation(V, F);
+
+	// Compute median edge length
+	Eigen::MatrixXi E;
+	Eigen::VectorXd lengths;
+	igl::edges(F, E);
+	igl::edge_lengths(V, E, lengths);
+	int num_edges = (int) lengths.size();
+	std::nth_element(lengths.data(), lengths.data() + num_edges/2, lengths.data() + num_edges);
+	double median_edge_length = lengths[num_edges/2];
+
+	// List border edges, prune incident triangle if length is higher than threshold
+	NavigationData data(F);
+	std::vector<bool> should_remove_face(F.rows(), false); // mark removed triangles
+	std::vector<bool> marked_edges(num_edges, false); // mark edges in the pending queue
+	std::stack<NavigationIndex> pending_edges;
+	for (int f = 0; f < F.rows(); ++f) {
+		for (int lv = 0; lv < F.cols(); ++lv) {
+			auto index = index_from_face(F, data, f, lv);
+			assert(index.edge < num_edges);
+			if (switch_face(data, index).face < 0) {
+				pending_edges.push(index);
+				marked_edges[index.edge] = true;
+			}
+		}
+	}
+	while (!pending_edges.empty()) {
+		NavigationIndex index = pending_edges.top();
+		pending_edges.pop();
+		double len = (V.row(index.vertex) - V.row(switch_vertex(data, index).vertex)).norm();
+		if (len > edge_length_ratio * median_edge_length) {
+			// Remove facet, and visit face-adjacent edges
+			should_remove_face[index.face] = true;
+			NavigationIndex index2 = index;
+			for (int lv = 0; lv < F.cols(); ++lv, index2 = next_around_face(data, index2)) {
+				auto index3 = switch_face(data, index2);
+				if (index3.face >= 0 && !marked_edges[index2.edge]) {
+					pending_edges.push(index3);
+					marked_edges[index3.edge] = true;
+				}
+			}
+		}
+	}
+
+	// Extract selected faces
+	int num_selected = 0;
+	for (bool b : should_remove_face) { if (!b) ++num_selected;  }
+	Eigen::MatrixXi F2(num_selected, F.cols());
+	for (int f = 0, f2 = 0; f < F.rows(); ++f) {
+		if (!should_remove_face[f]) {
+			F2.row(f2) = F.row(f);
+			++f2;
+		}
+	}
+
+	// Return boundary loop in the reduced triangulation
+	igl::boundary_loop(F2, L);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void triangulate_polygon(const Eigen::MatrixXd &P, Eigen::MatrixXd &V, Eigen::MatrixXi &F) {
+	Eigen::MatrixXd PV = P.leftCols<2>();
+	Eigen::MatrixXi E, WE;
+	Eigen::VectorXi J;
+	E.resize(P.rows(), 2);
+	int n = (int) P.rows();
+	for (int i = 0; i < n; ++i) {
+		E.row(i) << i, (i+1)%n;
+	}
+	igl::triangle::cdt(PV, E, "", V, F, WE, J);
+	if (P.cols() == 3) {
+		V.conservativeResize(V.rows(), 3);
 	}
 }
 

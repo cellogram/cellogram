@@ -156,7 +156,7 @@ void UIState::draw_custom_window() {
 			points_data().set_mesh(state.points, state.triangles);
 			points_data().set_colors(C);
 
-			
+
 		}
 		ImGui::SameLine(0, p);
 		if (ImGui::Button("Original pos", ImVec2((w - p) / 2.f, 0))) {
@@ -241,6 +241,8 @@ void UIState::draw_custom_window() {
 			region_grow(state.Graph, Vertex_Value, criterium, region);
 		}
 	}
+
+	ImGui::End();
 }
 
 // -----------------------------------------------------------------------------
@@ -254,7 +256,7 @@ bool UIState::pre_draw() {
 		points_data().set_points(state.points, Eigen::RowVector3d(1, 0, 0));
 		compute_triangulation();
 	}
-	
+
 	return false;
 }
 

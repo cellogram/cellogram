@@ -15,6 +15,8 @@ add_library(${PROJECT_NAME}
 	load_points.h
 	MeshUtils.cpp
 	MeshUtils.h
+	navigation.cpp
+	navigation.h
 	PolygonUtils.cpp
 	PolygonUtils.h
 	State.cpp
@@ -35,6 +37,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC ..)
 target_link_libraries(${PROJECT_NAME}
 	geogram
 	igl::core
+	igl::triangle
 	json
 	polyclipping
 	tinyformat
