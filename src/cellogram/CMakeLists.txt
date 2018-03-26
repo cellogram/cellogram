@@ -33,6 +33,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC ..)
 target_link_libraries(${PROJECT_NAME}
 	geogram
 	igl::core
+	igl::triangle
 	json
 	polyclipping
 	tinyformat

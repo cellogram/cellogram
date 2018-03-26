@@ -2,8 +2,9 @@
 #include "convex_hull.h"
 #include "delaunay.h"
 #include "navigation.h"
-#include <igl/boundary_loop.h>
 #include <igl/edges.h>
+#include <igl/boundary_loop.h>
+#include <igl/triangle/cdt.h>
 #include <algorithm>
 #include <numeric>
 #include <stack>
@@ -175,6 +176,23 @@ void loose_convex_hull(const Eigen::MatrixXd &V, Eigen::VectorXi &L, double edge
 
 	// Return boundary loop in the reduced triangulation
 	igl::boundary_loop(F2, L);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void triangulate_polygon(const Eigen::MatrixXd &P, Eigen::MatrixXd &V, Eigen::MatrixXi &F) {
+	Eigen::MatrixXd PV = P.leftCols<2>();
+	Eigen::MatrixXi E, WE;
+	Eigen::VectorXi J;
+	E.resize(P.rows(), 2);
+	int n = (int) P.rows();
+	for (int i = 0; i < n; ++i) {
+		E.row(i) << i, (i+1)%n;
+	}
+	igl::triangle::cdt(PV, E, "", V, F, WE, J);
+	if (P.cols() == 3) {
+		V.conservativeResize(V.rows(), 3);
+	}
 }
 
 // -----------------------------------------------------------------------------

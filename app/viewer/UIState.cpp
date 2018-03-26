@@ -95,8 +95,8 @@ void UIState::compute_hull() {
 	// Compute polygon of the convex hull
 	Eigen::MatrixXd P;
 	Eigen::VectorXi I, J;
-	convex_hull(state.points, state.boundary);
-	// loose_convex_hull(state.points, state.boundary);
+	// convex_hull(state.points, state.boundary);
+	loose_convex_hull(state.points, state.boundary);
 	int dims = (int) state.points.cols();
 	I = state.boundary;
 	J = Eigen::VectorXi::LinSpaced(dims, 0, dims-1);
@@ -116,7 +116,8 @@ void UIState::compute_hull() {
 	hull_data().add_edges(P, P2, Eigen::RowVector3d(0, 0, 0));
 
 	// Draw filled polygon
-	triangulate_convex_polygon(P, state.hull_vertices, state.hull_faces);
+	// triangulate_convex_polygon(P, state.hull_vertices, state.hull_faces);
+	triangulate_polygon(P, state.hull_vertices, state.hull_faces);
 	hull_data().set_mesh(state.hull_vertices, state.hull_faces);
 
 	// Set viewer options

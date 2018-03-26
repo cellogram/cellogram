@@ -43,4 +43,13 @@ void triangulate_convex_polygon(const Eigen::MatrixXd &P, Eigen::MatrixXd &V, Ei
 ///
 void loose_convex_hull(const Eigen::MatrixXd &V, Eigen::VectorXi &L, double edge_length_ratio = 3.0);
 
+///
+/// Triangulate a (potentially non-convex) polygon
+///
+/// @param[in]  P     { #P x (2|3) input point positions along the polygon }
+/// @param[out] V     { #V x (2|3) output vertex positions }
+/// @param[out] F     { #F x 3 output triangle indices }
+///
+void triangulate_polygon(const Eigen::MatrixXd &P, Eigen::MatrixXd &V, Eigen::MatrixXi &F);
+
 } // namespace cellogram
