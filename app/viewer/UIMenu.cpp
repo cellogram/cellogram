@@ -230,15 +230,31 @@ void UIState::draw_custom_window() {
 	// Button to call any function for testing
 	if (ImGui::CollapsingHeader("Test foo", ImGuiTreeNodeFlags_DefaultOpen)) {
 		if (ImGui::Button("Test function")) {
-			tri2hex(state.hull_faces, state.Graph);
-			Eigen::VectorXi Vertex_Value = Eigen::VectorXi::Zero(state.points.rows());
+			tri2hex(state.triangles, state.adjacency_list);
+			laplace_energy(state.points, state.triangles, state.current_laplace_energy);
+			double avg = state.current_laplace_energy.mean();
+			std::vector<bool> crit_pass(state.points.rows(), false);
 			for (int i = 0; i < state.points.rows(); i++)
 			{
-				Vertex_Value(i) = i;
+				if (state.current_laplace_energy(i) > 0.25*avg)
+				{
+					crit_pass[i] = true;
+				}
 			}
 			double criterium = 1000;
 			Eigen::VectorXi region;
-			region_grow(state.Graph, Vertex_Value, criterium, region);
+			region_grow(state.adjacency_list, crit_pass, region);
+			std::cout << region.transpose() << std::endl;
+			
+			Eigen::MatrixXd C;
+			Eigen::VectorXd regionD = region.cast<double>();
+			igl::parula(regionD, true, C);
+			// Plot the mesh with pseudocolors
+			
+			points_data().show_faces = true;
+			points_data().set_mesh(state.points, state.triangles);
+			points_data().set_colors(C);
+			
 		}
 	}
 

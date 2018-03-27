@@ -1,47 +1,63 @@
 ////////////////////////////////////////////////////////////////////////////////
-#include <vector>
+#include <queue>
 #include <Eigen/Dense>
 #include <iostream>
+#include <algorithm>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
 
 // -----------------------------------------------------------------------------
-	void check_crit(const Eigen::MatrixXi &Graph, const Eigen::VectorXi &Vertex_Value, Eigen::VectorXi &region, Eigen::VectorXi &visited, const double criterium, int group, int ind)
+	void region_grow(std::vector<std::vector<int>> &Graph, const std::vector<bool> &crit_pass, Eigen::VectorXi &region)
 	{
-		if (visited(ind) == 0 && Vertex_Value(ind) > criterium)
-		{
-			// This vertex has now been visited and is assigned to the current group
-			visited(ind) = 1;
-			region(ind) = group;
-
-			// Start a new loop going through all the vertex connected directly to this one
-			int j = 0;
-			while (Graph(ind,j)!=0)
-			{
-				check_crit(Graph, Vertex_Value, region, visited, criterium, group, Graph(ind, j));
-				j++;
-			}
-			
-		}
-	}
-
-
-	void region_grow(const Eigen::MatrixXi &Graph, const Eigen::VectorXi &Vertex_Value, const double criterium, Eigen::VectorXi &region)
-	{
-		int n = Graph.rows();
-		int group = 1;
+		int n = crit_pass.size();
+		int cId = 1;
+		std::queue<int> Q;
 		Eigen::VectorXi visited = Eigen::VectorXi::Zero(n);
-		
-		int k = 0;
-		while (k < n)
-		{
-			// check if point has been visited and if criterium is met
-			check_crit(Graph, Vertex_Value, region, visited, criterium, group, k);
+		std::vector<int> id(n, 0);
 
-			// when function returns all vertices indirectly connected to this one are assigned to same group
-			group++;
-			k++;
+		for (int i = 0; i < n; i++)
+		{
+			Q.push(i);
+			while (!Q.empty())
+			{
+				int u = Q.front();
+				Q.pop();
+				
+				if (crit_pass[u] && visited(u) == 0)
+				{
+					//add connections to queue if not already visited
+					for (std::vector<int>::iterator it = Graph[u].begin(); it != Graph[u].end(); ++it) {
+						if (visited(*it) == 0)
+						{
+							Q.push(*it);
+						}
+					}
+					id[u] = cId;
+				}
+				// set vertex to visited
+				visited(u) = 1;
+			}
+			// While loop left which means that the next vertex found is from a new group
+			cId++;
+		}
+		
+		// Loop through region to clean up IDs
+		std::vector<int> map = id;
+		std::sort(map.begin(), map.end());
+		auto newEnd = std::unique(map.begin(), map.end());
+		map.erase(newEnd, map.end());
+
+		for (int i = 0; i < map.size(); i++)
+		{
+			std::replace(id.begin(), id.end(), map[i], i);
+		}
+
+		// Save into eigen format
+		region = Eigen::VectorXi::Zero(n);
+		for (int i = 0; i < id.size(); i++)
+		{
+			region(i) = id[i];
 		}
 	}
 // -----------------------------------------------------------------------------

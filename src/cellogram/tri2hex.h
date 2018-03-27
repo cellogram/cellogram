@@ -11,6 +11,6 @@ namespace cellogram {
 /// @param[in]  F     { #F x 3 input triangle indices }
 /// @param[out] Graph     { #m x dims connectivity }
 ///
-void tri2hex(const Eigen::MatrixXi &F, Eigen::MatrixXi &Graph);
+void tri2hex(const Eigen::MatrixXi &F, std::vector<std::vector<int>> &Graph);
 
 } // namespace cellogram

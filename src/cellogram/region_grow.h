@@ -14,8 +14,8 @@ namespace cellogram {
 /// @param[in]  criterium		{ #single criterium value for growing region where vertices pass }
 /// @param[out] region			{ #connected vertices that pass criterium }
 ///
-void region_grow(const Eigen::MatrixXi &Graph, const Eigen::VectorXi &Vertex_Value, const double criterium, Eigen::VectorXi &region);
+void region_grow(std::vector<std::vector<int>> &Graph, const std::vector<bool> &crit_pass, Eigen::VectorXi &region);
 
 // this function may not be called from external
-void check_crit(const Eigen::MatrixXi &Graph, const Eigen::VectorXi &Vertex_Value, Eigen::VectorXi &region, Eigen::VectorXi &visited, const double criterium, int group, int ind);
+//void check_crit(const Eigen::MatrixXi &Graph, const Eigen::VectorXi &Vertex_Value, Eigen::VectorXi &region, Eigen::VectorXi &visited, const double criterium, int group, int ind);
 } // namespace cellogram
