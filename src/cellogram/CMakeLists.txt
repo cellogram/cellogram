@@ -27,6 +27,8 @@ add_library(${PROJECT_NAME}
 	tri2hex.h
 	vertex.cpp
 	vertex.h
+	vertex_degree.cpp
+	vertex_degree.h
 	voronoi.cpp
 	voronoi.h
 )
@@ -38,6 +40,7 @@ target_link_libraries(${PROJECT_NAME}
 	geogram
 	igl::core
 	igl::triangle
+	igl::opengl_glfw_imgui
 	json
 	polyclipping
 	tinyformat

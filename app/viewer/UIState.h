@@ -31,6 +31,7 @@ public:
 	int hull_id;
 	int points_id;
 	int img_id;
+	int bad_region_id;
 
 	// UI options
 	// double foo;
@@ -60,7 +61,9 @@ public:
 	igl::opengl::ViewerData & points_data() { return mesh_by_id(points_id); }
 	igl::opengl::ViewerData & hull_data() { return mesh_by_id(hull_id); }
 	igl::opengl::ViewerData & img_data() { return mesh_by_id(img_id); }
-
+	igl::opengl::ViewerData & bad_region_data() { return mesh_by_id(bad_region_id); }
+private:
+	void fix_color(igl::opengl::ViewerData &data);
 public:
 	// Menu stuff
 	void draw_viewer_menu() override;

@@ -3,6 +3,10 @@
 #include <Eigen/Dense>
 #include <iostream>
 #include <algorithm>
+#include "navigation.h"
+#include <igl/slice.h>
+#include <igl/boundary_loop.h>
+#include <igl/opengl/glfw/Viewer.h>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
@@ -18,7 +22,7 @@ namespace cellogram {
 
 		for (int i = 0; i < n; i++)
 		{
-			Q.push(i);
+ 			Q.push(i);
 			while (!Q.empty())
 			{
 				int u = Q.front();
@@ -37,6 +41,8 @@ namespace cellogram {
 				}
 				// set vertex to visited
 				visited(u) = 1;
+
+				//std::cout << i << " - " << crit_pass[i] << " - " << id[u] << " - " << u << std::endl;
 			}
 			// While loop left which means that the next vertex found is from a new group
 			cId++;
@@ -62,4 +68,82 @@ namespace cellogram {
 	}
 // -----------------------------------------------------------------------------
 
+	void region_bounding(const Eigen::MatrixXd &points, const Eigen::MatrixXi &F, const Eigen::VectorXi &region, std::vector<std::vector<int>> &region_edges)
+	{
+		int nRegions = region.maxCoeff();
+		
+		// create a 2d vector containing all the vertices belonging to one region
+		// as well as one containing the triangles
+		std::vector<std::vector<int>> region_points(nRegions);
+		std::vector<std::vector<int>> region_F(nRegions);
+		region_edges.resize(nRegions);
+
+		for (int i = 0; i < points.rows(); i++)
+		{
+			if (region(i) > 0) {
+				region_points[region(i)-1].push_back(i);
+				// for this vertex find the all the faces
+				for (int f = 0; f < F.rows(); ++f) {
+					for (int lv = 0; lv < F.cols(); ++lv) {
+						if (i == F(f,lv))
+						{
+							region_F[region(i) - 1].push_back(f);
+						}
+					}
+				}
+			}
+		}
+
+		// per region find the bounding vertices
+		for (int i = 0; i < nRegions; i++)
+		{
+			// for each region the belonging triangles need to be extracted
+			std::sort(region_F[i].begin(), region_F[i].end());
+			region_F[i].erase(unique(region_F[i].begin(), region_F[i].end()), region_F[i].end());
+
+			Eigen::MatrixXi F2(region_F[i].size(), 3);
+			for (int j = 0; j < region_F[i].size(); j++)
+			{
+				F2.row(j) = F.row(region_F[i][j]);
+			}
+			//Eigen::VectorXi L;
+			std::vector<std::vector<int>> Ls;
+			igl::boundary_loop(F2, Ls);
+
+			igl::opengl::glfw::Viewer v;
+			v.data().set_mesh(points, F2);
+			for (auto L : Ls) {
+				Eigen::MatrixXd pts(L.size(), points.cols());
+				for (int i = 0; i < L.size(); ++i) {
+					pts.row(i) = points.row(L[i]);
+				}
+				//igl::slice(points, L, 1, pts);
+				v.data().add_points(pts, Eigen::RowVector3d::Random());
+			}
+			v.launch();
+
+			// Checked with MATLAB - F2 is correct regarding the not closing of the boundary
+			//std::cout << "\nTriangles\n" << F2.transpose();
+			//std::cout << "\nRegion\n" << L.transpose();
+
+			// save boundary to vector
+			//std::cout << std::endl << i << std::endl;
+			/*for (int j = 0; j < L.rows(); j++)
+			{
+				region_edges[i].push_back(L(j));
+				//std::cout << region_edges[i][j] << ",";
+			}*/
+		}
+		//std::cout << "\nPoints\n" << points.transpose();
+	}
+
+	void is_boundary_vertex(const Eigen::MatrixXi &F, Eigen::VectorXi &L) {
+
+	}
+
+	void longest_boundary_loop(const Eigen::MatrixXi &F) {
+
+	}
+
+// -----------------------------------------------------------------------------
 } // namespace cellogram

@@ -68,9 +68,7 @@ bool UIState::load(std::string name) {
 	viewer.core.align_camera_center(state.points);
 	double extent = (state.points.colwise().maxCoeff() - state.points.colwise().minCoeff()).maxCoeff();
 	points_data().point_size = float(0.008 * extent);
-
-	points_data().show_faces = false;
-	points_data().show_texture = false;
+	fix_color(points_data());
 
 	// Compute and show convex hull + triangulation
 	compute_hull();
@@ -135,6 +133,8 @@ void UIState::compute_triangulation() {
 	points_data().clear();
 	points_data().set_points(state.points, Eigen::RowVector3d(1, 0, 0));
 	points_data().set_mesh(state.points, state.triangles);
+
+	fix_color(points_data());
 }
 
 void UIState::load_image(std::string fname) {
@@ -168,6 +168,15 @@ void UIState::load_image(std::string fname) {
 	img_data().show_lines = false;
 	// Use the image as a texture
 	img_data().set_texture(R,G,B);
+}
+
+void UIState::fix_color(igl::opengl::ViewerData &data) {
+	data.F_material_specular.setZero();
+	data.V_material_specular.setZero();
+	data.dirty |= igl::opengl::MeshGL::DIRTY_DIFFUSE;
+
+	data.V_material_ambient *= 2;
+	data.F_material_ambient *= 2;
 }
 
 // -----------------------------------------------------------------------------
