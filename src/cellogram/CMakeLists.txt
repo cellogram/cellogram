@@ -1,6 +1,8 @@
 project(cellogram)
 
 add_library(${PROJECT_NAME}
+	boundary_loop.cpp
+	boundary_loop.h
 	common.cpp
 	common.h
 	convex_hull.cpp

@@ -136,13 +136,8 @@ void UIState::draw_custom_window() {
 			points_data().set_points(state.points, Eigen::RowVector3d(1, 0, 0));
 			compute_triangulation();
 		}
-		ImGui::SameLine(0, p);
-		if (ImGui::Button("Animate", ImVec2((w - p) / 2.f, 0))) {
-			if (continuous_lloyd)
-				continuous_lloyd = false;
-			else
-				continuous_lloyd = true;
-		}
+		//ImGui::SameLine(0, p);
+		ImGui::Checkbox("Animate", &continuous_lloyd);
 		static float t = 0;
 		if (ImGui::SliderFloat("t", &t, 0, 1)) {
 			Eigen::MatrixXd V = t * state.points + (1 - t) * state.detected;
@@ -243,6 +238,7 @@ void UIState::draw_custom_window() {
 		if (ImGui::Button("Test function")) {
 
 			// Calculate the graph adjancency
+			state.adjacency_list.clear();
 			tri2hex(state.triangles, state.adjacency_list);
 
 			// Calculate the laplacian energy with respect to the original positions

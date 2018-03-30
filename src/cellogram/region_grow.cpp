@@ -5,7 +5,7 @@
 #include <algorithm>
 #include "navigation.h"
 #include <igl/slice.h>
-#include <igl/boundary_loop.h>
+#include <cellogram/boundary_loop.h>
 #include <igl/opengl/glfw/Viewer.h>
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -106,21 +106,25 @@ namespace cellogram {
 			{
 				F2.row(j) = F.row(region_F[i][j]);
 			}
-			//Eigen::VectorXi L;
+			Eigen::VectorXi L;
 			std::vector<std::vector<int>> Ls;
-			igl::boundary_loop(F2, Ls);
+			boundary_loop(F2, L);
+			//igl::boundary_loop(F2, Ls);
 
-			igl::opengl::glfw::Viewer v;
-			v.data().set_mesh(points, F2);
-			for (auto L : Ls) {
+			//igl::opengl::glfw::Viewer v;
+			//v.data().set_mesh(points, F2);
+			/*for (auto L : Ls) {
 				Eigen::MatrixXd pts(L.size(), points.cols());
 				for (int i = 0; i < L.size(); ++i) {
 					pts.row(i) = points.row(L[i]);
 				}
-				//igl::slice(points, L, 1, pts);
+				
 				v.data().add_points(pts, Eigen::RowVector3d::Random());
-			}
-			v.launch();
+			}*/
+			//Eigen::MatrixXd pts(L.size(), points.cols());
+			//igl::slice(points, L, 1, pts);
+			//v.data().add_points(pts, Eigen::RowVector3d::Random());
+			//v.launch();
 
 			// Checked with MATLAB - F2 is correct regarding the not closing of the boundary
 			//std::cout << "\nTriangles\n" << F2.transpose();
@@ -128,21 +132,13 @@ namespace cellogram {
 
 			// save boundary to vector
 			//std::cout << std::endl << i << std::endl;
-			/*for (int j = 0; j < L.rows(); j++)
+			for (int j = 0; j < L.rows(); j++)
 			{
 				region_edges[i].push_back(L(j));
 				//std::cout << region_edges[i][j] << ",";
-			}*/
+			}
 		}
 		//std::cout << "\nPoints\n" << points.transpose();
-	}
-
-	void is_boundary_vertex(const Eigen::MatrixXi &F, Eigen::VectorXi &L) {
-
-	}
-
-	void longest_boundary_loop(const Eigen::MatrixXi &F) {
-
 	}
 
 // -----------------------------------------------------------------------------
