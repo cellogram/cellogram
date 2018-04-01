@@ -16,7 +16,6 @@ public:
 	Eigen::MatrixXd points; // relaxed point positions
 
 	Eigen::MatrixXi triangles; // triangular mesh
-	std::vector<std::vector<int>> adjacency_list; // adjaceny list of triangluar mesh
 
 	Eigen::VectorXi boundary; // list of vertices on the boundary
 

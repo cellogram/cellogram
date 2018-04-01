@@ -7,6 +7,7 @@
 #include <cellogram/vertex.h>
 #include <cellogram/region_grow.h>
 #include <cellogram/vertex_degree.h>
+#include <cellogram/mesh_solver.h>
 #include <igl/opengl/glfw/imgui/ImGuiHelpers.h>
 #include <imgui/imgui_internal.h>
 #include <imgui/imgui.h>
@@ -122,7 +123,7 @@ void UIState::draw_viewer_menu() {
 
 void UIState::draw_custom_window() {
 	ImGui::SetNextWindowPos(ImVec2(190.f * menu_scaling(), 0), ImGuiSetCond_FirstUseEver);
-	ImGui::SetNextWindowSize(ImVec2(300, 600), ImGuiSetCond_FirstUseEver);
+	ImGui::SetNextWindowSize(ImVec2(300, 700), ImGuiSetCond_FirstUseEver);
 	ImGui::Begin(
 		"Debug", nullptr,
 		ImGuiWindowFlags_NoSavedSettings
@@ -228,83 +229,40 @@ void UIState::draw_custom_window() {
 	- changing color of mesh
 	*/
 	if (ImGui::CollapsingHeader("Mesh", ImGuiTreeNodeFlags_DefaultOpen)) {
+		float w = ImGui::GetContentRegionAvailWidth();
+		float p = ImGui::GetStyle().FramePadding.x;
 		ImGui::Checkbox("Mesh Fill", &(points_data().show_faces));
 		ImGui::ColorEdit4("Mesh color", points_data().line_color.data(),
 			ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueWheel);
+		if (ImGui::Button("Find regions", ImVec2((w - p) / 2.f, 0))) {
+			delete_vertex(state.points);
+		}
+		ImGui::SameLine(0, p);
+		if (ImGui::Button("Solve regions", ImVec2((w - p) / 2.f, 0))) {
+			delete_vertex(state.points);
+		}
 	}
 	
+
 	// Button to call any function for testing
 	if (ImGui::CollapsingHeader("Test foo", ImGuiTreeNodeFlags_DefaultOpen)) {
 		if (ImGui::Button("Test function")) {
 
-			// Calculate the graph adjancency
-			state.adjacency_list.clear();
-			tri2hex(state.triangles, state.adjacency_list);
+			mesh_solver mesh;
 
-			// Calculate the laplacian energy with respect to the original positions
-			laplace_energy(state.points, state.triangles, state.current_laplace_energy);
-
-			// Find the degree of each vertex
-			Eigen::VectorXi degree;
-			vertex_degree(state.triangles, degree );
-
-			// Determine whether each vertex passes the criterium for bad mesh
-			double avg = state.current_laplace_energy.mean();
-			std::vector<bool> crit_pass(state.points.rows(), false);
-			for (int i = 0; i < state.points.rows(); i++)
-			{
-				if (state.current_laplace_energy(i) > 0.8*avg || degree(i) != 6)
-				//if (degree(i) != 6)
-				{
-					crit_pass[i] = true;
-				}
-			}
-
-			// Find connected regions where the criterium was not passed
-			Eigen::VectorXi region;
-			region_grow(state.adjacency_list, crit_pass, region);
-
-			//std::cout << region.transpose() << std::endl;
-
-			// Find edges of connected region
-			std::vector<std::vector<int>> region_edges;
-			region_bounding(state.points, state.triangles, region, region_edges);
-			/*
-			std::cout << "Points\n" << state.points.transpose() << "\nBoundary\n" << std::endl;
-			for (int j = 0; j < region_edges[0].size(); j++) {
-				std::cout << region_edges[0][j] << " ";
-			}*/
-			
+			mesh.find_bad_regions(state.points, state.triangles);
 
 			// Color mesh according to 
 			Eigen::MatrixXd C;
-			Eigen::VectorXd regionD = region.cast<double>();
+			Eigen::VectorXd regionD = mesh.region.cast<double>();
 			igl::jet(regionD, true, C);
 			points_data().clear();
 			points_data().set_mesh(state.points, state.triangles);
 			points_data().set_colors(C);
 			fix_color(points_data());
 
-			// Line boundary
-			Eigen::MatrixXd bad_P1(state.points.rows(), 3);
-			Eigen::MatrixXd bad_P2(state.points.rows(), 3);
-			int k = 0;
-			for (int i = 0; i < region_edges.size(); i++)
-			{
-				int n = region_edges[i].size();
-				for (int j = 0; j < region_edges[i].size(); j++) //
-				{
-					bad_P1.row(k) = state.points.row(region_edges[i][j]);
-					bad_P2.row(k) = state.points.row(region_edges[i][(j + 1) % n]);
-					k++;
-				}
-			}
-			
-			bad_P1.conservativeResize(k, 3);
-			bad_P2.conservativeResize(k, 3);
-
 			bad_region_data().clear();
-			bad_region_data().add_edges(bad_P1, bad_P2, Eigen::RowVector3d(0, 0, 0));
+			bad_region_data().add_edges(mesh.bad_P1, mesh.bad_P2, Eigen::RowVector3d(0, 0, 0));
 			
 			//std::cout << "Boundary\n" << bad_P1.transpose() << std::endl;
 			//std::cout << "Points\n" << state.points.transpose() << std::endl;
@@ -313,7 +271,7 @@ void UIState::draw_custom_window() {
 			Eigen::MatrixXd bad_region_vertices;
 			Eigen::MatrixXi bad_region_faces;
 			//std::cout << bad_P1.transpose() << std::endl;
-			triangulate_polygon(bad_P1, bad_region_vertices, bad_region_faces);
+			triangulate_polygon(mesh.bad_P1, bad_region_vertices, bad_region_faces);
 			bad_region_data().set_mesh(bad_region_vertices, bad_region_faces);
 			
 			// Set viewer options
@@ -322,6 +280,8 @@ void UIState::draw_custom_window() {
 			bad_region_data().show_lines = false;
 			bad_region_data().shininess = 0;
 			bad_region_data().line_width = 4.0;
+
+			mesh.solve_regions(state.points, state.triangles);
 			
 		}
 	}

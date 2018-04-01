@@ -15,6 +15,8 @@ add_library(${PROJECT_NAME}
 	laplace_energy.h
 	load_points.cpp
 	load_points.h
+	mesh_solver.cpp
+	mesh_solver.h
 	MeshUtils.cpp
 	MeshUtils.h
 	navigation.cpp

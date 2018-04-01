@@ -11,7 +11,8 @@
 namespace cellogram {
 
 // -----------------------------------------------------------------------------
-
+	typedef std::vector<int> Path;
+/*
 int find_next_starting_point(const std::vector<bool> & needs_visit ) {
 
 	for (unsigned int i = 0; i < needs_visit.size(); i++) {
@@ -20,7 +21,7 @@ int find_next_starting_point(const std::vector<bool> & needs_visit ) {
 	return -1;
 }
 
-typedef std::vector<int> Path;
+
 
 int get_next(
 	int starting_node, 
@@ -76,7 +77,7 @@ void trace_loop(int starting_pos, std::vector<Path> &paths, std::vector<bool> &n
 	}
 	paths.push_back(p);
 }
-
+*/
 Path get_longest_path(const std::vector<Path> &paths) {
 	if (paths.empty()) return Path();
 	int maxi = 0;
