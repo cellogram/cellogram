@@ -57,6 +57,9 @@ igl::opengl::ViewerData & UIState::mesh_by_id(int id) {
 
 bool UIState::load(std::string name) {
 	if (name.empty()) { return true; }
+	
+	// clear state
+	state = State();
 
 	// Load points
 	load_points(name, state.points);

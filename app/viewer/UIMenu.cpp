@@ -137,13 +137,18 @@ void UIState::draw_custom_window() {
 			points_data().set_points(state.points, Eigen::RowVector3d(1, 0, 0));
 			compute_triangulation();
 		}
-		//ImGui::SameLine(0, p);
-		ImGui::Checkbox("Animate", &continuous_lloyd);
-		static float t = 0;
-		if (ImGui::SliderFloat("t", &t, 0, 1)) {
-			Eigen::MatrixXd V = t * state.points + (1 - t) * state.detected;
-			points_data().set_mesh(V, state.triangles);
-		}
+		
+	}
+
+	static float t = 0;
+	if (ImGui::SliderFloat("t", &t, 0, 1)) {
+		Eigen::MatrixXd V = t * state.points + (1 - t) * state.detected;
+		points_data().set_mesh(V, state.triangles);
+		//points_data().set_points(V, Eigen::RowVector3d(1, 0, 0));
+		Eigen::MatrixXd bad_P1, bad_P2;
+		state.regions.compute_regions_edges(V, bad_P1, bad_P2);
+		bad_region_data().clear();
+		bad_region_data().add_edges(bad_P1, bad_P2, Eigen::RowVector3d(0, 0, 0));
 	}
 
 	// Laplace energy panel
@@ -151,9 +156,10 @@ void UIState::draw_custom_window() {
 		float w = ImGui::GetContentRegionAvailWidth();
 		float p = ImGui::GetStyle().FramePadding.x;
 		if (ImGui::Button("Current pos", ImVec2((w - p) / 2.f, 0))) {
-			laplace_energy(state.points, state.triangles, state.current_laplace_energy);
+			Eigen::VectorXd current_laplace_energy;
+			laplace_energy(state.points, state.triangles, current_laplace_energy);
 			Eigen::MatrixXd C;
-			igl::parula(state.current_laplace_energy, true, C);
+			igl::parula(current_laplace_energy, true, C);
 
 			// Plot the mesh with pseudocolors
 			points_data().clear();
@@ -164,9 +170,10 @@ void UIState::draw_custom_window() {
 		}
 		ImGui::SameLine(0, p);
 		if (ImGui::Button("Original pos", ImVec2((w - p) / 2.f, 0))) {
-			laplace_energy(state.detected, state.triangles, state.original_laplace_energy);
+			Eigen::VectorXd original_laplace_energy;
+			laplace_energy(state.detected, state.triangles, original_laplace_energy);
 			Eigen::MatrixXd C;
-			igl::parula(state.original_laplace_energy, true, C);
+			igl::parula(original_laplace_energy, true, C);
 
 			// Plot the mesh with pseudocolors
 			points_data().clear();
@@ -245,16 +252,21 @@ void UIState::draw_custom_window() {
 	
 
 	// Button to call any function for testing
-	if (ImGui::CollapsingHeader("Test foo", ImGuiTreeNodeFlags_DefaultOpen)) {
-		if (ImGui::Button("Test function")) {
+	if (ImGui::CollapsingHeader("Phases", ImGuiTreeNodeFlags_DefaultOpen)) {
+		//ImGui::SameLine(0, p);
+		ImGui::Checkbox("Run Lloyd", &continuous_lloyd);
+		
 
-			mesh_solver mesh;
+		if (ImGui::Button("build regions")) {
 
-			mesh.find_bad_regions(state.points, state.triangles);
+			
+			state.regions.find_bad_regions(state.detected, state.triangles);
+			Eigen::MatrixXd bad_P1, bad_P2;
+			state.regions.compute_regions_edges(state.points,bad_P1,bad_P2);
 
 			// Color mesh according to 
 			Eigen::MatrixXd C;
-			Eigen::VectorXd regionD = mesh.region.cast<double>();
+			Eigen::VectorXd regionD = state.regions.region.cast<double>();
 			igl::jet(regionD, true, C);
 			points_data().clear();
 			points_data().set_mesh(state.points, state.triangles);
@@ -262,27 +274,56 @@ void UIState::draw_custom_window() {
 			fix_color(points_data());
 
 			bad_region_data().clear();
-			bad_region_data().add_edges(mesh.bad_P1, mesh.bad_P2, Eigen::RowVector3d(0, 0, 0));
+			bad_region_data().add_edges(bad_P1, bad_P2, Eigen::RowVector3d(0, 0, 0));
 			
 			//std::cout << "Boundary\n" << bad_P1.transpose() << std::endl;
 			//std::cout << "Points\n" << state.points.transpose() << std::endl;
 
 			// Draw filled polygon
-			Eigen::MatrixXd bad_region_vertices;
-			Eigen::MatrixXi bad_region_faces;
-			//std::cout << bad_P1.transpose() << std::endl;
-			triangulate_polygon(mesh.bad_P1, bad_region_vertices, bad_region_faces);
-			bad_region_data().set_mesh(bad_region_vertices, bad_region_faces);
-			
-			// Set viewer options
+			// Compile faces and vertices into single matrices
+			//Eigen::MatrixXd bad_region_vertices(state.points.rows(), 3);
+			//Eigen::MatrixXi bad_region_faces(state.triangles.rows(), 3);
+			//std::cout << mesh.bad_P1 << std::endl;
+			//// Make loop for each region and append...
+			//int face_counter = 0;
+			//int vertex_counter = 0;
+			//for (size_t i = 0; i < mesh.region_edges.size(); i++)
+			//{
+			//	Eigen::MatrixXd P_temp = Eigen::MatrixXd::Zero(mesh.region_edges[i].size(),3);
+			//	for (size_t j = 0; j < mesh.region_edges[i].size(); j++)
+			//	{
+			//		P_temp.row(i) = state.points.row(mesh.region_edges[i][j]);
+			//	}
+			//	Eigen::MatrixXd bad_region_vertices_tmp;
+			//	Eigen::MatrixXi bad_region_faces_tmp;
+			//	triangulate_polygon(P_temp, bad_region_vertices_tmp, bad_region_faces_tmp);
+
+
+
+			//	face_counter += bad_region_faces_tmp.rows();
+			//	vertex_counter += bad_region_vertices_tmp.rows();
+
+			//}
+
+			////triangulate_polygon(mesh.bad_P1, mesh.region_edges, bad_region_vertices, bad_region_faces);
+			//bad_region_data().set_mesh(bad_region_vertices, bad_region_faces);
+			//
+			//// Set viewer options
 			bad_region_data().set_colors(Eigen::RowVector3d(52, 152, 219) / 255.0);
-			bad_region_data().show_faces = false;
-			bad_region_data().show_lines = false;
-			bad_region_data().shininess = 0;
+			//bad_region_data().show_faces = false;
+			//bad_region_data().show_lines = false;
+			//bad_region_data().shininess = 0;
 			bad_region_data().line_width = 4.0;
 
-			mesh.solve_regions(state.points, state.triangles);
+			//mesh.solve_regions(state.points, state.triangles);
+			//mesh.solve_regions(state.points, state.triangles);
 			
+		}
+
+		if (ImGui::Button("solve regions")) {
+			state.regions.solve_regions(state.points, state.triangles);
+
+			std::cout << "\nPoints\n" << state.detected << std::endl;
 		}
 	}
 

@@ -52,6 +52,7 @@ void gurobiModel::model(const SparseMatrix<double> &Q, const SparseMatrix<int> &
 	}
 
 	// optimize model
+	bool solution_found = false;
 	try
 	{
 		model.optimize();
@@ -60,6 +61,7 @@ void gurobiModel::model(const SparseMatrix<double> &Q, const SparseMatrix<int> &
 		double objval = 0;
 		if (optimstatus == GRB_OPTIMAL) {
 			objval = model.get(GRB_DoubleAttr_ObjVal);
+			solution_found = true;
 		}
 		else if (optimstatus == GRB_INF_OR_UNBD) {
 			cout << "Model is infeasible or unbounded" << endl;
@@ -87,10 +89,19 @@ void gurobiModel::model(const SparseMatrix<double> &Q, const SparseMatrix<int> &
 
 
 	// Iterate over the solutions and compute the objectives
-	resultX = VectorXd(Q.rows());
-	for (int i = 0; i < Q.rows(); i++)
-	{
-		resultX(i) = x[i].get(GRB_DoubleAttr_X);
+	if(solution_found){
+		resultX = VectorXd(Q.rows());
+		for (int i = 0; i < Q.rows(); i++)
+		{
+			resultX(i) = x[i].get(GRB_DoubleAttr_X);
+		}
 	}
+	else {
+		resultX = VectorXd(1);
+		resultX(1) = -1;
+
+	}
+
+
 	//cout << resultX;
 }

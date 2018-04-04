@@ -195,6 +195,21 @@ void triangulate_polygon(const Eigen::MatrixXd &P, Eigen::MatrixXd &V, Eigen::Ma
 	}
 }
 
+//void triangulate_polygon(std::vector<int> &P,  Eigen::MatrixXd &V, Eigen::MatrixXi &F) {
+//	Eigen::MatrixXd
+//	Eigen::MatrixXd PV = P.leftCols<2>();
+//	Eigen::MatrixXi E, WE;
+//	Eigen::VectorXi J;
+//	E.resize(P.rows(), 2);
+//	int n = (int)P.rows();
+//	for (int i = 0; i < n; ++i) {
+//		E.row(i) << i, (i + 1) % n;
+//	}
+//	igl::triangle::cdt(PV, E, "V", V, F, WE, J);
+//	if (P.cols() == 3) {
+//		V.conservativeResize(V.rows(), 3);
+//	}
+//}
 // -----------------------------------------------------------------------------
 
 } // namespace cellogram

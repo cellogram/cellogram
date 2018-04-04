@@ -48,6 +48,7 @@ target_link_libraries(${PROJECT_NAME}
 	json
 	polyclipping
 	tinyformat
+	gurobi_solver
 )
 
 # Extra warnings

@@ -1,4 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////
+#include "region_grow.h"
+
 #include <queue>
 #include <Eigen/Dense>
 #include <iostream>
@@ -68,7 +70,7 @@ namespace cellogram {
 	}
 // -----------------------------------------------------------------------------
 
-	void region_bounding(const Eigen::MatrixXd &points, const Eigen::MatrixXi &F, const Eigen::VectorXi &region, std::vector<std::vector<int>> &region_edges)
+	void region_bounding(const Eigen::MatrixXi &F, const Eigen::VectorXi &region, std::vector<std::vector<int>> &region_edges)
 	{
 		int nRegions = region.maxCoeff();
 		
@@ -78,7 +80,7 @@ namespace cellogram {
 		std::vector<std::vector<int>> region_F(nRegions);
 		region_edges.resize(nRegions);
 
-		for (int i = 0; i < points.rows(); i++)
+		for (int i = 0; i <region.size(); i++)
 		{
 			if (region(i) > 0) {
 				region_points[region(i)-1].push_back(i);

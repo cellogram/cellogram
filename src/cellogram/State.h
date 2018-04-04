@@ -1,5 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "common.h"
+#include "mesh_solver.h"
 #include <vector>
 #include <Eigen/Dense>
 ////////////////////////////////////////////////////////////////////////////////
@@ -22,8 +23,7 @@ public:
 	Eigen::MatrixXd hull_vertices;
 	Eigen::MatrixXi hull_faces;
 
-	Eigen::VectorXd original_laplace_energy; // Laplace energy at vertices for the ORIGINAL positions with CURRENT mesh
-	Eigen::VectorXd current_laplace_energy; // Laplace energy at vertices for the CURRENT positions with CURRENT mesh
+	mesh_solver regions;
 
 public:
 	// void foo();

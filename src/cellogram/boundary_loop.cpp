@@ -182,10 +182,12 @@ void boundary_loop(const Eigen::MatrixXi &F, Eigen::VectorXi &longest_path) {
 			}
 			if (!path.empty()) {
 				if (path.size() == 3) {
-					std::cout << v0 << std::endl;
+					std::cout << "boundary_loop.cpp, path size is only three " << v0 << std::endl << "Path not added\n";
 				}
-				//std::cout << path.size() << std::endl;
-				paths.push_back(path);
+				else{
+					//std::cout << path.size() << std::endl;
+					paths.push_back(path);
+				}
 			}
 		}
 	}

@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
 
 	// Default arguments
 	struct {
-		std::string input = DATA_DIR "1.xyz";
+		std::string input = DATA_DIR "small2.xyz";
 	} args;
 
 	// Parse arguments

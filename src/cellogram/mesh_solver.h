@@ -1,3 +1,5 @@
+#pragma once
+
 ////////////////////////////////////////////////////////////////////////////////
 #include "common.h"
 #include <vector>
@@ -10,8 +12,7 @@ namespace cellogram {
 	public:
 		std::vector<std::vector<int>> region_edges;
 		Eigen::VectorXi region;
-		Eigen::MatrixXd bad_P1;
-		Eigen::MatrixXd bad_P2;
+
 
 	public:
 		///
@@ -26,6 +27,9 @@ namespace cellogram {
 		///
 		/// @param[in]  V		  { #V x dims input point positions }
 		/// @param[in]  F		  { #F x 3 input triangle indices }
-		void solve_regions(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F);
+		void solve_regions(const Eigen::MatrixXd &V, Eigen::MatrixXi &F);
+
+
+		void compute_regions_edges(const Eigen::MatrixXd &V, Eigen::MatrixXd &bad_P1, Eigen::MatrixXd &bad_P2);
 	};
 } // namespace cellogram

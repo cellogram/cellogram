@@ -264,7 +264,7 @@ void State::extract_mesh_from_raster(const MatrixXi &raster, MatrixXd &V, Matrix
   // Count the vertices
   int count = raster.maxCoeff() + 1;
   // Create the vertices
-  cout << V << endl;
+  //cout << V << endl;
   V.resize(count, 3);
 
   count = 0;

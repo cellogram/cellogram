@@ -51,5 +51,5 @@ void loose_convex_hull(const Eigen::MatrixXd &V, Eigen::VectorXi &L, double edge
 /// @param[out] F     { #F x 3 output triangle indices }
 ///
 void triangulate_polygon(const Eigen::MatrixXd &P, Eigen::MatrixXd &V, Eigen::MatrixXi &F);
-
+//void triangulate_polygon(const Eigen::MatrixXd &P, std::vector<std::vector<int>> &regions, Eigen::MatrixXd &V, Eigen::MatrixXi &F);
 } // namespace cellogram

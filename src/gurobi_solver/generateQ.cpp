@@ -190,6 +190,8 @@ void generateQ::mapBack(const VectorXd &x)
 			}
 		}
 	}
+
+	std::cout << "\nIDX\n" << IDX << std::endl;
 	
 	T = MatrixXi::Zero(F.rows(), 3);
 	for (int i = 0; i < F.rows(); i++)

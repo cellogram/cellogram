@@ -24,7 +24,7 @@ void region_grow(std::vector<std::vector<int>> &Graph, const std::vector<bool> &
 /// @param[in]  criterium		{ #single criterium value for growing region where vertices pass }
 /// @param[out] region			{ #connected vertices that pass criterium }
 ///
-void region_bounding(const Eigen::MatrixXd &points, const Eigen::MatrixXi &triangles, const Eigen::VectorXi &region, std::vector<std::vector<int>> &region_edges);
+void region_bounding(const Eigen::MatrixXi &triangles, const Eigen::VectorXi &region, std::vector<std::vector<int>> &region_edges);
 
 // this function may not be called from external
 //void check_crit(const Eigen::MatrixXi &Graph, const Eigen::VectorXi &Vertex_Value, Eigen::VectorXi &region, Eigen::VectorXi &visited, const double criterium, int group, int ind);
