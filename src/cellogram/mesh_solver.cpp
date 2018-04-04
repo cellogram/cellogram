@@ -37,12 +37,10 @@ namespace cellogram {
 		{
 			for (size_t j = 0; j < roiInternal.size(); j++)
 			{
-				if (roiInternal[j])
+				if ((triangles(i, 0) == roiInternal[j]) || (triangles(i, 1) == roiInternal[j]) || (triangles(i, 2) == roiInternal[j]))
 				{
-					if ((triangles(i, 0) == j) || (triangles(i, 1) == j) || (triangles(i, 2) == j))
-					{
-						removeIdx.push_back(i);
-					}
+					removeIdx.push_back(i);
+					std::cout << i << "\n";
 				}
 			}
 		}
@@ -52,13 +50,13 @@ namespace cellogram {
 		it = std::unique(removeIdx.begin(), removeIdx.end());
 		removeIdx.resize(std::distance(removeIdx.begin(), it));
 
+
+
 		// remove all the triangles that connect to the internal of ROI
 		for (int i = removeIdx.size() - 1; i >= 0; i--)
 		{
 			removeRow(triangles, removeIdx[i]);
 		}
-
-		std::cout << "\nTriangles removed\n" << triangles.transpose() << std::endl;
 
 		// add new rows at the end of triangles
 		Eigen::MatrixXi tmp = triangles;
@@ -407,25 +405,9 @@ namespace cellogram {
 				}
 
 			}
-
-			//huge cout section for debugging
-			std::cout << "\current_edge_vertices\n" << std::endl;
-			for (size_t i = 0; i < current_edge_vertices.size(); i++)
-			{
-				std::cout << " " << current_edge_vertices[i] << std::endl;
-			}
-			std::cout << "\ncurrent_internal\n" << std::endl;
-			for (size_t i = 0; i < current_internal.size(); i++)
-			{
-				std::cout << " " << current_internal[i] << std::endl;
-			}
-			std::cout << "\nGlobal\n" << tGlobal << std::endl;
-			//std::cout << "\nV\n" << V.transpose() << std::endl;
-			//std::cout << "\nF\n" << F.transpose() << std::endl;
 			
 			replaceTriangles(tGlobal, F, current_internal);
 
-			//std::cout << "\nF after\n" << F.transpose() << std::endl;
 
 		}
 		int nRegions_true = nRegions - 1; // because the first one is skipped, as it is the boundary of the image

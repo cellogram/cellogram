@@ -321,9 +321,8 @@ void UIState::draw_custom_window() {
 		}
 
 		if (ImGui::Button("solve regions")) {
-			state.regions.solve_regions(state.points, state.triangles);
+			state.regions.solve_regions(state.detected, state.triangles);
 
-			std::cout << "\nPoints\n" << state.detected << std::endl;
 		}
 	}
 
