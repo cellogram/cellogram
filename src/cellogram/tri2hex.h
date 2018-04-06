@@ -11,6 +11,8 @@ namespace cellogram {
 /// @param[in]  F     { #F x 3 input triangle indices }
 /// @param[out] Graph     { #m x dims connectivity }
 ///
-void tri2hex(const Eigen::MatrixXi &F, std::vector<std::vector<int>> &Graph);
+void adjacency_list(const Eigen::MatrixXi &F, std::vector<std::vector<int>> &Graph);
+
+void triangle_region_list(const Eigen::VectorXi &vertex_region_id, const Eigen::MatrixXi &F, Eigen::VectorXd &face_region_id);
 
 } // namespace cellogram

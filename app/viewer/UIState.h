@@ -36,7 +36,6 @@ public:
 	// UI options
 	// double foo;
 
-	bool continuous_lloyd;
 	bool image_loaded;
 
 
@@ -51,8 +50,6 @@ public:
 
 	virtual bool save(std::string name) override;
 
-	virtual bool pre_draw() override;
-
 	void load_image(std::string name);
 	void compute_hull();
 	void compute_triangulation();
@@ -63,7 +60,11 @@ public:
 	igl::opengl::ViewerData & img_data() { return mesh_by_id(img_id); }
 	igl::opengl::ViewerData & bad_region_data() { return mesh_by_id(bad_region_id); }
 private:
+	void draw_mesh();
 	void fix_color(igl::opengl::ViewerData &data);
+	Eigen::VectorXd create_region_label();
+	void build_region_edges(const Eigen::MatrixXd &pts, Eigen::MatrixXd &bad_P1, Eigen::MatrixXd &bad_P2);
+
 public:
 	// Menu stuff
 	void draw_viewer_menu() override;

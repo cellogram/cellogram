@@ -14,7 +14,7 @@
 namespace cellogram {
 
 // -----------------------------------------------------------------------------
-	void region_grow(std::vector<std::vector<int>> &Graph, const std::vector<bool> &crit_pass, Eigen::VectorXi &region)
+	void region_grow(std::vector<std::vector<int>> &Graph, const Eigen::Matrix<bool, 1, Eigen::Dynamic> &crit_pass, Eigen::VectorXi &region)
 	{
 		int n = crit_pass.size();
 		int cId = 1;
@@ -30,7 +30,7 @@ namespace cellogram {
 				int u = Q.front();
 				Q.pop();
 				
-				if (crit_pass[u] && visited(u) == 0)
+				if (crit_pass(u) && visited(u) == 0)
 				{
 					//add connections to queue if not already visited
 					for (std::vector<int>::iterator it = Graph[u].begin(); it != Graph[u].end(); ++it) {
@@ -70,7 +70,7 @@ namespace cellogram {
 	}
 // -----------------------------------------------------------------------------
 
-	void region_bounding(const Eigen::MatrixXi &F, const Eigen::VectorXi &region, std::vector<std::vector<int>> &region_edges)
+	/*void region_bounding(const Eigen::MatrixXi &F, const Eigen::VectorXi &region, std::vector<Region> &regions)
 	{
 		int nRegions = region.maxCoeff();
 		
@@ -78,7 +78,7 @@ namespace cellogram {
 		// as well as one containing the triangles
 		std::vector<std::vector<int>> region_points(nRegions);
 		std::vector<std::vector<int>> region_F(nRegions);
-		region_edges.resize(nRegions);
+		regions.resize(nRegions);
 
 		for (int i = 0; i <region.size(); i++)
 		{
@@ -108,9 +108,11 @@ namespace cellogram {
 			{
 				F2.row(j) = F.row(region_F[i][j]);
 			}
-			Eigen::VectorXi L;
-			std::vector<std::vector<int>> Ls;
-			boundary_loop(F2, L);
+			//Eigen::VectorXi L;
+			//std::vector<std::vector<int>> Ls;
+			// boundary_loop(F2, L);
+			Region &current_region = regions[i];
+			boundary_loop(F2, current_region.region_boundary);
 			//igl::boundary_loop(F2, Ls);
 
 			//igl::opengl::glfw::Viewer v;
@@ -122,7 +124,7 @@ namespace cellogram {
 				}
 				
 				v.data().add_points(pts, Eigen::RowVector3d::Random());
-			}*/
+			}*
 			//Eigen::MatrixXd pts(L.size(), points.cols());
 			//igl::slice(points, L, 1, pts);
 			//v.data().add_points(pts, Eigen::RowVector3d::Random());
@@ -134,14 +136,17 @@ namespace cellogram {
 
 			// save boundary to vector
 			//std::cout << std::endl << i << std::endl;
-			for (int j = 0; j < L.rows(); j++)
+
+			//Region &current_region = regions[i];
+			//current_region.region_boundary = L;
+			/*for (int j = 0; j < L.rows(); j++)
 			{
 				region_edges[i].push_back(L(j));
 				//std::cout << region_edges[i][j] << ",";
-			}
+			}*
 		}
 		//std::cout << "\nPoints\n" << points.transpose();
-	}
+	}*/
 
 // -----------------------------------------------------------------------------
 } // namespace cellogram

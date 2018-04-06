@@ -13,7 +13,6 @@ namespace cellogram {
 
 // -----------------------------------------------------------------------------
 	typedef std::vector<int> Path;
-	State s;
 	generateQ q;
 	gurobiModel g;
 	
@@ -40,7 +39,6 @@ namespace cellogram {
 				if ((triangles(i, 0) == roiInternal[j]) || (triangles(i, 1) == roiInternal[j]) || (triangles(i, 2) == roiInternal[j]))
 				{
 					removeIdx.push_back(i);
-					std::cout << i << "\n";
 				}
 			}
 		}
@@ -65,11 +63,11 @@ namespace cellogram {
 		triangles << tmp, tNew;
 	}
 
-	void mesh_solver::find_bad_regions(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F) {
+	/*void mesh_solver::find_bad_regions(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F) {
 		region_edges.clear();
 		// Calculate the graph adjancency
-		std::vector<std::vector<int>> adjacency_list; // adjaceny list of triangluar mesh
-		tri2hex(F, adjacency_list);
+		std::vector<std::vector<int>> adj; // adjaceny list of triangluar mesh
+		adjacency_list(F, adj);
 
 		// Calculate the laplacian energy with respect to the original positions
 		Eigen::VectorXd current_laplace_energy;
@@ -92,13 +90,13 @@ namespace cellogram {
 		}
 
 		// Find connected regions where the criterium was not passed
-		region_grow(adjacency_list, crit_pass, region);
+		region_grow(adj, crit_pass, region);
 
 		// Find edges of connected region
 		region_bounding(F, region, region_edges);
-	}
+	}*/
 
-	void mesh_solver::compute_regions_edges(const Eigen::MatrixXd &V, Eigen::MatrixXd &bad_P1, Eigen::MatrixXd &bad_P2) {
+	/*void mesh_solver::compute_regions_edges(const Eigen::MatrixXd &V, Eigen::MatrixXd &bad_P1, Eigen::MatrixXd &bad_P2) {
 		// Line boundary
 		bad_P1.resize(V.rows(), 3);
 		bad_P2.resize(V.rows(), 3);
@@ -116,10 +114,10 @@ namespace cellogram {
 
 		bad_P1.conservativeResize(k, 3);
 		bad_P2.conservativeResize(k, 3);
-	}
+	}*/
 
 
-	std::vector<Path> find_points_in_region(const Eigen::VectorXi &region)
+	/*std::vector<Path> find_points_in_region(const Eigen::VectorXi &region)
 	{
 		std::vector<Path> region_points(region.rows());
 		for (int j = 0; j < region.rows(); j++)
@@ -130,10 +128,10 @@ namespace cellogram {
 			}
 		}
 		return region_points;
-	}
+	}*/
 
 
-	std::vector<Path> find_triangles_in_region(const Eigen::MatrixXi &F, const Eigen::VectorXi &region)
+	/*std::vector<Path> find_triangles_in_region(const Eigen::MatrixXi &F, const Eigen::VectorXi &region)
 	{
 		std::vector<Path> region_F(region.rows());
 		for (int j = 0; j < region.rows(); j++)
@@ -153,7 +151,7 @@ namespace cellogram {
 			}
 		}
 		return region_F;
-	}
+	}*/
 
 	Eigen::VectorXi find_n_neighbor(const Eigen::MatrixXi &F2,const Eigen::VectorXi &current_edge_vertices, std::vector<Path> &adj) {
 		// This function needs to find the number of correct neighbors to the outside. 
@@ -273,13 +271,16 @@ namespace cellogram {
 		}
 	}
 
-	void mesh_solver::solve_regions(const Eigen::MatrixXd &V, Eigen::MatrixXi &F) {
+	void mesh_solver::solve_regions(Eigen::MatrixXd &pts,  Eigen::MatrixXd &V, Eigen::MatrixXi &F) {
 		int nRegions = (int)region_edges.size();
+		int counter_small_region = 0;
 		int counter_invalid_neigh = 0;
 		int counter_infeasible_region = 0;
+		int nRegions_solved = 0;
+
 		// 0. Calculate adj for later
 		std::vector<Path> adj;
-		tri2hex(F,adj);
+		adjacency_list(F,adj);
 
 		// 1.
 		// create a 2d vector containing all the vertices belonging to each region
@@ -287,7 +288,7 @@ namespace cellogram {
 		
 		//std::vector<Path> region_points(nRegions);
 		
-		region_edges.resize(nRegions);
+		//region_edges.resize(nRegions);
 
 		// 1.1 find the points and triangles inside
 		std::vector<Path> region_points = find_points_in_region(region);
@@ -299,6 +300,12 @@ namespace cellogram {
 		for (int i = 1; i < region_edges.size(); i++)
 		{
 			int nPolygon = (int)region_edges[i].size(); // length of current edge
+
+			if (nPolygon < 7)
+			{
+				counter_small_region++;
+				continue;
+			}
 			
 			// 2.1
 			// Save current edge points into single vector
@@ -332,7 +339,7 @@ namespace cellogram {
 				// this mesh is not properly close
 				//std::cout << "Invalid neighbors\n" << neigh << std::endl;
 				counter_invalid_neigh++;
-				break;
+				continue;
 			}
 
 			
@@ -369,7 +376,8 @@ namespace cellogram {
 
 			
 			// Deriving Q and constraints for optimization
-			q.QforOptimization(s.Vperfect, s.Vdeformed, 8);
+			const int perm_possibilities = 8;
+			q.QforOptimization(s.Vperfect, s.Vdeformed, perm_possibilities);
 			q.optimizationConstraints(s.V_boundary.rows());
 
 			
@@ -383,6 +391,44 @@ namespace cellogram {
 			
 			// Map back to indices of coordinates
 			q.mapBack(g.resultX);
+			//std::cout << g.resultX << std::endl;
+
+			std::vector<Eigen::Triplet<double> > permutation_triplets;
+			const int n_points = s.Vperfect.rows();
+			for (int i = 0; i < n_points; ++i)
+			{
+				const int index = i * perm_possibilities;
+
+				for (int j = 0; j < perm_possibilities; ++j)
+				{
+					if (g.resultX(index+j) == 1)
+					{
+						const int dest_vertex = q.IDX(j, i);
+						permutation_triplets.emplace_back(i, dest_vertex, 1);
+						continue;
+					}
+				}
+			}
+
+
+			// Replace vertex
+			Eigen::SparseMatrix<double> permutation(n_points, n_points);
+			permutation.setFromTriplets(permutation_triplets.begin(), permutation_triplets.end());
+			const Eigen::MatrixXd new_points = permutation.transpose() * s.Vperfect;
+
+
+			assert(current_edge_vertices.size() + current_internal.size() == n_points);
+			for (int i = 0; i < current_edge_vertices.size(); i++)
+			{
+				const int global_index = current_edge_vertices[i];
+				pts.row(global_index) = new_points.row(i);
+
+			}
+			for (int i = 0; i < current_internal.size(); i++)
+			{
+				const int global_index = current_internal[i];
+				pts.row(global_index) = new_points.row(i + current_edge_vertices.size());
+			}
 
 			
 			// Map q.T back to global indices
@@ -405,15 +451,16 @@ namespace cellogram {
 				}
 
 			}
-			
+						
 			replaceTriangles(tGlobal, F, current_internal);
 
-
+			nRegions_solved++;
 		}
 		int nRegions_true = nRegions - 1; // because the first one is skipped, as it is the boundary of the image
 		std::cout << "\n\nOptmization complete" << std::endl;
 		std::cout << "Total regions:\t" << nRegions_true << std::endl;
-		std::cout << "Solved:\t\t" << nRegions_true - counter_invalid_neigh - counter_infeasible_region << std::endl;
+		std::cout << "Solved:\t\t" << nRegions_solved << std::endl;
+		std::cout << "Too small:\t" << counter_small_region << std::endl;
 		std::cout << "Bad loop:\t" << counter_invalid_neigh << std::endl;
 		std::cout << "Infeasible:\t" << counter_infeasible_region << std::endl;
 	}

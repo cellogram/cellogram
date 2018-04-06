@@ -1,10 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "UIState.h"
-#include <cellogram/load_points.h>
-#include <cellogram/convex_hull.h>
-#include <cellogram/delaunay.h>
+
 #include <cellogram/PolygonUtils.h>
-#include <igl/slice.h>
 #include <igl/colon.h>
 #include <igl/png/readPNG.h>
 ////////////////////////////////////////////////////////////////////////////////
@@ -56,14 +53,7 @@ igl::opengl::ViewerData & UIState::mesh_by_id(int id) {
 }
 
 bool UIState::load(std::string name) {
-	if (name.empty()) { return true; }
-	
-	// clear state
-	state = State();
-
-	// Load points
-	load_points(name, state.points);
-	state.detected = state.points;
+	if (!state.load(name)){ return false; }
 
 	// Show points and align camera
 	points_data().clear();
@@ -77,48 +67,30 @@ bool UIState::load(std::string name) {
 	compute_hull();
 	compute_triangulation();
 
-	return false;
+	return true;
 }
 
 bool UIState::save(std::string name) {
-	if (name.empty()) { return true; }
-
-	if (/*can save*/true) {
-		return true;
-	}
-
-	return false;
+	return state.save(name);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 void UIState::compute_hull() {
-	// Compute polygon of the convex hull
-	Eigen::MatrixXd P;
-	Eigen::VectorXi I, J;
-	// convex_hull(state.points, state.boundary);
-	loose_convex_hull(state.points, state.boundary);
-	int dims = (int) state.points.cols();
-	I = state.boundary;
-	J = Eigen::VectorXi::LinSpaced(dims, 0, dims-1);
-	igl::slice(state.points, I, J, P);
+	state.compute_hull();
+	
 
-	// Offset by epsilon
-	// offset_polygon(P, P, 1);
 
 	hull_data().clear();
 
 	// Draw edges
-	int n = (int) P.rows();
-	Eigen::MatrixXd P2;
-	P2.resizeLike(P);
-	P2.topRows(n-1) = P.bottomRows(n-1);
-	P2.row(n-1) = P.row(0);
-	hull_data().add_edges(P, P2, Eigen::RowVector3d(0, 0, 0));
+	int n = (int) state.hull_polygon.rows();
 
-	// Draw filled polygon
-	// triangulate_convex_polygon(P, state.hull_vertices, state.hull_faces);
-	triangulate_polygon(P, state.hull_vertices, state.hull_faces);
+	Eigen::MatrixXd P2; P2.resizeLike(state.hull_polygon);
+	P2.topRows(n-1) = state.hull_polygon.bottomRows(n-1);
+	P2.row(n-1) = state.hull_polygon.row(0);
+	hull_data().add_edges(state.hull_polygon, P2, Eigen::RowVector3d(0, 0, 0));
+
 	hull_data().set_mesh(state.hull_vertices, state.hull_faces);
 
 	// Set viewer options
@@ -132,14 +104,12 @@ void UIState::compute_hull() {
 // -----------------------------------------------------------------------------
 
 void UIState::compute_triangulation() {
-	delaunay_triangulation(state.points, state.triangles);
-	points_data().clear();
-	points_data().set_points(state.points, Eigen::RowVector3d(1, 0, 0));
-	points_data().set_mesh(state.points, state.triangles);
+	state.compute_triangulation();
 
-	fix_color(points_data());
+	draw_mesh();
 }
 
+//TODO refactor when more clear
 void UIState::load_image(std::string fname) {
 	Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> R, G, B, A; // Image
 
@@ -173,6 +143,15 @@ void UIState::load_image(std::string fname) {
 	img_data().set_texture(R,G,B);
 }
 
+void UIState::draw_mesh()
+{
+	points_data().clear();
+	points_data().set_points(state.points, Eigen::RowVector3d(1, 0, 0));
+	points_data().set_mesh(state.points, state.triangles);
+
+	fix_color(points_data());
+}
+
 void UIState::fix_color(igl::opengl::ViewerData &data) {
 	data.F_material_specular.setZero();
 	data.V_material_specular.setZero();
@@ -182,6 +161,46 @@ void UIState::fix_color(igl::opengl::ViewerData &data) {
 	data.F_material_ambient *= 2;
 }
 
+
+Eigen::VectorXd UIState::create_region_label()
+{
+	Eigen::VectorXd regionD(state.points.rows());
+	regionD.setZero();
+	for (int i = 0; i < state.regions.size(); ++i)
+	{
+		/*for (int j = 0; j < state.regions[i].region_boundary.size(); ++j)
+		{
+			regionD(state.regions[i].region_boundary(j)) = i + 10;
+		}*/
+
+		for (int j = 0; j < state.regions[i].region_interior.size(); ++j)
+		{
+			regionD(state.regions[i].region_interior(j)) = i + 10;
+		}
+	}
+
+	return regionD;
+}
+
+void UIState::build_region_edges(const Eigen::MatrixXd &pts, Eigen::MatrixXd &bad_P1, Eigen::MatrixXd &bad_P2)
+{
+	bad_P1.resize(pts.rows(), 3);
+	bad_P2.resize(pts.rows(), 3);
+
+	int index = 0;
+	Eigen::MatrixXd local_bad_P1, local_bad_P2;
+	for (auto &r : state.regions)
+	{
+		r.compute_edges(pts, local_bad_P1, local_bad_P2);
+		bad_P1.block(index, 0, local_bad_P1.rows(), local_bad_P1.cols()) = local_bad_P1;
+		bad_P2.block(index, 0, local_bad_P2.rows(), local_bad_P2.cols()) = local_bad_P2;
+
+		index += local_bad_P2.rows();
+
+	}
+	bad_P1.conservativeResize(index, 3);
+	bad_P2.conservativeResize(index, 3);
+}
 // -----------------------------------------------------------------------------
 
 } // namespace cellogram

@@ -56,7 +56,9 @@ void lloyd_relaxation(
 	}
 
 	cvt.Lloyd_iterations(num_iter);
-	//cvt.Newton_iterations(num_iter);
+	if (num_iter > 10) {
+		cvt.Newton_iterations(num_iter);
+	}
 	std::copy_n(cvt.embedding(0), 2*points.size(), reinterpret_cast<double *>(&points[0]));
 }
 

@@ -1,7 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "UIState.h"
 #include "FileDialog.h"
-#include <cellogram/voronoi.h>
 #include <cellogram/laplace_energy.h>
 #include <cellogram/tri2hex.h>
 #include <cellogram/vertex.h>
@@ -125,28 +124,30 @@ void UIState::draw_custom_window() {
 	ImGui::SetNextWindowPos(ImVec2(190.f * menu_scaling(), 0), ImGuiSetCond_FirstUseEver);
 	ImGui::SetNextWindowSize(ImVec2(300, 700), ImGuiSetCond_FirstUseEver);
 	ImGui::Begin(
-		"Debug", nullptr,
+		"Algorithm", nullptr,
 		ImGuiWindowFlags_NoSavedSettings
 	);
 	// Lloyds relaxation panel
-	if (ImGui::CollapsingHeader("Lloyds Relaxation", ImGuiTreeNodeFlags_DefaultOpen)) {
+	//if (ImGui::CollapsingHeader("Lloyds Relaxation", ImGuiTreeNodeFlags_DefaultOpen)) {
 		float w = ImGui::GetContentRegionAvailWidth();
 		float p = ImGui::GetStyle().FramePadding.x;
+
+		ImGui::InputInt("Num Iter", &state.lloyd_iterations);
 		if (ImGui::Button("Lloyd", ImVec2((w - p) / 2.f, 0))) {
-			lloyd_relaxation(state.points, state.boundary, 1, state.hull_vertices, state.hull_faces);
-			points_data().set_points(state.points, Eigen::RowVector3d(1, 0, 0));
-			compute_triangulation();
+			state.relax_with_lloyd();
+
+			draw_mesh();
 		}
 		
-	}
+	//}
 
-	static float t = 0;
+	static float t = 1;
 	if (ImGui::SliderFloat("t", &t, 0, 1)) {
 		Eigen::MatrixXd V = t * state.points + (1 - t) * state.detected;
 		points_data().set_mesh(V, state.triangles);
 		//points_data().set_points(V, Eigen::RowVector3d(1, 0, 0));
 		Eigen::MatrixXd bad_P1, bad_P2;
-		state.regions.compute_regions_edges(V, bad_P1, bad_P2);
+		build_region_edges(V, bad_P1, bad_P2);
 		bad_region_data().clear();
 		bad_region_data().add_edges(bad_P1, bad_P2, Eigen::RowVector3d(0, 0, 0));
 	}
@@ -253,21 +254,16 @@ void UIState::draw_custom_window() {
 
 	// Button to call any function for testing
 	if (ImGui::CollapsingHeader("Phases", ImGuiTreeNodeFlags_DefaultOpen)) {
-		//ImGui::SameLine(0, p);
-		ImGui::Checkbox("Run Lloyd", &continuous_lloyd);
-		
-
 		if (ImGui::Button("build regions")) {
-
+			state.detect_bad_regions();
+			state.fix_regions();
 			
-			state.regions.find_bad_regions(state.detected, state.triangles);
 			Eigen::MatrixXd bad_P1, bad_P2;
-			state.regions.compute_regions_edges(state.points,bad_P1,bad_P2);
+			build_region_edges(state.points, bad_P1, bad_P2);
 
 			// Color mesh according to 
 			Eigen::MatrixXd C;
-			Eigen::VectorXd regionD = state.regions.region.cast<double>();
-			igl::jet(regionD, true, C);
+			igl::jet(create_region_label(), true, C);
 			points_data().clear();
 			points_data().set_mesh(state.points, state.triangles);
 			points_data().set_colors(C);
@@ -317,12 +313,23 @@ void UIState::draw_custom_window() {
 
 			//mesh.solve_regions(state.points, state.triangles);
 			//mesh.solve_regions(state.points, state.triangles);
+
+			points_data().clear();
+			points_data().set_mesh(state.points, state.triangles);
+			points_data().set_colors(C);
+			fix_color(points_data());
 			
 		}
 
 		if (ImGui::Button("solve regions")) {
-			state.regions.solve_regions(state.detected, state.triangles);
+			state.resolve_regions();			// Color mesh according to 
 
+			Eigen::MatrixXd C;
+			igl::jet(create_region_label(), true, C);
+			points_data().clear();
+			points_data().set_mesh(state.points, state.triangles);
+			points_data().set_colors(C);
+			fix_color(points_data());
 		}
 	}
 
@@ -330,19 +337,6 @@ void UIState::draw_custom_window() {
 }
 
 // -----------------------------------------------------------------------------
-
-bool UIState::pre_draw() {
-	ImGuiMenu::pre_draw();
-
-	// perform lloyd if necessary
-	if (continuous_lloyd) {
-		lloyd_relaxation(state.points, state.boundary, 1, state.hull_vertices, state.hull_faces);
-		points_data().set_points(state.points, Eigen::RowVector3d(1, 0, 0));
-		compute_triangulation();
-	}
-
-	return false;
-}
 
 // -----------------------------------------------------------------------------
 

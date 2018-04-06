@@ -8,7 +8,7 @@ namespace cellogram {
 
 // -----------------------------------------------------------------------------
 
-	void tri2hex(const Eigen::MatrixXi &F, std::vector<std::vector<int>> &adj) {
+	void adjacency_list(const Eigen::MatrixXi &F, std::vector<std::vector<int>> &adj) {
 		int n = F.maxCoeff() + 1;
 		adj.resize(n);
 
@@ -28,6 +28,20 @@ namespace cellogram {
 			adj[i].resize(std::distance(adj[i].begin(), it));
 		}
 
+	}
+
+	void triangle_region_list(const Eigen::VectorXi &vertex_region_id, const Eigen::MatrixXi &F, Eigen::VectorXd &face_region_id) {
+		face_region_id = Eigen::VectorXd::Zero(F.rows());
+		for (size_t i = 0; i < vertex_region_id.size(); i++)
+		{
+			for (size_t j = 0; j < F.rows(); j++)
+			{
+				if (F(j, 0) == i || F(j, 1) == i || F(j, 2) == i)
+				{
+					face_region_id(j) = (double)vertex_region_id(i);
+				}
+			}
+		}
 	}
 // -----------------------------------------------------------------------------
 
