@@ -9,6 +9,7 @@ namespace cellogram {
 // -----------------------------------------------------------------------------
 
 	void adjacency_list(const Eigen::MatrixXi &F, std::vector<std::vector<int>> &adj) {
+		adj.clear();
 		int n = F.maxCoeff() + 1;
 		adj.resize(n);
 

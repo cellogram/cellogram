@@ -41,10 +41,10 @@ std::vector<std::pair<int, int>> delaunay_edges(const GEO::Delaunay_var &delauna
 // -----------------------------------------------------------------------------
 
 void delaunay_triangulation(const Eigen::MatrixXd &V, Eigen::MatrixXi &F) {
+	F.resize(0, 0);
 	assert(V.cols() == 2 | V.cols() == 3);
 	int n = (int) V.rows();
-	Eigen::MatrixXd P(2, n);
-	P = V.leftCols<2>().transpose();
+	const Eigen::MatrixXd P = V.leftCols<2>().transpose();
 
 	// Compute triangulation
 	GEO::Delaunay_var delaunay = GEO::Delaunay::create(2, "BDEL2d");

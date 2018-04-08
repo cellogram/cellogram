@@ -64,6 +64,26 @@ void State::init(const MatrixXd &vB, const MatrixXd &vI, const VectorXi &n)
 	// Merge V_boundary and V_internal to contain all original coordinates in a matrix
 	Vdeformed = MatrixXd(V_boundary.rows() + V_internal.rows(), 2);
 	Vdeformed << V_boundary, V_internal;
+	/*
+	
+	V_boundary = vB;
+	V_internal = vI;
+	neigh = n;
+
+	// Merge V_boundary and V_internal to contain all original coordinates in a matrix
+	Vdeformed = MatrixXd::Zero(V_boundary.rows() + V_internal.rows(), 3);
+
+	int k = 0;
+	for (int i = 0; i < vB.rows(); i++)
+	{
+		Vdeformed(i, 0) = vB(i, 0);
+		Vdeformed(i, 1) = vB(i, 1);
+	}
+	for (int i = 0; i < vI.rows(); i++)
+	{
+		Vdeformed(vB.rows() + i, 0) = vI(i, 0);
+		Vdeformed(vB.rows() + i, 1) = vI(i, 1);
+	}*/
 }
 
 void State::save(std::string path)

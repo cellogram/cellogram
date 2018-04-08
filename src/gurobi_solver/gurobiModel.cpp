@@ -98,7 +98,7 @@ void gurobiModel::model(const SparseMatrix<double> &Q, const SparseMatrix<int> &
 	}
 	else {
 		resultX = VectorXd(1);
-		resultX(1) = -1;
+		resultX(0) = -1;
 
 	}
 

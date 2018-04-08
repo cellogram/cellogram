@@ -22,6 +22,14 @@ UIState &UIState::ui_state() {
 void UIState::initialize() {
 	viewer.plugins.push_back(this);
 
+	/*state.load("C:\\Users\\Tobias\\Documents\\cellogram\\data\\small2.xyz");
+	state.compute_hull();
+	state.compute_triangulation();
+	state.relax_with_lloyd();
+	state.detect_bad_regions();
+	state.fix_regions();
+	state.resolve_regions();*/
+
 	// Setup viewer parameters
 	viewer.resize(1024, 1024);
 	viewer.core.background_color.setOnes();
@@ -175,7 +183,7 @@ Eigen::VectorXd UIState::create_region_label()
 
 		for (int j = 0; j < state.regions[i].region_interior.size(); ++j)
 		{
-			regionD(state.regions[i].region_interior(j)) = i + 10;
+			regionD(state.regions[i].region_interior(j)) = i;
 		}
 	}
 

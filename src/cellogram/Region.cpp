@@ -9,15 +9,42 @@
 #include <gurobi_solver/gurobiModel.h>
 
 #include <cellogram/boundary_loop.h>
+
+
+#include <igl/opengl/glfw/Viewer.h>
+
+#include <igl/opengl/glfw/imgui/ImGuiMenu.h>
+
+#include <igl/opengl/glfw/imgui/ImGuiHelpers.h>
+#include <imgui/imgui.h>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
 	namespace
 	{
+		bool is_clockwise(const Eigen::MatrixXd &poly) {
+			double s = 0;
+			for (int i = 0; i < poly.rows(); ++i) {
+				int j = (i + 1) % poly.rows();
+				double xi = poly(i, 0), yi = poly(i, 1);
+				double xj = poly(j, 0), yj = poly(j, 1);
+				s += (xj - xi) * (yj + yi);
+			}
+			return (s > 0);
+		}
+
 		bool is_neigh_valid(const VectorXi &neigh)
 		{
+			// check if number of neigh is smaller than 7
+			if (neigh.maxCoeff() > 6)
+			{
+				return false;
+			}
+
 			// check if neigh actually closes a loop by tacing
 			Eigen::VectorXi turns = neigh.array() - 4;
+			std::cout << neigh << std::endl;
+			//std::cout << turns << std::endl;
 
 			Eigen::MatrixXi dirs_even(6, 2);
 			Eigen::MatrixXi dirs_odd(6, 2);
@@ -67,7 +94,7 @@ namespace cellogram {
 			}
 		}
 
-		Eigen::VectorXi find_n_neighbor(const Eigen::MatrixXi &F2, const Eigen::VectorXi &current_edge_vertices, std::vector<std::vector<int>> &adj) {
+		Eigen::VectorXi find_n_neighbor(const Eigen::MatrixXi &F2, const Eigen::VectorXi &current_edge_vertices, const std::vector<std::vector<int>> &adj) {
 			// This function needs to find the number of correct neighbors to the outside. 
 			// This can not be done using the inside of the region, because that region may be faulty
 			std::vector<int> internalTri(current_edge_vertices.rows(), 0);
@@ -87,6 +114,11 @@ namespace cellogram {
 
 				}
 				neigh(j) = adj[current_edge_vertices(j)].size() - (internalTri[j] - 1);
+				//if (neigh(j) > 6) {
+				//	std::cout << "\nCheck neigh:\n" << current_edge_vertices(j) << " - " << adj[current_edge_vertices(j)].size() << " " << internalTri[j];
+				//	std::cout << "\n\nF2: " << F2.transpose();
+				//	std::cout << "\n\nEdge: " << current_edge_vertices.transpose();
+				//}
 			}
 			return neigh;
 		}
@@ -166,27 +198,82 @@ namespace cellogram {
 		}
 	}
 
+	void Region::find_triangles(const Eigen::MatrixXi &F)
+	{
+		std::vector<int> region_faces;
+		for (int j = 0; j < region_interior.rows(); j++)
+		{
+			int current_vertex = region_interior(j);
+			{
+				// for this vertex find the all the faces
+				for (int f = 0; f < F.rows(); ++f) {
+					for (int lv = 0; lv < F.cols(); ++lv) {
+						if (current_vertex == F(f, lv))
+						{
+							region_faces.push_back(f);
+							break;
+						}
+					}
+				}
+			}
+		}
 
-	void Region::bounding(const Eigen::MatrixXi &F) {
+		std::sort(region_faces.begin(), region_faces.end());
+		region_faces.erase(std::unique(region_faces.begin(), region_faces.end()), region_faces.end());
+
+		region_triangles.resize(region_faces.size());
+
+		for (int j = 0; j < region_faces.size(); j++)
+		{
+			region_triangles(j) = region_faces[j];
+		}
+	}
+
+	void Region::bounding(const Eigen::MatrixXi &F, const Eigen::MatrixXd &V) {
 		boundary_loop(get_triangulation(F), region_boundary);
+
+		Eigen::MatrixXd points(region_boundary.size(), 2);
+
+		for (int i = 0; i < region_boundary.size(); ++i)
+		{
+			points(i, 0) = V(region_boundary(i), 0);
+			points(i, 1) = V(region_boundary(i), 1);
+		}
+
+		if (is_clockwise(points))
+			region_boundary.reverseInPlace();
 	}
 
 
-	int Region::resolve(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, std::vector<std::vector<int>> &adj, const int perm_possibilities, Eigen::MatrixXd  &new_points, Eigen::MatrixXi &new_triangles)
+	int Region::resolve(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, const std::vector<std::vector<int>> &adj, const int perm_possibilities, Eigen::MatrixXd  &new_points, Eigen::MatrixXi &new_triangles)
 	{
 		int nPolygon = region_boundary.size(); // length of current edge
 
-		// 2.1
-		// Save current edge points into single vector
-
+		// update triangle indices in region_triangles
+		std::cout << "\n1 - Tri: \n" << region_triangles.transpose();
+		find_triangles(F);
+		std::cout << "\n2 - Tri: \n" << region_triangles.transpose();
 		// for each region the belonging triangles need to be extracted and duplicates removed
+		
 		Eigen::MatrixXi F2 = get_triangulation(F);
-
-		// 2.3 find number of neighbors
-
-		// 2.2
+		
 		// Determine number of connections into the cluster to determine "neigh"
 		Eigen::VectorXi neigh = find_n_neighbor(F2, region_boundary, adj);
+		std::cout << "\n3 - Neigh: \n" << neigh.transpose();
+		//PLEASE USE ME 
+		//igl::opengl::glfw::Viewer viewer;
+		//igl::opengl::glfw::imgui::ImGuiMenu menu;
+		//viewer.plugins.push_back(&menu);
+
+		//viewer.data().set_mesh(V, F2);
+		//for (int i = 0; i < region_boundary.size(); ++i) {
+		//	viewer.data().add_label(V.row(region_boundary(i)), std::to_string(neigh(i)));
+		//}
+
+		//viewer.launch();
+
+
+
 		if (!is_neigh_valid(neigh)) {
 			// this mesh is not properly close
 			return NOT_PROPERLY_CLOSED;
@@ -233,7 +320,7 @@ namespace cellogram {
 
 		// Generate and solve model for gurobi
 		g.model(q.Q, q.Aeq);
-		if (g.resultX(1) == -1) {
+		if (g.resultX(0) == -1) {
 			// no solution found
 			return NO_SOLUTION;
 		}
@@ -263,6 +350,9 @@ namespace cellogram {
 		Eigen::SparseMatrix<double> permutation(n_points, n_points);
 		permutation.setFromTriplets(permutation_triplets.begin(), permutation_triplets.end());
 		
+		std::cout << "\nDef: \n" << s.Vdeformed;
+		std::cout << "\nPerf: \n" << s.Vperfect;
+
 		new_points = permutation.transpose() * s.Vperfect;
 		new_triangles = q.T;
 

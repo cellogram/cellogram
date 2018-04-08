@@ -65,6 +65,7 @@ namespace cellogram {
 		// Load points
 		load_points(path, detected);
 		points = detected;
+		compute_triangulation();
 
 		return true;
 	}
@@ -156,7 +157,7 @@ namespace cellogram {
 
 		for (auto & r : regions)
 		{
-			r.bounding(triangles);
+			r.bounding(triangles, points);
 		}
 	}
 
@@ -199,25 +200,31 @@ namespace cellogram {
 		counter_solved_regions = 0;
 
 		// loop through all the boundaries and solve individually. Possibly skip first one, as it's the boundary of the image
-		for (int i = 1; i < regions.size(); i++)
+		auto it = regions.begin();
+		++it; //skip the first one, Tobi knows why
+		while (it != regions.end())
 		{
 			//remove from regions all the solved one
 			//grow the others and regurobi the regions max 4 time
 
-			auto &region = regions[i];
+			auto &region = *it;
 
-			auto state = region.resolve(points, triangles, adj, perm_possibilities, new_points, new_triangles);
+			auto state = region.resolve(detected, triangles, adj, perm_possibilities, new_points, new_triangles);
 			//gurobi r
 			if (state == Region::NOT_PROPERLY_CLOSED)
 			{
 				counter_invalid_neigh++;
+				++it;
 				continue;
 			}
 			else if (state == Region::NO_SOLUTION)
 			{
 				counter_infeasible_region++;
+				++it;
 				continue;
 			}
+
+
 
 
 			// Map q.T back to global indices
@@ -254,6 +261,8 @@ namespace cellogram {
 
 			replaceTriangles(tGlobal, region.region_triangles, triangles);
 
+
+			it = regions.erase(it);
 			counter_solved_regions++;
 		}
 
