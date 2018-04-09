@@ -27,7 +27,7 @@ namespace cellogram {
 		void find_triangles(const Eigen::MatrixXi & F);
 		void bounding(const Eigen::MatrixXi &F, const Eigen::MatrixXd &V);
 
-		int resolve(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, const std::vector<std::vector<int>> &adj, const int perm_possibilities, Eigen::MatrixXd  &new_points, Eigen::MatrixXi &new_triangles);
+		int resolve(const Eigen::MatrixXd &V_detected, const Eigen::MatrixXd &V_current, const Eigen::MatrixXi &F, const std::vector<std::vector<int>> &adj, const int perm_possibilities, Eigen::MatrixXd  &new_points, Eigen::MatrixXi &new_triangles);
 
 	private:
 		Eigen::MatrixXi get_triangulation(const Eigen::MatrixXi &F);

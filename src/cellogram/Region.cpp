@@ -245,7 +245,7 @@ namespace cellogram {
 	}
 
 
-	int Region::resolve(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, const std::vector<std::vector<int>> &adj, const int perm_possibilities, Eigen::MatrixXd  &new_points, Eigen::MatrixXi &new_triangles)
+	int Region::resolve(const Eigen::MatrixXd &V_detected, const Eigen::MatrixXd &V_current, const Eigen::MatrixXi &F, const std::vector<std::vector<int>> &adj, const int perm_possibilities, Eigen::MatrixXd  &new_points, Eigen::MatrixXi &new_triangles)
 	{
 		int nPolygon = region_boundary.size(); // length of current edge
 
@@ -284,16 +284,21 @@ namespace cellogram {
 		// 3 Pepare for Gurobi
 		// vB contains the boundary vertices, vI the internal vertices
 		Eigen::MatrixXd vB(nPolygon, 2);
+		Eigen::MatrixXd v_output(nPolygon,3);
+		v_output.col(2).setZero();
 		for (int i = 0; i < nPolygon; i++)
 		{
-			vB(i, 0) = V(region_boundary(i), 0);
-			vB(i, 1) = V(region_boundary(i), 1);
+			vB(i, 0) = V_detected(region_boundary(i), 0);
+			vB(i, 1) = V_detected(region_boundary(i), 1);
+
+			v_output(i, 0) = V_current(region_boundary(i), 0);
+			v_output(i, 1) = V_current(region_boundary(i), 1);
 		}
 		Eigen::MatrixXd vI(region_interior.size(), 2);
 		for (int i = 0; i < region_interior.size(); i++)
 		{
-			vI(i, 0) = V(region_interior[i], 0);
-			vI(i, 1) = V(region_interior[i], 1);
+			vI(i, 0) = V_detected(region_interior[i], 0);
+			vI(i, 1) = V_detected(region_interior[i], 1);
 		}
 		// Generate perfect mesh in ROI
 		State s;
@@ -352,8 +357,20 @@ namespace cellogram {
 		
 		std::cout << "\nDef: \n" << s.Vdeformed;
 		std::cout << "\nPerf: \n" << s.Vperfect;
+		std::cout << "\Vi: \n" << vI;
 
 		new_points = permutation.transpose() * s.Vperfect;
+
+		const Eigen::Vector3d bary_detected = new_points.block(0, 0, nPolygon, 3).colwise().mean();
+		const Eigen::Vector3d bary_points = v_output.colwise().mean();
+		const Eigen::Vector3d traslation = bary_points - bary_detected;
+
+		for (long i = 0; i < new_points.rows(); ++i) {
+			new_points.row(i) += traslation;
+		}
+
+		new_points.block(0, 0, nPolygon, 3) = v_output;
+
 		new_triangles = q.T;
 
 		return OK;

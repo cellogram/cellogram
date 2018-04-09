@@ -42,9 +42,13 @@ void UIState::initialize() {
 	// Setup viewer data
 	viewer.append_mesh();
 	viewer.append_mesh();
+	viewer.append_mesh();
+	viewer.append_mesh();
 	viewer.data_list[0].id = hull_id = 0;
 	viewer.data_list[1].id = points_id = 1;
-	viewer.data_list[2].id = img_id = 2;
+	viewer.data_list[2].id = image_id = 2;
+	viewer.data_list[3].id = bad_region_id = 3;
+	viewer.data_list[4].id = matching_id = 4;
 }
 
 void UIState::launch() {
@@ -74,7 +78,7 @@ bool UIState::load(std::string name) {
 	// Compute and show convex hull + triangulation
 	compute_hull();
 	compute_triangulation();
-
+	viewer_control();
 	return true;
 }
 
@@ -85,45 +89,60 @@ bool UIState::save(std::string name) {
 ////////////////////////////////////////////////////////////////////////////////
 
 void UIState::compute_hull() {
+	// State
 	state.compute_hull();
 	
+	// UI
+	show_hull = true;
+	
+	
+	//hull_data().clear();
 
+	//// Draw edges
+	//int n = (int) state.hull_polygon.rows();
 
-	hull_data().clear();
+	//Eigen::MatrixXd P2; P2.resizeLike(state.hull_polygon);
+	//P2.topRows(n-1) = state.hull_polygon.bottomRows(n-1);
+	//P2.row(n-1) = state.hull_polygon.row(0);
+	//hull_data().add_edges(state.hull_polygon, P2, Eigen::RowVector3d(0, 0, 0));
 
-	// Draw edges
-	int n = (int) state.hull_polygon.rows();
+	//hull_data().set_mesh(state.hull_vertices, state.hull_faces);
 
-	Eigen::MatrixXd P2; P2.resizeLike(state.hull_polygon);
-	P2.topRows(n-1) = state.hull_polygon.bottomRows(n-1);
-	P2.row(n-1) = state.hull_polygon.row(0);
-	hull_data().add_edges(state.hull_polygon, P2, Eigen::RowVector3d(0, 0, 0));
-
-	hull_data().set_mesh(state.hull_vertices, state.hull_faces);
-
-	// Set viewer options
-	hull_data().set_colors(Eigen::RowVector3d(52, 152, 219)/255.0);
-	hull_data().show_faces = false;
-	hull_data().show_lines = false;
-	hull_data().shininess = 0;
-	hull_data().line_width = 2.0;
+	//// Set viewer options
+	//hull_data().set_colors(Eigen::RowVector3d(52, 152, 219)/255.0);
+	//hull_data().show_faces = false;
+	//hull_data().show_lines = false;
+	//hull_data().shininess = 0;
+	//hull_data().line_width = 2.0;
 }
 
 // -----------------------------------------------------------------------------
 
 void UIState::compute_triangulation() {
+	// State
 	state.compute_triangulation();
 
-	draw_mesh();
+	// UI
+	show_points = true;
+
+	//viewer_control();
+	//draw_mesh();
 }
 
 //TODO refactor when more clear
 void UIState::load_image(std::string fname) {
-	Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> R, G, B, A; // Image
+	Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> G, B, A; // Image
+	igl::png::readPNG(fname, img, G, B, A);
+	
+	image_loaded = true;
+	show_image = true;
 
-	igl::png::readPNG(fname, R, G, B, A);
-	int xMax = R.cols();
-	int yMax = R.rows();
+}
+
+void UIState::display_image()
+{
+	int xMax = img.cols();
+	int yMax = img.rows();
 
 	// Replace the mesh with a triangulated square
 	Eigen::MatrixXd V(4, 3);
@@ -143,12 +162,99 @@ void UIState::load_image(std::string fname) {
 		1, 0,
 		0, 0;
 
-	img_data().set_mesh(V, F);
-	img_data().set_uv(UV);
-	img_data().show_faces = true;
-	img_data().show_lines = false;
+	image_data().set_mesh(V, F);
+	image_data().set_uv(UV);
+	image_data().show_faces = true;
+	image_data().show_lines = false;
+	image_data().show_texture = true;
 	// Use the image as a texture
-	img_data().set_texture(R,G,B);
+	image_data().set_texture(img, img, img);
+	image_data().set_colors(Eigen::RowVector3d(1, 1, 1));
+}
+
+void UIState::viewer_control()
+{
+	hull_data().clear();
+	points_data().clear();
+	image_data().clear();
+	matching_data().clear();
+	bad_region_data().clear();
+	
+	// Read all the UIState flags and update display
+	// hull
+	if (show_hull) {
+		// Draw edges
+		int n = (int)state.hull_polygon.rows();
+
+		Eigen::MatrixXd P2; P2.resizeLike(state.hull_polygon);
+		P2.topRows(n - 1) = state.hull_polygon.bottomRows(n - 1);
+		P2.row(n - 1) = state.hull_polygon.row(0);
+		hull_data().add_edges(state.hull_polygon, P2, Eigen::RowVector3d(0, 0, 0));
+
+		hull_data().set_mesh(state.hull_vertices, state.hull_faces);
+		hull_data().set_colors(Eigen::RowVector3d(52, 152, 219) / 255.0);
+		hull_data().show_faces = false;
+		hull_data().show_lines = false;
+		hull_data().shininess = 0;
+		hull_data().line_width = 3.0;
+	}
+
+	// points
+	Eigen::MatrixXd V = t * state.points + (1 - t) * state.detected;
+	points_data().set_mesh(V, state.triangles);
+	if (image_loaded)
+	{
+		Eigen::MatrixXd UV(state.detected.rows(), 2);
+		UV.col(0) = state.detected.col(0) / img.rows();
+		UV.col(1) = 1 - state.detected.col(1).array() / img.cols();
+
+		points_data().show_texture = true;
+		points_data().set_uv(UV);
+		points_data().set_texture(img, img, img);
+		points_data().set_colors(Eigen::RowVector3d(1, 1, 1));
+	}
+	if (show_points)
+	{
+		points_data().set_points(V, vertex_color);
+	}
+
+	// fill
+	points_data().show_faces = show_mesh_fill;
+	if (mesh_color.size() > 0) {
+		points_data().set_colors(mesh_color);
+	}
+
+	// bad regions
+	if (show_bad_regions)
+	{
+		Eigen::MatrixXd bad_P1, bad_P2;
+		build_region_edges(V, bad_P1, bad_P2);
+
+	}
+	//bad_region_data().clear();
+	//bad_region_data().add_edges(bad_P1, bad_P2, Eigen::RowVector3d(0, 0, 0));
+
+	// image
+	if (show_image && !image_loaded)
+	{
+		show_image = false;
+	}
+	else if (show_image && image_loaded) 
+	{
+		display_image();
+	}
+
+	// matching
+	if (show_matching) {
+		matching_data().clear();
+		matching_data().add_edges(state.points, state.detected, Eigen::RowVector3d(0, 0, 0));
+		matching_data().line_width = 3.0;
+	}
+
+	// Fix shininess for all layers
+	fix_color(hull_data());
+	fix_color(points_data());
+	fix_color(image_data());
 }
 
 void UIState::draw_mesh()
@@ -209,6 +315,7 @@ void UIState::build_region_edges(const Eigen::MatrixXd &pts, Eigen::MatrixXd &ba
 	bad_P1.conservativeResize(index, 3);
 	bad_P2.conservativeResize(index, 3);
 }
+
 // -----------------------------------------------------------------------------
 
 } // namespace cellogram

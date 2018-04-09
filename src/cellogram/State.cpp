@@ -209,7 +209,7 @@ namespace cellogram {
 
 			auto &region = *it;
 
-			auto state = region.resolve(detected, triangles, adj, perm_possibilities, new_points, new_triangles);
+			auto state = region.resolve(detected, points, triangles, adj, perm_possibilities, new_points, new_triangles);
 			//gurobi r
 			if (state == Region::NOT_PROPERLY_CLOSED)
 			{

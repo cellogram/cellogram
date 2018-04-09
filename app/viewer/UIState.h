@@ -30,14 +30,27 @@ public:
 	// Multiple meshes ids
 	int hull_id;
 	int points_id;
-	int img_id;
+	int image_id;
 	int bad_region_id;
+	int matching_id;
 
 	// UI options
 	// double foo;
 
-	bool image_loaded;
+	// Display flags
+	float t;
+	Eigen::MatrixXd vertex_color = Eigen::RowVector3d(1,0,0);
+	Eigen::MatrixXd mesh_color;
+	bool show_hull = false;
+	bool image_loaded = false;
+	bool show_points = false;
+	bool show_mesh_fill = true;
+	bool show_image = false;
+	bool show_matching = false;
+	bool show_bad_regions = false;
 
+	// Image
+	Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> img;
 
 public:
 	void initialize();
@@ -51,15 +64,18 @@ public:
 	virtual bool save(std::string name) override;
 
 	void load_image(std::string name);
+	void display_image();
 	void compute_hull();
 	void compute_triangulation();
 
 public:
 	igl::opengl::ViewerData & points_data() { return mesh_by_id(points_id); }
 	igl::opengl::ViewerData & hull_data() { return mesh_by_id(hull_id); }
-	igl::opengl::ViewerData & img_data() { return mesh_by_id(img_id); }
+	igl::opengl::ViewerData & image_data() { return mesh_by_id(image_id); }
 	igl::opengl::ViewerData & bad_region_data() { return mesh_by_id(bad_region_id); }
+	igl::opengl::ViewerData & matching_data() { return mesh_by_id(matching_id); }
 private:
+	void viewer_control();
 	void draw_mesh();
 	void fix_color(igl::opengl::ViewerData &data);
 	Eigen::VectorXd create_region_label();
