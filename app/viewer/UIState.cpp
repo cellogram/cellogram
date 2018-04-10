@@ -215,7 +215,7 @@ void UIState::viewer_control()
 	}
 	if (show_points)
 	{
-		points_data().set_points(V, vertex_color);
+		points_data().set_points(V, vertex_color.cast<double>().head<3>());
 	}
 
 	// fill
@@ -227,12 +227,11 @@ void UIState::viewer_control()
 	// bad regions
 	if (show_bad_regions)
 	{
-		Eigen::MatrixXd bad_P1, bad_P2;
 		build_region_edges(V, bad_P1, bad_P2);
-
+		bad_region_data().add_edges(bad_P1, bad_P2, Eigen::RowVector3d(0, 0, 0));
+		bad_region_data().line_width = 3.0;
 	}
-	//bad_region_data().clear();
-	//bad_region_data().add_edges(bad_P1, bad_P2, Eigen::RowVector3d(0, 0, 0));
+
 
 	// image
 	if (show_image && !image_loaded)
@@ -255,6 +254,8 @@ void UIState::viewer_control()
 	fix_color(hull_data());
 	fix_color(points_data());
 	fix_color(image_data());
+	fix_color(bad_region_data());
+	fix_color(matching_data());
 }
 
 void UIState::draw_mesh()

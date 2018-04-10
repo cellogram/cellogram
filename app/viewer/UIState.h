@@ -39,7 +39,7 @@ public:
 
 	// Display flags
 	float t;
-	Eigen::MatrixXd vertex_color = Eigen::RowVector3d(1,0,0);
+	Eigen::RowVector4f vertex_color = Eigen::RowVector4f(1,0,0,0);
 	Eigen::MatrixXd mesh_color;
 	bool show_hull = false;
 	bool image_loaded = false;
@@ -48,6 +48,7 @@ public:
 	bool show_image = false;
 	bool show_matching = false;
 	bool show_bad_regions = false;
+	Eigen::MatrixXd bad_P1, bad_P2;
 
 	// Image
 	Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> img;

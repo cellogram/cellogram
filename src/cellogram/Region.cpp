@@ -139,9 +139,15 @@ namespace cellogram {
 		}
 	}
 
-	void Region::grow()
+	void Region::grow(const Eigen::MatrixXi &F)
 	{
-		//TODO
+		// Turn boundary vertices to internal vertices and recalculate boundary
+		// This function is called on individual regions an will not merge overlapping regions
+		Eigen::VectorXi region_interior_new(region_interior.rows() + region_boundary.rows());
+		region_interior_new << region_interior,region_boundary;
+
+		region_interior = region_interior_new;
+
 	}
 
 

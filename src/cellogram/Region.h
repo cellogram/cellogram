@@ -20,7 +20,7 @@ namespace cellogram {
 
 		void compute_edges(const Eigen::MatrixXd &V, Eigen::MatrixXd &bad_P1, Eigen::MatrixXd &bad_P2);
 
-		void grow();
+		void grow(const Eigen::MatrixXi &F);
 
 		void find_points(const Eigen::VectorXi &region_ids, const int id);
 		void find_triangles(const Eigen::MatrixXi &F, const Eigen::VectorXi &region_ids, const int id);

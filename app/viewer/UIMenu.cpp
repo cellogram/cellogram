@@ -234,33 +234,9 @@ void UIState::draw_custom_window() {
 		}
 		ImGui::SameLine(0, p);
 		if (ImGui::Button("Delete Node", ImVec2((w - p) / 2.f, 0))) {
-			//Eigen::MatrixXd V, C;
-			//Eigen::MatrixXi F;
-			//C = Eigen::MatrixXd::Constant(F.rows(), 3, 1);
-			//igl::opengl::glfw::Viewer viewer;
-			//viewer.callback_mouse_down =
-			//	[&V, &F, &C](igl::opengl::glfw::Viewer& viewer, int, int)->bool
-			//{
-			//	int fid;
-			//	Eigen::Vector3f bc;
-			//	// Cast a ray in the view direction starting from the mouse position
-			//	double x = viewer.current_mouse_x;
-			//	double y = viewer.core.viewport(3) - viewer.current_mouse_y;
-			//	if (igl::unproject_onto_mesh(Eigen::Vector2f(x, y), viewer.core.view * viewer.core.model,
-			//		viewer.core.proj, viewer.core.viewport, V, F, fid, bc))
-			//	{
-			//		// paint hit red
-			//		C.row(fid) << 1, 0, 0;
-			//		points_data().set_colors(C);
-			//		return true;
-			//	}
-			//	return false;
-			//};
-
 			delete_vertex(state.points);
 		}
-		static bool show_matching = false;
-		ImGui::ColorEdit4("Node color", points_data().line_color.data(),
+		ImGui::ColorEdit4("Vertex color", vertex_color.data(),
 			ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueWheel);
 	}
 	// Mesh
@@ -272,14 +248,9 @@ void UIState::draw_custom_window() {
 		float w = ImGui::GetContentRegionAvailWidth();
 		float p = ImGui::GetStyle().FramePadding.x;
 		//ImGui::Checkbox("Mesh Fill", &(points_data().show_faces));
-		ImGui::ColorEdit4("Mesh color", points_data().line_color.data(),
-			ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueWheel);
-		if (ImGui::Button("Find regions", ImVec2((w - p) / 2.f, 0))) {
-			delete_vertex(state.points);
-		}
-		ImGui::SameLine(0, p);
-		if (ImGui::Button("Solve regions", ImVec2((w - p) / 2.f, 0))) {
-			delete_vertex(state.points);
+		if (ImGui::ColorEdit4("Mesh color", points_data().line_color.data(),
+			ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueWheel)) {
+			viewer_control();
 		}
 	}
 	
@@ -292,7 +263,7 @@ void UIState::draw_custom_window() {
 			
 			show_bad_regions = true;
 
-			Eigen::MatrixXd bad_P1, bad_P2;
+			
 			build_region_edges(state.points, bad_P1, bad_P2);
 			
 			// Color mesh according to 
