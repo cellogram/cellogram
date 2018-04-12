@@ -90,7 +90,7 @@ void UIState::draw_viewer_menu() {
 		ImGui::Checkbox("Orthographic view", &(viewer.core.orthographic));
 		ImGui::PopItemWidth();
 	}
-
+/*
 	// Draw options
 	if (ImGui::CollapsingHeader("Draw Options", ImGuiTreeNodeFlags_DefaultOpen)) {
 		if (ImGui::Checkbox("Face-based", &(viewer.data().face_based))) {
@@ -117,20 +117,21 @@ void UIState::draw_viewer_menu() {
 		ImGui::Checkbox("Fill", &(viewer.data().show_faces));
 		ImGui::Checkbox("Show vertex labels", &(viewer.data().show_vertid));
 		ImGui::Checkbox("Show faces labels", &(viewer.data().show_faceid));
-	}
+	}*/
 }
 
 // -----------------------------------------------------------------------------
-
+static float menu_y = 190;
+static float menu_height = 700;
+static float menu_width = 300;
 void UIState::draw_custom_window() {
-	ImGui::SetNextWindowPos(ImVec2(190.f * menu_scaling(), 0), ImGuiSetCond_FirstUseEver);
-	ImGui::SetNextWindowSize(ImVec2(300, 800), ImGuiSetCond_FirstUseEver);
+	ImGui::SetNextWindowPos(ImVec2(menu_y * menu_scaling(), 0), ImGuiSetCond_FirstUseEver);
+	ImGui::SetNextWindowSize(ImVec2(menu_width, menu_height), ImGuiSetCond_FirstUseEver);
 	ImGui::Begin(
 		"Algorithm", nullptr,
 		ImGuiWindowFlags_NoSavedSettings
 	);
 	// Lloyds relaxation panel
-	//if (ImGui::CollapsingHeader("Lloyds Relaxation", ImGuiTreeNodeFlags_DefaultOpen)) {
 		float w = ImGui::GetContentRegionAvailWidth();
 		float p = ImGui::GetStyle().FramePadding.x;
 
@@ -145,13 +146,6 @@ void UIState::draw_custom_window() {
 	//}
 
 	if (ImGui::SliderFloat("t", &t, 0, 1)) {
-		//Eigen::MatrixXd V = t * state.points + (1 - t) * state.detected;
-		//points_data().set_mesh(V, state.triangles);
-		////points_data().set_points(V, Eigen::RowVector3d(1, 0, 0));
-		//Eigen::MatrixXd bad_P1, bad_P2;
-		//build_region_edges(V, bad_P1, bad_P2);
-		//bad_region_data().clear();
-		//bad_region_data().add_edges(bad_P1, bad_P2, Eigen::RowVector3d(0, 0, 0));
 		viewer_control();
 	}
 
@@ -162,14 +156,9 @@ void UIState::draw_custom_window() {
 		if (ImGui::Button("Current pos", ImVec2((w - p) / 2.f, 0))) {
 			Eigen::VectorXd current_laplace_energy;
 			laplace_energy(state.points, state.triangles, current_laplace_energy);
-			//Eigen::MatrixXd C;
 			igl::parula(current_laplace_energy, true, mesh_color);
 
-			// Plot the mesh with pseudocolors
-			//points_data().clear();
-			//points_data().set_mesh(state.points, state.triangles);
-			//points_data().set_colors(C);
-			//fix_color(points_data());
+			// update UI
 			viewer_control();
 
 		}
@@ -177,15 +166,9 @@ void UIState::draw_custom_window() {
 		if (ImGui::Button("Original pos", ImVec2((w - p) / 2.f, 0))) {
 			Eigen::VectorXd original_laplace_energy;
 			laplace_energy(state.detected, state.triangles, original_laplace_energy);
-			//Eigen::MatrixXd C;
 			igl::parula(original_laplace_energy, true, mesh_color);
 
-			// Plot the mesh with pseudocolors
-			//points_data().clear();
-			//points_data().set_mesh(state.points, state.triangles);
-			//points_data().set_colors(C);
-			//fix_color(points_data());
-
+			// update UI
 			viewer_control();
 		}
 	}
@@ -195,27 +178,14 @@ void UIState::draw_custom_window() {
 			std::string fname = FileDialog::openFileName(DATA_DIR, { "*.png" });
 			if (!fname.empty()) {
 				load_image(fname);
-				//image_data().show_texture = true;
-				//// now that image is loaded, menu for image handling can be called
+
 				image_loaded = true;
+				show_image = true;
+
+				// update UI
 				viewer_control();
-				//fix_color(img_data());
 			}
 		}
-
-		// Generate new submenu to handle the image
-		/*
-		It should be able to
-		- turn on and off the image
-		- change the contrast
-		-
-		*/
-		//if (image_loaded) {
-		//	ImGui::Checkbox("Show image", &(image_data().show_faces));
-		//	// Brightness
-		//	ImGui::PushItemWidth(80 * menu_scaling());
-		//	ImGui::DragFloat("Brightness", &(viewer.core.camera_zoom), 0.05f, 0.1f, 20.0f);
-		//}
 	}
 	// Node control panel
 	/* This menu will include:
@@ -230,14 +200,17 @@ void UIState::draw_custom_window() {
 		float p = ImGui::GetStyle().FramePadding.x;
 		if (ImGui::Button("Add node", ImVec2((w - p) / 2.f, 0))) {
 
-			add_vertex(state.points);
+			//add_vertex();
 		}
 		ImGui::SameLine(0, p);
 		if (ImGui::Button("Delete Node", ImVec2((w - p) / 2.f, 0))) {
-			delete_vertex(state.points);
+			//delete_vertex(state.points);
 		}
-		ImGui::ColorEdit4("Vertex color", vertex_color.data(),
-			ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueWheel);
+		if (ImGui::ColorEdit4("Vertex color", vertex_color.data(),
+			ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueWheel))
+		{
+			viewer_control();
+		}
 	}
 	// Mesh
 	/* This menu will include:
@@ -247,96 +220,38 @@ void UIState::draw_custom_window() {
 	if (ImGui::CollapsingHeader("Mesh", ImGuiTreeNodeFlags_DefaultOpen)) {
 		float w = ImGui::GetContentRegionAvailWidth();
 		float p = ImGui::GetStyle().FramePadding.x;
-		//ImGui::Checkbox("Mesh Fill", &(points_data().show_faces));
 		if (ImGui::ColorEdit4("Mesh color", points_data().line_color.data(),
 			ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueWheel)) {
 			viewer_control();
 		}
 	}
 	
-
-	// Button to call any function for testing
 	if (ImGui::CollapsingHeader("Phases", ImGuiTreeNodeFlags_DefaultOpen)) {
 		if (ImGui::Button("build regions")) {
 			state.detect_bad_regions();
 			state.fix_regions();
 			
+			show_points = false;
 			show_bad_regions = true;
 
-			
-			build_region_edges(state.points, bad_P1, bad_P2);
-			
-			// Color mesh according to 
-			//Eigen::MatrixXd C;
 			igl::jet(create_region_label(), true, mesh_color);
 			
 			viewer_control();
-			/*points_data().clear();
-			points_data().set_mesh(state.points, state.triangles);
-			points_data().set_colors(C);
-			fix_color(points_data());
-
-			bad_region_data().clear();
-			bad_region_data().add_edges(bad_P1, bad_P2, Eigen::RowVector3d(0, 0, 0));
-			*/
-			//std::cout << "Boundary\n" << bad_P1.transpose() << std::endl;
-			//std::cout << "Points\n" << state.points.transpose() << std::endl;
-
-			// Draw filled polygon
-			// Compile faces and vertices into single matrices
-			//Eigen::MatrixXd bad_region_vertices(state.points.rows(), 3);
-			//Eigen::MatrixXi bad_region_faces(state.triangles.rows(), 3);
-			//std::cout << mesh.bad_P1 << std::endl;
-			//// Make loop for each region and append...
-			//int face_counter = 0;
-			//int vertex_counter = 0;
-			//for (size_t i = 0; i < mesh.region_edges.size(); i++)
-			//{
-			//	Eigen::MatrixXd P_temp = Eigen::MatrixXd::Zero(mesh.region_edges[i].size(),3);
-			//	for (size_t j = 0; j < mesh.region_edges[i].size(); j++)
-			//	{
-			//		P_temp.row(i) = state.points.row(mesh.region_edges[i][j]);
-			//	}
-			//	Eigen::MatrixXd bad_region_vertices_tmp;
-			//	Eigen::MatrixXi bad_region_faces_tmp;
-			//	triangulate_polygon(P_temp, bad_region_vertices_tmp, bad_region_faces_tmp);
-
-
-
-			//	face_counter += bad_region_faces_tmp.rows();
-			//	vertex_counter += bad_region_vertices_tmp.rows();
-
-			//}
-
-			////triangulate_polygon(mesh.bad_P1, mesh.region_edges, bad_region_vertices, bad_region_faces);
-			//bad_region_data().set_mesh(bad_region_vertices, bad_region_faces);
-			//
-			//// Set viewer options
-			//bad_region_data().set_colors(Eigen::RowVector3d(52, 152, 219) / 255.0);
-			//bad_region_data().show_faces = false;
-			//bad_region_data().show_lines = false;
-			//bad_region_data().shininess = 0;
-			//bad_region_data().line_width = 4.0;
-
-			//mesh.solve_regions(state.points, state.triangles);
-			//mesh.solve_regions(state.points, state.triangles);
-/*
-			points_data().clear();
-			points_data().set_mesh(state.points, state.triangles);
-			points_data().set_colors(C);
-			fix_color(points_data());*/
-			
-			
 		}
 
 		if (ImGui::Button("solve regions")) {
-			state.resolve_regions();			// Color mesh according to 
+			state.resolve_regions();			
 
 			igl::jet(create_region_label(), true, mesh_color);
-			/*points_data().clear();
-			points_data().set_mesh(state.points, state.triangles);
-			points_data().set_colors(C);
-			fix_color(points_data());*/
+
+			viewer_control();
+		}
+
+		if (ImGui::Button("grow regions")) {
+			state.grow_regions();			
+
+			igl::jet(create_region_label(), true, mesh_color);
+
 			viewer_control();
 		}
 	}
@@ -344,19 +259,44 @@ void UIState::draw_custom_window() {
 	ImGui::End();
 
 
+	// Clicking Menu
+	ImGui::SetNextWindowPos(ImVec2(0 * menu_scaling(), menu_height + 5), ImGuiSetCond_FirstUseEver);
+	ImGui::SetNextWindowSize(ImVec2(menu_width, 300), ImGuiSetCond_FirstUseEver);
+	ImGui::Begin(
+		"Clicking", nullptr,
+		ImGuiWindowFlags_NoSavedSettings
+	);
+
+	if (ImGui::Button("Select Region", ImVec2(-1, 0))) {
+		igl::jet(create_region_label(), true, mesh_color);
+		select_region = true;
+	}
+	if (ImGui::Button("Grow Selected", ImVec2(-1, 0))) {
+		if (selected_region < 0) return;
+		state.grow_region(selected_region);
+		igl::jet(create_region_label(), true, mesh_color);
+		viewer_control();
+	}
+	if (ImGui::Button("Solve Selected", ImVec2(-1, 0))) {
+		state.resolve_region(selected_region);
+		igl::jet(create_region_label(), true, mesh_color);
+		viewer_control();
+		selected_region = -1;
+	}
+	if (ImGui::Button("Delete Vertex", ImVec2(-1, 0))) {
+		delete_vertex = true;
+		
+	}
+	if (ImGui::Button("Add Vertex", ImVec2(-1, 0))) {
+		add_vertex = true;
+	}
+	ImGui::End();
 
 
 
-
-
-
-
-
-
-
-
-	ImGui::SetNextWindowPos(ImVec2(190.f * menu_scaling(), 850), ImGuiSetCond_FirstUseEver);
-	ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiSetCond_FirstUseEver);
+	// Displaying Options
+	ImGui::SetNextWindowPos(ImVec2(menu_y * menu_scaling(), menu_height + 5), ImGuiSetCond_FirstUseEver);
+	ImGui::SetNextWindowSize(ImVec2(menu_width, 300), ImGuiSetCond_FirstUseEver);
 	ImGui::Begin(
 		"View settings", nullptr,
 		ImGuiWindowFlags_NoSavedSettings

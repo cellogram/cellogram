@@ -9,7 +9,7 @@ class gurobiModel
 public:
 
     // Output
-	VectorXd resultX;
+	VectorXi resultX;
 
 	// Generate and solve Model
 	void model(const SparseMatrix<double> &Q, const SparseMatrix<int> &Aeq);

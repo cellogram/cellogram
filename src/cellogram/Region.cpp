@@ -43,8 +43,6 @@ namespace cellogram {
 
 			// check if neigh actually closes a loop by tacing
 			Eigen::VectorXi turns = neigh.array() - 4;
-			std::cout << neigh << std::endl;
-			//std::cout << turns << std::endl;
 
 			Eigen::MatrixXi dirs_even(6, 2);
 			Eigen::MatrixXi dirs_odd(6, 2);
@@ -139,15 +137,28 @@ namespace cellogram {
 		}
 	}
 
-	void Region::grow(const Eigen::MatrixXi &F)
+	void Region::grow(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F)
 	{
 		// Turn boundary vertices to internal vertices and recalculate boundary
 		// This function is called on individual regions an will not merge overlapping regions
-		Eigen::VectorXi region_interior_new(region_interior.rows() + region_boundary.rows());
-		region_interior_new << region_interior,region_boundary;
 
-		region_interior = region_interior_new;
+		Eigen::VectorXi regions_id(V.rows());
+		regions_id.setZero();
 
+		//for any pt in region_interior or region_boundary set regions_id to 1
+		for (size_t i = 0; i < region_interior.size(); i++)
+		{
+			regions_id(region_interior(i)) = 1;
+		}
+		for (size_t i = 0; i < region_boundary.size(); i++)
+		{
+			regions_id(region_boundary(i)) = 1;
+		}
+
+		find_points(regions_id, 1);
+		find_triangles(F, regions_id, 1);
+
+		bounding(F, V);
 	}
 
 
@@ -197,6 +208,7 @@ namespace cellogram {
 		region_faces.erase(std::unique(region_faces.begin(), region_faces.end()), region_faces.end());
 
 		region_triangles.resize(region_faces.size());
+		assert(region_triangles.size() > 0);
 
 		for (int j = 0; j < region_faces.size(); j++)
 		{
@@ -228,7 +240,7 @@ namespace cellogram {
 		region_faces.erase(std::unique(region_faces.begin(), region_faces.end()), region_faces.end());
 
 		region_triangles.resize(region_faces.size());
-
+		assert(region_triangles.size() > 0);
 		for (int j = 0; j < region_faces.size(); j++)
 		{
 			region_triangles(j) = region_faces[j];
@@ -256,24 +268,22 @@ namespace cellogram {
 		int nPolygon = region_boundary.size(); // length of current edge
 
 		// update triangle indices in region_triangles
-		std::cout << "\n1 - Tri: \n" << region_triangles.transpose();
 		find_triangles(F);
-		std::cout << "\n2 - Tri: \n" << region_triangles.transpose();
 		// for each region the belonging triangles need to be extracted and duplicates removed
 		
 		Eigen::MatrixXi F2 = get_triangulation(F);
 		
 		// Determine number of connections into the cluster to determine "neigh"
 		Eigen::VectorXi neigh = find_n_neighbor(F2, region_boundary, adj);
-		std::cout << "\n3 - Neigh: \n" << neigh.transpose();
-		//PLEASE USE ME 
-		//igl::opengl::glfw::Viewer viewer;
-		//igl::opengl::glfw::imgui::ImGuiMenu menu;
-		//viewer.plugins.push_back(&menu);
 
-		//viewer.data().set_mesh(V, F2);
+		////PLEASE USE ME 
+		//igl::opengl::glfw::Viewer viewer;
+		////igl::opengl::glfw::imgui::ImGuiMenu menu;
+		////viewer.plugins.push_back(&menu);
+
+		//viewer.data().set_mesh(V_detected, F2);
 		//for (int i = 0; i < region_boundary.size(); ++i) {
-		//	viewer.data().add_label(V.row(region_boundary(i)), std::to_string(neigh(i)));
+		//	//viewer.data().add_label(V_detected.row(region_boundary(i)), std::to_string(neigh(i)));
 		//}
 
 		//viewer.launch();
@@ -311,10 +321,20 @@ namespace cellogram {
 		s.init(vB, vI, neigh);
 		s.fill_hole();
 
+		//// compare sizes
+		//std::cout << "\n\nregion_boundary: \n" << region_boundary.transpose() << "\n" <<region_boundary.rows();
+		//std::cout << "\n\nregion_interior: \n" << region_interior.transpose() << "\n" << region_interior.rows();
+		//std::cout << "\n\ns.Vdeformed: \n" << s.Vdeformed.transpose() << "\n" << s.Vdeformed.rows();
+		//std::cout << "\n\ns.Vperfect: \n" << s.Vperfect.transpose() << "\n" << s.Vperfect.rows();
+		////
+
 		// Check whether vertices inside region is equal to the ones expected
-		if (verbose && s.Vdeformed.rows() != s.Vdeformed.rows()) {
-			std::cout << "\nDeformed\n" << s.Vdeformed.transpose();
-			std::cout << "\nPerfect\n" << s.Vperfect.transpose();
+		if (verbose && s.Vperfect.rows() < s.Vdeformed.rows()) {
+			std::cout << "Region is missing point(s)\n";
+			std::cout << "Matching " << s.Vdeformed.rows() << " deformed points to " << s.Vperfect.rows() << " relaxed points.\n";
+			std::cout << "Remove manually\n";
+			// no solution possible
+			return NO_SOLUTION;
 		}
 
 		// Generate adjacency matrix and the laplacian
@@ -325,7 +345,8 @@ namespace cellogram {
 
 
 		// Deriving Q and constraints for optimization
-		q.QforOptimization(s.Vperfect, s.Vdeformed, perm_possibilities);
+		int K = std::min(perm_possibilities,q.iNrV);
+		q.QforOptimization(s.Vperfect, s.Vdeformed, K);
 		q.optimizationConstraints(s.V_boundary.rows());
 
 
@@ -336,6 +357,9 @@ namespace cellogram {
 			return NO_SOLUTION;
 		}
 
+		std::cout << "\ng.resultX\n" << g.resultX << std::endl;
+		std::cout << "\nq.IDX\n" << q.IDX << std::endl;
+
 		// Map back to indices of coordinates
 		q.mapBack(g.resultX);
 		//std::cout << g.resultX << std::endl;
@@ -344,9 +368,9 @@ namespace cellogram {
 		const int n_points = s.Vperfect.rows();
 		for (int i = 0; i < n_points; ++i)
 		{
-			const int index = i * perm_possibilities;
+			const int index = i * K;
 
-			for (int j = 0; j < perm_possibilities; ++j)
+			for (int j = 0; j < K; ++j)
 			{
 				if (g.resultX(index + j) == 1)
 				{
@@ -360,10 +384,12 @@ namespace cellogram {
 		// Replace vertex
 		Eigen::SparseMatrix<double> permutation(n_points, n_points);
 		permutation.setFromTriplets(permutation_triplets.begin(), permutation_triplets.end());
+
+		std::cout << Eigen::MatrixXd(permutation) << std::endl;
 		
-		std::cout << "\nDef: \n" << s.Vdeformed;
-		std::cout << "\nPerf: \n" << s.Vperfect;
-		std::cout << "\Vi: \n" << vI;
+		//std::cout << "\nDef: \n" << s.Vdeformed;
+		//std::cout << "\nPerf: \n" << s.Vperfect;
+		//std::cout << "\Vi: \n" << vI;
 
 		new_points = permutation.transpose() * s.Vperfect;
 
@@ -390,6 +416,35 @@ namespace cellogram {
 			F2.row(j) = F.row(region_triangles(j));
 		}
 		return F2;
+	}
+
+	void Region::fix_missing_points(const Eigen::MatrixXi &F)
+	{
+		std::vector<int> internal(region_interior.data(), region_interior.data() + region_interior.size());
+		std::vector<int> boundary(region_boundary.data(), region_boundary.data() + region_boundary.size());
+
+		for (int j = 0; j < region_triangles.size(); j++)
+		{
+			for (int i = 0; i < 3; ++i)
+			{
+				const int vId = F(region_triangles(j), i);
+				if (std::find(boundary.begin(), boundary.end(), vId) == boundary.end())
+				{
+					internal.push_back(vId);
+				}
+			}
+		}
+
+
+		std::sort(internal.begin(), internal.end());
+		internal.erase(std::unique(internal.begin(), internal.end()), internal.end());
+
+		region_interior.resize(internal.size());
+
+		for (int j = 0; j < internal.size(); j++)
+		{
+			region_interior(j) = internal[j];
+		}
 	}
 
 	

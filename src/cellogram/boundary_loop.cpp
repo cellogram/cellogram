@@ -12,72 +12,7 @@ namespace cellogram {
 
 // -----------------------------------------------------------------------------
 	typedef std::vector<int> Path;
-/*
-int find_next_starting_point(const std::vector<bool> & needs_visit ) {
 
-	for (unsigned int i = 0; i < needs_visit.size(); i++) {
-		if (needs_visit[i] ) return i;
-	}
-	return -1;
-}
-
-
-
-int get_next(
-	int starting_node, 
-	const std::vector<std::vector<int>> &adj, 
-	std::vector<int> &pos_in_path, 
-	const std::vector<bool> &needs_visit
-) 
-{
-	std::cout << "who is next from " << starting_node << "?\n";
-
-	int time_now = pos_in_path.back();
-	for (int neigh : adj[starting_node] ) {
-		std::cout << "maybe " << neigh << "?\n";
-		if (needs_visit[neigh]) std::cout << " he needs a visit!\n";
-		else {
-			std::cout << " he does not needs a visit!\n";
-			std::cout << " but " << pos_in_path[neigh] << "<" << (time_now - 1) << "\n";
-		}
-		if (needs_visit[neigh] || (pos_in_path[neigh] < time_now-1)) return neigh;
-	}
-	assert(false);
-	std::cout << "NO NEXT MOVE FOUND ????\n\n\n";
-	return 0;
-}
-
-void trace_loop(int starting_pos, std::vector<Path> &paths, std::vector<bool> &needs_visit, const std::vector<std::vector<int>> &adj) {
-	
-	std::cout << "\n\nstarting loop from: " << starting_pos << "\n";
-
-	int n = (int)adj.size();
-	const int BIG = 1000000000;
-	std::vector<int> pos_in_path(n, +BIG);
-
-	Path p; 
-	int i = starting_pos;
-	while (true) {
-		// visit node i
-		needs_visit[i] = false;
-		pos_in_path[i] = (int)p.size();
-		p.push_back(i);		
-		
-		std::cout << "visiting node: " << i << "\n";
-		i = get_next( i, adj, pos_in_path , needs_visit );
-		if (i == starting_pos) break;
-
-		if (pos_in_path[i] != BIG) {
-			// pacman thing
-			Path subloop( p.begin() + pos_in_path[i], p.end() );
-
-			p.resize(pos_in_path[i]);
-			paths.push_back(subloop);
-		}
-	}
-	paths.push_back(p);
-}
-*/
 Path get_longest_path(const std::vector<Path> &paths) {
 	if (paths.empty()) return Path();
 	int maxi = 0;
@@ -182,7 +117,7 @@ void boundary_loop(const Eigen::MatrixXi &F, Eigen::VectorXi &longest_path) {
 			}
 			if (!path.empty()) {
 				if (path.size() == 3) {
-					std::cout << "boundary_loop.cpp, path size is only three " << v0 << std::endl << "Path not added\n";
+					//std::cout << "boundary_loop.cpp, path size is only three " << v0 << std::endl << "Path not added\n";
 				}
 				else{
 					//std::cout << path.size() << std::endl;
@@ -192,13 +127,7 @@ void boundary_loop(const Eigen::MatrixXi &F, Eigen::VectorXi &longest_path) {
 		}
 	}
 
-	//while (true) {
-	//	int starting_pos = find_next_starting_point(border_vertex);
-	//	if (starting_pos == -1) break;
 
-	//	trace_loop(starting_pos, paths, border_vertex, adj); // adds at least one (maybe more) Paths to paths
-	//}
-	
 	longest_path = path_to_vecXi( get_longest_path(paths) );
 	
 }

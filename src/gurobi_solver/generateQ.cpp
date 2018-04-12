@@ -175,23 +175,23 @@ void generateQ::optimizationConstraints(int nrBoundaryV)
 	//cout << "Aeq: " << endl << Aeq << endl;
 }
 
-void generateQ::mapBack(const VectorXd &x)
+void generateQ::mapBack(const VectorXi &x)
 {
 	vMapping = VectorXi::Zero(iNrV);
-	VectorXd temp;
+	VectorXi temp;
 	for (int i = 0; i < iNrV; i++)
 	{
 		temp = x.segment(i*K, K);
+		//tempi = tempd.cast<int>();
+		std::cout << (temp.transpose().array()-1) << " - " << temp.transpose() << std::endl;
 		for (int j = 0; j < K; j++)
 		{
-			if (temp(j)==1)
+			if (temp(j) == 1)
 			{
 				vMapping(i) = IDX(j, i);
 			}
 		}
 	}
-
-	std::cout << "\nIDX\n" << IDX << std::endl;
 	
 	T = MatrixXi::Zero(F.rows(), 3);
 	for (int i = 0; i < F.rows(); i++)

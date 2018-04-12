@@ -59,8 +59,17 @@ namespace cellogram {
 
 	bool State::load(const std::string & path)
 	{
-		//clear everything
 		if (path.empty()) { return false; }
+		// clear previous
+		detected.resize(0,0); // detected (unmoved) point positions
+		points.resize(0, 0); // relaxed point positions
+		triangles.resize(0, 0); // triangular mesh
+		adj.clear(); // adjaceny list of triangluar mesh
+		boundary.resize(0); // list of vertices on the boundary
+		hull_vertices.resize(0, 0); //needed for lloyd
+		hull_faces.resize(0,0);
+		hull_polygon.resize(0, 0);
+		regions.clear();
 
 		// Load points
 		load_points(path, detected);
@@ -141,6 +150,12 @@ namespace cellogram {
 			}
 		}
 
+		// boundaries of the image must not be considered bad, but instead used to enclose regions inside the image
+		for (int i = 0; i < boundary.size(); i++)
+		{
+			crit_pass(boundary(i)) = false;
+		}
+
 		// Find connected regions where the criterium was not passed
 
 		//maybe avoid regions id, fill directly region_vertices and use in the next method
@@ -158,7 +173,12 @@ namespace cellogram {
 		for (auto & r : regions)
 		{
 			r.bounding(triangles, points);
+
+			r.fix_missing_points(triangles);
 		}
+
+
+
 	}
 
 	void State::fix_regions()
@@ -187,7 +207,119 @@ namespace cellogram {
 
 	void State::grow_region(const int index)
 	{
-		regions[index].grow();
+		regions[index].grow(points, triangles);
+	}
+
+	void State::grow_regions()
+	{
+		Eigen::Matrix<bool, 1, Eigen::Dynamic> crit_pass(points.rows());
+		crit_pass.setConstant(false);
+		for (int j = 0; j < regions.size(); j++)
+		{
+			auto &r = regions[j];
+			for (size_t i = 0; i < r.region_interior.size(); i++)
+			{
+				crit_pass(r.region_interior(i)) = true;
+			}
+			if (j > 0)
+			{
+				for (size_t i = 0; i < r.region_boundary.size(); i++)
+				{
+					crit_pass(r.region_boundary(i)) = true;
+				}
+			}
+		}
+
+		// Find connected regions where the criterium was not passed
+
+		//maybe avoid regions id, fill directly region_vertices and use in the next method
+		Eigen::VectorXi regions_id;
+		region_grow(adj, crit_pass, regions_id);
+		int n_regions = regions_id.maxCoeff();
+
+		regions.resize(n_regions);
+		for (int i = 0; i < n_regions; ++i)
+		{
+			regions[i].find_points(regions_id, i + 1);
+			regions[i].find_triangles(triangles, regions_id, i + 1);
+		}
+
+		for (auto & r : regions)
+		{
+			r.bounding(triangles, points);
+		}
+	}
+
+	void State::resolve_region(const int index)
+	{
+		Eigen::MatrixXd new_points;
+		Eigen::MatrixXi new_triangles;
+
+		counter_invalid_neigh = 0;
+		counter_infeasible_region = 0;
+		counter_solved_regions = 0;
+
+		//remove from regions all the solved one
+		//grow the others and regurobi the regions max 4 time
+
+		auto &region = regions[index];
+
+		auto state = region.resolve(detected, points, triangles, adj, perm_possibilities, new_points, new_triangles);
+		//gurobi r
+		if (state == Region::NOT_PROPERLY_CLOSED)
+		{
+			counter_invalid_neigh++;
+			return;
+		}
+		else if (state == Region::NO_SOLUTION)
+		{
+			counter_infeasible_region++;
+			return;
+		}
+
+		// Map q.T back to global indices
+		assert(region.region_boundary.size() + region.region_interior.size() == new_points.rows());
+		std::cout << new_points << std::endl;
+		const int n_region_boundary = region.region_boundary.size();
+		const int n_region_interior = region.region_interior.size();
+
+		Eigen::VectorXi local_to_global(n_region_boundary + n_region_interior);
+
+		for (int i = 0; i < n_region_boundary; i++)
+		{
+			const int global_index = region.region_boundary[i];
+			local_to_global(i) = global_index;
+			points.row(global_index) = new_points.row(i);
+
+		}
+		for (int i = 0; i < n_region_interior; i++)
+		{
+			const int global_index = region.region_interior[i];
+			local_to_global(i + n_region_boundary) = global_index;
+			points.row(global_index) = new_points.row(i + n_region_boundary);
+		}
+
+
+		Eigen::MatrixXi tGlobal = Eigen::MatrixXi(new_triangles.rows(), 3);
+		for (int i = 0; i < new_triangles.rows(); i++)
+		{
+			for (int j = 0; j < 3; j++)
+			{
+				tGlobal(i, j) = local_to_global(new_triangles(i, j));
+			}
+
+		}
+
+		replaceTriangles(tGlobal, region.region_triangles, triangles);
+
+		counter_solved_regions++;
+
+		adjacency_list(triangles, adj);
+
+		regions.erase(regions.begin() + index);
+
+		for (auto &r : regions)
+			r.find_triangles(triangles);
 	}
 
 	void State::resolve_regions()
@@ -224,7 +356,12 @@ namespace cellogram {
 				continue;
 			}
 
-
+			if (region.region_boundary.size() + region.region_interior.size() != new_points.rows())
+			{
+				counter_infeasible_region++; //maybe new name (point missing or too much)
+				++it;
+				continue;
+			}
 
 
 			// Map q.T back to global indices
@@ -267,6 +404,39 @@ namespace cellogram {
 		}
 
 		adjacency_list(triangles, adj);
+
+		for (auto &r : regions)
+			r.find_triangles(triangles);
+	}
+
+	void State::delete_vertex(const int index)
+	{
+		Eigen::MatrixXd tmp(detected.rows() - 1, detected.cols());
+		tmp.block(0, 0, index, detected.cols()) = detected.block(0, 0, index, detected.cols());
+		tmp.block(index, 0, tmp.rows() - index, detected.cols()) = detected.block(index+1, 0, tmp.rows() - index, detected.cols());
+
+		detected = tmp;
+		points = detected;
+		compute_triangulation();
+		compute_hull();
+	}
+
+	void State::add_vertex(Eigen::Vector3d new_point)
+	{
+		Eigen::MatrixXd tmp(detected.rows() + 1, detected.cols());
+		tmp.block(0, 0, detected.rows(), detected.cols()) = detected;
+		//tmp.block(detected.rows(), 0, 1, detected.cols()) = new_point.transpose();
+		tmp.row(detected.rows()) = new_point.transpose();
+
+		std::cout << tmp << std::endl;
+		std::cout << "\nNew point:\n" << new_point.transpose() << std::endl;
+
+		//detected.resizeLike(tmp);
+		//points.resizeLike(tmp);
+		detected = tmp;
+		points = detected;
+		compute_triangulation();
+		compute_hull();
 	}
 
 

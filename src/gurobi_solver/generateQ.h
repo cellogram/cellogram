@@ -39,6 +39,6 @@ public:
 	void optimizationConstraints(int nrBoundaryV);
 
 	// Map the results from gurobi back to the indices of the coordinates
-	void mapBack(const VectorXd &x);
+	void mapBack(const VectorXi &x);
 };
 

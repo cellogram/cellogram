@@ -1,6 +1,6 @@
 project(cellogram)
 
-add_library(${PROJECT_NAME}
+set(source_list
 	boundary_loop.cpp
 	boundary_loop.h
 	common.cpp
@@ -37,6 +37,8 @@ add_library(${PROJECT_NAME}
 	voronoi.h
 )
 
+add_library(${PROJECT_NAME} ${source_list})
+
 target_include_directories(${PROJECT_NAME} PUBLIC ..)
 
 # Dependencies
@@ -57,3 +59,9 @@ target_compile_options(${PROJECT_NAME} PRIVATE ${ALL_WARNINGS})
 # Use C++14
 target_compile_features(${PROJECT_NAME} PUBLIC ${CXX14_FEATURES})
 
+
+foreach(source IN ITEMS ${source_list})
+    get_filename_component(source_path "${source}" PATH)
+    string(REPLACE "/" "\\" group_path "${source_path}")
+    source_group("${group_path}" FILES "${source}")
+endforeach()

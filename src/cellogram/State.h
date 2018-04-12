@@ -20,7 +20,7 @@ private:
 public:
 	int lloyd_iterations = 12;
 	double energy_variation_from_mean = 1.8;
-	int perm_possibilities = 8;
+	int perm_possibilities = 12;
 
 
 	int counter_invalid_neigh;
@@ -54,7 +54,12 @@ public:
 	void detect_bad_regions();
 	void fix_regions();
 	void grow_region(const int index);
+	void grow_regions();
+	void resolve_region(const int index);
 	void resolve_regions();
+
+	void delete_vertex(const int index);
+	void add_vertex(Eigen::Vector3d new_point);
 
 public:
 	// void foo();

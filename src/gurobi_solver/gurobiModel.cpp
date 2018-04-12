@@ -14,8 +14,12 @@ void gurobiModel::model(const SparseMatrix<double> &Q, const SparseMatrix<int> &
 	Objective: 	    minimize xT Q x + qT x
 	Constraints: 	A x = b (linear constraints)
 	*/
+	
 	GRBEnv env = GRBEnv();
 	GRBModel model = GRBModel(env);
+
+	double time_limit = 60;
+	model.set(GRB_DoubleParam_TimeLimit, time_limit);
 
 	int nVars = Aeq.cols();
 	int nConstraints = Aeq.rows();
@@ -89,19 +93,15 @@ void gurobiModel::model(const SparseMatrix<double> &Q, const SparseMatrix<int> &
 
 
 	// Iterate over the solutions and compute the objectives
-	if(solution_found){
-		resultX = VectorXd(Q.rows());
-		for (int i = 0; i < Q.rows(); i++)
-		{
-			resultX(i) = x[i].get(GRB_DoubleAttr_X);
+	if (solution_found) {
+		resultX.resize(Q.rows());
+		for (int i = 0; i < Q.rows(); i++) {
+			resultX(i) = std::round(x[i].get(GRB_DoubleAttr_X));
 		}
-	}
-	else {
-		resultX = VectorXd(1);
+	} else {
+		resultX.resize(1);
 		resultX(0) = -1;
-
 	}
-
 
 	//cout << resultX;
 }

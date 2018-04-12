@@ -34,6 +34,8 @@ public:
 	int bad_region_id;
 	int matching_id;
 
+	int selected_region = -1;
+
 	// UI options
 	// double foo;
 
@@ -48,7 +50,11 @@ public:
 	bool show_image = false;
 	bool show_matching = false;
 	bool show_bad_regions = false;
-	Eigen::MatrixXd bad_P1, bad_P2;
+
+	// Clicking flags
+	bool select_region = false;
+	bool add_vertex = false;
+	bool delete_vertex = false;
 
 	// Image
 	Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> img;
@@ -63,6 +69,8 @@ public:
 	virtual bool load(std::string name) override;
 
 	virtual bool save(std::string name) override;
+
+	virtual bool mouse_scroll(float delta_y) override;
 
 	void load_image(std::string name);
 	void display_image();
