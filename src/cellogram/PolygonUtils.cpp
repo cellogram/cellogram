@@ -7,6 +7,44 @@ namespace cellogram {
 
 // -----------------------------------------------------------------------------
 
+
+	typedef std::complex<double> P;
+
+	double inline det(const P &u, const P &v) {
+		return imag(conj(u) * v);
+	}
+	// Return true iff [a,b] intersects [c,d], and store the intersection in ans
+	bool intersect_segment(const P &a, const P &b, const P &c, const P &d, P &ans) {
+		const double eps = 1e-10; // small epsilon for numerical precision
+		double x = det(c - a, d - c);
+		double y = det(b - a, a - c);
+		double z = det(b - a, d - c);
+		// ab and cd are parallel ||
+		if (std::abs(z) < eps || x * z < 0 || x * z > z*z || y * z < 0 || y * z > z*z) return false;
+		ans = c + (d - c) * y / z;
+		return true;
+	}
+
+	bool is_inside(const Eigen::MatrixXd &poly, double &x, double &y) {
+		P outside(-1000, -1000);
+		P q(x, y);
+		size_t n = poly.rows();
+		bool tmp, ans = false;
+		for (size_t i = 0; i < poly.rows(); ++i) {
+			P m; // Coordinates of intersection point
+			P p0(poly(i, 0), poly(i, 1));
+			P p1(poly((i + 1) % n, 0), poly((i + 1) % n, 1));
+			tmp = intersect_segment(q, outside, p0, p1, m);
+			ans = (ans != tmp);
+		}
+		return ans;
+	}
+
+
+	// -----------------------------------------------------------------------------
+
+
+
 namespace {
 
 constexpr int FACTOR = 1<<23;
@@ -39,6 +77,8 @@ Eigen::MatrixXd fromClipper(const ClipperLib::Path &path) {
 	}
 	return V;
 }
+
+
 
 } // anonymous namespace
 

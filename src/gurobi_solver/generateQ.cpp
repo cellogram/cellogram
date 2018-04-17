@@ -183,7 +183,6 @@ void generateQ::mapBack(const VectorXi &x)
 	{
 		temp = x.segment(i*K, K);
 		//tempi = tempd.cast<int>();
-		std::cout << (temp.transpose().array()-1) << " - " << temp.transpose() << std::endl;
 		for (int j = 0; j < K; j++)
 		{
 			if (temp(j) == 1)

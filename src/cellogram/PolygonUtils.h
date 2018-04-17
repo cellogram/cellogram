@@ -13,5 +13,5 @@ namespace cellogram {
 /// @param[in]  eps   { Offset distance }
 ///
 void offset_polygon(const Eigen::MatrixXd &IV, Eigen::MatrixXd &OV, double eps);
-
+bool is_inside(const Eigen::MatrixXd &poly, double &x, double &y);
 } // namespace poly_fem

@@ -4,14 +4,17 @@
 #include <cellogram/tri2hex.h>
 #include <cellogram/vertex_degree.h>
 #include <cellogram/region_grow.h>
+#include <cellogram/Mesh.h>
 #include <gurobi_solver/state.h>
 #include <gurobi_solver/generateQ.h>
 #include <gurobi_solver/gurobiModel.h>
 
 #include <cellogram/boundary_loop.h>
-
-
+#include <cellogram/delaunay.h>
+#include <cellogram/convex_hull.h>
 #include <igl/opengl/glfw/Viewer.h>
+
+#include <igl/triangle/triangulate.h>
 
 #include <igl/opengl/glfw/imgui/ImGuiMenu.h>
 
@@ -22,6 +25,28 @@
 namespace cellogram {
 	namespace
 	{
+		void removeRow(Eigen::MatrixXi& matrix, unsigned int rowToRemove)
+		{
+			unsigned int numRows = matrix.rows() - 1;
+			unsigned int numCols = matrix.cols();
+
+			if (rowToRemove < numRows)
+				matrix.block(rowToRemove, 0, numRows - rowToRemove, numCols) = matrix.bottomRows(numRows - rowToRemove);
+
+			matrix.conservativeResize(numRows, numCols);
+		}
+
+		void removeRow(Eigen::VectorXi& matrix, unsigned int rowToRemove)
+		{
+			unsigned int numRows = matrix.rows() - 1;
+			unsigned int numCols = matrix.cols();
+
+			if (rowToRemove < numRows)
+				matrix.block(rowToRemove, 0, numRows - rowToRemove, numCols) = matrix.bottomRows(numRows - rowToRemove);
+
+			matrix.conservativeResize(numRows, numCols);
+		}
+
 		bool is_clockwise(const Eigen::MatrixXd &poly) {
 			double s = 0;
 			for (int i = 0; i < poly.rows(); ++i) {
@@ -111,7 +136,8 @@ namespace cellogram {
 					}
 
 				}
-				neigh(j) = adj[current_edge_vertices(j)].size() - (internalTri[j] - 1);
+				neigh(j) = 6 - (internalTri[j] - 1);
+				//neigh(j) = adj[current_edge_vertices(j)].size() - (internalTri[j] - 1);
 				//if (neigh(j) > 6) {
 				//	std::cout << "\nCheck neigh:\n" << current_edge_vertices(j) << " - " << adj[current_edge_vertices(j)].size() << " " << internalTri[j];
 				//	std::cout << "\n\nF2: " << F2.transpose();
@@ -268,7 +294,7 @@ namespace cellogram {
 		int nPolygon = region_boundary.size(); // length of current edge
 
 		// update triangle indices in region_triangles
-		find_triangles(F);
+		//find_triangles(F);
 		// for each region the belonging triangles need to be extracted and duplicates removed
 		
 		Eigen::MatrixXi F2 = get_triangulation(F);
@@ -329,12 +355,11 @@ namespace cellogram {
 		////
 
 		// Check whether vertices inside region is equal to the ones expected
-		if (verbose && s.Vperfect.rows() < s.Vdeformed.rows()) {
-			std::cout << "Region is missing point(s)\n";
-			std::cout << "Matching " << s.Vdeformed.rows() << " deformed points to " << s.Vperfect.rows() << " relaxed points.\n";
-			std::cout << "Remove manually\n";
-			// no solution possible
-			return NO_SOLUTION;
+		if (s.Vperfect.rows() > s.Vdeformed.rows()) {
+			return TOO_FEW_VERTICES;
+		}
+		else if (s.Vperfect.rows() < s.Vdeformed.rows()) {
+			return TOO_MANY_VERTICES;
 		}
 
 		// Generate adjacency matrix and the laplacian
@@ -357,8 +382,8 @@ namespace cellogram {
 			return NO_SOLUTION;
 		}
 
-		std::cout << "\ng.resultX\n" << g.resultX << std::endl;
-		std::cout << "\nq.IDX\n" << q.IDX << std::endl;
+		//std::cout << "\ng.resultX\n" << g.resultX << std::endl;
+		//std::cout << "\nq.IDX\n" << q.IDX << std::endl;
 
 		// Map back to indices of coordinates
 		q.mapBack(g.resultX);
@@ -385,7 +410,7 @@ namespace cellogram {
 		Eigen::SparseMatrix<double> permutation(n_points, n_points);
 		permutation.setFromTriplets(permutation_triplets.begin(), permutation_triplets.end());
 
-		std::cout << Eigen::MatrixXd(permutation) << std::endl;
+		//std::cout << Eigen::MatrixXd(permutation) << std::endl;
 		
 		//std::cout << "\nDef: \n" << s.Vdeformed;
 		//std::cout << "\nPerf: \n" << s.Vperfect;
@@ -445,6 +470,101 @@ namespace cellogram {
 		{
 			region_interior(j) = internal[j];
 		}
+	}
+
+	void Region::delete_vertex(Mesh &mesh, const int index)
+	{
+		int n = region_interior.rows();
+		Eigen::VectorXi V_new(n - 1);
+		int i;
+		for (i = 0; i < n; i++)
+		{
+			if (region_interior(i) == index)
+			{
+				removeRow(region_interior, i);
+				break;
+			}
+		}
+
+
+		Eigen::VectorXi local2global;
+		local_to_global(local2global);
+
+		// retriangulate region
+		Eigen::MatrixXd boundary_V(region_boundary.size(), mesh.points.cols());
+		Eigen::MatrixXd internal_V(region_interior.size(),mesh.points.cols());
+
+		for (int i = 0; i < region_interior.size(); i++)
+		{
+			internal_V.row(i) = mesh.points.row(region_interior(i));
+		}
+		for (int i = 0; i < region_boundary.size(); i++)
+		{
+			boundary_V.row(i) = mesh.points.row(region_boundary(i));
+		}
+		
+		// TODO fill boundary_V 
+		Eigen::MatrixXi new_triangles;
+
+		Eigen::MatrixXi E, WE;
+		Eigen::VectorXi J;
+
+		int nn = (int)boundary_V.rows();
+		E.resize(nn, 2);
+		for (int i = 0; i < nn; ++i) {
+			E.row(i) << i, (i + 1) % nn;
+		}
+		Eigen::MatrixXd all_points(boundary_V.rows() + internal_V.rows(), 3);
+		all_points << boundary_V, internal_V;
+		Eigen::MatrixXd PV = all_points.leftCols<2>();
+
+
+		Eigen::MatrixXd dummy;
+		//VpqYYS0
+		igl::triangle::triangulate(PV, E, MatrixXd(0, 2), "QpqYYS0", dummy, new_triangles);
+		//asd.conservativeResize(asd.rows(), 3);
+		//asd.col(2).setZero();
+
+		//std::cout << boundary_V << std::endl;
+		//std::cout << new_triangles << std::endl;
+		//std::cout << PV << std::endl;
+
+		//igl::opengl::glfw::Viewer viewer;
+		//viewer.data().set_mesh(asd, new_triangles);
+		////viewer.data().add_points(asd, Eigen::RowVector3d(1, 0, 0));
+		//viewer.data().add_points(PV, Eigen::RowVector3d(1, 1, 0));
+		//for (int i = 0; i < n; ++i) {
+		//	viewer.data().add_edges(PV.row(E(i, 0)), PV.row(E(i, 1)), Eigen::RowVector3d(1, 0, 0));
+		//}
+		//viewer.launch();
+
+
+		mesh.local_update(local2global, index, new_triangles);
+		find_triangles(mesh.triangles);
+	}
+
+	void Region::triangluate_region()
+	{
+	}
+
+	void Region::local_to_global(Eigen::VectorXi & local2global)
+	{
+		const int n_region_boundary = region_boundary.size();
+		const int n_region_interior = region_interior.size();
+		//add this into the region
+		local2global.resize(n_region_boundary + n_region_interior);
+
+		for (int i = 0; i < n_region_boundary; i++)
+		{
+			const int global_index = region_boundary[i];
+			local2global(i) = global_index;
+		}
+		for (int i = 0; i < n_region_interior; i++)
+		{
+			const int global_index = region_interior[i];
+			local2global(i + n_region_boundary) = global_index;
+		}
+
 	}
 
 	

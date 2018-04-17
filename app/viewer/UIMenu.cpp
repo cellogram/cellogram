@@ -155,7 +155,7 @@ void UIState::draw_custom_window() {
 		float p = ImGui::GetStyle().FramePadding.x;
 		if (ImGui::Button("Current pos", ImVec2((w - p) / 2.f, 0))) {
 			Eigen::VectorXd current_laplace_energy;
-			laplace_energy(state.points, state.triangles, current_laplace_energy);
+			laplace_energy(state.mesh.points, state.mesh.triangles, current_laplace_energy);
 			igl::parula(current_laplace_energy, true, mesh_color);
 
 			// update UI
@@ -165,7 +165,7 @@ void UIState::draw_custom_window() {
 		ImGui::SameLine(0, p);
 		if (ImGui::Button("Original pos", ImVec2((w - p) / 2.f, 0))) {
 			Eigen::VectorXd original_laplace_energy;
-			laplace_energy(state.detected, state.triangles, original_laplace_energy);
+			laplace_energy(state.mesh.detected, state.mesh.triangles, original_laplace_energy);
 			igl::parula(original_laplace_energy, true, mesh_color);
 
 			// update UI
@@ -229,7 +229,6 @@ void UIState::draw_custom_window() {
 	if (ImGui::CollapsingHeader("Phases", ImGuiTreeNodeFlags_DefaultOpen)) {
 		if (ImGui::Button("build regions")) {
 			state.detect_bad_regions();
-			state.fix_regions();
 			
 			show_points = false;
 			show_bad_regions = true;
@@ -249,6 +248,13 @@ void UIState::draw_custom_window() {
 
 		if (ImGui::Button("grow regions")) {
 			state.grow_regions();			
+
+			igl::jet(create_region_label(), true, mesh_color);
+
+			viewer_control();
+		}
+		if (ImGui::Button("fix regions")) {
+			state.fix_regions();
 
 			igl::jet(create_region_label(), true, mesh_color);
 
@@ -279,9 +285,10 @@ void UIState::draw_custom_window() {
 	}
 	if (ImGui::Button("Solve Selected", ImVec2(-1, 0))) {
 		state.resolve_region(selected_region);
+
+		selected_region = -1;
 		igl::jet(create_region_label(), true, mesh_color);
 		viewer_control();
-		selected_region = -1;
 	}
 	if (ImGui::Button("Delete Vertex", ImVec2(-1, 0))) {
 		delete_vertex = true;
@@ -290,6 +297,20 @@ void UIState::draw_custom_window() {
 	if (ImGui::Button("Add Vertex", ImVec2(-1, 0))) {
 		add_vertex = true;
 	}
+	ImGui::InputInt("Param", &selected_param);
+	if (ImGui::Button("Color Code", ImVec2(-1, 0))) {
+		// determine color map for interior vertices
+		color_code = true;
+		show_points = true;
+		viewer_control();
+	}
+	if (ImGui::Button("Split region", ImVec2(-1, 0))) {
+		// select vertices and mark them as good permenantly
+		make_vertex_good = true;
+		viewer_control();
+	}
+
+
 	ImGui::End();
 
 

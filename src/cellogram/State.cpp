@@ -1,52 +1,21 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "State.h"
 
-#include <cellogram/load_points.h>
-#include <cellogram/load_points.h>
 #include <cellogram/convex_hull.h>
-#include <cellogram/delaunay.h>
+
 #include <cellogram/voronoi.h>
 
 #include <cellogram/laplace_energy.h>
 #include <cellogram/tri2hex.h>
-#include <cellogram/vertex_degree.h>
 #include <cellogram/region_grow.h>
+#include <cellogram/PolygonUtils.h>
 
 #include <igl/slice.h>
+#include <igl/list_to_matrix.h>
+#include <igl/point_in_poly.h>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
-
-	namespace
-	{
-		void removeRow(Eigen::MatrixXi& matrix, unsigned int rowToRemove)
-		{
-			unsigned int numRows = matrix.rows() - 1;
-			unsigned int numCols = matrix.cols();
-
-			if (rowToRemove < numRows)
-				matrix.block(rowToRemove, 0, numRows - rowToRemove, numCols) = matrix.bottomRows(numRows - rowToRemove);
-
-			matrix.conservativeResize(numRows, numCols);
-		}
-
-		void replaceTriangles(const Eigen::MatrixXi tNew, const Eigen::MatrixXi &to_remove, Eigen::MatrixXi &triangles)
-		{
-			std::vector<int> removeIdx(to_remove.data(), to_remove.data() + to_remove.rows() * to_remove.cols());
-			std::sort(removeIdx.begin(), removeIdx.end());
-			// remove all the triangles that connect to the internal of ROI
-			for (int i = removeIdx.size() - 1; i >= 0; i--)
-			{
-				removeRow(triangles, removeIdx[i]);
-			}
-
-			// add new rows at the end of triangles
-			Eigen::MatrixXi tmp = triangles;
-			triangles.resize(triangles.rows() + tNew.rows(), triangles.cols());
-
-			triangles << tmp, tNew;
-		}
-	}
 
 	// -----------------------------------------------------------------------------
 
@@ -55,28 +24,42 @@ namespace cellogram {
 		return instance;
 	}
 
+
+
+	int State::find_region_by_vertex(const int index)
+	{
+		for(int i = 0; i < regions.size(); i++)
+		{
+			for (int j = 0; j < regions[i].region_interior.rows(); j++)
+			{
+				if (regions[i].region_interior(j) == index)
+				{
+					int region_index = i;
+					return region_index;
+				}
+			}
+		}
+		return -1;
+	}
+	
+
 	// -----------------------------------------------------------------------------
 
 	bool State::load(const std::string & path)
 	{
-		if (path.empty()) { return false; }
 		// clear previous
-		detected.resize(0,0); // detected (unmoved) point positions
-		points.resize(0, 0); // relaxed point positions
-		triangles.resize(0, 0); // triangular mesh
-		adj.clear(); // adjaceny list of triangluar mesh
-		boundary.resize(0); // list of vertices on the boundary
 		hull_vertices.resize(0, 0); //needed for lloyd
 		hull_faces.resize(0,0);
 		hull_polygon.resize(0, 0);
 		regions.clear();
 
 		// Load points
-		load_points(path, detected);
-		points = detected;
-		compute_triangulation();
+		return mesh.load(path);
+	}
 
-		return true;
+	bool State::load_param(const std::string & path)
+	{
+		return mesh.load_params(path);
 	}
 
 	bool State::save(const std::string & path)
@@ -87,40 +70,57 @@ namespace cellogram {
 	void State::compute_hull()
 	{
 		//convex_hull(points, boundary);
-		loose_convex_hull(detected, boundary);
-		int dims = (int)detected.cols();
+		loose_convex_hull(mesh.detected, mesh.boundary);
+		int dims = (int)mesh.detected.cols();
 
 
 		// Compute polygon of the convex hull
-		Eigen::VectorXi I = boundary;
+		Eigen::VectorXi I = mesh.boundary;
 		Eigen::VectorXi J = Eigen::VectorXi::LinSpaced(dims, 0, dims - 1);
 
-		igl::slice(detected, I, J, hull_polygon);
+		igl::slice(mesh.detected, I, J, hull_polygon);
 
 		// Offset by epsilon
 		// offset_polygon(hull_polygon, hull_polygon, 1);
 
 		// Draw filled polygon
-		// triangulate_convex_polygon(hull_polygon, hull_vertices, hull_faces);
+		//triangulate_convex_polygon(hull_polygon, hull_vertices, hull_faces);
 		triangulate_polygon(hull_polygon, hull_vertices, hull_faces);
 	}
 
-	void State::compute_triangulation()
+	void State::clean_hull()
 	{
-		delaunay_triangulation(points, triangles);
-
-		// Calculate the graph adjancency
-		adjacency_list(triangles, adj);
+		// Find and delete the vertices outside of the hull
+		//std::vector<int> ind;
+		//for (int i = 0; i < points.rows(); i++)
+		//{
+		//	//bool is_on_hull = false;
+		//	//for (int j = 0; j < hull_index.rows(); j++)
+		//	//{
+		//	//	if (i == hull_index(j))
+		//	//	{
+		//	//		is_on_hull = true;
+		//	//	}
+		//	//}
+		//	//if (!is_on_hull)
+		//	//{
+		//		if (!is_inside(hull_vertices, mesh.detected(i, 0), mesh.detected(i, 1)))
+		//		{
+		//			std::cout << mesh.detected(i, 0) << " " << mesh.detected(i, 1) << "\n";
+		//			ind.push_back(i);
+		//		}
+		//	//}
+		//}
+		//for (int i = ind.size(); i > 0; i--)
+		//{
+		//	delete_vertex(ind[i-1]);
+		//}
 	}
 
 	void State::relax_with_lloyd()
 	{
 		//reset the state
-		points = detected;
-		compute_triangulation();
-
-		lloyd_relaxation(points, boundary, lloyd_iterations, hull_vertices, hull_faces);
-		compute_triangulation();
+		mesh.relax_with_lloyd(lloyd_iterations, hull_vertices, hull_faces);
 	}
 
 	void State::detect_bad_regions()
@@ -131,12 +131,12 @@ namespace cellogram {
 
 		// Calculate the laplacian energy with respect to the original positions
 		Eigen::VectorXd energy;
-		laplace_energy(detected, triangles, energy); //any other energy?
+		laplace_energy(mesh.detected, mesh.triangles, energy); //any other energy?
 		//laplace_energy(points, triangles, energy);
 
 		// Find the degree of each vertex
 		Eigen::VectorXi degree;
-		vertex_degree(triangles, degree);
+		mesh.vertex_degree(degree);
 
 		// Determine whether each vertex passes the criterium for bad mesh
 		double avg = energy.mean();
@@ -151,37 +151,42 @@ namespace cellogram {
 		}
 
 		// boundaries of the image must not be considered bad, but instead used to enclose regions inside the image
-		for (int i = 0; i < boundary.size(); i++)
+		for (int i = 0; i < mesh.boundary.size(); i++)
 		{
-			crit_pass(boundary(i)) = false;
+			crit_pass(mesh.boundary(i)) = false;
+		}
+
+		// vertices manually picked as good must be removed from bad
+		for (int i = 0; i < fixed_as_good.size(); i++)
+		{
+			crit_pass(fixed_as_good[i]) = false;
 		}
 
 		// Find connected regions where the criterium was not passed
 
 		//maybe avoid regions id, fill directly region_vertices and use in the next method
 		Eigen::VectorXi regions_id;
-		region_grow(adj, crit_pass, regions_id);
+		region_grow(mesh.adj, crit_pass, regions_id);
 		int n_regions = regions_id.maxCoeff();
 
 		regions.resize(n_regions);
 		for (int i = 0; i < n_regions; ++i)
 		{
 			regions[i].find_points(regions_id, i + 1);
-			regions[i].find_triangles(triangles, regions_id, i + 1);
+			regions[i].find_triangles(mesh.triangles, regions_id, i + 1);
 		}
 
 		for (auto & r : regions)
 		{
-			r.bounding(triangles, points);
+			r.bounding(mesh.triangles, mesh.points);
 
-			r.fix_missing_points(triangles);
+			r.fix_missing_points(mesh.triangles);
 		}
 
-
-
+		erase_small_regions();
 	}
 
-	void State::fix_regions()
+	void State::erase_small_regions()
 	{
 		counter_small_region = 0;
 		//first remove/grow the ones with too small
@@ -200,19 +205,64 @@ namespace cellogram {
 		}
 
 
-		//grow the ones with wong valency
+		//grow the ones with wrong valency
 		//split the big ones
+	}
+
+	void State::fix_regions()
+	{
+		bool must_continue = true;
+
+		std::vector<int> to_remove;
+		// loop through remaining regions and act depending on status
+		for (auto & r : regions)
+		{
+			// If too many vertices are in the region, find the least likely to be correct and remove
+			if (r.status == Region::TOO_MANY_VERTICES)
+			{
+				int n = r.region_interior.rows();
+				Eigen::VectorXd x_pstd(n), y_pstd(n), pval_Ar(n);
+				for (int i = 0; i < r.region_interior.size(); i++)
+				{
+					x_pstd(i) = mesh.params(r.region_interior(i), 5);
+					y_pstd(i) = mesh.params(r.region_interior(i), 6);
+					pval_Ar(i) = mesh.params(r.region_interior(i), 15);
+				}
+				int xMax, yMax, pMax;
+				x_pstd.maxCoeff(&xMax);
+				y_pstd.maxCoeff(&yMax);
+				pval_Ar.maxCoeff(&pMax);
+
+				if (xMax == yMax && xMax == pMax)
+				{
+					int ind = r.region_interior(xMax);
+					to_remove.push_back(ind);
+
+					// pop and rebuild current region
+					// solve rebuilt region
+				}
+			}
+		}
+
+
+		std::sort(to_remove.begin(), to_remove.end());
+
+		for (int i = to_remove.size() - 1; i >= 0; --i)
+		{
+			delete_vertex(to_remove[i]);
+		}
+		resolve_regions();
 	}
 
 
 	void State::grow_region(const int index)
 	{
-		regions[index].grow(points, triangles);
+		regions[index].grow(mesh.points, mesh.triangles);
 	}
 
 	void State::grow_regions()
 	{
-		Eigen::Matrix<bool, 1, Eigen::Dynamic> crit_pass(points.rows());
+		Eigen::Matrix<bool, 1, Eigen::Dynamic> crit_pass(mesh.points.rows());
 		crit_pass.setConstant(false);
 		for (int j = 0; j < regions.size(); j++)
 		{
@@ -234,19 +284,19 @@ namespace cellogram {
 
 		//maybe avoid regions id, fill directly region_vertices and use in the next method
 		Eigen::VectorXi regions_id;
-		region_grow(adj, crit_pass, regions_id);
+		region_grow(mesh.adj, crit_pass, regions_id);
 		int n_regions = regions_id.maxCoeff();
 
 		regions.resize(n_regions);
 		for (int i = 0; i < n_regions; ++i)
 		{
 			regions[i].find_points(regions_id, i + 1);
-			regions[i].find_triangles(triangles, regions_id, i + 1);
+			regions[i].find_triangles(mesh.triangles, regions_id, i + 1);
 		}
 
 		for (auto & r : regions)
 		{
-			r.bounding(triangles, points);
+			r.bounding(mesh.triangles, mesh.points);
 		}
 	}
 
@@ -264,7 +314,8 @@ namespace cellogram {
 
 		auto &region = regions[index];
 
-		auto state = region.resolve(detected, points, triangles, adj, perm_possibilities, new_points, new_triangles);
+		auto state = region.resolve(mesh.detected, mesh.points, mesh.triangles, mesh.adj, perm_possibilities, new_points, new_triangles);
+		region.status = state;
 		//gurobi r
 		if (state == Region::NOT_PROPERLY_CLOSED)
 		{
@@ -279,47 +330,19 @@ namespace cellogram {
 
 		// Map q.T back to global indices
 		assert(region.region_boundary.size() + region.region_interior.size() == new_points.rows());
-		std::cout << new_points << std::endl;
-		const int n_region_boundary = region.region_boundary.size();
-		const int n_region_interior = region.region_interior.size();
 
-		Eigen::VectorXi local_to_global(n_region_boundary + n_region_interior);
+		//add this into the region
+		Eigen::VectorXi local_to_global;
+		region.local_to_global(local_to_global);
 
-		for (int i = 0; i < n_region_boundary; i++)
-		{
-			const int global_index = region.region_boundary[i];
-			local_to_global(i) = global_index;
-			points.row(global_index) = new_points.row(i);
-
-		}
-		for (int i = 0; i < n_region_interior; i++)
-		{
-			const int global_index = region.region_interior[i];
-			local_to_global(i + n_region_boundary) = global_index;
-			points.row(global_index) = new_points.row(i + n_region_boundary);
-		}
-
-
-		Eigen::MatrixXi tGlobal = Eigen::MatrixXi(new_triangles.rows(), 3);
-		for (int i = 0; i < new_triangles.rows(); i++)
-		{
-			for (int j = 0; j < 3; j++)
-			{
-				tGlobal(i, j) = local_to_global(new_triangles(i, j));
-			}
-
-		}
-
-		replaceTriangles(tGlobal, region.region_triangles, triangles);
+		mesh.local_update(local_to_global, new_points, new_triangles, region.region_triangles);
 
 		counter_solved_regions++;
-
-		adjacency_list(triangles, adj);
 
 		regions.erase(regions.begin() + index);
 
 		for (auto &r : regions)
-			r.find_triangles(triangles);
+			r.find_triangles(mesh.triangles);
 	}
 
 	void State::resolve_regions()
@@ -333,15 +356,15 @@ namespace cellogram {
 
 		// loop through all the boundaries and solve individually. Possibly skip first one, as it's the boundary of the image
 		auto it = regions.begin();
-		++it; //skip the first one, Tobi knows why
 		while (it != regions.end())
 		{
 			//remove from regions all the solved one
 			//grow the others and regurobi the regions max 4 time
 
 			auto &region = *it;
-
-			auto state = region.resolve(detected, points, triangles, adj, perm_possibilities, new_points, new_triangles);
+			region.find_triangles(mesh.triangles);
+			auto state = region.resolve(mesh.detected, mesh.points, mesh.triangles, mesh.adj, perm_possibilities, new_points, new_triangles);
+			region.status = state;
 			//gurobi r
 			if (state == Region::NOT_PROPERLY_CLOSED)
 			{
@@ -366,76 +389,63 @@ namespace cellogram {
 
 			// Map q.T back to global indices
 			assert(region.region_boundary.size() + region.region_interior.size() == new_points.rows());
-			const int n_region_boundary = region.region_boundary.size();
-			const int n_region_interior = region.region_interior.size();
+			
 
-			Eigen::VectorXi local_to_global(n_region_boundary + n_region_interior);
+			Eigen::VectorXi local_to_global;
+			region.local_to_global(local_to_global);
 
-			for (int i = 0; i < n_region_boundary; i++)
-			{
-				const int global_index = region.region_boundary[i];
-				local_to_global(i) = global_index;
-				points.row(global_index) = new_points.row(i);
-
-			}
-			for (int i = 0; i < n_region_interior; i++)
-			{
-				const int global_index = region.region_interior[i];
-				local_to_global(i + n_region_boundary) = global_index;
-				points.row(global_index) = new_points.row(i + n_region_boundary);
-			}
-
-
-			Eigen::MatrixXi tGlobal = Eigen::MatrixXi(new_triangles.rows(), 3);
-			for (int i = 0; i < new_triangles.rows(); i++)
-			{
-				for (int j = 0; j < 3; j++)
-				{
-					tGlobal(i, j) = local_to_global(new_triangles(i, j));
-				}
-
-			}
-
-			replaceTriangles(tGlobal, region.region_triangles, triangles);
-
+			mesh.local_update(local_to_global, new_points, new_triangles, region.region_triangles);
 
 			it = regions.erase(it);
 			counter_solved_regions++;
 		}
 
-		adjacency_list(triangles, adj);
-
 		for (auto &r : regions)
-			r.find_triangles(triangles);
+			r.find_triangles(mesh.triangles);
+	}
+
+	void State::final_relax()
+	{
 	}
 
 	void State::delete_vertex(const int index)
 	{
-		Eigen::MatrixXd tmp(detected.rows() - 1, detected.cols());
-		tmp.block(0, 0, index, detected.cols()) = detected.block(0, 0, index, detected.cols());
-		tmp.block(index, 0, tmp.rows() - index, detected.cols()) = detected.block(index+1, 0, tmp.rows() - index, detected.cols());
 
-		detected = tmp;
-		points = detected;
-		compute_triangulation();
-		compute_hull();
+		if (regions.empty())
+		{
+			mesh.delete_vertex(index, true);
+			//maybe recompute the hull
+		}
+		else
+		{
+			//find the region 
+			int region_ind = find_region_by_vertex(index);
+			if (region_ind == -1)
+			{
+				regions.clear();
+				delete_vertex(index);
+				return;
+			}
+			//and call region.delete_vertex(index) which calls the new local_update of mesh
+			//the region delete vertex shold get the local id of the vertex compute the local2global without that vertex and retriangulate the region
+			regions[region_ind].delete_vertex(mesh,index);
+
+			detect_bad_regions();
+		}
+
+		// maybe clear regions and recompute hull
 	}
 
 	void State::add_vertex(Eigen::Vector3d new_point)
 	{
-		Eigen::MatrixXd tmp(detected.rows() + 1, detected.cols());
-		tmp.block(0, 0, detected.rows(), detected.cols()) = detected;
-		//tmp.block(detected.rows(), 0, 1, detected.cols()) = new_point.transpose();
-		tmp.row(detected.rows()) = new_point.transpose();
+		mesh.add_vertex(new_point);		
+	}
 
-		std::cout << tmp << std::endl;
-		std::cout << "\nNew point:\n" << new_point.transpose() << std::endl;
-
-		//detected.resizeLike(tmp);
-		//points.resizeLike(tmp);
-		detected = tmp;
-		points = detected;
-		compute_triangulation();
+	void State::reset_state()
+	{
+		fixed_as_good.clear();
+		mesh.reset();
+		regions.clear();
 		compute_hull();
 	}
 

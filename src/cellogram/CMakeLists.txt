@@ -15,6 +15,8 @@ set(source_list
 	laplace_energy.h
 	load_points.cpp
 	load_points.h
+	Mesh.cpp
+	Mesh.h
 	MeshUtils.cpp
 	MeshUtils.h
 	navigation.cpp

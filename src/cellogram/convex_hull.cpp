@@ -189,7 +189,7 @@ void triangulate_polygon(const Eigen::MatrixXd &P, Eigen::MatrixXd &V, Eigen::Ma
 	for (int i = 0; i < n; ++i) {
 		E.row(i) << i, (i+1)%n;
 	}
-	igl::triangle::cdt(PV, E, "", V, F, WE, J);
+	igl::triangle::cdt(PV, E, "Q", V, F, WE, J);
 	if (P.cols() == 3) {
 		V.conservativeResize(V.rows(), 3);
 	}

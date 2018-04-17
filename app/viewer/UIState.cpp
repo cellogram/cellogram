@@ -4,7 +4,7 @@
 #include <cellogram/PolygonUtils.h>
 #include <igl/colon.h>
 #include <igl/unproject_onto_mesh.h>
-#include <igl/jet.h>
+#include <igl/colormap.h>
 #include <igl/png/readPNG.h>
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -39,7 +39,7 @@ void UIState::initialize() {
 
 	viewer.callback_mouse_down = [&](igl::opengl::glfw::Viewer& viewer, int, int)->bool
 	{
-		if (!select_region && !add_vertex && !delete_vertex)
+		if (!select_region && !add_vertex && !delete_vertex && !make_vertex_good)
 			return false;
 
 		int fid;
@@ -47,8 +47,10 @@ void UIState::initialize() {
 		bool found = false;
 		double x = viewer.current_mouse_x;
 		double y = viewer.core.viewport(3) - viewer.current_mouse_y;
+		Eigen::MatrixXd V = t * state.mesh.points + (1 - t) * state.mesh.detected;
+
 		if (igl::unproject_onto_mesh(Eigen::Vector2f(x, y), viewer.core.view * viewer.core.model,
-			viewer.core.proj, viewer.core.viewport, state.points, state.triangles, fid, bc))
+			viewer.core.proj, viewer.core.viewport, V, state.mesh.triangles, fid, bc))
 		{
 			std::cout << fid << " " << bc.transpose() << std::endl;
 			found = true;
@@ -83,14 +85,14 @@ void UIState::initialize() {
 			double xNew = 0, yNew = 0, zNew = 0;
 			for (int i = 0; i < 3; i++)
 			{
-				xNew += bc(i) * state.points(state.triangles(fid, i), 0);
-				yNew += bc(i) * state.points(state.triangles(fid, i), 1);
+				xNew += bc(i) * V(state.mesh.triangles(fid, i), 0);
+				yNew += bc(i) * V(state.mesh.triangles(fid, i), 1);
 				zNew += 0;
 			}
 			state.add_vertex(Eigen::Vector3d(xNew,yNew,zNew));
+			state.reset_state();
+			reset_viewer();
 			viewer_control();
-
-			std::cout << "\nDetect\n:" << state.detected.row(state.detected.rows()-1) << std::endl;
 		}
 		else if (delete_vertex)
 		{
@@ -107,9 +109,29 @@ void UIState::initialize() {
 				}
 			}
 			//std::cout << "\n max\n" <<  maxBC;
-			vid = state.triangles(fid, maxBC);
+			vid = state.mesh.triangles(fid, maxBC);
 			state.delete_vertex(vid);
+			//state.reset_state();
+			reset_viewer();
 			viewer_control();
+		}
+		else if (make_vertex_good)
+		{
+			make_vertex_good = false;
+			// find maximum barycenter coordinates and get vertex id
+			int vid;
+			int maxBC = 0;
+			double maxBCVal = bc(maxBC);
+			for (int i = 1; i < 3; i++)
+			{
+				if (maxBCVal < bc(i)) {
+					maxBC = i;
+					maxBCVal = bc(i);
+				}
+			}
+			//std::cout << "\n max\n" <<  maxBC;
+			vid = state.mesh.triangles(fid, maxBC);
+			state.fixed_as_good.push_back(vid);
 		}
 		return false;
 	};
@@ -164,28 +186,29 @@ bool UIState::load(std::string name) {
 	img.resize(0, 0);
 	// reset flags
 
-	mesh_color.resize(0,0);
-	bool show_hull = false;
-	bool image_loaded = false;
-	bool show_points = false;
-	bool show_mesh_fill = true;
-	bool show_image = false;
-	bool show_matching = false;
-	bool show_bad_regions = false;
+	mesh_color.resize(1,3);
+	mesh_color.row(0) = Eigen::RowVector3d(255, 255, 120) / 255.0;
+	reset_viewer();
 
 	// Show points and align camera
 	points_data().clear();
-	points_data().set_points(state.points, Eigen::RowVector3d(1, 0, 0));
-	viewer.core.align_camera_center(state.points);
-	double extent = (state.points.colwise().maxCoeff() - state.points.colwise().minCoeff()).maxCoeff();
+	points_data().set_points(state.mesh.points, Eigen::RowVector3d(1, 0, 0));
+	viewer.core.align_camera_center(state.mesh.points);
+	double extent = (state.mesh.points.colwise().maxCoeff() - state.mesh.points.colwise().minCoeff()).maxCoeff();
 	points_data().point_size = float(0.008 * extent);
 	fix_color(points_data());
 
 	// Compute and show convex hull + triangulation
 	compute_hull();
+	//clean_hull();
 	compute_triangulation();
 	viewer_control();
 	return true;
+}
+
+bool UIState::load_param(std::string name)
+{
+	return state.load_param(name);
 }
 
 bool UIState::save(std::string name) {
@@ -215,14 +238,34 @@ void UIState::compute_hull() {
 	show_hull = true;
 }
 
+void UIState::clean_hull() {
+	// State
+	state.clean_hull();
+}
+
 // -----------------------------------------------------------------------------
 
 void UIState::compute_triangulation() {
 	// State
-	state.compute_triangulation();
+	//state.compute_triangulation();
 
 	// UI
 	show_points = true;
+}
+
+void UIState::reset_viewer()
+{
+	// Display flags
+	float t;
+	Eigen::RowVector3d vertex_color = Eigen::RowVector3d(1, 0, 0);
+	Eigen::MatrixXd mesh_color;
+	bool show_hull = false;
+	bool image_loaded = false;
+	bool show_points = false;
+	bool show_mesh_fill = true;
+	bool show_image = false;
+	bool show_matching = false;
+	bool show_bad_regions = false;
 }
 
 //TODO refactor when more clear
@@ -230,6 +273,7 @@ void UIState::load_image(std::string fname) {
 	Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> G, B, A; // Image
 	igl::png::readPNG(fname, img, G, B, A);
 	
+	show_mesh_fill = false;
 	image_loaded = true;
 	show_image = true;
 
@@ -296,9 +340,9 @@ void UIState::viewer_control()
 	}
 
 	// points
-	Eigen::MatrixXd V = t * state.points + (1 - t) * state.detected;
-	points_data().set_mesh(V, state.triangles);
-	if (image_loaded)
+	Eigen::MatrixXd V = t * state.mesh.points + (1 - t) * state.mesh.detected;
+	points_data().set_mesh(V, state.mesh.triangles);
+	/*if (image_loaded)
 	{
 		Eigen::MatrixXd UV(state.detected.rows(), 2);
 		UV.col(0) = state.detected.col(0) / img.rows();
@@ -308,7 +352,7 @@ void UIState::viewer_control()
 		points_data().set_uv(UV);
 		points_data().set_texture(img, img, img);
 		points_data().set_colors(Eigen::RowVector3d(1, 1, 1));
-	}
+	}*/
 	if (show_points)
 	{
 		if (state.regions.empty())
@@ -320,23 +364,38 @@ void UIState::viewer_control()
 			C.col(1).setConstant(vertex_color(1));
 			C.col(2).setConstant(vertex_color(2));
 
-			for (auto &r : state.regions)
+			if (color_code)
 			{
-
-				for (int i = 0; i < r.region_boundary.size(); ++i)
+				Eigen::VectorXd param(V.rows());
+				for (int i = 0; i < V.rows(); i++)
 				{
-					C.row(r.region_boundary(i)) = Eigen::RowVector3d(0, 0, 1);
+					param(i) = state.mesh.params(i,selected_param);
 				}
-
-				for (int i = 0; i < r.region_interior.size(); ++i)
+				//igl::parula(param, true, C);
+				igl::ColorMapType cm = igl::ColorMapType::COLOR_MAP_TYPE_INFERNO;
+				igl::colormap(cm,param, true, C);
+			}
+			else 
+			{
+				for (auto &r : state.regions)
 				{
-					C.row(r.region_interior(i)) = Eigen::RowVector3d(0, 1, 0);
-				}
 
+					for (int i = 0; i < r.region_boundary.size(); ++i)
+					{
+						C.row(r.region_boundary(i)) = Eigen::RowVector3d(0, 0, 1);
+					}
+
+					for (int i = 0; i < r.region_interior.size(); ++i)
+					{
+						C.row(r.region_interior(i)) = Eigen::RowVector3d(0, 1, 0);
+					}
+
+				}
 			}
 
 
 			points_data().set_points(V, C);
+			
 		}
 	}
 
@@ -373,7 +432,7 @@ void UIState::viewer_control()
 	// matching
 	if (show_matching) {
 		matching_data().clear();
-		matching_data().add_edges(state.points, state.detected, Eigen::RowVector3d(0, 0, 0));
+		matching_data().add_edges(state.mesh.points, state.mesh.detected, Eigen::RowVector3d(0, 0, 0));
 		matching_data().line_width = 3.0;
 	}
 
@@ -388,8 +447,8 @@ void UIState::viewer_control()
 void UIState::draw_mesh()
 {
 	points_data().clear();
-	points_data().set_points(state.points, Eigen::RowVector3d(1, 0, 0));
-	points_data().set_mesh(state.points, state.triangles);
+	points_data().set_points(state.mesh.points, Eigen::RowVector3d(1, 0, 0));
+	points_data().set_mesh(state.mesh.points, state.mesh.triangles);
 
 	fix_color(points_data());
 }
@@ -406,7 +465,7 @@ void UIState::fix_color(igl::opengl::ViewerData &data) {
 
 Eigen::VectorXd UIState::create_region_label()
 {
-	Eigen::VectorXd regionD(state.points.rows());
+	Eigen::VectorXd regionD(state.mesh.points.rows());
 	regionD.setZero();
 	for (int i = 0; i < state.regions.size(); ++i)
 	{

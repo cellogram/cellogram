@@ -35,7 +35,7 @@ public:
 	int matching_id;
 
 	int selected_region = -1;
-
+	int selected_param = 0;
 	// UI options
 	// double foo;
 
@@ -50,11 +50,13 @@ public:
 	bool show_image = false;
 	bool show_matching = false;
 	bool show_bad_regions = false;
+	bool color_code = false;
 
 	// Clicking flags
 	bool select_region = false;
 	bool add_vertex = false;
 	bool delete_vertex = false;
+	bool make_vertex_good = false;
 
 	// Image
 	Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> img;
@@ -67,6 +69,7 @@ public:
 	igl::opengl::ViewerData & mesh_by_id(int id);
 
 	virtual bool load(std::string name) override;
+	bool load_param(std::string name);
 
 	virtual bool save(std::string name) override;
 
@@ -75,7 +78,11 @@ public:
 	void load_image(std::string name);
 	void display_image();
 	void compute_hull();
+	void clean_hull();
 	void compute_triangulation();
+
+
+	void reset_viewer();
 
 public:
 	igl::opengl::ViewerData & points_data() { return mesh_by_id(points_id); }
