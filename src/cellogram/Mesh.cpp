@@ -9,24 +9,18 @@
 #include <igl/list_to_matrix.h>
 
 #include <fstream>
+#include <Eigen/Sparse>
+
+#include <igl/opengl/glfw/Viewer.h>
+
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
 
 	namespace
 	{
-		void removeRow(Eigen::MatrixXi& matrix, unsigned int rowToRemove)
-		{
-			unsigned int numRows = matrix.rows() - 1;
-			unsigned int numCols = matrix.cols();
-
-			if (rowToRemove < numRows)
-				matrix.block(rowToRemove, 0, numRows - rowToRemove, numCols) = matrix.bottomRows(numRows - rowToRemove);
-
-			matrix.conservativeResize(numRows, numCols);
-		}
-
-		void removeRow(Eigen::MatrixXd& matrix, unsigned int rowToRemove)
+		template<typename T>
+		void removeRow(T& matrix, unsigned int rowToRemove)
 		{
 			unsigned int numRows = matrix.rows() - 1;
 			unsigned int numCols = matrix.cols();
@@ -47,12 +41,16 @@ namespace cellogram {
 				removeRow(triangles, removeIdx[i]);
 			}
 
+			std::cout << tNew << "\n\n" << std::endl;
+
 			// add new rows at the end of triangles
 			Eigen::MatrixXi tmp = triangles;
 			triangles.resize(triangles.rows() + tNew.rows(), triangles.cols());
 
 			triangles << tmp, tNew;
 		}
+
+		
 	}
 
 
@@ -64,11 +62,15 @@ namespace cellogram {
 		points.resize(0, 0); // relaxed point positions
 		triangles.resize(0, 0); // triangular mesh
 		adj.clear(); // adjaceny list of triangluar mesh
+		vertex_to_tri.clear();
 		boundary.resize(0); // list of vertices on the boundary
 
 		// Load points
 		load_points(path, detected);
 		points = detected;
+		solved_vertex.resize(points.rows(), 1);
+		solved_vertex.setConstant(false);
+
 		compute_triangulation();
 
 		// automatically load params if available
@@ -134,6 +136,7 @@ namespace cellogram {
 	{
 		// Delete vertex
 		removeRow(detected, index);
+		removeRow(solved_vertex, index);
 
 		// Delete entry in params
 		if (params.rows() > 0)
@@ -158,12 +161,9 @@ namespace cellogram {
 			removeRow(points, index);
 
 			// delete triangles
-			std::vector<int> ind;
-			for (int i = 0; i < triangles.rows(); i++)
-			{
-				if (triangles(i, 0) == index || triangles(i, 1) == index || triangles(i, 2) == index)
-					ind.push_back(i);
-			}
+			std::vector<int> ind, ind2;
+			ind = vertex_to_tri[index];
+
 			for (int i = ind.size()-1; i >= 0; i--)
 			{
 				removeRow(triangles,ind[i]);
@@ -178,6 +178,7 @@ namespace cellogram {
 				}
 			}
 			adjacency_list(triangles, adj);
+			generate_vertex_to_tri();
 		}
 	}
 
@@ -188,6 +189,13 @@ namespace cellogram {
 		tmp.block(0, 0, detected.rows(), detected.cols()) = detected;
 		tmp.row(detected.rows()) = new_point.transpose();
 		detected = tmp;
+
+		// Add new entry to solved_vertex
+		Eigen::Matrix<bool, Eigen::Dynamic,1> tmp_bool;
+		tmp_bool.resize(solved_vertex.rows()+1);
+		tmp_bool.block(0, 0, solved_vertex.rows(), solved_vertex.cols()) = solved_vertex;
+		tmp_bool(solved_vertex.rows()) = false;
+		solved_vertex = tmp_bool;
 
 		// Add zero row to params
 		if (params.rows() > 0)
@@ -222,6 +230,15 @@ namespace cellogram {
 		triangles << tmp, tGlobal;
 
 		adjacency_list(triangles, adj);
+		generate_vertex_to_tri();
+	}
+
+	void Mesh::mark_vertex_as_solved(const Eigen::VectorXi & region_interior)
+	{
+		for (int i = 0; i < region_interior.size(); i++)
+		{
+			solved_vertex(region_interior(i)) = true;
+		}
 	}
 
 	void Mesh::local_update(Eigen::VectorXi & local2global, Eigen::MatrixXd & new_points, Eigen::MatrixXi & new_triangles, Eigen::VectorXi & old_triangles)
@@ -246,6 +263,196 @@ namespace cellogram {
 		replaceTriangles(tGlobal, old_triangles, triangles);
 
 		adjacency_list(triangles, adj);
+		generate_vertex_to_tri();
+	}
+
+	void Mesh::final_relax()
+	{
+		int n = points.rows();
+		////Find vertices that have lower connectivity than 6
+		//Eigen::VectorXi neighCount = Eigen::VectorXi::Zero(n);
+
+		//for (size_t i = 0; i < triangles.rows(); i++)
+		//{
+		//	for (size_t j = 0; j < 3; j++)
+		//	{
+		//		neighCount(triangles(i, j))++;
+		//	}
+
+		//}
+
+		Eigen::VectorXi neighCount;
+		vertex_degree(neighCount);
+
+		//std::cout << neighCount.transpose() << std::endl;
+		//std::cout << degree.transpose() << std::endl;
+
+		// Determine fixed vertices based on connectivity and bounding box
+		Eigen::VectorXi indFixed = Eigen::VectorXi::Zero(n);
+
+		for (size_t i = 0; i < n; i++)
+		{
+			if (neighCount(i) != 6)
+			{
+				indFixed(i) = 1;
+			}
+		}
+		for (size_t i = 0; i < boundary.rows(); i++)
+		{
+			indFixed(boundary(i)) = 1;
+		}
+
+		////PLEASE USE ME 
+		//igl::opengl::glfw::Viewer viewer;
+
+		//viewer.data().set_mesh(points, triangles);
+		//Eigen::MatrixXd C(n, 3);
+		//for (int i = 0; i < indFixed.rows(); ++i) {
+		//	if(indFixed(i) == 1)
+		//		C.row(i) = Eigen::RowVector3d(1, 0, 0);
+		//	else
+		//		C.row(i) = Eigen::RowVector3d(0, 0, 0);
+		//}
+		//viewer.data().set_points(points, C);
+		//viewer.data().point_size = float(8);
+		//viewer.core.set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_NO_ROTATION);
+		//viewer.core.orthographic = true;
+		//viewer.core.is_animating = true;
+		//viewer.launch();
+
+
+		// Rearrange coordinates and triangle indices to have free vertices first...
+		//MatrixXd xRearranged = MatrixXd::Zero(n, 1);
+		Eigen::SparseVector<double> xRearranged(n);
+		Eigen::SparseVector<double> yRearranged(n);
+		Eigen::VectorXi indicesMapping = Eigen::VectorXi::Zero(n);
+		Eigen::MatrixXi trianglesRearranged = Eigen::MatrixXi::Zero(triangles.rows(), 3);
+
+
+		int c = 0;
+		for (size_t i = 0; i < n; i++)
+		{
+			if (indFixed(i) == 0)
+			{
+				indicesMapping(i) = c;
+				xRearranged.fill(c) = points(i, 0);
+				yRearranged.fill(c) = points(i, 1);
+
+				c++;
+			}
+		}
+		int nFree = c;
+
+		// and then the fixed vertices
+		for (size_t i = 0; i < n; i++)
+		{
+			if (indFixed(i) == 1)
+			{
+				indicesMapping(i) = c;
+				xRearranged.fill(c) = points(i, 0);
+				yRearranged.fill(c) = points(i, 1);
+
+				c++;
+			}
+		}
+
+		// rearrange triangles such that it is congruent with the newly arranged coordinates
+		for (size_t j = 0; j < triangles.rows(); j++)
+		{
+			for (size_t k = 0; k < 3; k++)
+			{
+				trianglesRearranged(j, k) = indicesMapping(triangles(j, k));
+			}
+		}
+
+		// Generate Laplacian
+		Eigen::VectorXd diag = Eigen::VectorXd::Zero(n);
+		Eigen::SparseMatrix<double> L(n, n);
+		typedef Eigen::Triplet<int> Trip;
+		std::vector< Trip > tripletList;
+		tripletList.reserve(n * 7);
+
+		for (size_t i = 0; i < trianglesRearranged.rows(); i++)
+		{
+			for (size_t j = 0; j < 3; j++)
+			{
+				tripletList.push_back(Trip(trianglesRearranged(i, j), trianglesRearranged(i, (j + 1) % 3), -1));
+				tripletList.push_back(Trip(trianglesRearranged(i, (j + 1) % 3), trianglesRearranged(i, j), -1));
+				diag(trianglesRearranged(i, j))++;
+			}
+		}
+
+		for (size_t i = 0; i < diag.rows(); i++)
+		{
+			tripletList.push_back(Trip(i, i, diag(i)));
+		}
+
+		L.setFromTriplets(tripletList.begin(), tripletList.end());
+
+		// Force all non-zeros to be one
+		for (int k = 0; k<L.outerSize(); ++k)
+		{
+			for (Eigen::SparseMatrix<double>::InnerIterator it(L, k); it; ++it)
+			{
+				if (it.value() < 0)
+				{
+					L.coeffRef(it.row(), it.col()) = -1;
+				}
+			}
+		}
+
+		// Solve for xNew and yNew
+		Eigen::SparseMatrix<double>  Li = L.block(0, 0, nFree, nFree);
+		Eigen::SparseMatrix<double>  Lb = L.block(0, nFree, nFree, L.rows() - nFree);
+
+		//SparseMatrix<int>  Lii = Li.inverse();
+		Eigen::SimplicialLDLT<Eigen::SparseMatrix<double> > solver;
+		solver.compute(Li);
+		if (solver.info() != Eigen::Success) {
+			// decomposition failed
+			return;
+		}
+
+		Eigen::SparseVector<double> xB(L.rows() - nFree);
+		Eigen::SparseVector<double> yB(L.rows() - nFree);
+		for (size_t i = 0; i < L.rows() - nFree; i++)
+		{
+			xB.fill(i) = xRearranged.coeffRef(nFree + i);
+			yB.fill(i) = yRearranged.coeffRef(nFree + i);
+		}
+		Eigen::SparseVector<double> tmp = -Lb * xB;
+
+		Eigen::VectorXd xNew = solver.solve(Eigen::VectorXd(tmp));
+
+		tmp = -Lb * yB;
+		Eigen::VectorXd yNew = solver.solve(Eigen::VectorXd(tmp));
+
+		// Overwrite the free vertices of xRearranged and yRearranged
+		for (size_t i = 0; i < nFree; i++)
+		{
+			xRearranged.coeffRef(i) = xNew(i);
+			yRearranged.coeffRef(i) = yNew(i);
+		}
+
+		// use indices mapping to overwrite "points" with the newly calculated coordinates
+		for (size_t i = 0; i < indicesMapping.rows(); i++)
+		{
+			points(i,0) = xRearranged.coeffRef(indicesMapping(i));
+			points(i,1) = yRearranged.coeffRef(indicesMapping(i));
+		}
+	}
+
+	void Mesh::generate_vertex_to_tri()
+	{
+		vertex_to_tri.clear();
+		vertex_to_tri.resize(points.rows());
+
+		for (int f = 0; f < triangles.rows(); ++f) {
+			for (int lv = 0; lv < triangles.cols(); ++lv)
+			{
+				vertex_to_tri[triangles(f, lv)].push_back(f);
+			}
+		}
 	}
 
 	void Mesh::reset()
@@ -260,6 +467,8 @@ namespace cellogram {
 
 		// Calculate the graph adjancency
 		adjacency_list(triangles, adj);
+		generate_vertex_to_tri();
+
 	}
 
 }// namespace cellogram

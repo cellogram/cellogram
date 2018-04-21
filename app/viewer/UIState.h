@@ -61,6 +61,7 @@ public:
 	// Image
 	Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> img;
 
+	std::string current_region_status;
 public:
 	void initialize();
 

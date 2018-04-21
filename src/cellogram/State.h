@@ -45,9 +45,13 @@ public:
 	void compute_hull();
 	void clean_hull();
 
+	Eigen::VectorXi increase_boundary(const Eigen::VectorXi &boundary);
+
 	void relax_with_lloyd();
 	void detect_bad_regions();
 	void erase_small_regions();
+	void check_regions();
+	void check_region(const int index);
 	void fix_regions();
 	void grow_region(const int index);
 	void grow_regions();

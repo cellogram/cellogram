@@ -117,6 +117,29 @@ namespace cellogram {
 		//}
 	}
 
+	Eigen::VectorXi State::increase_boundary(const Eigen::VectorXi &boundary)
+	{
+		std::vector<int> new_boundary;
+		for (int i = 0; i < boundary.size(); i++)
+		{
+			new_boundary.push_back(boundary(i));
+			for (int j = 0; j < mesh.adj[boundary(i)].size(); j++)
+			{
+				new_boundary.push_back(mesh.adj[boundary(i)][j]);
+			}
+		}
+
+		std::sort(new_boundary.begin(), new_boundary.end());
+		new_boundary.erase(std::unique(new_boundary.begin(), new_boundary.end()), new_boundary.end());
+
+		Eigen::VectorXi bboundary(new_boundary.size());
+		for (int i = 0; i < new_boundary.size(); i++)
+		{
+			bboundary(i) = new_boundary[i];
+		}
+		return bboundary;
+	}
+
 	void State::relax_with_lloyd()
 	{
 		//reset the state
@@ -151,9 +174,12 @@ namespace cellogram {
 		}
 
 		// boundaries of the image must not be considered bad, but instead used to enclose regions inside the image
-		for (int i = 0; i < mesh.boundary.size(); i++)
+		Eigen::VectorXi boundary = increase_boundary(mesh.boundary);
+		boundary = increase_boundary(boundary);
+
+		for (int i = 0; i < boundary.size(); i++)
 		{
-			crit_pass(mesh.boundary(i)) = false;
+			crit_pass(boundary(i)) = false;
 		}
 
 		// vertices manually picked as good must be removed from bad
@@ -161,6 +187,15 @@ namespace cellogram {
 		{
 			crit_pass(fixed_as_good[i]) = false;
 		}
+
+		// Don't find regions that have been solved
+		for (int i = 0; i < mesh.solved_vertex.size(); i++)
+		{
+			if (mesh.solved_vertex(i))
+				crit_pass(i) = false;
+		}
+
+
 
 		// Find connected regions where the criterium was not passed
 
@@ -176,11 +211,22 @@ namespace cellogram {
 			regions[i].find_triangles(mesh.triangles, regions_id, i + 1);
 		}
 
+		int index = 0;
 		for (auto & r : regions)
 		{
 			r.bounding(mesh.triangles, mesh.points);
 
-			r.fix_missing_points(mesh.triangles);
+			bool repeat = false;
+			do {
+				repeat = r.fix_missing_points(mesh.triangles);
+			} while (repeat);
+
+			repeat = false;
+			do {
+				repeat = r.add_orphaned_triangles(mesh);
+			} while (repeat);
+
+			++index;
 		}
 
 		erase_small_regions();
@@ -207,6 +253,20 @@ namespace cellogram {
 
 		//grow the ones with wrong valency
 		//split the big ones
+	}
+
+	void State::check_regions()
+	{
+		for (auto & r : regions)
+		{
+			r.status = r.check_region(mesh.detected, mesh.points, mesh.triangles, mesh.adj);
+			std::cout << r.status << std::endl;
+		}
+	}
+
+	void State::check_region(const int index)
+	{
+		regions[index].status = regions[index].check_region(mesh.detected, mesh.points, mesh.triangles, mesh.adj);
 	}
 
 	void State::fix_regions()
@@ -251,7 +311,12 @@ namespace cellogram {
 		{
 			delete_vertex(to_remove[i]);
 		}
-		resolve_regions();
+
+		for (auto & r : regions)
+			r.find_triangles(mesh.triangles);
+
+		check_regions();
+		//resolve_regions();
 	}
 
 
@@ -314,15 +379,18 @@ namespace cellogram {
 
 		auto &region = regions[index];
 
-		auto state = region.resolve(mesh.detected, mesh.points, mesh.triangles, mesh.adj, perm_possibilities, new_points, new_triangles);
-		region.status = state;
+		if (region.status != 0)
+			return;
+
+		auto status = region.resolve(mesh.detected, mesh.points, perm_possibilities, new_points, new_triangles);
+		region.status = status;
 		//gurobi r
-		if (state == Region::NOT_PROPERLY_CLOSED)
+		if (status == Region::NOT_PROPERLY_CLOSED)
 		{
 			counter_invalid_neigh++;
 			return;
 		}
-		else if (state == Region::NO_SOLUTION)
+		else if (status == Region::NO_SOLUTION)
 		{
 			counter_infeasible_region++;
 			return;
@@ -338,6 +406,9 @@ namespace cellogram {
 		mesh.local_update(local_to_global, new_points, new_triangles, region.region_triangles);
 
 		counter_solved_regions++;
+
+		// Mark region as good in mesh
+		mesh.mark_vertex_as_solved(region.region_interior);
 
 		regions.erase(regions.begin() + index);
 
@@ -363,18 +434,23 @@ namespace cellogram {
 
 			auto &region = *it;
 			region.find_triangles(mesh.triangles);
-			auto state = region.resolve(mesh.detected, mesh.points, mesh.triangles, mesh.adj, perm_possibilities, new_points, new_triangles);
-			region.status = state;
+			auto status = region.resolve(mesh.detected, mesh.points, perm_possibilities, new_points, new_triangles);
+			region.status = status;
 			//gurobi r
-			if (state == Region::NOT_PROPERLY_CLOSED)
+			if (status == Region::NOT_PROPERLY_CLOSED)
 			{
 				counter_invalid_neigh++;
 				++it;
 				continue;
 			}
-			else if (state == Region::NO_SOLUTION)
+			else if (status == Region::NO_SOLUTION)
 			{
 				counter_infeasible_region++;
+				++it;
+				continue;
+			}
+			else if (status != 0)
+			{
 				++it;
 				continue;
 			}
@@ -396,16 +472,22 @@ namespace cellogram {
 
 			mesh.local_update(local_to_global, new_points, new_triangles, region.region_triangles);
 
+			// Mark region as good in mesh
+			mesh.mark_vertex_as_solved(region.region_interior);
+
 			it = regions.erase(it);
 			counter_solved_regions++;
+
 		}
 
 		for (auto &r : regions)
 			r.find_triangles(mesh.triangles);
+
 	}
 
 	void State::final_relax()
 	{
+		mesh.final_relax();
 	}
 
 	void State::delete_vertex(const int index)
@@ -432,6 +514,9 @@ namespace cellogram {
 
 			detect_bad_regions();
 		}
+
+		for (auto &r : regions)
+			r.find_triangles(mesh.triangles);
 
 		// maybe clear regions and recompute hull
 	}

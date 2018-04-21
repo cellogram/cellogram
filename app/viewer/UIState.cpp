@@ -52,7 +52,7 @@ void UIState::initialize() {
 		if (igl::unproject_onto_mesh(Eigen::Vector2f(x, y), viewer.core.view * viewer.core.model,
 			viewer.core.proj, viewer.core.viewport, V, state.mesh.triangles, fid, bc))
 		{
-			std::cout << fid << " " << bc.transpose() << std::endl;
+			//std::cout << fid << " " << bc.transpose() << std::endl;
 			found = true;
 		}
 
@@ -73,7 +73,8 @@ void UIState::initialize() {
 					{
 						selected_region = i;
 						viewer_control();
-						std::cout << "Region = " << i << std::endl;
+						current_region_status = Region::pretty_status(state.regions[i].status);
+						std::cout << current_region_status << std::endl;
 						return true;
 					}
 				}
@@ -183,6 +184,7 @@ igl::opengl::ViewerData & UIState::mesh_by_id(int id) {
 bool UIState::load(std::string name) {
 	if (!state.load(name)){ return false; }
 	selected_region = -1;
+	current_region_status = "";
 	img.resize(0, 0);
 	// reset flags
 

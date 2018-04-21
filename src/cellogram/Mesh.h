@@ -20,6 +20,9 @@ public:
 
 	Eigen::MatrixXi triangles; // triangular mesh
 	std::vector<std::vector<int>> adj; // adjaceny list of triangluar mesh
+	std::vector<std::vector<int>> vertex_to_tri;
+
+	Eigen::Matrix<bool, Eigen::Dynamic, 1> solved_vertex;
 
 	bool load(const std::string &path);
 	bool load_params(const std::string &path);
@@ -27,14 +30,18 @@ public:
 	void relax_with_lloyd(const int lloyd_iterations, const Eigen::MatrixXd &hull_vertices, const Eigen::MatrixXi &hull_faces);
 	void vertex_degree(Eigen::VectorXi &degree);
 
-	//// Vertex
 	void delete_vertex(const int index, bool recompute_triangulation = true);
 	void add_vertex(Eigen::Vector3d &new_point);
 
 	void local_update(Eigen::VectorXi &local2global, Eigen::MatrixXd &new_points, Eigen::MatrixXi &new_triangles, Eigen::VectorXi & old_triangles);
 	void local_update(Eigen::VectorXi & local2global, const int global_to_remove, Eigen::MatrixXi & new_triangles);
 
+	void mark_vertex_as_solved(const Eigen::VectorXi & region_interior);
+
+	void final_relax();
+	void generate_vertex_to_tri();
 	void reset();
+
 
 private:
 	void compute_triangulation();

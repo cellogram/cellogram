@@ -90,26 +90,26 @@ void UIState::draw_viewer_menu() {
 		ImGui::Checkbox("Orthographic view", &(viewer.core.orthographic));
 		ImGui::PopItemWidth();
 	}
-/*
+
 	// Draw options
-	if (ImGui::CollapsingHeader("Draw Options", ImGuiTreeNodeFlags_DefaultOpen)) {
-		if (ImGui::Checkbox("Face-based", &(viewer.data().face_based))) {
-			viewer.data().set_face_based(viewer.data().face_based);
-		}
-		ImGui::Checkbox("Show texture", &(viewer.data().show_texture));
-		if (ImGui::Checkbox("Invert normals", &(viewer.data().invert_normals))) {
-			viewer.data().dirty |= igl::opengl::MeshGL::DIRTY_NORMAL;
-		}
-		ImGui::Checkbox("Show overlay", &(viewer.data().show_overlay));
-		ImGui::Checkbox("Show overlay depth", &(viewer.data().show_overlay_depth));
-		ImGui::ColorEdit4("Background", viewer.core.background_color.data(),
-				ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueWheel);
-		ImGui::ColorEdit4("Line color", viewer.data().line_color.data(),
-				ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueWheel);
-		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.3f);
-		ImGui::DragFloat("Shininess", &(viewer.data().shininess), 0.05f, 0.0f, 100.0f);
-		ImGui::PopItemWidth();
-	}
+	//if (ImGui::CollapsingHeader("Draw Options", ImGuiTreeNodeFlags_DefaultOpen)) {
+	//	if (ImGui::Checkbox("Face-based", &(viewer.data().face_based))) {
+	//		viewer.data().set_face_based(viewer.data().face_based);
+	//	}
+	//	ImGui::Checkbox("Show texture", &(viewer.data().show_texture));
+	//	if (ImGui::Checkbox("Invert normals", &(viewer.data().invert_normals))) {
+	//		viewer.data().dirty |= igl::opengl::MeshGL::DIRTY_NORMAL;
+	//	}
+	//	ImGui::Checkbox("Show overlay", &(viewer.data().show_overlay));
+	//	ImGui::Checkbox("Show overlay depth", &(viewer.data().show_overlay_depth));
+	//	ImGui::ColorEdit4("Background", viewer.core.background_color.data(),
+	//			ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueWheel);
+	//	ImGui::ColorEdit4("Line color", viewer.data().line_color.data(),
+	//			ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueWheel);
+	//	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.3f);
+	//	ImGui::DragFloat("Shininess", &(viewer.data().shininess), 0.05f, 0.0f, 100.0f);
+	//	ImGui::PopItemWidth();
+	//}
 
 	// Overlays
 	if (ImGui::CollapsingHeader("Overlays", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -117,12 +117,12 @@ void UIState::draw_viewer_menu() {
 		ImGui::Checkbox("Fill", &(viewer.data().show_faces));
 		ImGui::Checkbox("Show vertex labels", &(viewer.data().show_vertid));
 		ImGui::Checkbox("Show faces labels", &(viewer.data().show_faceid));
-	}*/
+	}
 }
 
 // -----------------------------------------------------------------------------
 static float menu_y = 190;
-static float menu_height = 700;
+static float menu_height = 750;
 static float menu_width = 300;
 void UIState::draw_custom_window() {
 	ImGui::SetNextWindowPos(ImVec2(menu_y * menu_scaling(), 0), ImGuiSetCond_FirstUseEver);
@@ -136,12 +136,12 @@ void UIState::draw_custom_window() {
 		float p = ImGui::GetStyle().FramePadding.x;
 
 		ImGui::InputInt("Num Iter", &state.lloyd_iterations);
-		if (ImGui::Button("Lloyd", ImVec2((w - p) / 2.f, 0))) {
+		/*if (ImGui::Button("Lloyd", ImVec2((w - p) / 2.f, 0))) {
 			state.relax_with_lloyd();
 			t = 1;
 			mesh_color.resize(0, 0);
 			viewer_control();
-		}
+		}*/
 		
 	//}
 
@@ -227,7 +227,19 @@ void UIState::draw_custom_window() {
 	}
 	
 	if (ImGui::CollapsingHeader("Phases", ImGuiTreeNodeFlags_DefaultOpen)) {
-		if (ImGui::Button("build regions")) {
+		// Lloyds relaxation panel
+		float w = ImGui::GetContentRegionAvailWidth();
+		float p = ImGui::GetStyle().FramePadding.x;
+
+		if (ImGui::Button("Lloyd", ImVec2((w - p) , 0))) {
+			state.relax_with_lloyd();
+			t = 1;
+			mesh_color.resize(0, 0);
+			viewer_control();
+		}
+
+
+		if (ImGui::Button("build regions", ImVec2((w - p), 0))) {
 			state.detect_bad_regions();
 			
 			show_points = false;
@@ -238,7 +250,19 @@ void UIState::draw_custom_window() {
 			viewer_control();
 		}
 
-		if (ImGui::Button("solve regions")) {
+		if (ImGui::Button("check regions", ImVec2((w - p) , 0))) {
+			state.check_regions();
+		}
+
+		if (ImGui::Button("fix regions", ImVec2((w - p), 0))) {
+			state.fix_regions();
+
+			igl::jet(create_region_label(), true, mesh_color);
+
+			viewer_control();
+		}
+
+		if (ImGui::Button("solve regions", ImVec2((w - p), 0))) {
 			state.resolve_regions();			
 
 			igl::jet(create_region_label(), true, mesh_color);
@@ -246,15 +270,16 @@ void UIState::draw_custom_window() {
 			viewer_control();
 		}
 
-		if (ImGui::Button("grow regions")) {
+		if (ImGui::Button("grow regions", ImVec2((w - p) , 0))) {
 			state.grow_regions();			
 
 			igl::jet(create_region_label(), true, mesh_color);
 
 			viewer_control();
 		}
-		if (ImGui::Button("fix regions")) {
-			state.fix_regions();
+
+		if (ImGui::Button("Ultimate relaxation", ImVec2((w - p), 0))) {
+			state.final_relax();
 
 			igl::jet(create_region_label(), true, mesh_color);
 
@@ -267,7 +292,7 @@ void UIState::draw_custom_window() {
 
 	// Clicking Menu
 	ImGui::SetNextWindowPos(ImVec2(0 * menu_scaling(), menu_height + 5), ImGuiSetCond_FirstUseEver);
-	ImGui::SetNextWindowSize(ImVec2(menu_width, 300), ImGuiSetCond_FirstUseEver);
+	ImGui::SetNextWindowSize(ImVec2(menu_width, 350), ImGuiSetCond_FirstUseEver);
 	ImGui::Begin(
 		"Clicking", nullptr,
 		ImGuiWindowFlags_NoSavedSettings
@@ -287,6 +312,7 @@ void UIState::draw_custom_window() {
 		state.resolve_region(selected_region);
 
 		selected_region = -1;
+		current_region_status = "";
 		igl::jet(create_region_label(), true, mesh_color);
 		viewer_control();
 	}
@@ -308,6 +334,11 @@ void UIState::draw_custom_window() {
 		// select vertices and mark them as good permenantly
 		make_vertex_good = true;
 		viewer_control();
+	}
+
+	if (selected_region >= 0) {
+		ImGui::LabelText("", "Region %d", selected_region);
+		ImGui::LabelText("", "%s", current_region_status.c_str());
 	}
 
 
