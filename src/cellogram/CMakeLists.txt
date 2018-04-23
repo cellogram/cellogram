@@ -27,6 +27,8 @@ set(source_list
 	State.h
 	StringUtils.cpp
 	StringUtils.h
+	point_source_detection.cpp
+	point_source_detection.h
 	Region.cpp
 	Region.h
 	tri2hex.cpp

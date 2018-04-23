@@ -4,6 +4,10 @@ add_executable(${PROJECT_NAME}
 	delaunay.cpp
 )
 
+add_executable(PointsDetection
+	pts_detection.cpp
+)
+
 # Dependencies
 target_link_libraries(${PROJECT_NAME}
 	tinyfiledialogs
@@ -12,12 +16,19 @@ target_link_libraries(${PROJECT_NAME}
 	gurobi_solver
 )
 
+target_link_libraries(PointsDetection
+	cellogram
+)
+
 # Enable extra warnings
 target_compile_options(${PROJECT_NAME} PRIVATE ${ALL_WARNINGS})
+target_compile_options(PointsDetection PRIVATE ${ALL_WARNINGS})
 
 # Output directory for binary
 set_target_properties(${PROJECT_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
+set_target_properties(PointsDetection PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 
 # Data folder
 set(DATA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../data/")
 target_compile_definitions(${PROJECT_NAME} PRIVATE -DDATA_DIR=\"${DATA_DIR}\")
+target_compile_definitions(PointsDetection PRIVATE -DDATA_DIR=\"${DATA_DIR}\")
