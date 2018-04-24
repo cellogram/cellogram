@@ -55,6 +55,8 @@ target_link_libraries(${PROJECT_NAME}
 	polyclipping
 	tinyformat
 	gurobi_solver
+	tcdf
+	PointsUntangler
 )
 
 # Extra warnings

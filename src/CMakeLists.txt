@@ -1,5 +1,8 @@
 if(TARGET gurobi)
 	add_subdirectory(gurobi_solver)
 endif()
-add_subdirectory(cellogram)
+
 add_subdirectory(pointsUntangler)
+add_subdirectory(tcdf)
+
+add_subdirectory(cellogram)
