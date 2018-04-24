@@ -41,7 +41,6 @@ bool load_img(const std::string & path, Eigen::MatrixXd &res)
 		file.close();
 		return false;
 	}
-	assert(detected.rows() == params.rows());
 	return true;
 }
 
@@ -53,9 +52,16 @@ int main(int argc, char** argv) {
 
 	const std::string root = DATA_DIR;
 
-	load_img(root + "path", img);
+	load_img(root + "pval.txt", img);
 
-	cellogram::point_source_detection(img, sigma, V);
+	double min = img.minCoeff();
+	double max = img.maxCoeff();
+
+	Eigen::MatrixXd imgNorm;
+
+	imgNorm = (img.array() - min) / (max - min);
+
+	cellogram::point_source_detection(imgNorm, sigma, V);
 
 
 	return 0;
