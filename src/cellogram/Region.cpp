@@ -563,6 +563,7 @@ namespace cellogram {
 				break;
 		}
 		//assert(ln < 3);
+		assert(lv < 3);
 
 		NavigationData data(mesh.triangles);
 		NavigationIndex n_index = index_from_face(mesh.triangles, data, f, lv);
