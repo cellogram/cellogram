@@ -52,7 +52,7 @@ int main(int argc, char** argv) {
 
 	const std::string root = DATA_DIR;
 
-	load_img(root + "pval.txt", img);
+	load_img(root + "1-1.txt", img);
 
 	double min = img.minCoeff();
 	double max = img.maxCoeff();

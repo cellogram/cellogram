@@ -9,5 +9,5 @@
 namespace cellogram {
 
 
-void point_source_detection(const Eigen::MatrixXd &img, const double sigma, Eigen::MatrixXd &V);
+void point_source_detection(const Eigen::MatrixXd &img, const double sigma, Eigen::MatrixXd &V, Eigen::MatrixXd &V_std, Eigen::VectorXd &pval_Ar);
 } // namespace cellogram

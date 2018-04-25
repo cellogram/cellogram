@@ -12,11 +12,13 @@
 #undef IGL_STATIC_LIBRARY
 #include <igl/edge_lengths.h>
 #include <igl/colon.h>
+#include "tcdf/tcdf.h"
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
 
 // -----------------------------------------------------------------------------
+	typedef Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> MatrixXb;
 
 namespace {
 
@@ -97,6 +99,7 @@ namespace {
 
 		Eigen::MatrixXd imgPad;
 		imgPad.resize(ydim + 2 * padSize, xdim + 2 * padSize);
+		imgPad.setZero();
 		imgPad.block(padSize, padSize, ydim, xdim) = img;
 
 		// scan through image and replace each pixel with the highest value of it's domain
@@ -105,14 +108,15 @@ namespace {
 			for (int j = padSize; j < xdim + padSize; j++)
 			{
 				// Loop through domain and find highest value
-				std::vector<double> data(mask.size());
-				for (int k = 0; k < padSize; k++)
+				std::vector<double> data; data.reserve(mask.size());
+				for (int k = -padSize; k <= padSize; k++)
 				{
-					for (int l = 0; l < padSize; l++)
+					for (int l = -padSize; l <= padSize; l++)
 					{
-							data.push_back(imgPad(i - padSize + k, j - padSize + l));
+							data.push_back(imgPad(i + k, j + l));
 					}
 				}
+				assert(data.size() == mask.size());
 				std::sort(data.begin(), data.end());
 				filtered_img(i - padSize, j - padSize) = data[order];
 			}
@@ -124,14 +128,14 @@ namespace {
 	Eigen::MatrixXd locmax2d(Eigen::MatrixXd &img, int maskSize)
 	{
 		int rows = maskSize;
+		int padSize = (maskSize - 1) / 2;
 		int cols = maskSize;
 		Eigen::MatrixXi mask;
 		mask.setZero(maskSize,maskSize);
 		int numEl = rows * cols;
 
-		Eigen::MatrixXd fImg = ordfilt2(img, numEl, mask);
-		std::cout << "fImg\n" << fImg << std::endl;
-		Eigen::MatrixXd fImg2 = ordfilt2(img, numEl - 1, mask);
+		Eigen::MatrixXd fImg = ordfilt2(img, numEl-1, mask);
+		Eigen::MatrixXd fImg2 = ordfilt2(img, numEl - 2, mask);
 
 		// take only those positions where the max filter and the original image value
 		// are equal -> this is a local maximum
@@ -147,9 +151,20 @@ namespace {
 		}
 
 		// set image border to zero
-		//TODO
+		Eigen::MatrixXd fImgFinal(img.rows(),img.cols());
+		fImgFinal.setZero(img.rows(), img.cols());
 
-		return fImg;
+		fImgFinal.block(padSize, padSize, img.rows() - 2 * padSize, img.cols() - 2 * padSize) = fImg.block(padSize, padSize, img.rows() - 2 * padSize, img.cols() - 2 * padSize);
+
+		return fImgFinal;
+	}
+
+
+	void fitGaussians2D(const Eigen::MatrixXd &img, const Eigen::MatrixXi &xy, const Eigen::VectorXd &A, const Eigen::VectorXd &sigma,
+		const Eigen::VectorXd &c, Eigen::MatrixXd &V, Eigen::MatrixXd &V_std, Eigen::VectorXd &pval_Ar)
+	{
+		Eigen::MatrixXd pstruct
+		
 	}
 
 } // anonymous namespace
@@ -158,7 +173,7 @@ namespace {
 
 
 
-void point_source_detection(const Eigen::MatrixXd &img, const double sigma, Eigen::MatrixXd &V)
+void point_source_detection(const Eigen::MatrixXd &img, const double sigma, Eigen::MatrixXd &V, Eigen::MatrixXd &V_std, Eigen::VectorXd &pval_Ar)
 {
 	assert(img.minCoeff()>=0);
 	assert(img.maxCoeff()<=1);
@@ -222,13 +237,14 @@ void point_source_detection(const Eigen::MatrixXd &img, const double sigma, Eige
 		Eigen::MatrixXd tmp = fg - c_est * gsum;
 		RSS = A_est.array().square().matrix() * g2sum - 2 * A_est.cwiseProduct(tmp) + f_c;
 	}
-	(RSS.array() < 0).select(0, RSS); // negative numbers may result from machine epsilon / roundoff precision
+	RSS = (RSS.array().abs() < 1e-10).select(0, RSS); // negative numbers may result from machine epsilon / roundoff precision
 
 
 
 	Eigen::MatrixXd	sigma_e2 = RSS / (n - 3);
 	Eigen::MatrixXd sigma_A = sigma_e2*C(0, 0);
 	sigma_A = sigma_A.cwiseSqrt();
+
 
 	// standard deviation of residuals
 	Eigen::MatrixXd	sigma_res = RSS / (n - 1);
@@ -241,32 +257,71 @@ void point_source_detection(const Eigen::MatrixXd &img, const double sigma, Eige
 	Eigen::MatrixXd scomb;
 	{
 		//df2 = (n-1) * (sigma_A.^2 + SE_sigma_c.^2).^2 ./ (sigma_A.^4 + SE_sigma_c.^4);
-		Eigen::MatrixXd tmp = sigma_A.array().square().matrix() + SE_sigma_c.array().square().matrix();
-		Eigen::MatrixXd tmp2 = tmp.array().square().matrix();
-		Eigen::MatrixXd tmp3 = sigma_A.array().square().square().matrix() + SE_sigma_c.array().square().square().matrix(); //checked
-		df2 = (n - 1) * tmp2.cwiseQuotient(tmp3); //checked
+		Eigen::MatrixXd tmp = sigma_A.array().square() + SE_sigma_c.array().square();
+		Eigen::MatrixXd tmp2 = tmp.array().square();
+		Eigen::MatrixXd tmp3 = sigma_A.array().square().square() + SE_sigma_c.array().square().square(); //checked
+		df2 = (n - 1) * tmp2.array() / tmp3.array(); //checked
 		scomb = tmp/n;
 	}
 		
 	scomb = scomb.cwiseSqrt(); //checked
 	Eigen::MatrixXd	 T = A_est - sigma_res * kLevel;
 	T = T.cwiseQuotient(scomb); //checked
-
-	//Eigen::MatrixXd pval = tcdf(-T, df2);
+	Eigen::MatrixXd pval;
+	matlabautogen::tcdf(-T, df2, pval);
 	
 	//mask of admissible positions for local maxima
-	/*Eigen::MatrixXd	mask;
-	mask.setZero(img.rows(), img.cols());
-	(img.array() < 0.05).select(1, mask);*/
+	MatrixXb mask = pval.array() < 0.05;
 
 	// all local max
-	Eigen::MatrixXd allMax = locmax2d(imgLoG, 2 * std::ceil(sigma) + 1);
-
-
+	Eigen::MatrixXd allMax = locmax2d(imgLoG, 2 * std::ceil(sigma) + 1); // checked
 
 	// local maxima above threshold in image domain
-	/*imgLM = allMax.*mask;
-	pstruct = [];*/
+	Eigen::MatrixXd imgLM = allMax.array() * mask.cast<double>().array(); // checked
+
+	if (imgLM.cwiseAbs().sum() - 1e-8 < 0)
+		return;
+
+	//->set threshold in LoG domain
+	Eigen::MatrixXd tmp;
+	tmp = (imgLM.array().abs() < 1e-10).select(std::numeric_limits<double>::max(), imgLoG);
+	double logThreshold = tmp.minCoeff();
+	MatrixXb logMask = (imgLoG.array() >= logThreshold);
+	
+	// combine masks
+	mask = mask.array() || logMask.array();
+	std::cout << imgLM << std::endl;
+
+	// re - select local maxima
+	imgLM = allMax.array()*mask.cast<double>().array();
+
+	Eigen::MatrixXi lm(imgLM.size(),2);
+	Eigen::VectorXd A_est_idx(imgLM.size()), c_est_idx(imgLM.size()), s_est_idx;
+	int k = 0;
+	for (int i = 0; i < imgLM.rows(); i++)
+	{
+		for (int j = 0; j < imgLM.cols(); j++)
+		{
+			if (std::abs(imgLM(i, j)) > 1e-8)
+			{
+				lm(i,1) = i;
+				lm(i,0) = j;
+				A_est_idx(k) = A_est(i, j);
+				c_est_idx(k) = c_est(i, j);
+				k++;
+			}
+		}
+	}
+
+	lm.conservativeResize(k, 2);
+	A_est_idx.conservativeResize(k);
+	c_est_idx.conservativeResize(k);
+	s_est_idx = Eigen::VectorXd::Constant(k, sigma);
+
+	fitGaussians2D(img, lm, A_est_idx, s_est_idx, c_est_idx, V, V_std, pval_Ar);
+
+	//% remove NaN values
+	//	idx = ~isnan([pstruct.x]);
 }
 
 } // namespace cellogram

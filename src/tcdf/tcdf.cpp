@@ -41,6 +41,8 @@
 #include "ctcdf_emxAPI.h"
 #include "ctcdf_initialize.h"
 
+#include <iostream>
+
 namespace matlabautogen
 {
 
@@ -59,7 +61,14 @@ emxArray_real_T *c_argInit_UnboundedxUnbounded_r(const Eigen::MatrixXd &mat)
   /* Set the size of the array.
      Change this size to the value that the application requires. */
   result = emxCreateND_real_T(2, iv0);
-  memcpy(result->data, mat.data(), mat.size());
+  //memcpy(result->data, mat.data(), mat.size()*sizeof(double));
+
+  for (int i = 0; i < mat.size(); ++i)
+	  result->data[i] = mat(i);
+
+  //for (int i = 0; i < mat.size(); ++i)
+	//  std::cout << result->data[i]<< mat(i) << std::endl;
+
 
  // int idx0;
  //  int idx1;
