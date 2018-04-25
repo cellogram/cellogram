@@ -40,7 +40,7 @@ void heapUp(int i){
 void heapDown(int i){
     int j = i*2;
     if (j>=(int)moves.size()) return;
-    int k = j++;
+    int k = j+1;
     if (k<(int)moves.size()) {
         if (moves[j]<moves[k]) j = k;
     }

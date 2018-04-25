@@ -37,12 +37,14 @@ void pointsUntangler(const Eigen::MatrixXd &detected, Eigen::MatrixXi &tris, Eig
     for (int i=0; i<1; i++) {
         int nDone = 0;
         nDone += g.tryAllSwaps();
-        if (nDone) break;
+        if (nDone!=0) break;
     }
     // g.exportPLY(outputPath+"1_3AssignSoft.ply");
 
+	g.assignUnassignedNiceWay();
     for (int i=0; i<3; i++) {
         int nDone = 0;
+		
         nDone += g.assignUnassignedHardWay();
         nDone += g.tryAllSwaps();
         if (nDone==0) break;

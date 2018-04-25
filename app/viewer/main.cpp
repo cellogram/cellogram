@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
 
 	// Default arguments
 	struct {
-		std::string input = DATA_DIR "2_points.xyz";
+		std::string input = DATA_DIR "2.xyz";
 		std::string param = DATA_DIR "2_param.txt";
 	} args;
 
@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
 
 	UIState::ui_state().initialize();
 	UIState::ui_state().load(args.input);
-	UIState::ui_state().load_param(args.param);
+	//UIState::ui_state().load_param(args.param);
 	UIState::ui_state().launch();
 
 	return 0;

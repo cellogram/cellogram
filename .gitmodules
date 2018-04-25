@@ -10,3 +10,6 @@
 [submodule "3rdparty/json"]
 	path = 3rdparty/json
 	url = git@github.com:nlohmann/json.git
+[submodule "3rdparty/gsl"]
+	path = 3rdparty/gsl
+	url = https://github.com/ampl/gsl.git

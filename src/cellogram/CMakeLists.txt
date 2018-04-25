@@ -39,6 +39,8 @@ set(source_list
 	vertex_degree.h
 	voronoi.cpp
 	voronoi.h
+	fitGaussian2D.cpp
+	fitGaussian2D.h
 )
 
 add_library(${PROJECT_NAME} ${source_list})
@@ -57,6 +59,7 @@ target_link_libraries(${PROJECT_NAME}
 	gurobi_solver
 	tcdf
 	points_untangler
+	gsl
 )
 
 # Extra warnings

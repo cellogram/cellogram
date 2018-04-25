@@ -2,6 +2,7 @@
 #include "convex_hull.h"
 #include "delaunay.h"
 #include "navigation.h"
+#include "fitGaussian2D.h"
 #include <igl/edges.h>
 #include <igl/boundary_loop.h>
 #include <igl/triangle/cdt.h>
@@ -13,6 +14,7 @@
 #include <igl/edge_lengths.h>
 #include <igl/colon.h>
 #include "tcdf/tcdf.h"
+#include <queue>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
@@ -159,12 +161,120 @@ namespace {
 		return fImgFinal;
 	}
 
+	Eigen::MatrixXi bwlabel(const MatrixXb &mask)
+	{
+
+		typedef Eigen::Vector2d vec2;
+		MatrixXb tmp = mask;
+		Eigen::MatrixXi labels(mask.rows(), mask.cols());
+		labels.setZero();
+
+
+		Eigen::MatrixXi visited(mask.rows(), mask.cols());
+		int label = 1;
+		// loop through entire mask
+		for (int i = 0; i < mask.rows(); i++)
+		{
+			for (int j = 0; j < mask.cols(); j++)
+			{
+				if (tmp(i, j))
+				{
+					std::queue<vec2> q;
+					q.emplace(i, j);
+					while (!q.empty())
+					{
+						auto index = q.front();
+						q.pop();
+						if (!tmp(index(0), index(1)))
+							continue;
+						labels(index(0), index(1)) = label;
+						tmp(index(0), index(1)) = false;
+
+						if (index(0) > 0)
+							q.emplace(index(0) - 1, index(1));
+						if (index(1) > 0)
+							q.emplace(index(0), index(1) - 1);
+						if (index(0) < mask.rows() - 1)
+							q.emplace(index(0) + 1, index(1));
+						if (index(1) < mask.cols() - 1)
+							q.emplace(index(0), index(1) + 1);
+					}
+					label++;
+				}
+			}
+		}
+		return labels;
+	}
 
 	void fitGaussians2D(const Eigen::MatrixXd &img, const Eigen::MatrixXi &xy, const Eigen::VectorXd &A, const Eigen::VectorXd &sigma,
-		const Eigen::VectorXd &c, Eigen::MatrixXd &V, Eigen::MatrixXd &V_std, Eigen::VectorXd &pval_Ar)
+		const Eigen::VectorXd &c, const MatrixXb &mask, Eigen::MatrixXd &V, Eigen::MatrixXd &V_std, Eigen::VectorXd &pval_Ar)
 	{
-		// Eigen::MatrixXd pstruct
-		//TODO
+		int np = xy.rows();
+		std::string mode = "xy";
+		Eigen::MatrixXi labels = bwlabel(mask);
+		//std::cout << "labels" << labels << std::endl;
+		int ny = img.rows();
+		int nx = img.cols();
+		double kLevel = 1.959963984540054;
+
+		Eigen::Vector2d iRange(img.minCoeff(), img.maxCoeff());
+
+		Eigen::Vector2i estIdx(1, 2);
+		double sigma_max = sigma.maxCoeff();
+		int w2 = ceil(2 * sigma_max);
+		int w4 = ceil(4 * sigma_max);
+
+		Eigen::VectorXd g(2 * w4 + 1);
+		int k = 0;
+		for (int i = -w4; i <= w4; i++)
+		{
+			g(k) = std::exp(-i * i / (2 * sigma_max *sigma_max));
+			k++;
+		}
+		Eigen::MatrixXd g2 = g*g.transpose();
+		Eigen::Map<Eigen::RowVectorXd> gv(g2.data(), g2.size());
+
+		for (int p = 0; p < np; p++)
+		{
+			// ignore points in border
+			if (xy(p, 0) < w4 || xy(p, 0) >= nx - w4 || xy(p, 1) < w4 || xy(p, 1) >= ny - w4)
+				continue;
+
+			// label mask
+			Eigen::MatrixXi maskWindow;
+			Eigen::MatrixXd window;
+			maskWindow = labels.block(xy(p, 1) - w4, xy(p, 0) - w4, 2 * w4 + 1, 2 * w4 + 1);
+			
+			maskWindow = (maskWindow.array() == maskWindow(w4 + 1, w4 + 1)).select(0, maskWindow);
+			//maskWindow(maskWindow == maskWindow(w4 + 1, w4 + 1)) = 0;
+			window = img.block(xy(p, 1) - w4, xy(p, 0) - w4, 2 * w4 + 1, 2 * w4 + 1);
+
+			double c_init = c(p);
+
+			std::cout << "\n\n\n-------------\n" << window << "\n\n\n" << std::endl;
+
+			// set any other components to NaN
+			int npx = 0;
+			for (int i = 0; i < window.rows(); i++)
+			{
+				for (int j = 0; j < window.cols(); j++)
+				{
+					if (maskWindow(i,j) != 0)
+						window(i, j) = std::nan("");
+					else
+						npx++;
+				}
+			}
+
+			if (npx < 10) // only perform fit if window contains sufficient data points
+				continue;
+
+			double A_init = A(p);
+			fitGaussian2D(window, 0, 0, A_init, sigma(p), c_init);
+		}
+
+			
+
 	}
 
 } // anonymous namespace
@@ -298,16 +408,16 @@ void point_source_detection(const Eigen::MatrixXd &img, const double sigma, Eige
 	Eigen::MatrixXi lm(imgLM.size(),2);
 	Eigen::VectorXd A_est_idx(imgLM.size()), c_est_idx(imgLM.size()), s_est_idx;
 	int k = 0;
-	for (int i = 0; i < imgLM.rows(); i++)
+	for (int i = 0; i < imgLM.cols(); i++)
 	{
-		for (int j = 0; j < imgLM.cols(); j++)
+		for (int j = 0; j < imgLM.rows(); j++)
 		{
-			if (std::abs(imgLM(i, j)) > 1e-8)
+			if (std::abs(imgLM(j, i)) > 1e-8)
 			{
-				lm(i,1) = i;
-				lm(i,0) = j;
-				A_est_idx(k) = A_est(i, j);
-				c_est_idx(k) = c_est(i, j);
+				lm(k,0) = i;
+				lm(k,1) = j;
+				A_est_idx(k) = A_est(j, i);
+				c_est_idx(k) = c_est(j, i);
 				k++;
 			}
 		}
@@ -318,7 +428,12 @@ void point_source_detection(const Eigen::MatrixXd &img, const double sigma, Eige
 	c_est_idx.conservativeResize(k);
 	s_est_idx = Eigen::VectorXd::Constant(k, sigma);
 
-	fitGaussians2D(img, lm, A_est_idx, s_est_idx, c_est_idx, V, V_std, pval_Ar);
+	std::cout << "lm:\n" << lm << std::endl;
+	std::cout << "A_est_idx:\n" << A_est_idx << std::endl;
+	std::cout << "c_est_idx:\n" << c_est_idx << std::endl;
+	std::cout << "mask:\n" << mask << std::endl;
+
+	fitGaussians2D(img, lm, A_est_idx, s_est_idx, c_est_idx, mask, V, V_std, pval_Ar); //inputs checked
 
 	//% remove NaN values
 	//	idx = ~isnan([pstruct.x]);

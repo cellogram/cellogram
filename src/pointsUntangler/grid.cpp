@@ -581,7 +581,7 @@ scalar Grid::energyBetween(int vi, int vj) const{
 }
 
 scalar Grid::energyBetween2(int vi, int vj) const{
-    if (vi==-1 || vj==-1) return -1;
+    if (vi==-1 || vj==-1) return 0;
     return squaredDistance(vert[vi],vert[vj]);
 }
 
@@ -600,9 +600,9 @@ void Grid::printf() const{
 
 bool Grid::testAndDoSwapBordersIncluded(int gi, int gj){
     if(grid[gi]==-1 && grid[gj]==-1) return false;
-    scalar before = energyAround2(gi,gj);
+    scalar before = energyAround(gi,gj);
     swapTwo( gi, gj );
-    scalar after = energyAround2(gi,gj);
+    scalar after = energyAround(gi,gj);
     if (after+0.00001<before) {
         return true;
     }
@@ -691,7 +691,7 @@ int Grid::tryAllSwapsAround(int gi){
 }
 
 int Grid::tryAllSwaps(){
-    return tryAllBiSwaps()+tryAllTriSwaps()+tryAllQuadriSwaps();
+	return tryAllBiSwaps() + tryAllTriSwaps() +tryAllQuadriSwaps();
 }
 
 int Grid::tryAllBiSwaps(){
@@ -732,7 +732,7 @@ int Grid::tryAllTriSwaps(){
 
 int Grid::tryAllQuadriSwaps(){
     int count = 0;
-    while (1) {
+    for (int safety=0; safety<5; safety++) {
         int pass = 0;
         for (int i=safeGiMinS3; i<safeGiMaxS3; i++) {
             int a,b,c,d;
@@ -780,6 +780,8 @@ int Grid::tryAllSwapsBordersIncluded(){
         }
         if (pass==0) break;
         count+=pass;
+
+		if (count > 500) break;
     }
     std::cout<<"Done "<<count<<" greedy swaps;\n";
     return count;
@@ -888,7 +890,7 @@ static bool contains(const std::vector<int> &except, int i){
 
 bool Grid::fixUnassignedVertexNiceWay(int vi){
 
-    while (1){
+    for (int safety=0; safety<1000; safety++) {
         int gi = vdesired[vi];
         if (gi==-1) return false;
         int vj = grid[gi];
@@ -897,10 +899,10 @@ bool Grid::fixUnassignedVertexNiceWay(int vi){
             assign(gi,vi);
             return true;
         } else {
-            scalar before = energyAroundExcept1(gi);
+            scalar before = energyAround(gi);
             assign(gi,vi);
-            scalar after =  energyAroundExcept1(gi);
-            if (before<after) {
+            scalar after =  energyAround(gi);
+            if (before+0.0001<after) {
                 // before was better: undo swap
                 assign(gi,vj);
                 posInGrid[vi] = -1;
@@ -915,7 +917,7 @@ bool Grid::fixUnassignedVertexNiceWay(int vi){
 
 bool Grid::fixUnassignedVertexDijkstra(int vi){
 
-    scalar maxCost = edgeLen*edgeLen*6*5;
+    scalar maxCost = (edgeLen*edgeLen*6)*5;
     std::vector<scalar> cost(grid.size(),maxCost);
     std::vector<int> prevStep(grid.size(),-2);
     std::set<int> boundary;
