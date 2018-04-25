@@ -1,10 +1,10 @@
-#include "cellogram\point_source_detection.h"
+#include "cellogram/point_source_detection.h"
 
 #include <string>
 #include <iostream>
 #include <fstream>
 #include <vector>
-#include <Eigen\Dense>
+#include <Eigen/Dense>
 #include <igl/list_to_matrix.h>
 
 bool load_img(const std::string & path, Eigen::MatrixXd &res)
@@ -49,6 +49,8 @@ int main(int argc, char** argv) {
 	Eigen::MatrixXd img;
 	const double sigma = 2;
 	Eigen::MatrixXd V;
+	Eigen::MatrixXd V_std;
+	Eigen::VectorXd pval_Ar;
 
 	const std::string root = DATA_DIR;
 
@@ -61,7 +63,7 @@ int main(int argc, char** argv) {
 
 	imgNorm = (img.array() - min) / (max - min);
 
-	cellogram::point_source_detection(imgNorm, sigma, V);
+	cellogram::point_source_detection(imgNorm, sigma, V, V_std, pval_Ar);
 
 
 	return 0;

@@ -163,8 +163,8 @@ namespace {
 	void fitGaussians2D(const Eigen::MatrixXd &img, const Eigen::MatrixXi &xy, const Eigen::VectorXd &A, const Eigen::VectorXd &sigma,
 		const Eigen::VectorXd &c, Eigen::MatrixXd &V, Eigen::MatrixXd &V_std, Eigen::VectorXd &pval_Ar)
 	{
-		Eigen::MatrixXd pstruct
-		
+		// Eigen::MatrixXd pstruct
+		//TODO
 	}
 
 } // anonymous namespace
