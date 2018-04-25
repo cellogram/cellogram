@@ -11,7 +11,6 @@ namespace cellogram
 {
 namespace PointsUntangler
 {
-    
 
 void Grid::clear(){
     grid.clear();
