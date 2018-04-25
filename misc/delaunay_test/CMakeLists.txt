@@ -29,7 +29,7 @@ target_link_libraries(PointsDetection
 )
 
 target_link_libraries(Untangler
-	cellogram PointsUntangler
+	cellogram points_untangler
 )
 
 target_link_libraries(tcdf_test

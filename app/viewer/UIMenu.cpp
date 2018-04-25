@@ -231,6 +231,15 @@ void UIState::draw_custom_window() {
 		float w = ImGui::GetContentRegionAvailWidth();
 		float p = ImGui::GetStyle().FramePadding.x;
 
+		if (ImGui::Button("Untangle", ImVec2((w - p) , 0))) {
+			state.untangle();
+			t = 1;
+			mesh_color.resize(0, 0);
+			viewer_control();
+		}
+
+		ImGui::Separator();
+
 		if (ImGui::Button("Lloyd", ImVec2((w - p) , 0))) {
 			state.relax_with_lloyd();
 			t = 1;

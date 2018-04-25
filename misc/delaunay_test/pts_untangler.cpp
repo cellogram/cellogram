@@ -1,4 +1,4 @@
-#include "pointsUntangler/PointsUntangler.h"
+#include "pointsUntangler/points_untangler.h"
 
 #include <string>
 #include <iostream>

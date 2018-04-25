@@ -6,6 +6,8 @@
 #include <cellogram/voronoi.h>
 #include <cellogram/vertex_degree.h>
 
+#include <pointsUntangler/points_untangler.h>
+
 #include <igl/list_to_matrix.h>
 
 #include <fstream>
@@ -50,7 +52,7 @@ namespace cellogram {
 			triangles << tmp, tNew;
 		}
 
-		
+
 	}
 
 
@@ -302,7 +304,7 @@ namespace cellogram {
 			indFixed(boundary(i)) = 1;
 		}
 
-		////PLEASE USE ME 
+		////PLEASE USE ME
 		//igl::opengl::glfw::Viewer viewer;
 
 		//viewer.data().set_mesh(points, triangles);
@@ -453,6 +455,25 @@ namespace cellogram {
 				vertex_to_tri[triangles(f, lv)].push_back(f);
 			}
 		}
+	}
+
+	void Mesh::untangle()
+	{
+		Eigen::MatrixXd newPts;
+		cellogram::PointsUntangler::pointsUntangler(detected, triangles, newPts);
+
+		Eigen::MatrixXd total(detected.rows()+newPts.rows(), detected.cols());
+		// total.setZero();
+
+		total.block(0, 0, detected.rows(), detected.cols()) = detected;
+		total.block(detected.rows(), 0, newPts.rows(), newPts.cols()) = newPts;
+
+
+		detected = total;
+		points = detected;
+
+		adjacency_list(triangles, adj);
+		generate_vertex_to_tri();
 	}
 
 	void Mesh::reset()

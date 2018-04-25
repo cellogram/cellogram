@@ -83,48 +83,6 @@ void Mesh::updateAverageEdge(){
     avgEdge /= d;
 }
 
-/*
-void Mesh::updateAverageVecDir(){
-    avgEdgeDir = vec2(0,0);
-    for (const Edge &e:E) {
-        if ( V[e[0]].dontcare ) continue;
-        if ( V[e[1]].dontcare ) continue;
-
-        vec2 ed = V[e[0]].p - V[e[1]].p;
-        ed.normalize();
-
-        vec2 best(0,0);
-        scalar bestScore = -5;
-        for (int i=0; i<6; i++) {
-            scalar score = dot(ed,avgEdgeDir);
-            if (score>bestScore) {
-                bestScore = score;
-                best = ed;
-            }
-            ed = rotateBy60( ed );
-        }
-        avgEdgeDir += best;
-    }
-    avgEdgeDir.normalize();
-    std::cout<<"Edge dir: "<<avgEdgeDir.x<<","<<avgEdgeDir.y<<"\n";
-}*/
-
-
-/*
-scalar Mesh::goodEdge(int va, int vb){
-    vec2 v0 = V[va].p;
-    vec2 v1 = V[vb].p;
-    vec2 ed = v1-v0;
-    ed.normalize();
-
-    scalar score1 = std::fabs( dot(ed,avgEdgeDir) );
-    ed = rotateBy60( ed );
-    scalar score2 = std::fabs( dot(ed,avgEdgeDir) );
-    ed = rotateBy60( ed );
-    scalar score3 = std::fabs( dot(ed,avgEdgeDir) );
-    return std::max(std::max(score1,score2),score3);
-}*/
-
 void Edge::substitute(int fa, int fb){
         if (fi[0]==fa) fi[0]=fb;
         else if (fi[1]==fa) fi[1]=fb;
@@ -326,12 +284,12 @@ void Mesh::updateIndices(){
             }
             else {
                 ei = f->second;
-                myAssert(ei<E.size(),"Strange");
+                myAssert(ei<(int)E.size(),"Strange");
                 myAssert(ei>=0,"Strange");
             }
 
             F[fi].ei[w] = ei;
-            myAssert(ei<E.size(),"Strange");
+            myAssert(ei<(int)E.size(),"Strange");
             myAssert(ei>=0,"Strange");
 
             if (E[ei].fi[0]==-1) E[ei].fi[0]=fi;
@@ -467,15 +425,6 @@ FlipScore Mesh::evaluateFlip(int ei, bool desperate){
     myAssert(v1>=0,"same vert 1-1");
     */
 
-
-/*
-    int valReduction = 0;
-    if (!V[v0].dontcare) { if (V[v0].val>6) valReduction++; else valReduction--; }
-    if (!V[v1].dontcare) { if (V[v1].val>6) valReduction++; else valReduction--; }
-    if (!V[va].dontcare) { if (V[va].val<6) valReduction++; else valReduction--; }
-    if (!V[vb].dontcare) { if (V[vb].val<6) valReduction++; else valReduction--; }*/
-
-
     scalar valReduction = 0;
     if (!V[v0].dontcare) { if (V[v0].val>6) valReduction+=V[v0].price(); else valReduction-=V[v0].price(); }
     if (!V[v1].dontcare) { if (V[v1].val>6) valReduction+=V[v1].price(); else valReduction-=V[v1].price(); }
@@ -488,40 +437,19 @@ FlipScore Mesh::evaluateFlip(int ei, bool desperate){
     scalar lenReduction=0;
     lenReduction += (distance(V[v1].p,V[v0].p) - distance(V[va].p,V[vb].p))/10.0;
 
-    //lenReduction -= goodEdge(v0,v1) - goodEdge(va,vb);
-
-/*    lenReduction +=-(goodTriangle(va,vb,v0)+goodTriangle(vb,va,v1))
-                   +(goodTriangle(v0,v1,vb)+goodTriangle(v1,v0,va));*/
-
     if (desperate) {
-
-
-        /*
-        lenReduction=0;
-        for (int i:irregulars) {
-
-            if ((i!=va) && (i!=vb) && (i!=v0) && (i!=v1) )
-            {
-                lenReduction += deltaEng( i, v0, -1 );
-                lenReduction += deltaEng( i, v1, -1 );
-                lenReduction += deltaEng( i, va, +1 );
-                lenReduction += deltaEng( i, vb, +1 );
-            }
-        }*/
         lenReduction += 10.0*(rand()%1000*0.001);
     }
     myAssert(va!=vb,"Dont!");
 
-    //std::cout<<"("<<valReduction<<","<<lenReduction<<")\n";
     return FlipScore(valReduction,lenReduction);
 }
-
 
 
 FlipScore lastMove(0,0);
 std::vector<int> forbiden;
 
-bool contains(const std::vector<int>& v, int i){
+static bool contains(const std::vector<int>& v, int i){
     for (int j:v) if (j==i) return true; return false;
 }
 
@@ -555,12 +483,12 @@ int Mesh::bestFlip(bool force ){
 
 
 bool Mesh::sanityCheck(){
-    for (int fi=0; fi<F.size(); fi++){
+    for (int fi=0; fi<(int)F.size(); fi++){
         const Face& f (F[fi]);
         for (int w=0; w<3; w++) {
             int ei = f.ei[w];
             myAssert(ei>=0, "EI>0");
-            myAssert(ei<E.size(), "EI<E.size()");
+            myAssert(ei<(int)E.size(), "EI<E.size()");
             int v0 = f.vi[w];
             int v1 = f.vi[(w+1)%3];
             myAssert(v0!=v1,"The same F?");
@@ -570,13 +498,13 @@ bool Mesh::sanityCheck(){
 
         }
     }
-    for (int ei=0; ei<E.size(); ei++){
+    for (int ei=0; ei<(int)E.size(); ei++){
         const Edge& e (E[ei]);
         for (int s=0; s<2; s++) {
             int fi = e.fi[s];
             if (s==1) if (fi==-1) continue;
             myAssert(fi>=0, "FI>0");
-            myAssert(fi<F.size(), "fi<F.size()");
+            myAssert(fi<(int)F.size(), "fi<F.size()");
             int v0 = e.vi[0];
             int v1 = e.vi[1];
             myAssert(v0!=v1,"the same E?");
@@ -680,10 +608,9 @@ void Mesh::removeDontcare(){
     updateValencies();
 }
 
-
 bool Mesh::checkIfBest(){
     if (nVal<bestVal) {
-        std::cout<<"Progress: "<<bestVal<<"-->"<<nVal<<"\n"; //<<" (with "<<forcedTurnsStart<<")\n";
+        std::cout<<"Progress: "<<bestVal<<"-->"<<nVal; //<<" (with "<<forcedTurnsStart<<")\n";
         bestVal = nVal;
 
 
@@ -692,42 +619,16 @@ bool Mesh::checkIfBest(){
         //if (bestVal==0) break;
         return true;
     }
-    else return false;
-}
-
-void Mesh::recursiveSearch(int depth){
-    if (depth==0) {
-        while(1){
-            int ei = bestFlip( false );
-            if (ei == -1) break;
-            applyFlip(ei);
-        }
-        checkIfBest();
-    } else {
-        while(1){
-            int curr = bestVal;
-            for (int ei=0; ei<(int)E.size(); ei++) {
-
-                if (canFlip(ei)) {
-                    FlipScore s = evaluateFlip(ei,false);
-                    if (s.valReduction>=0) {
-                        applyFlip(ei);
-                        recursiveSearch(depth-1);
-                    }
-                }
-            }
-            if (bestVal==curr) break;
-        }
+    else {
+        std::cout<<"No progress\n";
+        return false;
     }
 }
 
 void Mesh::regularizeByFlips(int howDeep, int howWide){
 
     updateIndices();
-    /*
-    dontCareAboutBoundaries();
-    removeDontcare();
-    */
+
     dontCareAboutBoundaries();
     for (int i=0; i<2; i++){
         propagateDontcareToFaces();
@@ -736,12 +637,10 @@ void Mesh::regularizeByFlips(int howDeep, int howWide){
 
     //updateAverageVecDir();
 
-    updateValencies();
-
     updateIndices();
-    sanityCheck();
-
-    checkIfBest();
+    updateValencies();
+    bestVal = nVal;
+    //sanityCheck();
 
     int forcedTurnsStart = 0;
     int forcedTurns = 0;
@@ -754,9 +653,8 @@ void Mesh::regularizeByFlips(int howDeep, int howWide){
         if (ei==-1) {
             // no more profitable moves...
             if (checkIfBest()) {
-                std::cout<<"(with "<<forcedTurnsStart<<")\n";
+                std::cout<<" (with "<<forcedTurnsStart<<")\n";
                 forcedTurnsStart = 0;
-                // save best conf
                 if (nVal==0) break;
             } else {
                 // recover last best conf

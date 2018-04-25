@@ -6,7 +6,6 @@
 #include<string>
 #include<set>
 #include"vec2.h"
-#include"spatial_index.h"
 #include <Eigen/Dense>
 
 
@@ -26,12 +25,9 @@ public:
     std::vector<int> posInGrid;
 
     std::vector<int> grid;
-    std::vector<bool> fixed;
     std::vector<bool> madeUpVert;
 
-
     std::vector<int> vdesired; // this vert desires this grid position
-
 
     int sx,sy;
     void create(int sx, int sy);
@@ -39,26 +35,11 @@ public:
     void initIndicesOnGrid(int nx,int ny);
     void initVertOnGrid(int nx,int ny);
 
-    //void exportToEigen( Eigen::MatrixXi &t , Eigen::MatrixXd &newv );
-    //void inputFromEigen( const Eigen::MatrixXd &v );
-
     int assignUnassignedNiceWay();
     int assignUnassignedHardWay();
 
-    void setBoundaryAsFixed();
-    void setNullAsFixed();
-
     void printf() const;
-    void printf( const std::vector<int> &diff ) const;
 
-    void shuffle(int howMany);
-
-    void heuristicConstruct();
-    void heuristic();
-    void heuristicSimple();
-    void sanityCheck( int x, int y );
-
-    bool updateHappiness();
     void updatePosInGrid();
 
     scalar computeAvgEdgeLen() const;
@@ -71,8 +52,6 @@ public:
     bool exportPLY(const std::string& filename ) const;
     bool exportPLYtartan(const std::string& filename ) const;
 
-    void initSpatialIndex();
-
     void createVertices(int nv);
 
     int tryAllSwaps();
@@ -84,13 +63,16 @@ friend void meshToGrid(Mesh &m, Grid &g);
 
 private:
 
+    void sanityCheck( int x, int y );
+    void sanityCheck();
+
+
     int tryAllBiSwaps();
     int tryAllTriSwaps();
     int tryAllQuadriSwaps();
     int tryAllSwapsAround(int gi);
 
     bool fixUnassignedVertexNiceWay(int vj);
-    bool fixUnassignedVertexHardWay(int vj);
     bool fixUnassignedVertexDijkstra(int vj);
 
     std::vector<int> distFromBorder;
@@ -98,8 +80,10 @@ private:
 
     scalar edgeLen = 1.0;
 
+    void trimBorders();
 
     void assign(int gi, int vi);
+    void unassign(int gi);
     int indexOf(int x,int y) const {return x+y*sx;}
 
     int shiftPos(int gi, int dir) const;
@@ -130,42 +114,22 @@ private:
     bool testAndDoQuadriSwap( int gi, int gj, int gk, int gh);
     bool testAndDoSwapBordersIncluded( int gi, int gj);
 
-    SpatialIndex spatialIndex;
-
-    // heuristic stuff
-    bool findABetterSuitorFor(int gi , scalar budget, int depth , std::vector<int> chain);
-    int nSwapsAttempted; // bookkeeping
-    int maxDepth;
-
     void clear();
 
-    std::vector<bool> isHappy;
-
-    int randomNonFixedPos() const;
-
-    // for construction heuristic
-    std::set<int> boundary;
-    std::set<int> suitors;
-    void conquer(int gi, int vi);
     int numberOfAdj(int gi) const;
     void enlargeToInclude(int gi, int buffer);
     void enlargeGrid(int dxMin, int dxMax, int dyMin, int dyMax);
-    int closestPosToInBoundary(std::vector<int> p) const;
-    int closestPosTo(std::vector<int> p, std::vector<int> except) const;
     int hopDistance(int gi, int gj) const;
 
-
-    bool fillOneBoundary();
-    bool suitOneSuitor();
-
-    int bestPositionFor(int vj, std::vector<int> except = {});
-    int bestApproachingPositionFor(int vj) const;
+    //int bestPositionFor(int vj, std::vector<int> except = {});
 
     int safeGiMin, safeGiMax; // first and last grid elem with a neigh
     int safeGiMinS2, safeGiMaxS2; // first and last grid elem with a 2 star
     int safeGiMinS3, safeGiMaxS3; // first and last grid elem with a 3 star
     int neigh[6];
-    int nDone;
+
+    scalar triangleQuality(int vi, int vj, int vk ) const;
+
 };
 
 }

@@ -44,7 +44,7 @@ struct Edge{
 struct Vert{
     vec2 p;
     int val;
-    bool dontcare;
+    bool dontcare = false;
     int distToIrr;
 
     float timeReached; // for visuzliazion purposes only
@@ -113,7 +113,6 @@ private:
 
     //void updateAverageVecDir();
     void updateAverageEdge();
-    scalar goodEdge(int va, int vb);
     void updateValencies();
     void updateIndices();
     void dontCareAboutBoundaries();
@@ -129,7 +128,6 @@ private:
     void applyFlip(int ei);
     void removeDontcare();
     bool checkIfBest();
-    void recursiveSearch(int depth);
     void setDistanceToIrr();
     void setFaceRegularity();
     int mostRegularFace() const;

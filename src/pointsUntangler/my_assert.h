@@ -3,7 +3,7 @@
 
 #include<iostream>
 
-//#define myAssert(b, msg) {if (!(b)) std::cout<<"ERROR: "<<msg<<"\n";}
-#define myAssert(b, msg) {}
+#define myAssert(b, msg) {if (!(b)) std::cout<<"ERROR: "<<msg<<"\n";}
+//#define myAssert(b, msg) {}
 
 #endif // MY_ASSERT_H

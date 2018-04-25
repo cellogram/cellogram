@@ -43,6 +43,8 @@ public:
 	void reset();
 
 
+	void untangle();
+
 private:
 	void compute_triangulation();
 

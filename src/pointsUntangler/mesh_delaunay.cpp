@@ -1,5 +1,7 @@
 #include<igl/delaunay_triangulation.h>
+
 #include"mesh.h"
+#include <iostream>
 
 
 namespace cellogram
@@ -50,7 +52,7 @@ void Mesh::delaunay(){
     Eigen::MatrixXi FF;
 
     VV.resize(V.size(),2);
-    for (int i=0; i<V.size(); i++) { VV(i,0)=V[i].p.x; VV(i,1)=V[i].p.y; }
+    for (uint i=0; i<V.size(); i++) { VV(i,0)=V[i].p.x; VV(i,1)=V[i].p.y; }
     igl::delaunay_triangulation(VV, orient2D, incircle,  FF);
 
     F.resize(FF.rows());
@@ -58,6 +60,7 @@ void Mesh::delaunay(){
 
     updateIndices();
     updateValencies();
+    std::cout<<"Delaunay done (" << nVal <<" irregulars)\n";
 }
 
 }

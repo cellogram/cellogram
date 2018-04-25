@@ -56,7 +56,7 @@ target_link_libraries(${PROJECT_NAME}
 	tinyformat
 	gurobi_solver
 	tcdf
-	PointsUntangler
+	points_untangler
 )
 
 # Extra warnings

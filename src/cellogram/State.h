@@ -47,6 +47,8 @@ public:
 
 	Eigen::VectorXi increase_boundary(const Eigen::VectorXi &boundary);
 
+	void untangle();
+
 	void relax_with_lloyd();
 	void detect_bad_regions();
 	void erase_small_regions();

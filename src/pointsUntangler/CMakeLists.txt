@@ -1,8 +1,8 @@
-project(PointsUntangler)
+project(points_untangler)
 
 set(source_list
-	PointsUntangler.cpp
-	PointsUntangler.h
+	points_untangler.cpp
+	points_untangler.h
 	grid.cpp
 	grid.h
 	mesh.cpp
@@ -10,8 +10,6 @@ set(source_list
 	mesh_delaunay.cpp
 	mesh_to_grid.cpp
 	my_assert.h
-	spatial_index.cpp
-	spatial_index.h
 	vec2.h
 )
 

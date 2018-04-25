@@ -258,16 +258,16 @@ void UIState::compute_triangulation() {
 void UIState::reset_viewer()
 {
 	// Display flags
-	float t;
-	Eigen::RowVector3d vertex_color = Eigen::RowVector3d(1, 0, 0);
-	Eigen::MatrixXd mesh_color;
-	bool show_hull = false;
-	bool image_loaded = false;
-	bool show_points = false;
-	bool show_mesh_fill = true;
-	bool show_image = false;
-	bool show_matching = false;
-	bool show_bad_regions = false;
+	t = 0;
+	vertex_color = Eigen::RowVector4f(1,0,0,0);
+	mesh_color.resize(0, 0);
+	show_hull = false;
+	image_loaded = false;
+	show_points = false;
+	show_mesh_fill = true;
+	show_image = false;
+	show_matching = false;
+	show_bad_regions = false;
 }
 
 //TODO refactor when more clear

@@ -141,11 +141,11 @@ void meshToGrid(Mesh &m, Grid &g){
         // place vertex
         // enlist new moves
 
-        bool ok = false;
+        //bool ok = false;
         if ((gj==-1)&&(vj==-1)) {
             g.assign( gi, vi );
             m.V[vi].timeReached = time++;
-            ok = true;
+            //ok = true;
         }
         addMove( f.ei[w1] ,fi, move.pos, (move.dir+5)%6);
         addMove( f.ei[w2] ,fi,   gi    , (move.dir+1)%6);
@@ -198,6 +198,7 @@ void meshToGrid(Mesh &m, Grid &g){
     g.updatePosInGrid();
     m.updateAverageEdge();
     g.edgeLen = m.avgEdge;
+    g.trimBorders();
 }
 
 }

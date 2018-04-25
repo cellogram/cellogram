@@ -1,6 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "State.h"
 
+
 #include <cellogram/convex_hull.h>
 
 #include <cellogram/voronoi.h>
@@ -138,6 +139,11 @@ namespace cellogram {
 			bboundary(i) = new_boundary[i];
 		}
 		return bboundary;
+	}
+
+	void State::untangle()
+	{
+		mesh.untangle();
 	}
 
 	void State::relax_with_lloyd()
