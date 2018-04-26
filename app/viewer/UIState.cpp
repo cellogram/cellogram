@@ -5,7 +5,6 @@
 #include <igl/colon.h>
 #include <igl/unproject_onto_mesh.h>
 #include <igl/colormap.h>
-#include <igl/png/readPNG.h>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
@@ -182,13 +181,13 @@ igl::opengl::ViewerData & UIState::mesh_by_id(int id) {
 }
 
 bool UIState::load(std::string name) {
-	if (!state.load(name)){ return false; }
+	if (!state.load(name)) { return false; }
 	selected_region = -1;
 	current_region_status = "";
-	img.resize(0, 0);
+	//img.resize(0, 0);
 	// reset flags
 
-	mesh_color.resize(1,3);
+	mesh_color.resize(1, 3);
 	mesh_color.row(0) = Eigen::RowVector3d(255, 255, 120) / 255.0;
 	reset_viewer();
 
@@ -206,6 +205,32 @@ bool UIState::load(std::string name) {
 	compute_triangulation();
 	viewer_control();
 	return true;
+}
+
+void UIState::detect_vertices() {
+	state.detect_vertices();
+	selected_region = -1;
+	current_region_status = "";
+	//img.resize(0, 0);
+	// reset flags
+
+	mesh_color.resize(1, 3);
+	mesh_color.row(0) = Eigen::RowVector3d(255, 255, 120) / 255.0;
+	reset_viewer();
+
+	// Show points and align camera
+	points_data().clear();
+	points_data().set_points(state.mesh.points, Eigen::RowVector3d(1, 0, 0));
+	viewer.core.align_camera_center(state.mesh.points);
+	double extent = (state.mesh.points.colwise().maxCoeff() - state.mesh.points.colwise().minCoeff()).maxCoeff();
+	points_data().point_size = float(0.008 * extent);
+	fix_color(points_data());
+
+	// Compute and show convex hull + triangulation
+	compute_hull();
+	//clean_hull();
+	compute_triangulation();
+	viewer_control();
 }
 
 bool UIState::load_param(std::string name)
@@ -262,7 +287,6 @@ void UIState::reset_viewer()
 	vertex_color = Eigen::RowVector4f(1,0,0,0);
 	mesh_color.resize(0, 0);
 	show_hull = false;
-	image_loaded = false;
 	show_points = false;
 	show_mesh_fill = true;
 	show_image = false;
@@ -272,19 +296,17 @@ void UIState::reset_viewer()
 
 //TODO refactor when more clear
 void UIState::load_image(std::string fname) {
-	Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> G, B, A; // Image
-	igl::png::readPNG(fname, img, G, B, A);
-	
+	state.load_image(fname);
+
 	show_mesh_fill = false;
-	image_loaded = true;
 	show_image = true;
 
 }
 
 void UIState::display_image()
 {
-	int xMax = img.cols();
-	int yMax = img.rows();
+	int xMax = state.img.cols();
+	int yMax = state.img.rows();
 
 	// Replace the mesh with a triangulated square
 	Eigen::MatrixXd V(4, 3);
@@ -299,10 +321,10 @@ void UIState::display_image()
 		2, 3, 0;
 	Eigen::MatrixXd UV(4, 2);
 	UV <<
-		0, 1,
-		1, 1,
+		0, 0,
 		1, 0,
-		0, 0;
+		1, 1,
+		0, 1;
 
 	image_data().set_mesh(V, F);
 	image_data().set_uv(UV);
@@ -310,7 +332,7 @@ void UIState::display_image()
 	image_data().show_lines = false;
 	image_data().show_texture = true;
 	// Use the image as a texture
-	image_data().set_texture(img, img, img);
+	image_data().set_texture(state.img, state.img, state.img);
 	image_data().set_colors(Eigen::RowVector3d(1, 1, 1));
 }
 
@@ -321,7 +343,7 @@ void UIState::viewer_control()
 	image_data().clear();
 	matching_data().clear();
 	bad_region_data().clear();
-	
+
 	// Read all the UIState flags and update display
 	// hull
 	if (show_hull) {
@@ -368,16 +390,16 @@ void UIState::viewer_control()
 
 			if (color_code)
 			{
-				Eigen::VectorXd param(V.rows());
-				for (int i = 0; i < V.rows(); i++)
-				{
-					param(i) = state.mesh.params(i,selected_param);
-				}
-				//igl::parula(param, true, C);
-				igl::ColorMapType cm = igl::ColorMapType::COLOR_MAP_TYPE_INFERNO;
-				igl::colormap(cm,param, true, C);
+				//Eigen::VectorXd param(V.rows());
+				//for (int i = 0; i < V.rows(); i++)
+				//{
+				//	param(i) = state.mesh.params(i,selected_param);
+				//}
+				////igl::parula(param, true, C);
+				//igl::ColorMapType cm = igl::ColorMapType::COLOR_MAP_TYPE_INFERNO;
+				//igl::colormap(cm,param, true, C);
 			}
-			else 
+			else
 			{
 				for (auto &r : state.regions)
 				{
@@ -397,7 +419,7 @@ void UIState::viewer_control()
 
 
 			points_data().set_points(V, C);
-			
+
 		}
 	}
 
@@ -422,13 +444,16 @@ void UIState::viewer_control()
 
 
 	// image
-	if (show_image && !image_loaded)
+	if (show_image)
 	{
-		show_image = false;
-	}
-	else if (show_image && image_loaded) 
-	{
-		display_image();
+		if (state.img.size() <= 0)
+		{
+			show_image = false;
+		}
+		else
+		{
+			display_image();
+		}
 	}
 
 	// matching

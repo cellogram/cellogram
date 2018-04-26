@@ -306,6 +306,7 @@ namespace cellogram
 
 			/* copy Jacobian */
 			data->J = gsl_matrix_alloc(data->nValid, data->np);
+			gsl_multifit_fdfsolver_jac(s, data->J);
 			//gsl_matrix_memcpy(data->J, s->J);
 
 			gsl_multifit_fdfsolver_free(s);
@@ -314,18 +315,19 @@ namespace cellogram
 	}
 
 
-	void fitGaussian2D(const Eigen::MatrixXd &window, double x0, double y0, double A0, double sigma0, double C0)
+	void fitGaussian2D(const Eigen::MatrixXd &window, double x0, double y0, double A0, double sigma0, double C0,
+		Eigen::Vector2d &xy, internal::Params &params)
 	{
 		assert(window.rows() == window.cols());
 
 		int nx = window.rows();
-		int N = nx*nx;
+		int N = nx * nx;
 		double* px;
 		px = (double*)malloc(sizeof(double)*N);
 
 		int i;
 		// fill with noise
-		for (i=0; i<N; ++i) {
+		for (i = 0; i < N; ++i) {
 			px[i] = window(i);
 		}
 
@@ -344,13 +346,13 @@ namespace cellogram
 		data.gy = (double*)malloc(sizeof(double)*nx);
 
 		data.estIdx = (int*)malloc(sizeof(int)*np);
-		data.dfunc = (pfunc_t*) malloc(sizeof(pfunc_t) * np);
+		data.dfunc = (pfunc_t*)malloc(sizeof(pfunc_t) * np);
 
 		// read mask/pixels
 		data.nValid = N;
 		data.idx = (int*)malloc(sizeof(int)*data.nValid);
 		int k = 0;
-		for (i=0; i<N; ++i) {
+		for (i = 0; i < N; ++i) {
 			if (!std::isnan(data.pixels[i])) {
 				data.idx[k++] = i;
 			}
@@ -372,45 +374,66 @@ namespace cellogram
 		data.estIdx[np] = 4; data.dfunc[np++] = df_dc;
 
 		data.x_init = (double*)malloc(sizeof(double)*np);
-		for (i=0; i<np; ++i) {
+		for (i = 0; i < np; ++i) {
 			data.x_init[i] = data.prmVect[data.estIdx[i]];
 		}
 
 		MLalgo(&data);
 
-		//TODO read data. ... and save inside eigen matrices
 		/* parameters */
 		Eigen::MatrixXd prmVect = Eigen::Map<Eigen::MatrixXd>(data.prmVect, 1, NPARAMS);
-		std::cout << prmVect << std::endl;
-			//plhs[0] = mxCreateDoubleMatrix(1, NPARAMS, mxREAL);
-			//memcpy(mxGetPr(plhs[0]), data.prmVect, NPARAMS * sizeof(double));
+		xy(0) = prmVect(0);
+		xy(1) = prmVect(1);
 
-		/* standard dev. of parameters & covariance matrix 
+		params.A = prmVect(2);
+		params.sigma = prmVect(3);
+		params.C = prmVect(4);
+
+		/* standard dev. of parameters & covariance matrix  */
 		double RSS = 0.0;
-		double* resValid = NULL;
-		if (nlhs > 1) {
-			resValid = (double*)malloc(data.nValid * sizeof(double));
-			for (i = 0; i<data.nValid; ++i) {
-				resValid[i] = gsl_vector_get(data.residuals, i);
-				RSS += resValid[i] * resValid[i];
-			}
-			gsl_matrix *covar = gsl_matrix_alloc(np, np);
-			gsl_multifit_covar(data.J, 0.0, covar);
-			double iRSS = RSS / (data.nValid - data.np - 1);
-			plhs[1] = mxCreateDoubleMatrix(1, data.np, mxREAL);
-			double *prmStd = mxGetPr(plhs[1]);
-			for (i = 0; i<data.np; ++i) {
-				prmStd[i] = sqrt(iRSS*gsl_matrix_get(covar, i, i));
-			}
-			if (nlhs > 2) {
-				plhs[2] = mxCreateDoubleMatrix(np, np, mxREAL);
-				/* cov. matrix is symmetric, no need to transpose 
-				memcpy(mxGetPr(plhs[2]), covar->data, np*np * sizeof(double));
-			}
-			gsl_matrix_free(covar);
+		double mean = 0.0, std = 0.0;
+
+		double* resValid = resValid = (double*)malloc(data.nValid * sizeof(double));
+		for (i = 0; i < data.nValid; ++i) {
+			resValid[i] = gsl_vector_get(data.residuals, i);
+			RSS += resValid[i] * resValid[i];
+			mean += resValid[i];
 		}
 
-		/* residuals 
+		std = sqrt((RSS - mean * mean / data.nValid) / (data.nValid - 1));
+		mean /= data.nValid;
+
+		gsl_matrix *covar = gsl_matrix_alloc(np, np);
+		gsl_multifit_covar(data.J, 0.0, covar);
+		double iRSS = RSS / (data.nValid - data.np - 1);
+
+		Eigen::MatrixXd prmStd = Eigen::Map<Eigen::MatrixXd>(data.prmVect, 1, data.np);
+
+		for (i = 0; i < data.np; ++i) {
+			prmStd(i) = sqrt(iRSS*gsl_matrix_get(covar, i, i));
+		}
+
+		params.std_x = prmStd(0);
+		params.std_y = prmStd(1);
+
+		params.std_A = prmStd(2);
+		params.std_sigma = prmStd(3);
+		params.std_C = prmStd(4);
+
+		params.mean = mean;
+		params.std = std;
+		params.RSS = RSS;
+
+
+		/*if (nlhs > 2) {
+			plhs[2] = mxCreateDoubleMatrix(np, np, mxREAL);
+			/* cov. matrix is symmetric, no need to transpose
+			memcpy(mxGetPr(plhs[2]), covar->data, np*np * sizeof(double));
+		}*/
+
+		gsl_matrix_free(covar);
+
+		/* residuals
 		if (nlhs > 3) {
 			const char *fieldnames[] = { "data", "hAD", "mean", "std", "RSS" };
 			mwSize dims[2] = { 1, 1 };
@@ -439,9 +462,9 @@ namespace cellogram
 			mxSetFieldByNumber(plhs[3], 0, 4, mxCreateDoubleScalar(RSS));
 		}
 
-		/* Jacobian 
+		/* Jacobian
 		if (nlhs > 4) {
-			/* convert row-major double* data.J->data to column-major double* 
+			/* convert row-major double* data.J->data to column-major double*
 			plhs[4] = mxCreateDoubleMatrix(N, np, mxREAL);
 			double *J = mxGetPr(plhs[4]);
 			int k;

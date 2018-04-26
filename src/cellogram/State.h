@@ -22,7 +22,7 @@ public:
 	int lloyd_iterations = 12;
 	double energy_variation_from_mean = 1.8;
 	int perm_possibilities = 12;
-
+	double sigma = 1.5;
 
 	int counter_invalid_neigh;
 	int counter_small_region;
@@ -35,11 +35,14 @@ public:
 	Eigen::MatrixXi hull_faces;
 	Eigen::MatrixXd hull_polygon;
 
+	Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> img;
+
 	std::vector<Region> regions;
 
 	std::vector<int> fixed_as_good;
 
 	bool load(const std::string &path);
+	bool load_image(const std::string fname);
 	bool load_param(const std::string &path);
 	bool save(const std::string &path);
 	void compute_hull();
@@ -48,7 +51,7 @@ public:
 	Eigen::VectorXi increase_boundary(const Eigen::VectorXi &boundary);
 
 	void untangle();
-
+	void detect_vertices();
 	void relax_with_lloyd();
 	void detect_bad_regions();
 	void erase_small_regions();

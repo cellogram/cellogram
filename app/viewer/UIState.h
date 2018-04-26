@@ -44,7 +44,7 @@ public:
 	Eigen::RowVector4f vertex_color = Eigen::RowVector4f(1,0,0,0);
 	Eigen::MatrixXd mesh_color;
 	bool show_hull = false;
-	bool image_loaded = false;
+	//bool image_loaded = false;
 	bool show_points = false;
 	bool show_mesh_fill = true;
 	bool show_image = false;
@@ -59,7 +59,7 @@ public:
 	bool make_vertex_good = false;
 
 	// Image
-	Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> img;
+	//Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> img;
 
 	std::string current_region_status;
 public:
@@ -77,6 +77,7 @@ public:
 	virtual bool mouse_scroll(float delta_y) override;
 
 	void load_image(std::string name);
+	void detect_vertices();
 	void display_image();
 	void compute_hull();
 	void clean_hull();

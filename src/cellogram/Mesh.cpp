@@ -51,8 +51,6 @@ namespace cellogram {
 
 			triangles << tmp, tNew;
 		}
-
-
 	}
 
 
@@ -82,7 +80,7 @@ namespace cellogram {
 
 	bool Mesh::load_params(const std::string & path)
 	{
-		params.resize(0, 0);
+		/*params.resize(0, 0);
 		std::fstream file;
 		file.open(path.c_str());
 
@@ -115,7 +113,7 @@ namespace cellogram {
 			file.close();
 			return false;
 		}
-		assert(detected.rows() == params.rows());
+		assert(detected.rows() == params.rows());*/
 		return true;
 	}
 
@@ -134,6 +132,26 @@ namespace cellogram {
 		cellogram::vertex_degree(triangles, degree);
 	}
 
+	void Mesh::detect_vertices(const Eigen::MatrixXd &V, const DetectionParams &params)
+	{
+		detected.resize(0, 0); // detected (unmoved) point positions
+		points.resize(0, 0); // relaxed point positions
+		triangles.resize(0, 0); // triangular mesh
+		adj.clear(); // adjaceny list of triangluar mesh
+		vertex_to_tri.clear();
+		boundary.resize(0); // list of vertices on the boundary
+
+		detected = V;
+		points = detected;
+		solved_vertex.resize(points.rows(), 1);
+		solved_vertex.setConstant(false);
+
+		compute_triangulation();
+
+		// automatically load params if available
+
+	}
+
 	void Mesh::delete_vertex(const int index, bool recompute_triangulation)
 	{
 		// Delete vertex
@@ -141,10 +159,11 @@ namespace cellogram {
 		removeRow(solved_vertex, index);
 
 		// Delete entry in params
-		if (params.rows() > 0)
+		//TODO
+		/*if (params.rows() > 0)
 		{
 			removeRow(params, index);
-		}
+		}*/
 
 		for (int i = 0; i < boundary.size(); ++i)
 		{
@@ -199,14 +218,15 @@ namespace cellogram {
 		tmp_bool(solved_vertex.rows()) = false;
 		solved_vertex = tmp_bool;
 
-		// Add zero row to params
-		if (params.rows() > 0)
+		// Add zero row to params\
+		//TODO
+		/*if (params.rows() > 0)
 		{
 			Eigen::MatrixXd tmp(params.rows() + 1, params.cols());
 			tmp.block(0, 0, params.rows(), params.cols()) = params;
 			tmp.row(params.rows()) = Eigen::RowVectorXd::Zero(params.cols());
 			params = tmp;
-		}
+		}*/
 	}
 
 	void Mesh::local_update(Eigen::VectorXi &local2global, const int global_to_remove, Eigen::MatrixXi & new_triangles)
@@ -474,6 +494,17 @@ namespace cellogram {
 
 		adjacency_list(triangles, adj);
 		generate_vertex_to_tri();
+	}
+
+	void Mesh::clear()
+	{
+		detected.resize(0, 0); // detected (unmoved) point positions
+		points.resize(0, 0); // relaxed point positions
+		triangles.resize(0, 0); // triangular mesh
+		adj.clear(); // adjaceny list of triangluar mesh
+		vertex_to_tri.clear();
+		boundary.resize(0); // list of vertices on the boundary
+
 	}
 
 	void Mesh::reset()

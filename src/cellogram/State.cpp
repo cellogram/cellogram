@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "State.h"
 
-
+#include <cellogram/point_source_detection.h>
 #include <cellogram/convex_hull.h>
 
 #include <cellogram/voronoi.h>
@@ -14,6 +14,7 @@
 #include <igl/slice.h>
 #include <igl/list_to_matrix.h>
 #include <igl/point_in_poly.h>
+#include <igl/png/readPNG.h>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
@@ -56,6 +57,23 @@ namespace cellogram {
 
 		// Load points
 		return mesh.load(path);
+	}
+
+	bool State::load_image(const std::string fname)
+	{
+		Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> R, G, B, A; // Image
+		igl::png::readPNG(fname, R, G, B, A);
+		
+		img = R;
+
+		hull_vertices.resize(0, 0); //needed for lloyd
+		hull_faces.resize(0, 0);
+		hull_polygon.resize(0, 0);
+		regions.clear();
+
+
+		mesh.clear();
+		return true;
 	}
 
 	bool State::load_param(const std::string & path)
@@ -144,6 +162,29 @@ namespace cellogram {
 	void State::untangle()
 	{
 		mesh.untangle();
+	}
+
+	void State::detect_vertices()
+	{
+		// clear previous
+		hull_vertices.resize(0, 0); //needed for lloyd
+		hull_faces.resize(0, 0);
+		hull_polygon.resize(0, 0);
+		regions.clear();
+		
+		Eigen::MatrixXd V;
+		DetectionParams params;
+
+		Eigen::MatrixXd tmp = img.cast<double>().transpose();
+		double min = tmp.minCoeff();
+		double max = tmp.maxCoeff();
+		Eigen::MatrixXd imgNorm = (tmp.array() - min) / (max - min);
+		imgNorm = tmp;
+		//imgNorm = imgNorm.colwise().reverse().eval();
+		
+		point_source_detection(imgNorm, sigma, V, params);
+
+		mesh.detect_vertices(V, params);
 	}
 
 	void State::relax_with_lloyd()
@@ -290,9 +331,9 @@ namespace cellogram {
 				Eigen::VectorXd x_pstd(n), y_pstd(n), pval_Ar(n);
 				for (int i = 0; i < r.region_interior.size(); i++)
 				{
-					x_pstd(i) = mesh.params(r.region_interior(i), 5);
-					y_pstd(i) = mesh.params(r.region_interior(i), 6);
-					pval_Ar(i) = mesh.params(r.region_interior(i), 15);
+					x_pstd(i) = mesh.params.std_x(r.region_interior(i));
+					y_pstd(i) = mesh.params.std_y(r.region_interior(i));
+					pval_Ar(i) = mesh.params.pval_Ar(r.region_interior(i));
 				}
 				int xMax, yMax, pMax;
 				x_pstd.maxCoeff(&xMax);

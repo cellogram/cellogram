@@ -172,21 +172,7 @@ void UIState::draw_custom_window() {
 			viewer_control();
 		}
 	}
-	// Image Control Panel
-	if (ImGui::CollapsingHeader("Image", ImGuiTreeNodeFlags_DefaultOpen)) {
-		if (ImGui::Button("Load Image")) {
-			std::string fname = FileDialog::openFileName(DATA_DIR, { "*.png" });
-			if (!fname.empty()) {
-				load_image(fname);
 
-				image_loaded = true;
-				show_image = true;
-
-				// update UI
-				viewer_control();
-			}
-		}
-	}
 	// Node control panel
 	/* This menu will include:
 		- adding/removing nodes
@@ -195,7 +181,7 @@ void UIState::draw_custom_window() {
 			. with meaning, e.g. valence
 			. color picked by user
 	*/
-	if (ImGui::CollapsingHeader("Vertices", ImGuiTreeNodeFlags_DefaultOpen)) {
+	/*if (ImGui::CollapsingHeader("Vertices", ImGuiTreeNodeFlags_DefaultOpen)) {
 		float w = ImGui::GetContentRegionAvailWidth();
 		float p = ImGui::GetStyle().FramePadding.x;
 		if (ImGui::Button("Add node", ImVec2((w - p) / 2.f, 0))) {
@@ -211,7 +197,7 @@ void UIState::draw_custom_window() {
 		{
 			viewer_control();
 		}
-	}
+	}*/
 	// Mesh
 	/* This menu will include:
 	- show face
@@ -239,6 +225,23 @@ void UIState::draw_custom_window() {
 		}
 
 		ImGui::Separator();
+
+		if (ImGui::Button("Load Image")) {
+			std::string fname = FileDialog::openFileName(DATA_DIR, { "*.png" });
+			if (!fname.empty()) {
+				load_image(fname);
+
+				show_image = true;
+
+				// update UI
+				viewer_control();
+			}
+		}
+
+		if (ImGui::Button("Detection")) {
+			
+			detect_vertices();
+		}
 
 		if (ImGui::Button("Lloyd", ImVec2((w - p) , 0))) {
 			state.relax_with_lloyd();

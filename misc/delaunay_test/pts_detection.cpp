@@ -6,6 +6,7 @@
 #include <vector>
 #include <Eigen/Dense>
 #include <igl/list_to_matrix.h>
+#include <igl/Timer.h>
 
 bool load_img(const std::string & path, Eigen::MatrixXd &res)
 {
@@ -63,8 +64,12 @@ int main(int argc, char** argv) {
 
 	imgNorm = (img.array() - min) / (max - min);
 
-	cellogram::point_source_detection(imgNorm, sigma, V, V_std, pval_Ar);
+	cellogram::DetectionParams params;
 
+	cellogram::point_source_detection(imgNorm, sigma, V, params);
+
+	std::cout << V << std::endl;
+	std::cout << params.std_x << std::endl;
 
 	return 0;
 }

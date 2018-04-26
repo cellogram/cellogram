@@ -1,9 +1,12 @@
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
+#include <cellogram/point_source_detection.h>
+
 #include "common.h"
 #include <vector>
 #include <Eigen/Dense>
+
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
@@ -14,7 +17,7 @@ public:
 	Mesh() { }
 
 	Eigen::MatrixXd detected; // detected (unmoved) point positions
-	Eigen::MatrixXd params; // parameters of detected
+	DetectionParams params; // parameters of detected
 	Eigen::MatrixXd points; // relaxed point positions
 	Eigen::VectorXi boundary; // list of vertices on the boundary
 
@@ -30,6 +33,7 @@ public:
 	void relax_with_lloyd(const int lloyd_iterations, const Eigen::MatrixXd &hull_vertices, const Eigen::MatrixXi &hull_faces);
 	void vertex_degree(Eigen::VectorXi &degree);
 
+	void detect_vertices(const Eigen::MatrixXd &V, const DetectionParams &params);
 	void delete_vertex(const int index, bool recompute_triangulation = true);
 	void add_vertex(Eigen::Vector3d &new_point);
 
@@ -44,6 +48,8 @@ public:
 
 
 	void untangle();
+
+	void clear();
 
 private:
 	void compute_triangulation();
