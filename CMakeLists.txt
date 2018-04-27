@@ -115,3 +115,7 @@ add_subdirectory(src)
 add_subdirectory(app)
 add_subdirectory(misc)
 add_subdirectory(tests)
+
+
+set_target_properties (block_test PROPERTIES FOLDER 3rdparty/not_used)
+set_target_properties (bspline_test PROPERTIES FOLDER 3rdparty/gsl)

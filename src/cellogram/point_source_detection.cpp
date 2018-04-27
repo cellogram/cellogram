@@ -101,8 +101,8 @@ namespace cellogram {
 			int ydim = img.rows();
 			int xdim = img.cols();
 
-			first_img.resize(ydim, xdim);
-			second_img.resize(ydim, xdim);
+			first_img.setZero(ydim, xdim);
+			second_img.setZero(ydim, xdim);
 
 			Eigen::MatrixXd imgPad(ydim + 2 * padSize, xdim + 2 * padSize);
 			imgPad.setZero();
@@ -127,10 +127,14 @@ namespace cellogram {
 								second = first;
 								first = tmp;
 							}
-							else if (tmp > second && tmp != first)
+							else if (tmp > second)
 								second = tmp;
 						}
 					}
+
+
+					if (std::abs(second - -std::numeric_limits<double>::max()) < 1e-10)
+						second = first;
 
 					first_img(i - padSize, j - padSize) = first;
 					second_img(i - padSize, j - padSize) = second;
@@ -150,6 +154,9 @@ namespace cellogram {
 
 			Eigen::MatrixXd fImg, fImg2;
 			ordfilt2(img, mask, fImg, fImg2);
+
+			std::cout << "\n\nfimg\n" << fImg << std::endl;
+			std::cout << "\n\nfimg2\n" << fImg2 << std::endl;
 
 			// take only those positions where the max filter and the original image value
 			// are equal -> this is a local maximum
@@ -419,12 +426,17 @@ namespace cellogram {
 
 		//mask of admissible positions for local maxima
 		MatrixXb mask = pval.array() < 0.05;
+		//std::cout << "\n\mask: \n"<< mask << std::endl;
 
 		// all local max
 		Eigen::MatrixXd allMax = locmax2d(imgLoG, 2 * std::ceil(sigma) + 1); // checked
+		std::cout << "\n\nimgLoG: \n"<< imgLoG << std::endl;
+		//std::cout << "\n\nallmax: \n"<< allMax << std::endl;
 
 		// local maxima above threshold in image domain
 		Eigen::MatrixXd imgLM = allMax.array() * mask.cast<double>().array(); // checked
+
+		//std::cout << imgLM << std::endl;
 
 		if (imgLM.cwiseAbs().sum() - 1e-8 < 0)
 			return;

@@ -314,7 +314,7 @@ void UIState::display_image()
 		0, 0, 0,
 		xMax, 0, 0,
 		xMax, yMax, 0,
-		0, xMax, 0;
+		0, yMax, 0;
 	Eigen::MatrixXi F(2, 3);
 	F <<
 		0, 1, 2,
@@ -346,9 +346,11 @@ void UIState::viewer_control()
 
 	// Read all the UIState flags and update display
 	// hull
-	if (show_hull) {
+
+	int n = (int)state.hull_polygon.rows();
+
+	if (show_hull && n >= 3) {
 		// Draw edges
-		int n = (int)state.hull_polygon.rows();
 
 		Eigen::MatrixXd P2; P2.resizeLike(state.hull_polygon);
 		P2.topRows(n - 1) = state.hull_polygon.bottomRows(n - 1);
@@ -365,7 +367,9 @@ void UIState::viewer_control()
 
 	// points
 	Eigen::MatrixXd V = t * state.mesh.points + (1 - t) * state.mesh.detected;
-	points_data().set_mesh(V, state.mesh.triangles);
+
+	if (V.size() > 0)
+		points_data().set_mesh(V, state.mesh.triangles);
 	/*if (image_loaded)
 	{
 		Eigen::MatrixXd UV(state.detected.rows(), 2);

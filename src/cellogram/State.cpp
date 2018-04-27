@@ -179,12 +179,19 @@ namespace cellogram {
 		double min = tmp.minCoeff();
 		double max = tmp.maxCoeff();
 		Eigen::MatrixXd imgNorm = (tmp.array() - min) / (max - min);
-		imgNorm = tmp;
+		//imgNorm = tmp;
 		//imgNorm = imgNorm.colwise().reverse().eval();
 		
+
+		std::cout << imgNorm << std::endl;
+
 		point_source_detection(imgNorm, sigma, V, params);
 
+		std::cout << V << std::endl;
+
 		mesh.detect_vertices(V, params);
+
+		
 	}
 
 	void State::relax_with_lloyd()

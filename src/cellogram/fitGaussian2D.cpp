@@ -331,7 +331,7 @@ namespace cellogram
 			px[i] = window(i);
 		}
 
-		int np = NPARAMS;
+		int np = 4;
 
 		dataStruct_t data;
 
@@ -370,7 +370,7 @@ namespace cellogram
 		data.estIdx[np] = 0; data.dfunc[np++] = df_dx;
 		data.estIdx[np] = 1; data.dfunc[np++] = df_dy;
 		data.estIdx[np] = 2; data.dfunc[np++] = df_dA;
-		data.estIdx[np] = 3; data.dfunc[np++] = df_ds;
+		//data.estIdx[np] = 3; data.dfunc[np++] = df_ds;
 		data.estIdx[np] = 4; data.dfunc[np++] = df_dc;
 
 		data.x_init = (double*)malloc(sizeof(double)*np);
@@ -417,8 +417,8 @@ namespace cellogram
 		params.std_y = prmStd(1);
 
 		params.std_A = prmStd(2);
-		params.std_sigma = prmStd(3);
-		params.std_C = prmStd(4);
+		//params.std_sigma = prmStd(3);
+		params.std_C = prmStd(3); //4
 
 		params.mean = mean;
 		params.std = std;
