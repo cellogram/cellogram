@@ -183,11 +183,11 @@ namespace cellogram {
 		//imgNorm = imgNorm.colwise().reverse().eval();
 		
 
-		std::cout << imgNorm << std::endl;
+		//std::cout << imgNorm << std::endl;
 
 		point_source_detection(imgNorm, sigma, V, params);
 
-		std::cout << V << std::endl;
+		//std::cout << V << std::endl;
 
 		mesh.detect_vertices(V, params);
 

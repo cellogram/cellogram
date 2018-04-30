@@ -22,7 +22,7 @@ public:
 	int lloyd_iterations = 12;
 	double energy_variation_from_mean = 1.8;
 	int perm_possibilities = 12;
-	double sigma = 1.5;
+	double sigma = 3;
 
 	int counter_invalid_neigh;
 	int counter_small_region;

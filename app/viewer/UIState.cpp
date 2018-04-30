@@ -5,6 +5,9 @@
 #include <igl/colon.h>
 #include <igl/unproject_onto_mesh.h>
 #include <igl/colormap.h>
+
+
+#include <GLFW/glfw3.h>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
@@ -13,7 +16,9 @@ namespace cellogram {
 
 UIState::UIState()
 	: state(State::state())
-{ }
+{ 
+	reset_viewer();
+}
 
 UIState &UIState::ui_state() {
 	static UIState instance;
@@ -209,22 +214,16 @@ bool UIState::load(std::string name) {
 
 void UIState::detect_vertices() {
 	state.detect_vertices();
-	selected_region = -1;
-	current_region_status = "";
-	//img.resize(0, 0);
-	// reset flags
 
 	mesh_color.resize(1, 3);
 	mesh_color.row(0) = Eigen::RowVector3d(255, 255, 120) / 255.0;
-	reset_viewer();
-
+	//reset_viewer();
+	show_points = true;
 	// Show points and align camera
-	points_data().clear();
-	points_data().set_points(state.mesh.points, Eigen::RowVector3d(1, 0, 0));
-	viewer.core.align_camera_center(state.mesh.points);
-	double extent = (state.mesh.points.colwise().maxCoeff() - state.mesh.points.colwise().minCoeff()).maxCoeff();
-	points_data().point_size = float(0.008 * extent);
-	fix_color(points_data());
+	//points_data().clear();
+	//points_data().set_points(state.mesh.points, Eigen::RowVector3d(1, 0, 0));
+
+	//fix_color(points_data());
 
 	// Compute and show convex hull + triangulation
 	compute_hull();
@@ -284,12 +283,12 @@ void UIState::reset_viewer()
 {
 	// Display flags
 	t = 0;
-	vertex_color = Eigen::RowVector4f(1,0,0,0);
+	vertex_color = Eigen::RowVector3f(1,0,0);
 	mesh_color.resize(0, 0);
-	show_hull = false;
-	show_points = false;
-	show_mesh_fill = true;
-	show_image = false;
+	//show_hull = false;
+	//show_points = false;
+	//show_mesh_fill = true;
+	//show_image = false;
 	show_matching = false;
 	show_bad_regions = false;
 }
@@ -298,9 +297,39 @@ void UIState::reset_viewer()
 void UIState::load_image(std::string fname) {
 	state.load_image(fname);
 
+
+	selected_region = -1;
+	current_region_status = "";
+
 	show_mesh_fill = false;
 	show_image = true;
 
+	int xMax = state.img.cols();
+	int yMax = state.img.rows();
+	Eigen::MatrixXd V(4, 3);
+	V <<
+		0, 0, 0,
+		yMax, 0, 0,
+		yMax, xMax, 0,
+		0, xMax, 0;
+
+	viewer.core.align_camera_center(V);
+
+	double extent = (V.colwise().maxCoeff() -V.colwise().minCoeff()).maxCoeff();
+	//HIGH dpi
+	
+	//int width, height;
+	//glfwGetFramebufferSize(viewer.window, &width, &height);
+	//int width_window, height_window;
+	//glfwGetWindowSize(viewer.window, &width_window, &height_window);
+	//const int highdpi = width / width_window;
+
+
+	std::cout << extent << std::endl;
+	points_data().point_size =  float(700. / extent)+5;
+
+
+	viewer_control();
 }
 
 void UIState::display_image()
@@ -312,9 +341,9 @@ void UIState::display_image()
 	Eigen::MatrixXd V(4, 3);
 	V <<
 		0, 0, 0,
-		xMax, 0, 0,
-		xMax, yMax, 0,
-		0, yMax, 0;
+		yMax, 0, 0,
+		yMax, xMax, 0,
+		0, xMax, 0;
 	Eigen::MatrixXi F(2, 3);
 	F <<
 		0, 1, 2,
@@ -384,7 +413,26 @@ void UIState::viewer_control()
 	if (show_points)
 	{
 		if (state.regions.empty())
-			points_data().set_points(V, vertex_color.cast<double>().head<3>());
+		{
+			Eigen::MatrixXd C(V.rows(), 3);
+			C.col(0).setConstant(vertex_color(0));
+			C.col(1).setConstant(vertex_color(1));
+			C.col(2).setConstant(vertex_color(2));
+
+			if (color_code)
+			{
+				Eigen::VectorXd param(V.rows());
+				for (int i = 0; i < V.rows(); i++)
+				{
+					param(i) = state.mesh.params.std_x(i);
+				}
+				//igl::parula(param, true, C);
+				igl::ColorMapType cm = igl::ColorMapType::COLOR_MAP_TYPE_INFERNO;
+				igl::colormap(cm, param, true, C);
+			}
+
+			points_data().set_points(V, C);
+		}
 		else
 		{
 			Eigen::MatrixXd C(V.rows(), 3);
@@ -394,14 +442,14 @@ void UIState::viewer_control()
 
 			if (color_code)
 			{
-				//Eigen::VectorXd param(V.rows());
-				//for (int i = 0; i < V.rows(); i++)
-				//{
-				//	param(i) = state.mesh.params(i,selected_param);
-				//}
-				////igl::parula(param, true, C);
-				//igl::ColorMapType cm = igl::ColorMapType::COLOR_MAP_TYPE_INFERNO;
-				//igl::colormap(cm,param, true, C);
+				Eigen::VectorXd param(V.rows());
+				for (int i = 0; i < V.rows(); i++)
+				{
+					param(i) = state.mesh.params.pval_Ar(i);
+				}
+				//igl::parula(param, true, C);
+				igl::ColorMapType cm = igl::ColorMapType::COLOR_MAP_TYPE_INFERNO;
+				igl::colormap(cm,param, true, C);
 			}
 			else
 			{

@@ -41,7 +41,7 @@ public:
 
 	// Display flags
 	float t;
-	Eigen::RowVector4f vertex_color = Eigen::RowVector4f(1,0,0,0);
+	Eigen::RowVector3f vertex_color;
 	Eigen::MatrixXd mesh_color;
 	bool show_hull = false;
 	//bool image_loaded = false;

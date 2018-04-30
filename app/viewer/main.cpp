@@ -31,14 +31,12 @@ int main(int argc, char *argv[]) {
 
 	// Default arguments
 	struct {
-		std::string input = DATA_DIR "2.xyz";
-		std::string param = DATA_DIR "2_param.txt";
+		std::string input = DATA_DIR "perfects.png";
 	} args;
 
 	// Parse arguments
 	CLI::App app{"cellogram"};
-	app.add_option("input,-i,--input", args.input, "Output points.");
-	app.add_option("param,-p,--param", args.param, "Output params.");
+	app.add_option("input,-i,--input", args.input, "Input image.");
 	try {
 		app.parse(argc, argv);
 	} catch (const CLI::ParseError &e) {
@@ -46,7 +44,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	UIState::ui_state().initialize();
-	UIState::ui_state().load(args.input);
+	UIState::ui_state().load_image(args.input);
 	//UIState::ui_state().load_param(args.param);
 	UIState::ui_state().launch();
 

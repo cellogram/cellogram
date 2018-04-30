@@ -12,12 +12,12 @@
 #include <numeric>
 #include <stack>
 #include <geogram/basic/geometry.h>
-#undef IGL_STATIC_LIBRARY
 #include <igl/edge_lengths.h>
 #include <igl/colon.h>
 #include "tcdf/tcdf.h"
 #include <queue>
 #include <igl/Timer.h>
+#include <igl/remove_duplicate_vertices.h>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
@@ -116,6 +116,7 @@ namespace cellogram {
 					// Loop through domain and find highest value
 					double first = -std::numeric_limits<double>::max();
 					double second = first;
+					int counter = 0;
 					for (int k = -padSize; k <= padSize; k++)
 					{
 						for (int l = -padSize; l <= padSize; l++)
@@ -129,9 +130,9 @@ namespace cellogram {
 							}
 							else if (tmp > second)
 								second = tmp;
+							counter++;
 						}
 					}
-
 
 					if (std::abs(second - -std::numeric_limits<double>::max()) < 1e-10)
 						second = first;
@@ -155,8 +156,7 @@ namespace cellogram {
 			Eigen::MatrixXd fImg, fImg2;
 			ordfilt2(img, mask, fImg, fImg2);
 
-			std::cout << "\n\nfimg\n" << fImg << std::endl;
-			std::cout << "\n\nfimg2\n" << fImg2 << std::endl;
+
 
 			// take only those positions where the max filter and the original image value
 			// are equal -> this is a local maximum
@@ -164,12 +164,13 @@ namespace cellogram {
 			{
 				for (int j = 0; j < img.cols(); j++)
 				{
-					if (fImg2(i, j) == fImg(i, j))
+					if (std::abs(fImg2(i, j) - fImg(i, j)) < 1e-8)
 						fImg(i, j) = 0;
-					if (fImg(i, j) != img(i, j))
+					if (std::abs(fImg(i, j) - img(i, j)) > 1e-8)
 						fImg(i, j) = 0;
 				}
 			}
+			// fImg and fimg2 are correct
 
 			// set image border to zero
 			Eigen::MatrixXd fImgFinal(img.rows(), img.cols());
@@ -256,6 +257,8 @@ namespace cellogram {
 			params_out.resize(np);
 			int index = 0;
 			Eigen::MatrixXd df2(np,1),T(np,1);
+			T.setZero();
+			df2.setZero();
 
 			for (int p = 0; p < np; p++)
 			{
@@ -297,7 +300,7 @@ namespace cellogram {
 				internal::Params params;
 				fitGaussian2D(window, 0, 0, A_init, sigma(p), c_init, xy_detected, params);
 
-				V.row(index) = xy.row(p).cast<double>() + xy_detected.transpose();
+				V.row(index) = xy.row(p).cast<double>().array() + xy_detected.transpose().array()+0.5; //+0.5 middle of the pixel
 				params_out.set_from(params, index);
 
 				//df2 & T for pval_Ar
@@ -308,7 +311,7 @@ namespace cellogram {
 				double A_est = params.A;
 				df2(index,0) = (npx - 1) * (sigma_A2 + SE_sigma_r2)*(sigma_A2 + SE_sigma_r2) / (sigma_A2*sigma_A2 + SE_sigma_r2*SE_sigma_r2);
 				double scomb = std::sqrt((sigma_A2 + SE_sigma_r2) / npx);
-				T(index,0) = (A_est - params.std *kLevel) / scomb; //(A_est - res.std*kLevel) . / scomb;
+				T(index,0) = (A_est - params.std * kLevel) / scomb; //(A_est - res.std*kLevel) . / scomb;
 
 				++index;
 			}
@@ -318,11 +321,22 @@ namespace cellogram {
 
 			params_out.pval_Ar.setZero();
 
+			T.conservativeResize(index, 1);
+			df2.conservativeResize(index, 1);
+
 			Eigen::MatrixXd pval_Ar;
+
+			//std::cout << "\n\nT\n" << T << std::endl;
+			//std::cout << "\n\ndf2\n" << df2 << std::endl;
+
 			matlabautogen::tcdf(-T, df2, pval_Ar);
-			pval_Ar.conservativeResize(index,1);
+			//pval_Ar.conservativeResize(index,1);
+			assert(pval_Ar.size() == index);
+
+			//std::cout << pval_Ar << std::endl;
 
 			params_out.pval_Ar = pval_Ar;
+
 		}
 
 	} // anonymous namespace
@@ -355,6 +369,7 @@ namespace cellogram {
 		Eigen::MatrixXd fg = conv2(g, g, imgXT);
 		Eigen::MatrixXd fu = conv2(u, u, imgXT);
 		Eigen::MatrixXd fu2 = conv2(u, u, imgXT.array().square());
+
 
 		// Laplacian of Gaussian
 		Eigen::MatrixXd gx2 = g.array()*x.array().square();
@@ -426,11 +441,12 @@ namespace cellogram {
 
 		//mask of admissible positions for local maxima
 		MatrixXb mask = pval.array() < 0.05;
-		//std::cout << "\n\mask: \n"<< mask << std::endl;
+
+		// everything correct so far. Checked: fg, fu2, g, mask, imgLoG
 
 		// all local max
 		Eigen::MatrixXd allMax = locmax2d(imgLoG, 2 * std::ceil(sigma) + 1); // checked
-		std::cout << "\n\nimgLoG: \n"<< imgLoG << std::endl;
+		
 		//std::cout << "\n\nallmax: \n"<< allMax << std::endl;
 
 		// local maxima above threshold in image domain
@@ -483,9 +499,14 @@ namespace cellogram {
 		//std::cout << "mask:\n" << mask << std::endl;
 
 		fitGaussians2D(img, lm, A_est_idx, s_est_idx, c_est_idx, mask, V, params); //inputs checked
-		//pval_Ar = pval;
-		//% remove NaN values
-		//	idx = ~isnan([pstruct.x]);
+		
+		// remove duplicates
+		/*Eigen::MatrixXd tmp = V;
+		Eigen::MatrixXi Vi, Vj;
+		igl::remove_duplicate_vertices(tmp, 1e-3, V, Vi, Vj);
+*/
+		//V = tmp(Vi, :)
+
 	}
 
 	void DetectionParams::resize(const int size)

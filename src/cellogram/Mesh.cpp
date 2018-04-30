@@ -141,6 +141,7 @@ namespace cellogram {
 		vertex_to_tri.clear();
 		boundary.resize(0); // list of vertices on the boundary
 
+		this->params = params;
 		detected = V;
 		points = detected;
 		solved_vertex.resize(points.rows(), 1);

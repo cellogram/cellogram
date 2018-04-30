@@ -41,11 +41,11 @@ void UIState::draw_viewer_menu() {
 	if (ImGui::CollapsingHeader("Points", ImGuiTreeNodeFlags_DefaultOpen)) {
 		float w = ImGui::GetContentRegionAvailWidth();
 		float p = ImGui::GetStyle().FramePadding.x;
-		if (ImGui::Button("Load##Points", ImVec2((w-p)/2.f, 0))) {
+		/*if (ImGui::Button("Load##Points", ImVec2((w-p)/2.f, 0))) {
 			std::string fname = FileDialog::openFileName(DATA_DIR, {"*.xyz"});
 			if (!fname.empty()) { load(fname); }
-		}
-		ImGui::SameLine(0, p);
+		}*/
+		//ImGui::SameLine(0, p);
 		if (ImGui::Button("Save##Points", ImVec2((w-p)/2.f, 0))) {
 			std::string fname = FileDialog::saveFileName(DATA_DIR, {"*.xyz"});
 			if (!fname.empty()) { save(fname); }
