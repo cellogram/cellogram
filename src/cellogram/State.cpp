@@ -187,7 +187,9 @@ namespace cellogram {
 
 		point_source_detection(imgNorm, sigma, V, params);
 
-		//std::cout << V << std::endl;
+		std::cout << V << std::endl;
+
+		std::cout << params.pval_Ar << std::endl;
 
 		mesh.detect_vertices(V, params);
 

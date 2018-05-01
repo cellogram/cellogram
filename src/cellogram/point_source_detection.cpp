@@ -298,7 +298,10 @@ namespace cellogram {
 				double A_init = A(p);
 				Eigen::Vector2d xy_detected;
 				internal::Params params;
-				fitGaussian2D(window, 0, 0, A_init, sigma(p), c_init, xy_detected, params);
+				const bool ok = fitGaussian2D(window, 0, 0, A_init, sigma(p), c_init, xy_detected, params);
+
+	/*			if (!ok)
+					continue;*/
 
 				V.row(index) = xy.row(p).cast<double>().array() + xy_detected.transpose().array()+0.5; //+0.5 middle of the pixel
 				params_out.set_from(params, index);
@@ -446,7 +449,7 @@ namespace cellogram {
 
 		// all local max
 		Eigen::MatrixXd allMax = locmax2d(imgLoG, 2 * std::ceil(sigma) + 1); // checked
-		
+
 		//std::cout << "\n\nallmax: \n"<< allMax << std::endl;
 
 		// local maxima above threshold in image domain
@@ -499,14 +502,16 @@ namespace cellogram {
 		//std::cout << "mask:\n" << mask << std::endl;
 
 		fitGaussians2D(img, lm, A_est_idx, s_est_idx, c_est_idx, mask, V, params); //inputs checked
-		
-		// remove duplicates
-		/*Eigen::MatrixXd tmp = V;
-		Eigen::MatrixXi Vi, Vj;
-		igl::remove_duplicate_vertices(tmp, 1e-3, V, Vi, Vj);
-*/
-		//V = tmp(Vi, :)
 
+		// remove duplicates
+		const Eigen::MatrixXd tmpV = V;
+		Eigen::MatrixXi Vi, Vj;
+		igl::remove_duplicate_vertices(tmpV, 0.25, V, Vi, Vj);
+
+		if (Vi.size() != Vj.size())
+			params.remap(Vi);
+		else
+			V = tmpV;
 	}
 
 	void DetectionParams::resize(const int size)
@@ -560,6 +565,85 @@ namespace cellogram {
 		mean(index) = params.mean;
 		std(index) = params.std;
 		RSS(index) = params.RSS;
+	}
+
+	void DetectionParams::remap(const Eigen::VectorXi & map)
+	{
+		const auto tmp_A = A;
+		const auto tmp_sigma = sigma;
+		const auto tmp_C = C;
+		const auto tmp_std_x = std_x;
+		const auto tmp_std_y = std_y;
+		const auto tmp_std_A = std_A;
+		const auto tmp_std_sigma = std_sigma;
+		const auto tmp_std_C = std_C;
+		const auto tmp_mean = mean;
+		const auto tmp_std = std;
+		const auto tmp_RSS = RSS;
+		const auto tmp_pval_Ar = pval_Ar;
+
+		A.resize(map.size());
+		sigma.resize(map.size());
+		C.resize(map.size());
+		std_x.resize(map.size());
+		std_y.resize(map.size());
+		std_A.resize(map.size());
+		std_sigma.resize(map.size());
+		std_C.resize(map.size());
+		mean.resize(map.size());
+		std.resize(map.size());
+		RSS.resize(map.size());
+		pval_Ar.resize(map.size());
+
+		for (int i = 0; i < map.size(); i++)
+		{
+			A(i) = tmp_A(map(i));
+			sigma(i) = tmp_sigma(map(i));
+			C(i) = tmp_C(map(i));
+			std_x(i) = tmp_std_x(map(i));
+			std_y(i) = tmp_std_y(map(i));
+			std_A(i) = tmp_std_A(map(i));
+			std_sigma(i) = tmp_std_sigma(map(i));
+			std_C(i) = tmp_std_C(map(i));
+			mean(i) = tmp_mean(map(i));
+			std(i) = tmp_std(map(i));
+			RSS(i) = tmp_RSS(map(i));
+			pval_Ar(i) = tmp_pval_Ar(map(i));
+		}
+	}
+
+	void DetectionParams::remove_index(const int index)
+	{
+		//To delete the params of a vertex a mapping excluding the vertex to be deleted is generated
+		Eigen::VectorXi Vi(A.size() - 1);
+		int k = 0;
+		for (int i = 0; i < A.size(); i++)
+		{
+			if (i != index)
+			{
+				Vi(k) = i;
+				k++;
+			}
+		}
+		remap(Vi);
+	}
+
+	void DetectionParams::push_back(const double val)
+	{
+		const int index = A.size();
+		conservative_resize(index + 1);
+
+		A(index) = val;
+		sigma(index) = val;
+		C(index) = val;
+		std_x(index) = val;
+		std_y(index) = val;
+		std_A(index) = val;
+		std_sigma(index) = val;
+		std_C(index) = val;
+		mean(index) = val;
+		std(index) = val;
+		RSS(index) = val;
 	}
 
 } // namespace cellogram

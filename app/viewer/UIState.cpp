@@ -86,7 +86,7 @@ void UIState::initialize() {
 		}
 		else if(add_vertex)
 		{ 
-			add_vertex = false;
+			//add_vertex = false;
 			double xNew = 0, yNew = 0, zNew = 0;
 			for (int i = 0; i < 3; i++)
 			{
@@ -101,7 +101,7 @@ void UIState::initialize() {
 		}
 		else if (delete_vertex)
 		{
-			delete_vertex = false;
+			//delete_vertex = false;
 			// find maximum barycenter coordinates and get vertex id
 			int vid;
 			int maxBC = 0;

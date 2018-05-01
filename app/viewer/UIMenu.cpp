@@ -21,9 +21,35 @@
 
 namespace cellogram {
 
+	namespace
+	{
+		void push_disabled()
+		{
+			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+		}
+
+		void pop_disabled()
+		{
+			ImGui::PopItemFlag();
+			ImGui::PopStyleVar();
+		}
+
+		void push_selected()
+		{
+			ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyle().Colors[ImGuiCol_ButtonHovered]);
+		}
+
+		void pop_selected()
+		{
+			ImGui::PopStyleColor();
+		}
+	}
+
 // -----------------------------------------------------------------------------
 
 void UIState::draw_viewer_menu() {
+	ImGui::Begin("Cellogram", NULL, ImGuiWindowFlags_NoCollapse);
 	// Workspace
 	// if (ImGui::CollapsingHeader("Workspace", ImGuiTreeNodeFlags_DefaultOpen)) {
 	// 	float w = ImGui::GetContentRegionAvailWidth();
@@ -36,60 +62,154 @@ void UIState::draw_viewer_menu() {
 	// 		viewer.save_scene();
 	// 	}
 	// }
+	//-------- Viewer ---------
+	if (ImGui::CollapsingHeader("Mesh", ImGuiTreeNodeFlags_DefaultOpen)) {
+		float w = ImGui::GetContentRegionAvailWidth();
+		float p = ImGui::GetStyle().FramePadding.x;
+		if (ImGui::ColorEdit4("Mesh color", points_data().line_color.data(),
+			ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueWheel)) {
+			viewer_control();
+		}
+	}
 
-	// Mesh
+	//-------- Points ---------
 	if (ImGui::CollapsingHeader("Points", ImGuiTreeNodeFlags_DefaultOpen)) {
 		float w = ImGui::GetContentRegionAvailWidth();
 		float p = ImGui::GetStyle().FramePadding.x;
 		/*if (ImGui::Button("Load##Points", ImVec2((w-p)/2.f, 0))) {
-			std::string fname = FileDialog::openFileName(DATA_DIR, {"*.xyz"});
-			if (!fname.empty()) { load(fname); }
+		std::string fname = FileDialog::openFileName(DATA_DIR, {"*.xyz"});
+		if (!fname.empty()) { load(fname); }
 		}*/
 		//ImGui::SameLine(0, p);
-		if (ImGui::Button("Save##Points", ImVec2((w-p)/2.f, 0))) {
-			std::string fname = FileDialog::saveFileName(DATA_DIR, {"*.xyz"});
+		if (ImGui::Button("Save##Points", ImVec2((w - p) / 2.f, 0))) {
+			std::string fname = FileDialog::saveFileName(DATA_DIR, { "*.xyz" });
 			if (!fname.empty()) { save(fname); }
 		}
 	}
 
-	// Viewing options
-	if (ImGui::CollapsingHeader("Viewing Options", ImGuiTreeNodeFlags_DefaultOpen)) {
-		if (ImGui::Button("Center object", ImVec2(-1, 0))) {
-			viewer.core.align_camera_center(viewer.data().V, viewer.data().F);
-		}
-		if (ImGui::Button("Snap canonical view", ImVec2(-1, 0))) {
-			viewer.snap_to_canonical_quaternion();
-		}
+	//-------- Mesh ----------
+	if (ImGui::CollapsingHeader("Mesh", ImGuiTreeNodeFlags_DefaultOpen)) {
+		float w = ImGui::GetContentRegionAvailWidth();
+		float p = ImGui::GetStyle().FramePadding.x;
 
-		// Zoom
-		ImGui::PushItemWidth(80 * menu_scaling());
-		ImGui::DragFloat("Zoom", &(viewer.core.camera_zoom), 0.05f, 0.1f, 20.0f);
+		// Lloyds relaxation panel
+		ImGui::InputInt("Num Iter", &state.lloyd_iterations);
+		/*if (ImGui::Button("Lloyd", ImVec2((w - p) / 2.f, 0))) {
+		state.relax_with_lloyd();
+		t = 1;
+		mesh_color.resize(0, 0);
+		viewer_control();
+		}*/
 
-		// Select rotation type
-		static int rotation_type = static_cast<int>(viewer.core.rotation_type);
-		static Eigen::Quaternionf trackball_angle = Eigen::Quaternionf::Identity();
-		static bool orthographic = true;
-		if (ImGui::Combo("Camera Type", &rotation_type, "Trackball\0Two Axes\0002D Mode\0\0")) {
-			using RT = igl::opengl::ViewerCore::RotationType;
-			auto new_type = static_cast<RT>(rotation_type);
-			if (new_type != viewer.core.rotation_type) {
-				if (new_type == RT::ROTATION_TYPE_NO_ROTATION) {
-					trackball_angle = viewer.core.trackball_angle;
-					orthographic = viewer.core.orthographic;
-					viewer.core.trackball_angle = Eigen::Quaternionf::Identity();
-					viewer.core.orthographic = true;
-				} else if (viewer.core.rotation_type == RT::ROTATION_TYPE_NO_ROTATION) {
-					viewer.core.trackball_angle = trackball_angle;
-					viewer.core.orthographic = orthographic;
-				}
-				viewer.core.set_rotation_type(new_type);
-			}
+		//}
+
+		if (ImGui::SliderFloat("t", &t, 0, 1)) {
+			viewer_control();
 		}
 
-		// Orthographic view
-		ImGui::Checkbox("Orthographic view", &(viewer.core.orthographic));
-		ImGui::PopItemWidth();
+		if (ImGui::Button("Untangle", ImVec2((w - p), 0))) {
+			state.untangle();
+			t = 1;
+			mesh_color.resize(0, 0);
+			viewer_control();
+		}
+
+		ImGui::Separator();
+
+		if (ImGui::Button("Lloyd", ImVec2((w - p), 0))) {
+			state.relax_with_lloyd();
+			t = 1;
+			mesh_color.resize(0, 0);
+			viewer_control();
+		}
+
+
+		if (ImGui::Button("build regions", ImVec2((w - p), 0))) {
+			state.detect_bad_regions();
+
+			show_points = false;
+			show_bad_regions = true;
+
+			igl::jet(create_region_label(), true, mesh_color);
+
+			viewer_control();
+		}
+
+		if (ImGui::Button("check regions", ImVec2((w - p), 0))) {
+			state.check_regions();
+		}
+
+		if (ImGui::Button("fix regions", ImVec2((w - p), 0))) {
+			state.fix_regions();
+
+			igl::jet(create_region_label(), true, mesh_color);
+
+			viewer_control();
+		}
+
+		if (ImGui::Button("solve regions", ImVec2((w - p), 0))) {
+			state.resolve_regions();
+
+			igl::jet(create_region_label(), true, mesh_color);
+
+			viewer_control();
+		}
+
+		if (ImGui::Button("grow regions", ImVec2((w - p), 0))) {
+			state.grow_regions();
+
+			igl::jet(create_region_label(), true, mesh_color);
+
+			viewer_control();
+		}
+
+		if (ImGui::Button("Ultimate relaxation", ImVec2((w - p), 0))) {
+			state.final_relax();
+
+			igl::jet(create_region_label(), true, mesh_color);
+
+			viewer_control();
+		}
 	}
+	ImGui::End();
+	//// Viewing options
+	//if (ImGui::CollapsingHeader("Viewing Options", ImGuiTreeNodeFlags_DefaultOpen)) {
+	//	if (ImGui::Button("Center object", ImVec2(-1, 0))) {
+	//		viewer.core.align_camera_center(viewer.data().V, viewer.data().F);
+	//	}
+	//	if (ImGui::Button("Snap canonical view", ImVec2(-1, 0))) {
+	//		viewer.snap_to_canonical_quaternion();
+	//	}
+
+	//	// Zoom
+	//	ImGui::PushItemWidth(80 * menu_scaling());
+	//	ImGui::DragFloat("Zoom", &(viewer.core.camera_zoom), 0.05f, 0.1f, 20.0f);
+
+	//	// Select rotation type
+	//	static int rotation_type = static_cast<int>(viewer.core.rotation_type);
+	//	static Eigen::Quaternionf trackball_angle = Eigen::Quaternionf::Identity();
+	//	static bool orthographic = true;
+	//	if (ImGui::Combo("Camera Type", &rotation_type, "Trackball\0Two Axes\0002D Mode\0\0")) {
+	//		using RT = igl::opengl::ViewerCore::RotationType;
+	//		auto new_type = static_cast<RT>(rotation_type);
+	//		if (new_type != viewer.core.rotation_type) {
+	//			if (new_type == RT::ROTATION_TYPE_NO_ROTATION) {
+	//				trackball_angle = viewer.core.trackball_angle;
+	//				orthographic = viewer.core.orthographic;
+	//				viewer.core.trackball_angle = Eigen::Quaternionf::Identity();
+	//				viewer.core.orthographic = true;
+	//			} else if (viewer.core.rotation_type == RT::ROTATION_TYPE_NO_ROTATION) {
+	//				viewer.core.trackball_angle = trackball_angle;
+	//				viewer.core.orthographic = orthographic;
+	//			}
+	//			viewer.core.set_rotation_type(new_type);
+	//		}
+	//	}
+
+	//	// Orthographic view
+	//	ImGui::Checkbox("Orthographic view", &(viewer.core.orthographic));
+	//	ImGui::PopItemWidth();
+	//}
 
 	// Draw options
 	//if (ImGui::CollapsingHeader("Draw Options", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -111,13 +231,13 @@ void UIState::draw_viewer_menu() {
 	//	ImGui::PopItemWidth();
 	//}
 
-	// Overlays
-	if (ImGui::CollapsingHeader("Overlays", ImGuiTreeNodeFlags_DefaultOpen)) {
-		ImGui::Checkbox("Wireframe", &(viewer.data().show_lines));
-		ImGui::Checkbox("Fill", &(viewer.data().show_faces));
-		ImGui::Checkbox("Show vertex labels", &(viewer.data().show_vertid));
-		ImGui::Checkbox("Show faces labels", &(viewer.data().show_faceid));
-	}
+	//// Overlays
+	//if (ImGui::CollapsingHeader("Overlays", ImGuiTreeNodeFlags_DefaultOpen)) {
+	//	ImGui::Checkbox("Wireframe", &(viewer.data().show_lines));
+	//	ImGui::Checkbox("Fill", &(viewer.data().show_faces));
+	//	ImGui::Checkbox("Show vertex labels", &(viewer.data().show_vertid));
+	//	ImGui::Checkbox("Show faces labels", &(viewer.data().show_faceid));
+	//}
 }
 
 // -----------------------------------------------------------------------------
@@ -125,53 +245,168 @@ static float menu_y = 190;
 static float menu_height = 750;
 static float menu_width = 300;
 void UIState::draw_custom_window() {
+	ImGui::SetNextWindowPos(ImVec2(5,5), ImGuiSetCond_FirstUseEver);
+	ImGui::SetNextWindowSize(ImVec2(menu_width, 700), ImGuiSetCond_FirstUseEver);
+
+	ImGui::Begin("ImGui Demo", NULL, ImGuiWindowFlags_NoCollapse);
+	// Workspace
+	// if (ImGui::CollapsingHeader("Workspace", ImGuiTreeNodeFlags_DefaultOpen)) {
+	// 	float w = ImGui::GetContentRegionAvailWidth();
+	// 	float p = ImGui::GetStyle().FramePadding.x;
+	// 	if (ImGui::Button("Load##Workspace", ImVec2((w-p)/2.f, 0))) {
+	// 		viewer.load_scene();
+	// 	}
+	// 	ImGui::SameLine(0, p);
+	// 	if (ImGui::Button("Save##Workspace", ImVec2((w-p)/2.f, 0))) {
+	// 		viewer.save_scene();
+	// 	}
+	// }
+	//-------- Viewer ---------
+	if (ImGui::CollapsingHeader("Mesh", ImGuiTreeNodeFlags_DefaultOpen)) {
+		float w = ImGui::GetContentRegionAvailWidth();
+		float p = ImGui::GetStyle().FramePadding.x;
+		if (ImGui::ColorEdit4("Mesh color", points_data().line_color.data(),
+			ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueWheel)) {
+			viewer_control();
+		}
+	}
+
+	//-------- Points ---------
+	if (ImGui::CollapsingHeader("Points", ImGuiTreeNodeFlags_DefaultOpen)) {
+		float w = ImGui::GetContentRegionAvailWidth();
+		float p = ImGui::GetStyle().FramePadding.x;
+		/*if (ImGui::Button("Load##Points", ImVec2((w-p)/2.f, 0))) {
+		std::string fname = FileDialog::openFileName(DATA_DIR, {"*.xyz"});
+		if (!fname.empty()) { load(fname); }
+		}*/
+		//ImGui::SameLine(0, p);
+		if (ImGui::Button("Save##Points", ImVec2((w - p) / 2.f, 0))) {
+			std::string fname = FileDialog::saveFileName(DATA_DIR, { "*.xyz" });
+			if (!fname.empty()) { save(fname); }
+		}
+	}
+
+	//-------- Mesh ----------
+	if (ImGui::CollapsingHeader("Mesh", ImGuiTreeNodeFlags_DefaultOpen)) {
+		float w = ImGui::GetContentRegionAvailWidth();
+		float p = ImGui::GetStyle().FramePadding.x;
+
+		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.40f);
+		// Lloyds relaxation panel
+		ImGui::InputInt("Num Iterations", &state.lloyd_iterations);
+		/*if (ImGui::Button("Lloyd", ImVec2((w - p) / 2.f, 0))) {
+		state.relax_with_lloyd();
+		t = 1;
+		mesh_color.resize(0, 0);
+		viewer_control();
+		}*/
+
+		//}
+
+		if (ImGui::SliderFloat("t", &t, 0, 1)) {
+			viewer_control();
+		}
+
+		ImGui::PopItemWidth();
+
+		if (ImGui::Button("Untangle", ImVec2((w - p), 0))) {
+			state.untangle();
+			t = 1;
+			mesh_color.resize(0, 0);
+			viewer_control();
+		}
+
+		ImGui::Separator();
+
+		if (ImGui::Button("Lloyd", ImVec2((w - p), 0))) {
+			state.relax_with_lloyd();
+			t = 1;
+			mesh_color.resize(0, 0);
+			viewer_control();
+		}
+
+
+		if (ImGui::Button("build regions", ImVec2((w - p), 0))) {
+			state.detect_bad_regions();
+
+			show_points = false;
+			show_bad_regions = true;
+
+			igl::jet(create_region_label(), true, mesh_color);
+
+			viewer_control();
+		}
+
+		if (ImGui::Button("check regions", ImVec2((w - p), 0))) {
+			state.check_regions();
+		}
+
+		if (ImGui::Button("fix regions", ImVec2((w - p), 0))) {
+			state.fix_regions();
+
+			igl::jet(create_region_label(), true, mesh_color);
+
+			viewer_control();
+		}
+
+		if (ImGui::Button("solve regions", ImVec2((w - p), 0))) {
+			state.resolve_regions();
+
+			igl::jet(create_region_label(), true, mesh_color);
+
+			viewer_control();
+		}
+
+		if (ImGui::Button("grow regions", ImVec2((w - p), 0))) {
+			state.grow_regions();
+
+			igl::jet(create_region_label(), true, mesh_color);
+
+			viewer_control();
+		}
+
+		if (ImGui::Button("Ultimate relaxation", ImVec2((w - p), 0))) {
+			state.final_relax();
+
+			igl::jet(create_region_label(), true, mesh_color);
+
+			viewer_control();
+		}
+	}
+	ImGui::End();
+
+
 	ImGui::SetNextWindowPos(ImVec2(menu_y * menu_scaling(), 0), ImGuiSetCond_FirstUseEver);
 	ImGui::SetNextWindowSize(ImVec2(menu_width, menu_height), ImGuiSetCond_FirstUseEver);
 	ImGui::Begin(
 		"Algorithm", nullptr,
 		ImGuiWindowFlags_NoSavedSettings
 	);
-	// Lloyds relaxation panel
-		float w = ImGui::GetContentRegionAvailWidth();
-		float p = ImGui::GetStyle().FramePadding.x;
 
-		ImGui::InputInt("Num Iter", &state.lloyd_iterations);
-		/*if (ImGui::Button("Lloyd", ImVec2((w - p) / 2.f, 0))) {
-			state.relax_with_lloyd();
-			t = 1;
-			mesh_color.resize(0, 0);
-			viewer_control();
-		}*/
-		
+
+	//// Laplace energy panel
+	//if (ImGui::CollapsingHeader("Laplace Energy", ImGuiTreeNodeFlags_DefaultOpen)) {
+	//	float w = ImGui::GetContentRegionAvailWidth();
+	//	float p = ImGui::GetStyle().FramePadding.x;
+	//	if (ImGui::Button("Current pos", ImVec2((w - p) / 2.f, 0))) {
+	//		Eigen::VectorXd current_laplace_energy;
+	//		laplace_energy(state.mesh.points, state.mesh.triangles, current_laplace_energy);
+	//		igl::parula(current_laplace_energy, true, mesh_color);
+
+	//		// update UI
+	//		viewer_control();
+
+	//	}
+	//	ImGui::SameLine(0, p);
+	//	if (ImGui::Button("Original pos", ImVec2((w - p) / 2.f, 0))) {
+	//		Eigen::VectorXd original_laplace_energy;
+	//		laplace_energy(state.mesh.detected, state.mesh.triangles, original_laplace_energy);
+	//		igl::parula(original_laplace_energy, true, mesh_color);
+
+	//		// update UI
+	//		viewer_control();
+	//	}
 	//}
-
-	if (ImGui::SliderFloat("t", &t, 0, 1)) {
-		viewer_control();
-	}
-
-	// Laplace energy panel
-	if (ImGui::CollapsingHeader("Laplace Energy", ImGuiTreeNodeFlags_DefaultOpen)) {
-		float w = ImGui::GetContentRegionAvailWidth();
-		float p = ImGui::GetStyle().FramePadding.x;
-		if (ImGui::Button("Current pos", ImVec2((w - p) / 2.f, 0))) {
-			Eigen::VectorXd current_laplace_energy;
-			laplace_energy(state.mesh.points, state.mesh.triangles, current_laplace_energy);
-			igl::parula(current_laplace_energy, true, mesh_color);
-
-			// update UI
-			viewer_control();
-
-		}
-		ImGui::SameLine(0, p);
-		if (ImGui::Button("Original pos", ImVec2((w - p) / 2.f, 0))) {
-			Eigen::VectorXd original_laplace_energy;
-			laplace_energy(state.mesh.detected, state.mesh.triangles, original_laplace_energy);
-			igl::parula(original_laplace_energy, true, mesh_color);
-
-			// update UI
-			viewer_control();
-		}
-	}
 
 	// Node control panel
 	/* This menu will include:
@@ -203,30 +438,14 @@ void UIState::draw_custom_window() {
 	- show face
 	- changing color of mesh
 	*/
-	if (ImGui::CollapsingHeader("Mesh", ImGuiTreeNodeFlags_DefaultOpen)) {
-		float w = ImGui::GetContentRegionAvailWidth();
-		float p = ImGui::GetStyle().FramePadding.x;
-		if (ImGui::ColorEdit4("Mesh color", points_data().line_color.data(),
-			ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueWheel)) {
-			viewer_control();
-		}
-	}
+	
 	
 	if (ImGui::CollapsingHeader("Phases", ImGuiTreeNodeFlags_DefaultOpen)) {
 		// Lloyds relaxation panel
 		float w = ImGui::GetContentRegionAvailWidth();
 		float p = ImGui::GetStyle().FramePadding.x;
 
-		if (ImGui::Button("Untangle", ImVec2((w - p) , 0))) {
-			state.untangle();
-			t = 1;
-			mesh_color.resize(0, 0);
-			viewer_control();
-		}
-
-		ImGui::Separator();
-
-		if (ImGui::Button("Load Image")) {
+		if (ImGui::Button("Load Image", ImVec2((w - p), 0))) {
 			std::string fname = FileDialog::openFileName(DATA_DIR, { "*.png" });
 			if (!fname.empty()) {
 				load_image(fname);
@@ -238,65 +457,13 @@ void UIState::draw_custom_window() {
 			}
 		}
 
+		ImGui::InputFloat("Sigma", &state.sigma, 0.1, 0, 2);
+
 		if (ImGui::Button("Detection")) {
-			
 			detect_vertices();
 		}
 
-		if (ImGui::Button("Lloyd", ImVec2((w - p) , 0))) {
-			state.relax_with_lloyd();
-			t = 1;
-			mesh_color.resize(0, 0);
-			viewer_control();
-		}
 
-
-		if (ImGui::Button("build regions", ImVec2((w - p), 0))) {
-			state.detect_bad_regions();
-			
-			show_points = false;
-			show_bad_regions = true;
-
-			igl::jet(create_region_label(), true, mesh_color);
-			
-			viewer_control();
-		}
-
-		if (ImGui::Button("check regions", ImVec2((w - p) , 0))) {
-			state.check_regions();
-		}
-
-		if (ImGui::Button("fix regions", ImVec2((w - p), 0))) {
-			state.fix_regions();
-
-			igl::jet(create_region_label(), true, mesh_color);
-
-			viewer_control();
-		}
-
-		if (ImGui::Button("solve regions", ImVec2((w - p), 0))) {
-			state.resolve_regions();			
-
-			igl::jet(create_region_label(), true, mesh_color);
-
-			viewer_control();
-		}
-
-		if (ImGui::Button("grow regions", ImVec2((w - p) , 0))) {
-			state.grow_regions();			
-
-			igl::jet(create_region_label(), true, mesh_color);
-
-			viewer_control();
-		}
-
-		if (ImGui::Button("Ultimate relaxation", ImVec2((w - p), 0))) {
-			state.final_relax();
-
-			igl::jet(create_region_label(), true, mesh_color);
-
-			viewer_control();
-		}
 	}
 
 	ImGui::End();
@@ -328,20 +495,30 @@ void UIState::draw_custom_window() {
 		igl::jet(create_region_label(), true, mesh_color);
 		viewer_control();
 	}
+
+	bool was_delete = delete_vertex;
+	if (was_delete) push_selected();
 	if (ImGui::Button("Delete Vertex", ImVec2(-1, 0))) {
-		delete_vertex = true;
-		
+		add_vertex = false;
+		delete_vertex = !delete_vertex;
 	}
+	if (was_delete) pop_selected();
+
+	bool was_add = add_vertex;
+	if (was_add) push_selected();
 	if (ImGui::Button("Add Vertex", ImVec2(-1, 0))) {
-		add_vertex = true;
+		delete_vertex = false;
+		add_vertex = !add_vertex;
 	}
-	ImGui::InputInt("Param", &selected_param);
-	if (ImGui::Button("Color Code", ImVec2(-1, 0))) {
-		// determine color map for interior vertices
-		color_code = true;
-		show_points = true;
-		viewer_control();
-	}
+	if (was_add) pop_selected();
+
+	//ImGui::InputInt("Param", &selected_param);
+	//if (ImGui::Button("Color Code", ImVec2(-1, 0))) {
+	//	// determine color map for interior vertices
+	//	color_code = true;
+	//	show_points = true;
+	//	viewer_control();
+	//}
 	if (ImGui::Button("Split region", ImVec2(-1, 0))) {
 		// select vertices and mark them as good permenantly
 		make_vertex_good = true;
@@ -385,6 +562,29 @@ void UIState::draw_custom_window() {
 		viewer_control();
 	}
 	ImGui::End();
+
+
+	if (delete_vertex || add_vertex)
+	{
+		//Cross hair
+		ImGui::SetNextWindowPos(ImVec2(-100, -100), ImGuiSetCond_Always);
+		ImGui::Begin("mouse_layer");
+		ImVec2 p = ImGui::GetIO().MousePos;
+		ImDrawList* draw_list = ImGui::GetWindowDrawList();
+		draw_list->PushClipRectFullScreen();
+		draw_list->AddLine(ImVec2(p.x - 50, p.y), ImVec2(p.x + 50, p.y), IM_COL32(delete_vertex ? 255 : 0, add_vertex ? 255 : 0, 0, 255), 2.0f);
+		draw_list->AddLine(ImVec2(p.x, p.y - 50), ImVec2(p.x, p.y + 50), IM_COL32(delete_vertex ? 255 : 0, add_vertex ? 255 : 0, 0, 255), 2.0f);
+		draw_list->PopClipRect();
+
+		ImGui::GetIO().MouseDrawCursor = true;
+		ImGui::SetMouseCursor(-1);
+		ImGui::End();
+	}
+	else
+	{
+		ImGui::GetIO().MouseDrawCursor = false;
+		ImGui::SetMouseCursor(0);
+	}
 }
 
 // -----------------------------------------------------------------------------

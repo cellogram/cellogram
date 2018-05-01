@@ -34,6 +34,12 @@ namespace cellogram {
 		void conservative_resize(const int size);
 
 		void set_from(internal::Params &params, const int index);
+
+		void remap(const Eigen::VectorXi &map);
+
+		void remove_index(const int index);
+
+		void push_back(const double value);
 	};
 
 	void point_source_detection(const Eigen::MatrixXd &img, const double sigma, Eigen::MatrixXd &V, DetectionParams &params);

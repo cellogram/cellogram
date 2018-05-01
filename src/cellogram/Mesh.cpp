@@ -143,6 +143,13 @@ namespace cellogram {
 
 		this->params = params;
 		detected = V;
+
+		if (detected.cols() != 3)
+		{
+			detected.conservativeResize(detected.rows(), 3);
+			detected.col(2).setConstant(0);
+		}
+
 		points = detected;
 		solved_vertex.resize(points.rows(), 1);
 		solved_vertex.setConstant(false);
@@ -160,11 +167,10 @@ namespace cellogram {
 		removeRow(solved_vertex, index);
 
 		// Delete entry in params
-		//TODO
-		/*if (params.rows() > 0)
+		if (params.A.size() > 0)
 		{
-			removeRow(params, index);
-		}*/
+			params.remove_index(index);
+		}
 
 		for (int i = 0; i < boundary.size(); ++i)
 		{
@@ -174,8 +180,7 @@ namespace cellogram {
 
 		if (recompute_triangulation)
 		{
-			points = detected;
-			compute_triangulation();
+			reset();
 		}
 		else
 		{
@@ -219,15 +224,10 @@ namespace cellogram {
 		tmp_bool(solved_vertex.rows()) = false;
 		solved_vertex = tmp_bool;
 
-		// Add zero row to params\
-		//TODO
-		/*if (params.rows() > 0)
-		{
-			Eigen::MatrixXd tmp(params.rows() + 1, params.cols());
-			tmp.block(0, 0, params.rows(), params.cols()) = params;
-			tmp.row(params.rows()) = Eigen::RowVectorXd::Zero(params.cols());
-			params = tmp;
-		}*/
+		// Add zero row to params
+		params.push_back(0);
+
+		reset();
 	}
 
 	void Mesh::local_update(Eigen::VectorXi &local2global, const int global_to_remove, Eigen::MatrixXi & new_triangles)
@@ -511,6 +511,7 @@ namespace cellogram {
 	void Mesh::reset()
 	{
 		points = detected;
+		solved_vertex.setConstant(false);
 		compute_triangulation();
 	}
 

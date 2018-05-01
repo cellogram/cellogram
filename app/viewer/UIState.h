@@ -101,6 +101,7 @@ private:
 
 public:
 	// Menu stuff
+	void draw_viewer_window() override { }
 	void draw_viewer_menu() override;
 	void draw_custom_window() override;
 };

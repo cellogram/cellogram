@@ -292,6 +292,11 @@ namespace cellogram
 				status2 = gsl_multifit_test_gradient(gradt, data->eAbs);
 			} while ((status == GSL_CONTINUE || status2 == GSL_CONTINUE) && iter < data->maxIter);
 
+			//if (iter >= data->maxIter)
+			//	std::cout << "max iter reached " << status << std::endl;
+			//else
+			//	std::cout << status << std::endl;
+
 			gsl_vector_free(gradt);
 
 			int i;
@@ -310,12 +315,12 @@ namespace cellogram
 			//gsl_matrix_memcpy(data->J, s->J);
 
 			gsl_multifit_fdfsolver_free(s);
-			return 0;
+			return status;
 		}
 	}
 
 
-	void fitGaussian2D(const Eigen::MatrixXd &window, double x0, double y0, double A0, double sigma0, double C0,
+	bool fitGaussian2D(const Eigen::MatrixXd &window, double x0, double y0, double A0, double sigma0, double C0,
 		Eigen::Vector2d &xy, internal::Params &params)
 	{
 		assert(window.rows() == window.cols());
@@ -378,7 +383,8 @@ namespace cellogram
 			data.x_init[i] = data.prmVect[data.estIdx[i]];
 		}
 
-		MLalgo(&data);
+		const int status = MLalgo(&data);
+
 
 		/* parameters */
 		Eigen::MatrixXd prmVect = Eigen::Map<Eigen::MatrixXd>(data.prmVect, 1, NPARAMS);
@@ -487,6 +493,8 @@ namespace cellogram
 		free(data.gy);
 		free(data.gx);
 		free(px);
+
+		return status == GSL_SUCCESS || status == GSL_ETOLF;
 	}
 
 }
