@@ -109,6 +109,20 @@ if(NOT GUROBI_FOUND)
 	message(WARNING "Gurobi was not found on this computer, some features will be disabled.")
 endif()
 
+
+# TIFF
+add_library(TinyTiff 
+	${THIRD_PARTY_DIR}/TinyTIFF/tinytiffhighrestimer.cpp
+	${THIRD_PARTY_DIR}/TinyTIFF/tinytiffhighrestimer.h
+	${THIRD_PARTY_DIR}/TinyTIFF/tinytiffreader.cpp
+	${THIRD_PARTY_DIR}/TinyTIFF/tinytiffreader.h
+	${THIRD_PARTY_DIR}/TinyTIFF/tinytiffwriter.cpp
+	${THIRD_PARTY_DIR}/TinyTIFF/tinytiffwriter.h
+	# ${THIRD_PARTY_DIR}/TinyTIFF/libtiff_tools/libtiff_tools.cpp
+	# ${THIRD_PARTY_DIR}/TinyTIFF/libtiff_tools/libtiff_tools.h
+	)
+target_include_directories(TinyTiff SYSTEM INTERFACE ${THIRD_PARTY_DIR}/TinyTIFF)
+
 ################################################################################
 
 add_subdirectory(src)

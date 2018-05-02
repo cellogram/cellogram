@@ -13,3 +13,6 @@
 [submodule "3rdparty/gsl"]
 	path = 3rdparty/gsl
 	url = https://github.com/ampl/gsl.git
+[submodule "3rdparty/TinyTIFF"]
+	path = 3rdparty/TinyTIFF
+	url = https://github.com/jkriege2/TinyTIFF.git
