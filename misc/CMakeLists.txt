@@ -37,5 +37,6 @@ endif()
 add_application(pts_detection.cpp cellogram)
 add_application(pts_untangler.cpp cellogram points_untangler)
 add_application(tcdf_test.cpp tcdf)
+add_application(tif_test.cpp cellogram)
 
 

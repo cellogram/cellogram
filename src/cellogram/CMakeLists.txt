@@ -41,6 +41,8 @@ set(source_list
 	voronoi.h
 	fitGaussian2D.cpp
 	fitGaussian2D.h
+	tif_reader.cpp
+	tif_reader.h
 )
 
 add_library(${PROJECT_NAME} ${source_list})
@@ -60,6 +62,7 @@ target_link_libraries(${PROJECT_NAME}
 	tcdf
 	points_untangler
 	gsl
+	TinyTiff
 )
 
 # Extra warnings
