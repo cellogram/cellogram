@@ -913,6 +913,8 @@ bool Grid::fixUnassignedVertexNiceWay(int vi){
             }
         }
     }
+
+    return false;
 }
 
 bool Grid::fixUnassignedVertexDijkstra(int vi){
