@@ -367,7 +367,7 @@ namespace cellogram {
 
 		// Convolutions
 		Eigen::MatrixXd imgXT;
-		padarray_symmetric(img, w, imgXT);
+		padarray_symmetric(img.transpose(), w, imgXT);
 
 		Eigen::MatrixXd fg = conv2(g, g, imgXT);
 		Eigen::MatrixXd fu = conv2(u, u, imgXT);
@@ -501,7 +501,7 @@ namespace cellogram {
 		//std::cout << "c_est_idx:\n" << c_est_idx << std::endl;
 		//std::cout << "mask:\n" << mask << std::endl;
 
-		fitGaussians2D(img, lm, A_est_idx, s_est_idx, c_est_idx, mask, V, params); //inputs checked
+		fitGaussians2D(img.transpose(), lm, A_est_idx, s_est_idx, c_est_idx, mask, V, params); //inputs checked
 
 		// remove duplicates
 		const Eigen::MatrixXd tmpV = V;
@@ -644,6 +644,29 @@ namespace cellogram {
 		mean(index) = val;
 		std(index) = val;
 		RSS(index) = val;
+	}
+
+	void DetectionParams::save(const std::string & path)
+	{
+		using json = nlohmann::json;
+
+
+		json json_data;
+		json_data["A"] = std::vector<double>(A.data(), A.data() + A.size());
+		json_data["sigma"] = std::vector<double>(sigma.data(), sigma.data() + sigma.size());
+		json_data["C"] = std::vector<double>(C.data(), C.data() + C.size());
+		json_data["std_x"] = std::vector<double>(std_x.data(), std_x.data() + std_x.size());
+		json_data["std_y"] = std::vector<double>(std_y.data(), std_y.data() + std_y.size());
+		json_data["std_A"] = std::vector<double>(std_A.data(), std_A.data() + std_A.size());
+		json_data["std_sigma"] = std::vector<double>(std_sigma.data(), std_sigma.data() + std_sigma.size());
+		json_data["std_C"] = std::vector<double>(std_C.data(), std_C.data() + std_C.size());
+		json_data["mean"] = std::vector<double>(mean.data(), mean.data() + mean.size());
+		json_data["std"] = std::vector<double>(std.data(), std.data() + std.size());
+		json_data["RSS"] = std::vector<double>(RSS.data(), RSS.data() + RSS.size());
+
+		std::ofstream json_out(path + "/params.json");
+		json_out << json_data.dump(4) << std::endl;
+		json_out.close();
 	}
 
 } // namespace cellogram

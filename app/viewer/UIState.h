@@ -41,6 +41,7 @@ public:
 
 	// Display flags
 	float t;
+	Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> texture;
 	Eigen::RowVector3f vertex_color;
 	Eigen::MatrixXd mesh_color;
 	bool show_hull = false;
@@ -62,6 +63,8 @@ public:
 	//Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> img;
 
 	std::string current_region_status;
+
+	std::string save_dir = "";
 public:
 	void initialize();
 
@@ -72,7 +75,7 @@ public:
 	virtual bool load(std::string name) override;
 	bool load_param(std::string name);
 
-	virtual bool save(std::string name) override;
+	bool save();
 
 	virtual bool mouse_scroll(float delta_y) override;
 

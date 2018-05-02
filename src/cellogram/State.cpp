@@ -2,6 +2,7 @@
 #include "State.h"
 
 #include <cellogram/point_source_detection.h>
+#include <cellogram/image_reader.h>
 #include <cellogram/convex_hull.h>
 
 #include <cellogram/voronoi.h>
@@ -14,7 +15,6 @@
 #include <igl/slice.h>
 #include <igl/list_to_matrix.h>
 #include <igl/point_in_poly.h>
-#include <igl/png/readPNG.h>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
@@ -61,19 +61,16 @@ namespace cellogram {
 
 	bool State::load_image(const std::string fname)
 	{
-		Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> R, G, B, A; // Image
-		igl::png::readPNG(fname, R, G, B, A);
-		
-		img = R;
+		bool ok = read_image(fname, img);
 
 		hull_vertices.resize(0, 0); //needed for lloyd
 		hull_faces.resize(0, 0);
 		hull_polygon.resize(0, 0);
 		regions.clear();
-
-
 		mesh.clear();
-		return true;
+
+
+		return ok;
 	}
 
 	bool State::load_param(const std::string & path)
@@ -83,7 +80,41 @@ namespace cellogram {
 
 	bool State::save(const std::string & path)
 	{
-		return false;
+		using json = nlohmann::json;
+
+
+		json json_data;
+		json_data["lloyd_iterations"] = lloyd_iterations;
+		json_data["energy_variation_from_mean"] = energy_variation_from_mean;
+		json_data["perm_possibilities"] = perm_possibilities;
+		json_data["sigma"] = sigma;
+
+		{
+			std::ofstream json_out(path + "/settings.json");
+			json_out << json_data.dump(4) << std::endl;
+			json_out.close();
+		}
+
+		mesh.save(path);
+
+		{
+			std::ofstream hull_path(path + "/hull.vert");
+			hull_path << hull_vertices << std::endl;
+			hull_path.close();
+		}
+
+		{
+			std::ofstream hull_path(path + "/hull.tri");
+			hull_path << hull_faces << std::endl;
+			hull_path.close();
+		}
+
+		//std::vector<Region> regions;
+		//std::vector<int> fixed_as_good;
+
+
+
+		return true;
 	}
 
 	void State::compute_hull()
@@ -175,25 +206,25 @@ namespace cellogram {
 		Eigen::MatrixXd V;
 		DetectionParams params;
 
-		Eigen::MatrixXd tmp = img.cast<double>().transpose();
+		/*Eigen::MatrixXd tmp = img.cast<double>().transpose();
 		double min = tmp.minCoeff();
 		double max = tmp.maxCoeff();
-		Eigen::MatrixXd imgNorm = (tmp.array() - min) / (max - min);
+		Eigen::MatrixXd imgNorm = (tmp.array() - min) / (max - min);*/
 		//imgNorm = tmp;
 		//imgNorm = imgNorm.colwise().reverse().eval();
 		
 
 		//std::cout << imgNorm << std::endl;
 
-		point_source_detection(imgNorm, sigma, V, params);
+		point_source_detection(img, sigma, V, params);
 
-		std::cout << V << std::endl;
-
-		std::cout << params.pval_Ar << std::endl;
+		if (V.cols() != 3)
+		{
+			V.conservativeResize(V.rows(), 3);
+			V.col(2).setConstant(0);
+		}
 
 		mesh.detect_vertices(V, params);
-
-		
 	}
 
 	void State::relax_with_lloyd()

@@ -2,12 +2,16 @@
 #include "UIState.h"
 
 #include <cellogram/PolygonUtils.h>
+#include <cellogram/StringUtils.h>
 #include <igl/colon.h>
 #include <igl/unproject_onto_mesh.h>
 #include <igl/colormap.h>
 
 
 #include <GLFW/glfw3.h>
+
+#include <sys/types.h> // required for stat.h
+#include <sys/stat.h> // no clue why required -- man pages say so
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
@@ -186,6 +190,7 @@ igl::opengl::ViewerData & UIState::mesh_by_id(int id) {
 }
 
 bool UIState::load(std::string name) {
+	assert(false);
 	if (!state.load(name)) { return false; }
 	selected_region = -1;
 	current_region_status = "";
@@ -237,8 +242,17 @@ bool UIState::load_param(std::string name)
 	return state.load_param(name);
 }
 
-bool UIState::save(std::string name) {
-	return state.save(name);
+bool UIState::save() {
+	int nError = 0;
+
+#if defined(_WIN32)
+	std::wstring widestr = std::wstring(save_dir.begin(), save_dir.end());
+	nError = _wmkdir(widestr.c_str()); // can be used on Windows
+#else 
+	nError = mkdir(save_dir.c_str()); // can be used on non-Windows
+#endif
+
+	return state.save(save_dir);
 }
 
 bool UIState::mouse_scroll(float delta_y) {
@@ -297,6 +311,10 @@ void UIState::reset_viewer()
 void UIState::load_image(std::string fname) {
 	state.load_image(fname);
 
+	const int index = fname.find_last_of(".");
+	save_dir = fname.substr(0, index);
+
+	texture = (state.img.array() * 255).cast<unsigned char>();
 
 	selected_region = -1;
 	current_region_status = "";
@@ -361,7 +379,7 @@ void UIState::display_image()
 	image_data().show_lines = false;
 	image_data().show_texture = true;
 	// Use the image as a texture
-	image_data().set_texture(state.img, state.img, state.img);
+	image_data().set_texture(texture, texture, texture);
 	image_data().set_colors(Eigen::RowVector3d(1, 1, 1));
 }
 

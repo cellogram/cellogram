@@ -134,7 +134,7 @@ void UIState::draw_custom_window() {
 	float p = ImGui::GetStyle().FramePadding.x;
 
 	if (ImGui::Button("Load Image", ImVec2((w - p), 0))) {
-		std::string fname = FileDialog::openFileName(DATA_DIR, { "*.png" });
+		std::string fname = FileDialog::openFileName(DATA_DIR, { "*.png", "*.tif", "*.tiff" });
 		if (!fname.empty()) {
 			load_image(fname);
 
@@ -145,28 +145,13 @@ void UIState::draw_custom_window() {
 		}
 	}
 
+	if (ImGui::Button("Save##Points", ImVec2((w - p) / 2.f, 0))) {
+		save();
+	}
+
 	//-------- Points ---------
 	if (ImGui::CollapsingHeader("Points", ImGuiTreeNodeFlags_DefaultOpen)) {
-		/*if (ImGui::Button("Load##Points", ImVec2((w-p)/2.f, 0))) {
-		std::string fname = FileDialog::openFileName(DATA_DIR, {"*.xyz"});
-		if (!fname.empty()) { load(fname); }
-		}*/
-		//ImGui::SameLine(0, p);
-		if (ImGui::Button("Save##Points", ImVec2((w - p) / 2.f, 0))) {
-			std::string fname = FileDialog::saveFileName(DATA_DIR, { "*.xyz" });
-			if (!fname.empty()) { save(fname); }
-		}
-		if (ImGui::Button("Load Image", ImVec2((w - p), 0))) {
-			std::string fname = FileDialog::openFileName(DATA_DIR, { "*.png" });
-			if (!fname.empty()) {
-				load_image(fname);
 
-				show_image = true;
-
-				// update UI
-				viewer_control();
-			}
-		}
 
 		ImGui::InputFloat("Sigma", &state.sigma, 0.1, 0, 2);
 

@@ -13,7 +13,6 @@ add_executable(${PROJECT_NAME}
 # Dependencies
 target_link_libraries(${PROJECT_NAME} PUBLIC
 	igl::opengl_glfw_imgui
-	igl::png
 	cellogram
 	tinyfiledialogs
 	cli11

@@ -51,6 +51,8 @@ public:
 
 	void clear();
 
+	void save(const std::string &path);
+
 private:
 	void compute_triangulation();
 

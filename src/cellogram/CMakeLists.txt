@@ -9,6 +9,8 @@ set(source_list
 	convex_hull.h
 	delaunay.cpp
 	delaunay.h
+	image_reader.cpp
+	image_reader.h
 	region_grow.cpp
 	region_grow.h
 	laplace_energy.cpp
@@ -41,8 +43,6 @@ set(source_list
 	voronoi.h
 	fitGaussian2D.cpp
 	fitGaussian2D.h
-	tif_reader.cpp
-	tif_reader.h
 )
 
 add_library(${PROJECT_NAME} ${source_list})
@@ -54,7 +54,8 @@ target_link_libraries(${PROJECT_NAME}
 	geogram
 	igl::core
 	igl::triangle
-	igl::opengl_glfw_imgui
+	igl::opengl_glfw_imgui #needs to be removed when all ok
+	igl::png
 	json
 	polyclipping
 	tinyformat

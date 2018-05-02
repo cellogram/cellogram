@@ -423,7 +423,10 @@ namespace cellogram
 		params.std_y = prmStd(1);
 
 		params.std_A = prmStd(2);
+
 		//params.std_sigma = prmStd(3);
+		params.std_sigma = -1;//invalid
+
 		params.std_C = prmStd(3); //4
 
 		params.mean = mean;

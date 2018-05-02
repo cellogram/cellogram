@@ -144,12 +144,6 @@ namespace cellogram {
 		this->params = params;
 		detected = V;
 
-		if (detected.cols() != 3)
-		{
-			detected.conservativeResize(detected.rows(), 3);
-			detected.col(2).setConstant(0);
-		}
-
 		points = detected;
 		solved_vertex.resize(points.rows(), 1);
 		solved_vertex.setConstant(false);
@@ -506,6 +500,41 @@ namespace cellogram {
 		vertex_to_tri.clear();
 		boundary.resize(0); // list of vertices on the boundary
 
+	}
+
+	void Mesh::save(const std::string & path)
+	{
+		{
+			std::ofstream out(path + "/detected.vert");
+			out << detected << std::endl;
+			out.close();
+		}
+
+		{
+			std::ofstream out(path + "/points.vert");
+			out << points << std::endl;
+			out.close();
+		}
+
+		{
+			std::ofstream out(path + "/displacement.txt");
+			out << (points-detected) << std::endl;
+			out.close();
+		}
+
+		{
+			std::ofstream out(path + "/mesh.tri");
+			out << triangles << std::endl;
+			out.close();
+		}
+
+		{
+			std::ofstream out(path + "/boundary.txt");
+			out << boundary << std::endl;
+			out.close();
+		}
+
+		params.save(path);
 	}
 
 	void Mesh::reset()

@@ -35,7 +35,7 @@ public:
 	Eigen::MatrixXi hull_faces;
 	Eigen::MatrixXd hull_polygon;
 
-	Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> img;
+	Eigen::MatrixXd img;
 
 	std::vector<Region> regions;
 
