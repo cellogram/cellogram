@@ -61,10 +61,17 @@ target_link_libraries(${PROJECT_NAME}
 	tinyformat
 	gurobi_solver
 	tcdf
-	points_untangler
 	gsl
 	TinyTiff
 )
+
+if(CELLOGRAM_WTIH_UNTANGLER)
+	target_link_libraries(${PROJECT_NAME}
+		points_untangler
+	)
+
+	target_compile_definitions(${PROJECT_NAME} PRIVATE -DWITH_UNTANGLER)
+endif()
 
 # Extra warnings
 target_compile_options(${PROJECT_NAME} PRIVATE ${ALL_WARNINGS})

@@ -6,7 +6,9 @@
 #include <cellogram/voronoi.h>
 #include <cellogram/vertex_degree.h>
 
+#ifdef WITH_UNTANGLER
 #include <pointsUntangler/points_untangler.h>
+#endif
 
 #include <igl/list_to_matrix.h>
 
@@ -472,6 +474,7 @@ namespace cellogram {
 		}
 	}
 
+#ifdef WITH_UNTANGLER
 	void Mesh::untangle()
 	{
 		Eigen::MatrixXd newPts;
@@ -490,6 +493,7 @@ namespace cellogram {
 		adjacency_list(triangles, adj);
 		generate_vertex_to_tri();
 	}
+#endif
 
 	void Mesh::clear()
 	{

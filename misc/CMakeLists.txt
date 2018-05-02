@@ -32,19 +32,22 @@ endfunction()
 
 if(TARGET gurobi)
 	add_application(delaunay.cpp tinyfiledialogs geogram geogram_gfx gurobi_solver)
-
-
-set_target_properties (delaunay PROPERTIES FOLDER test)
+	set_target_properties (delaunay PROPERTIES FOLDER test)
 endif()
 
+if(CELLOGRAM_WTIH_UNTANGLER)
+	add_application(pts_untangler.cpp cellogram points_untangler)
+	set_target_properties (pts_untangler PROPERTIES FOLDER test)
+endif()
+
+
+
 add_application(pts_detection.cpp cellogram)
-add_application(pts_untangler.cpp cellogram points_untangler)
 add_application(tcdf_test.cpp tcdf)
 add_application(tif_test.cpp cellogram)
 
 
 set_target_properties (pts_detection PROPERTIES FOLDER test)
-set_target_properties (pts_untangler PROPERTIES FOLDER test)
 set_target_properties (tcdf_test PROPERTIES FOLDER test)
 set_target_properties (tif_test PROPERTIES FOLDER test)
 

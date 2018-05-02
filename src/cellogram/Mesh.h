@@ -46,8 +46,9 @@ public:
 	void generate_vertex_to_tri();
 	void reset();
 
-
+#ifdef WITH_UNTANGLER
 	void untangle();
+#endif
 
 	void clear();
 

@@ -183,6 +183,7 @@ void UIState::draw_custom_window() {
 
 		ImGui::PopItemWidth();
 
+#ifdef WITH_UNTANGLER
 		if (ImGui::Button("Untangle", ImVec2((w - p), 0))) {
 			state.untangle();
 			t = 1;
@@ -191,6 +192,7 @@ void UIState::draw_custom_window() {
 		}
 
 		ImGui::Separator();
+#endif
 
 		if (ImGui::Button("Lloyd", ImVec2((w - p), 0))) {
 			state.relax_with_lloyd();

@@ -50,7 +50,9 @@ public:
 
 	Eigen::VectorXi increase_boundary(const Eigen::VectorXi &boundary);
 
+#ifdef WITH_UNTANGLER
 	void untangle();
+#endif
 	void detect_vertices();
 	void relax_with_lloyd();
 	void detect_bad_regions();

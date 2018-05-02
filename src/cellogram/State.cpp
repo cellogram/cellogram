@@ -190,10 +190,12 @@ namespace cellogram {
 		return bboundary;
 	}
 
+#ifdef WITH_UNTANGLER
 	void State::untangle()
 	{
 		mesh.untangle();
 	}
+#endif
 
 	void State::detect_vertices()
 	{
