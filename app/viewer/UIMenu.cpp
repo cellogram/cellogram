@@ -49,129 +49,6 @@ namespace cellogram {
 // -----------------------------------------------------------------------------
 
 void UIState::draw_viewer_menu() {
-	ImGui::Begin("Cellogram", NULL, ImGuiWindowFlags_NoCollapse);
-	// Workspace
-	// if (ImGui::CollapsingHeader("Workspace", ImGuiTreeNodeFlags_DefaultOpen)) {
-	// 	float w = ImGui::GetContentRegionAvailWidth();
-	// 	float p = ImGui::GetStyle().FramePadding.x;
-	// 	if (ImGui::Button("Load##Workspace", ImVec2((w-p)/2.f, 0))) {
-	// 		viewer.load_scene();
-	// 	}
-	// 	ImGui::SameLine(0, p);
-	// 	if (ImGui::Button("Save##Workspace", ImVec2((w-p)/2.f, 0))) {
-	// 		viewer.save_scene();
-	// 	}
-	// }
-	//-------- Viewer ---------
-	if (ImGui::CollapsingHeader("Mesh", ImGuiTreeNodeFlags_DefaultOpen)) {
-		float w = ImGui::GetContentRegionAvailWidth();
-		float p = ImGui::GetStyle().FramePadding.x;
-		if (ImGui::ColorEdit4("Mesh color", points_data().line_color.data(),
-			ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueWheel)) {
-			viewer_control();
-		}
-	}
-
-	//-------- Points ---------
-	if (ImGui::CollapsingHeader("Points", ImGuiTreeNodeFlags_DefaultOpen)) {
-		float w = ImGui::GetContentRegionAvailWidth();
-		float p = ImGui::GetStyle().FramePadding.x;
-		/*if (ImGui::Button("Load##Points", ImVec2((w-p)/2.f, 0))) {
-		std::string fname = FileDialog::openFileName(DATA_DIR, {"*.xyz"});
-		if (!fname.empty()) { load(fname); }
-		}*/
-		//ImGui::SameLine(0, p);
-		if (ImGui::Button("Save##Points", ImVec2((w - p) / 2.f, 0))) {
-			std::string fname = FileDialog::saveFileName(DATA_DIR, { "*.xyz" });
-			if (!fname.empty()) { save(fname); }
-		}
-	}
-
-	//-------- Mesh ----------
-	if (ImGui::CollapsingHeader("Mesh", ImGuiTreeNodeFlags_DefaultOpen)) {
-		float w = ImGui::GetContentRegionAvailWidth();
-		float p = ImGui::GetStyle().FramePadding.x;
-
-		// Lloyds relaxation panel
-		ImGui::InputInt("Num Iter", &state.lloyd_iterations);
-		/*if (ImGui::Button("Lloyd", ImVec2((w - p) / 2.f, 0))) {
-		state.relax_with_lloyd();
-		t = 1;
-		mesh_color.resize(0, 0);
-		viewer_control();
-		}*/
-
-		//}
-
-		if (ImGui::SliderFloat("t", &t, 0, 1)) {
-			viewer_control();
-		}
-
-		if (ImGui::Button("Untangle", ImVec2((w - p), 0))) {
-			state.untangle();
-			t = 1;
-			mesh_color.resize(0, 0);
-			viewer_control();
-		}
-
-		ImGui::Separator();
-
-		if (ImGui::Button("Lloyd", ImVec2((w - p), 0))) {
-			state.relax_with_lloyd();
-			t = 1;
-			mesh_color.resize(0, 0);
-			viewer_control();
-		}
-
-
-		if (ImGui::Button("build regions", ImVec2((w - p), 0))) {
-			state.detect_bad_regions();
-
-			show_points = false;
-			show_bad_regions = true;
-
-			igl::jet(create_region_label(), true, mesh_color);
-
-			viewer_control();
-		}
-
-		if (ImGui::Button("check regions", ImVec2((w - p), 0))) {
-			state.check_regions();
-		}
-
-		if (ImGui::Button("fix regions", ImVec2((w - p), 0))) {
-			state.fix_regions();
-
-			igl::jet(create_region_label(), true, mesh_color);
-
-			viewer_control();
-		}
-
-		if (ImGui::Button("solve regions", ImVec2((w - p), 0))) {
-			state.resolve_regions();
-
-			igl::jet(create_region_label(), true, mesh_color);
-
-			viewer_control();
-		}
-
-		if (ImGui::Button("grow regions", ImVec2((w - p), 0))) {
-			state.grow_regions();
-
-			igl::jet(create_region_label(), true, mesh_color);
-
-			viewer_control();
-		}
-
-		if (ImGui::Button("Ultimate relaxation", ImVec2((w - p), 0))) {
-			state.final_relax();
-
-			igl::jet(create_region_label(), true, mesh_color);
-
-			viewer_control();
-		}
-	}
-	ImGui::End();
 	//// Viewing options
 	//if (ImGui::CollapsingHeader("Viewing Options", ImGuiTreeNodeFlags_DefaultOpen)) {
 	//	if (ImGui::Button("Center object", ImVec2(-1, 0))) {
@@ -241,40 +118,35 @@ void UIState::draw_viewer_menu() {
 }
 
 // -----------------------------------------------------------------------------
+static float menu_offset = 5;
 static float menu_y = 190;
-static float menu_height = 750;
+static float main_menu_height = 800;
+static float clicking_menu_height = 300;
+static float viewer_menu_height = 300;
 static float menu_width = 300;
 void UIState::draw_custom_window() {
-	ImGui::SetNextWindowPos(ImVec2(5,5), ImGuiSetCond_FirstUseEver);
-	ImGui::SetNextWindowSize(ImVec2(menu_width, 700), ImGuiSetCond_FirstUseEver);
+	ImGui::SetNextWindowPos(ImVec2(menu_offset, menu_offset), ImGuiSetCond_FirstUseEver);
+	ImGui::SetNextWindowSize(ImVec2(menu_width, main_menu_height), ImGuiSetCond_FirstUseEver);
 
-	ImGui::Begin("ImGui Demo", NULL, ImGuiWindowFlags_NoCollapse);
-	// Workspace
-	// if (ImGui::CollapsingHeader("Workspace", ImGuiTreeNodeFlags_DefaultOpen)) {
-	// 	float w = ImGui::GetContentRegionAvailWidth();
-	// 	float p = ImGui::GetStyle().FramePadding.x;
-	// 	if (ImGui::Button("Load##Workspace", ImVec2((w-p)/2.f, 0))) {
-	// 		viewer.load_scene();
-	// 	}
-	// 	ImGui::SameLine(0, p);
-	// 	if (ImGui::Button("Save##Workspace", ImVec2((w-p)/2.f, 0))) {
-	// 		viewer.save_scene();
-	// 	}
-	// }
-	//-------- Viewer ---------
-	if (ImGui::CollapsingHeader("Mesh", ImGuiTreeNodeFlags_DefaultOpen)) {
-		float w = ImGui::GetContentRegionAvailWidth();
-		float p = ImGui::GetStyle().FramePadding.x;
-		if (ImGui::ColorEdit4("Mesh color", points_data().line_color.data(),
-			ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueWheel)) {
+	ImGui::Begin("Cellogram", NULL, ImGuiWindowFlags_NoCollapse);
+
+	float w = ImGui::GetContentRegionAvailWidth();
+	float p = ImGui::GetStyle().FramePadding.x;
+
+	if (ImGui::Button("Load Image", ImVec2((w - p), 0))) {
+		std::string fname = FileDialog::openFileName(DATA_DIR, { "*.png" });
+		if (!fname.empty()) {
+			load_image(fname);
+
+			show_image = true;
+
+			// update UI
 			viewer_control();
 		}
 	}
 
 	//-------- Points ---------
 	if (ImGui::CollapsingHeader("Points", ImGuiTreeNodeFlags_DefaultOpen)) {
-		float w = ImGui::GetContentRegionAvailWidth();
-		float p = ImGui::GetStyle().FramePadding.x;
 		/*if (ImGui::Button("Load##Points", ImVec2((w-p)/2.f, 0))) {
 		std::string fname = FileDialog::openFileName(DATA_DIR, {"*.xyz"});
 		if (!fname.empty()) { load(fname); }
@@ -283,6 +155,23 @@ void UIState::draw_custom_window() {
 		if (ImGui::Button("Save##Points", ImVec2((w - p) / 2.f, 0))) {
 			std::string fname = FileDialog::saveFileName(DATA_DIR, { "*.xyz" });
 			if (!fname.empty()) { save(fname); }
+		}
+		if (ImGui::Button("Load Image", ImVec2((w - p), 0))) {
+			std::string fname = FileDialog::openFileName(DATA_DIR, { "*.png" });
+			if (!fname.empty()) {
+				load_image(fname);
+
+				show_image = true;
+
+				// update UI
+				viewer_control();
+			}
+		}
+
+		ImGui::InputFloat("Sigma", &state.sigma, 0.1, 0, 2);
+
+		if (ImGui::Button("Detection", ImVec2((w - p), 0))) {
+			detect_vertices();
 		}
 	}
 
@@ -293,7 +182,7 @@ void UIState::draw_custom_window() {
 
 		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.40f);
 		// Lloyds relaxation panel
-		ImGui::InputInt("Num Iterations", &state.lloyd_iterations);
+		ImGui::InputInt("Num Iter", &state.lloyd_iterations);
 		/*if (ImGui::Button("Lloyd", ImVec2((w - p) / 2.f, 0))) {
 		state.relax_with_lloyd();
 		t = 1;
@@ -375,103 +264,72 @@ void UIState::draw_custom_window() {
 	}
 	ImGui::End();
 
+	
 
-	ImGui::SetNextWindowPos(ImVec2(menu_y * menu_scaling(), 0), ImGuiSetCond_FirstUseEver);
-	ImGui::SetNextWindowSize(ImVec2(menu_width, menu_height), ImGuiSetCond_FirstUseEver);
+
+	//------------------------------------------------//
+	//------------- Viewer Options--------------------//
+	//------------------------------------------------//
+	ImGui::SetNextWindowPos(ImVec2(menu_offset, main_menu_height + 2* menu_offset), ImGuiSetCond_FirstUseEver);
+	ImGui::SetNextWindowSize(ImVec2(menu_width, 300), ImGuiSetCond_FirstUseEver);
 	ImGui::Begin(
-		"Algorithm", nullptr,
+		"View settings", nullptr,
 		ImGuiWindowFlags_NoSavedSettings
 	);
 
-
-	//// Laplace energy panel
-	//if (ImGui::CollapsingHeader("Laplace Energy", ImGuiTreeNodeFlags_DefaultOpen)) {
-	//	float w = ImGui::GetContentRegionAvailWidth();
-	//	float p = ImGui::GetStyle().FramePadding.x;
-	//	if (ImGui::Button("Current pos", ImVec2((w - p) / 2.f, 0))) {
-	//		Eigen::VectorXd current_laplace_energy;
-	//		laplace_energy(state.mesh.points, state.mesh.triangles, current_laplace_energy);
-	//		igl::parula(current_laplace_energy, true, mesh_color);
-
-	//		// update UI
-	//		viewer_control();
-
-	//	}
-	//	ImGui::SameLine(0, p);
-	//	if (ImGui::Button("Original pos", ImVec2((w - p) / 2.f, 0))) {
-	//		Eigen::VectorXd original_laplace_energy;
-	//		laplace_energy(state.mesh.detected, state.mesh.triangles, original_laplace_energy);
-	//		igl::parula(original_laplace_energy, true, mesh_color);
-
-	//		// update UI
-	//		viewer_control();
-	//	}
-	//}
-
-	// Node control panel
-	/* This menu will include:
-		- adding/removing nodes
-		- moving points
-		- changing color of nodes
-			. with meaning, e.g. valence
-			. color picked by user
-	*/
-	/*if (ImGui::CollapsingHeader("Vertices", ImGuiTreeNodeFlags_DefaultOpen)) {
-		float w = ImGui::GetContentRegionAvailWidth();
-		float p = ImGui::GetStyle().FramePadding.x;
-		if (ImGui::Button("Add node", ImVec2((w - p) / 2.f, 0))) {
-
-			//add_vertex();
-		}
-		ImGui::SameLine(0, p);
-		if (ImGui::Button("Delete Node", ImVec2((w - p) / 2.f, 0))) {
-			//delete_vertex(state.points);
-		}
-		if (ImGui::ColorEdit4("Vertex color", vertex_color.data(),
-			ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueWheel))
-		{
-			viewer_control();
-		}
-	}*/
-	// Mesh
-	/* This menu will include:
-	- show face
-	- changing color of mesh
-	*/
-	
-	
-	if (ImGui::CollapsingHeader("Phases", ImGuiTreeNodeFlags_DefaultOpen)) {
-		// Lloyds relaxation panel
-		float w = ImGui::GetContentRegionAvailWidth();
-		float p = ImGui::GetStyle().FramePadding.x;
-
-		if (ImGui::Button("Load Image", ImVec2((w - p), 0))) {
-			std::string fname = FileDialog::openFileName(DATA_DIR, { "*.png" });
-			if (!fname.empty()) {
-				load_image(fname);
-
-				show_image = true;
-
-				// update UI
-				viewer_control();
-			}
-		}
-
-		ImGui::InputFloat("Sigma", &state.sigma, 0.1, 0, 2);
-
-		if (ImGui::Button("Detection")) {
-			detect_vertices();
-		}
-
-
+	if (ImGui::ColorEdit4("Mesh color", points_data().line_color.data(),
+		ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueWheel)) {
+		viewer_control();
 	}
 
+	if (ImGui::Checkbox("Show hull", &show_hull)) {
+		viewer_control();
+	}
+	if (ImGui::Checkbox("Show points", &show_points)) {
+		viewer_control();
+	}
+	if (ImGui::Checkbox("Mesh Fill", &show_mesh_fill)) {
+		viewer_control();
+	}
+	if (ImGui::Checkbox("Show image", &show_image)) {
+		viewer_control();
+	}
+	if (ImGui::Checkbox("Show matching", &show_matching)) {
+		viewer_control();
+	}
+	if (ImGui::Checkbox("Bad regions", &show_bad_regions)) {
+		viewer_control();
+	}
 	ImGui::End();
 
 
-	// Clicking Menu
-	ImGui::SetNextWindowPos(ImVec2(0 * menu_scaling(), menu_height + 5), ImGuiSetCond_FirstUseEver);
-	ImGui::SetNextWindowSize(ImVec2(menu_width, 350), ImGuiSetCond_FirstUseEver);
+	if (delete_vertex || add_vertex)
+	{
+		//Cross hair
+		ImGui::SetNextWindowPos(ImVec2(-100, -100), ImGuiSetCond_Always);
+		ImGui::Begin("mouse_layer");
+		ImVec2 p = ImGui::GetIO().MousePos;
+		ImDrawList* draw_list = ImGui::GetWindowDrawList();
+		draw_list->PushClipRectFullScreen();
+		draw_list->AddLine(ImVec2(p.x - 50, p.y), ImVec2(p.x + 50, p.y), IM_COL32(delete_vertex ? 255 : 0, add_vertex ? 255 : 0, 0, 255), 2.0f);
+		draw_list->AddLine(ImVec2(p.x, p.y - 50), ImVec2(p.x, p.y + 50), IM_COL32(delete_vertex ? 255 : 0, add_vertex ? 255 : 0, 0, 255), 2.0f);
+		draw_list->PopClipRect();
+
+		ImGui::GetIO().MouseDrawCursor = true;
+		ImGui::SetMouseCursor(-1);
+		ImGui::End();
+	}
+	else
+	{
+		ImGui::GetIO().MouseDrawCursor = false;
+		ImGui::SetMouseCursor(0);
+	}
+
+	//------------------------------------------------//
+	//------------- Clicking Menu --------------------//
+	//------------------------------------------------//
+	ImGui::SetNextWindowPos(ImVec2(menu_offset, main_menu_height + viewer_menu_height + 3 * menu_offset), ImGuiSetCond_FirstUseEver);
+	ImGui::SetNextWindowSize(ImVec2(menu_width, clicking_menu_height), ImGuiSetCond_FirstUseEver);
 	ImGui::Begin(
 		"Clicking", nullptr,
 		ImGuiWindowFlags_NoSavedSettings
@@ -519,8 +377,9 @@ void UIState::draw_custom_window() {
 	//	show_points = true;
 	//	viewer_control();
 	//}
+
 	if (ImGui::Button("Split region", ImVec2(-1, 0))) {
-		// select vertices and mark them as good permenantly
+		// select vertices and mark them as good permanently
 		make_vertex_good = true;
 		viewer_control();
 	}
@@ -529,62 +388,8 @@ void UIState::draw_custom_window() {
 		ImGui::LabelText("", "Region %d", selected_region);
 		ImGui::LabelText("", "%s", current_region_status.c_str());
 	}
-
-
 	ImGui::End();
 
-
-
-	// Displaying Options
-	ImGui::SetNextWindowPos(ImVec2(menu_y * menu_scaling(), menu_height + 5), ImGuiSetCond_FirstUseEver);
-	ImGui::SetNextWindowSize(ImVec2(menu_width, 300), ImGuiSetCond_FirstUseEver);
-	ImGui::Begin(
-		"View settings", nullptr,
-		ImGuiWindowFlags_NoSavedSettings
-	);
-
-	if (ImGui::Checkbox("Show hull", &show_hull)) {
-		viewer_control();
-	}
-	if (ImGui::Checkbox("Show points", &show_points)) {
-		viewer_control();
-	}
-	if (ImGui::Checkbox("Mesh Fill", &show_mesh_fill)) {
-		viewer_control();
-	}
-	if (ImGui::Checkbox("Show image", &show_image)) {
-		viewer_control();
-	}
-	if (ImGui::Checkbox("Show matching", &show_matching)) {
-		viewer_control();
-	}
-	if (ImGui::Checkbox("Bad regions", &show_bad_regions)) {
-		viewer_control();
-	}
-	ImGui::End();
-
-
-	if (delete_vertex || add_vertex)
-	{
-		//Cross hair
-		ImGui::SetNextWindowPos(ImVec2(-100, -100), ImGuiSetCond_Always);
-		ImGui::Begin("mouse_layer");
-		ImVec2 p = ImGui::GetIO().MousePos;
-		ImDrawList* draw_list = ImGui::GetWindowDrawList();
-		draw_list->PushClipRectFullScreen();
-		draw_list->AddLine(ImVec2(p.x - 50, p.y), ImVec2(p.x + 50, p.y), IM_COL32(delete_vertex ? 255 : 0, add_vertex ? 255 : 0, 0, 255), 2.0f);
-		draw_list->AddLine(ImVec2(p.x, p.y - 50), ImVec2(p.x, p.y + 50), IM_COL32(delete_vertex ? 255 : 0, add_vertex ? 255 : 0, 0, 255), 2.0f);
-		draw_list->PopClipRect();
-
-		ImGui::GetIO().MouseDrawCursor = true;
-		ImGui::SetMouseCursor(-1);
-		ImGui::End();
-	}
-	else
-	{
-		ImGui::GetIO().MouseDrawCursor = false;
-		ImGui::SetMouseCursor(0);
-	}
 }
 
 // -----------------------------------------------------------------------------
