@@ -11,7 +11,8 @@ namespace cellogram {
 	class Region
 	{
 	public:
-		static const int NOT_CHECKED = -5;
+		static const int NOT_CHECKED = -6;
+		static const int REGION_TOO_LARGE = -5;
 		static const int TOO_FEW_VERTICES = -4;
 		static const int TOO_MANY_VERTICES = -3;
 		static const int NOT_PROPERLY_CLOSED = -2;
@@ -40,7 +41,7 @@ namespace cellogram {
 		void bounding(const Eigen::MatrixXi &F, const Eigen::MatrixXd &V);
 
 		int check_region(const Eigen::MatrixXd &V_detected, const Eigen::MatrixXd &V_current, const Eigen::MatrixXi &F, const std::vector<std::vector<int>> &adj);
-		int resolve(const Eigen::MatrixXd &V_detected, const Eigen::MatrixXd &V_current, const int perm_possibilities, Eigen::MatrixXd  &new_points, Eigen::MatrixXi &new_triangles);
+		int resolve(const Eigen::MatrixXd &V_detected, const Eigen::MatrixXd &V_current, const int perm_possibilities, const double gurobi_time_limit, Eigen::MatrixXd  &new_points, Eigen::MatrixXi &new_triangles, bool force_solve = false);
 
 		bool fix_missing_points(const Eigen::MatrixXi & F);
 		

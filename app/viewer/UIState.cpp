@@ -16,6 +16,19 @@
 
 namespace cellogram {
 
+	namespace {
+		int cellogram_mkdir(const std::string &path)
+		{
+			int nError;
+#if defined(_WIN32)
+			std::wstring widestr = std::wstring(path.begin(), path.end());
+			nError = _wmkdir(widestr.c_str()); // can be used on Windows
+#else 
+			nError = mkdir(path.c_str()); // can be used on non-Windows
+#endif
+			return nError;
+		}
+	}
 // -----------------------------------------------------------------------------
 
 UIState::UIState()
@@ -244,15 +257,9 @@ bool UIState::load_param(std::string name)
 
 bool UIState::save() {
 	int nError = 0;
-
-#if defined(_WIN32)
-	std::wstring widestr = std::wstring(save_dir.begin(), save_dir.end());
-	nError = _wmkdir(widestr.c_str()); // can be used on Windows
-#else 
-	nError = mkdir(save_dir.c_str()); // can be used on non-Windows
-#endif
-
-	return state.save(save_dir);
+	cellogram_mkdir(save_dir);
+	cellogram_mkdir(save_dir + "/cellogram");
+	return state.save(save_dir + "/cellogram");
 }
 
 bool UIState::mouse_scroll(float delta_y) {
@@ -390,6 +397,7 @@ void UIState::viewer_control()
 	image_data().clear();
 	matching_data().clear();
 	bad_region_data().clear();
+	selected_data().clear();
 
 	// Read all the UIState flags and update display
 	// hull
@@ -430,29 +438,29 @@ void UIState::viewer_control()
 	}*/
 	if (show_points)
 	{
-		if (state.regions.empty())
-		{
-			Eigen::MatrixXd C(V.rows(), 3);
-			C.col(0).setConstant(vertex_color(0));
-			C.col(1).setConstant(vertex_color(1));
-			C.col(2).setConstant(vertex_color(2));
+		//if (state.regions.empty())
+		//{
+		//	Eigen::MatrixXd C(V.rows(), 3);
+		//	C.col(0).setConstant(vertex_color(0));
+		//	C.col(1).setConstant(vertex_color(1));
+		//	C.col(2).setConstant(vertex_color(2));
 
-			if (color_code)
-			{
-				Eigen::VectorXd param(V.rows());
-				for (int i = 0; i < V.rows(); i++)
-				{
-					param(i) = state.mesh.params.std_x(i);
-				}
-				//igl::parula(param, true, C);
-				igl::ColorMapType cm = igl::ColorMapType::COLOR_MAP_TYPE_INFERNO;
-				igl::colormap(cm, param, true, C);
-			}
+		//	if (color_code)
+		//	{
+		//		Eigen::VectorXd param(V.rows());
+		//		for (int i = 0; i < V.rows(); i++)
+		//		{
+		//			param(i) = state.mesh.params.std_x(i);
+		//		}
+		//		//igl::parula(param, true, C);
+		//		igl::ColorMapType cm = igl::ColorMapType::COLOR_MAP_TYPE_INFERNO;
+		//		igl::colormap(cm, param, true, C);
+		//	}
 
-			points_data().set_points(V, C);
-		}
-		else
-		{
+		//	points_data().set_points(V, C);
+		//}
+		//else
+		//{
 			Eigen::MatrixXd C(V.rows(), 3);
 			C.col(0).setConstant(vertex_color(0));
 			C.col(1).setConstant(vertex_color(1));
@@ -490,17 +498,11 @@ void UIState::viewer_control()
 
 			points_data().set_points(V, C);
 
-		}
+		//}
 	}
 
 	// fill
 	points_data().show_faces = show_mesh_fill;
-	if (mesh_color.size() > 0) {
-		if (selected_region >= 0) {
-			for (int i = 0; i < state.regions[selected_region].region_interior.size(); ++i)
-				mesh_color.row(state.regions[selected_region].region_interior[i]) = Eigen::RowVector3d(0, 1, 0);
-		}
-	}
 	points_data().set_colors(mesh_color);
 
 	// bad regions
@@ -533,12 +535,31 @@ void UIState::viewer_control()
 		matching_data().line_width = 3.0;
 	}
 
+	// show selected region
+	if (show_selected_region && selected_region >0)
+	{
+		selected_data.clear();
+		int nTri = state.regions[selected_region].region_triangles.size();
+		Eigen::MatrixXd tri_color(nTri,3);
+		Eigen::MatrixXi region_tri(nTri, 3);
+		for (int j = 0; j < nTri; ++j)
+		{
+			Eigen::RowVector3d color;
+			color << 50, 255, 126;
+			tri_color.row(j) = color / 255;
+			region_tri.row(j) = state.mesh.triangles.row(state.regions[selected_region].region_triangles(j));
+		}
+		selected_data().set_mesh(V, state.regions[selected_region].region_triangles);
+		selected_data().set_colors(tri_color);
+	}
+
 	// Fix shininess for all layers
 	fix_color(hull_data());
 	fix_color(points_data());
 	fix_color(image_data());
 	fix_color(bad_region_data());
 	fix_color(matching_data());
+	fix_color(selected_data());
 }
 
 void UIState::draw_mesh()
@@ -560,24 +581,44 @@ void UIState::fix_color(igl::opengl::ViewerData &data) {
 }
 
 
-Eigen::VectorXd UIState::create_region_label()
+void UIState::create_region_label()
 {
-	Eigen::VectorXd regionD(state.mesh.points.rows());
-	regionD.setZero();
+	//mesh_color.resize(state.mesh.points.rows(),3);
+	mesh_color.resize(state.mesh.triangles.rows(), 3);
+	mesh_color.setOnes();
+
 	for (int i = 0; i < state.regions.size(); ++i)
 	{
-		/*for (int j = 0; j < state.regions[i].region_boundary.size(); ++j)
-		{
-			regionD(state.regions[i].region_boundary(j)) = i + 10;
-		}*/
+		Eigen::RowVector3d color;
 
-		for (int j = 0; j < state.regions[i].region_interior.size(); ++j)
+		switch (state.regions[i].status)
 		{
-			regionD(state.regions[i].region_interior(j)) = i+1;
+		case Region::OK:
+			color << 46, 204, 113; break;
+		case Region::TOO_MANY_VERTICES:
+			color << 155, 89, 182; break;
+		case Region::TOO_FEW_VERTICES:
+			color << 241, 196, 15; break;
+		case Region::REGION_TOO_LARGE:
+			color << 41, 128, 185; break;
+		case Region::NO_SOLUTION:
+			color << 192, 57, 43; break;
+		case Region::NOT_PROPERLY_CLOSED:
+			color << 149, 165, 166; break;
+		default:
+			color << 52, 73, 94;  break;
+		}
+		color /= 255;
+		//for (int j = 0; j < state.regions[i].region_interior.size(); ++j)
+		//{
+		//	mesh_color.row(state.regions[i].region_interior(j)) = color;
+		//}
+		for (int j = 0; j < state.regions[i].region_triangles.size(); ++j)
+		{
+			mesh_color.row(state.regions[i].region_triangles(j)) = color;
 		}
 	}
-
-	return regionD;
+	
 }
 
 void UIState::build_region_edges(const Eigen::MatrixXd &pts, Eigen::MatrixXd &bad_P1, Eigen::MatrixXd &bad_P2)

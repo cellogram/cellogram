@@ -8,7 +8,7 @@ using namespace Eigen;
 
 
 
-void gurobiModel::model(const SparseMatrix<double> &Q, const SparseMatrix<int> &Aeq)
+void gurobiModel::model(const SparseMatrix<double> &Q, const SparseMatrix<int> &Aeq, double time_limit)
 {
 	/* Mixed Integer Programming
 	Objective: 	    minimize xT Q x + qT x
@@ -18,7 +18,6 @@ void gurobiModel::model(const SparseMatrix<double> &Q, const SparseMatrix<int> &
 	GRBEnv env = GRBEnv();
 	GRBModel model = GRBModel(env);
 
-	double time_limit = 60;
 	model.set(GRB_DoubleParam_TimeLimit, time_limit);
 
 	int nVars = Aeq.cols();

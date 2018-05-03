@@ -44,6 +44,17 @@ namespace cellogram {
 		{
 			ImGui::PopStyleColor();
 		}
+
+		void draw_legend_item(float r, float g, float b, std::string label)
+		{
+			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+			ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(r / 255, g / 255, b / 255));
+			ImGui::Button("    ");
+			ImGui::SameLine();
+			ImGui::Text(label.c_str());
+			ImGui::PopStyleColor(1);
+			ImGui::PopItemFlag();
+		}
 	}
 
 // -----------------------------------------------------------------------------
@@ -201,26 +212,26 @@ void UIState::draw_custom_window() {
 			viewer_control();
 		}
 
+		if (ImGui::SliderFloat("energy", &state.energy_variation_from_mean, 0, 5)) {
+
+			state.detect_bad_regions();
+			state.check_regions();
+
+			create_region_label();
+
+			viewer_control();
+
+		}
 
 		if (ImGui::Button("build regions", ImVec2((w - p), 0))) {
 			state.detect_bad_regions();
-
-			show_points = false;
-			show_bad_regions = true;
-
-			igl::jet(create_region_label(), true, mesh_color);
-
-			viewer_control();
-		}
-
-		if (ImGui::Button("check regions", ImVec2((w - p), 0))) {
 			state.check_regions();
-		}
-
-		if (ImGui::Button("fix regions", ImVec2((w - p), 0))) {
 			state.fix_regions();
 
-			igl::jet(create_region_label(), true, mesh_color);
+			show_bad_regions = true;
+			show_mesh_fill = true;
+
+			create_region_label();
 
 			viewer_control();
 		}
@@ -228,26 +239,38 @@ void UIState::draw_custom_window() {
 		if (ImGui::Button("solve regions", ImVec2((w - p), 0))) {
 			state.resolve_regions();
 
-			igl::jet(create_region_label(), true, mesh_color);
+			create_region_label();
 
 			viewer_control();
 		}
 
-		if (ImGui::Button("grow regions", ImVec2((w - p), 0))) {
-			state.grow_regions();
+		//if (ImGui::Button("grow regions", ImVec2((w - p), 0))) {
+		//	state.grow_regions();
 
-			igl::jet(create_region_label(), true, mesh_color);
+		//	create_region_label();
 
-			viewer_control();
-		}
+		//	viewer_control();
+		//}
 
 		if (ImGui::Button("Ultimate relaxation", ImVec2((w - p), 0))) {
 			state.final_relax();
 
-			igl::jet(create_region_label(), true, mesh_color);
+			create_region_label();
 
 			viewer_control();
 		}
+
+		ImGui::Separator();
+
+		draw_legend_item(46, 204, 113, "Ok");
+		draw_legend_item(155, 89, 182, "Too Many Vertices");
+		draw_legend_item(241, 196, 15, "Too Few Vertices");
+		draw_legend_item(41, 128, 185, "Region Too Large");
+		draw_legend_item(192, 57, 43, "No Solution");
+		draw_legend_item(149, 165, 166, "Not Properly Closed");
+		draw_legend_item(52, 73, 94, "Other");
+
+
 	}
 	ImGui::End();
 
@@ -287,6 +310,10 @@ void UIState::draw_custom_window() {
 	if (ImGui::Checkbox("Bad regions", &show_bad_regions)) {
 		viewer_control();
 	}
+	if (ImGui::Checkbox("Selected region", &show_selected_region)) {
+		viewer_control();
+	}
+
 	ImGui::End();
 
 
@@ -323,13 +350,14 @@ void UIState::draw_custom_window() {
 	);
 
 	if (ImGui::Button("Select Region", ImVec2(-1, 0))) {
-		igl::jet(create_region_label(), true, mesh_color);
+		create_region_label();
 		select_region = true;
+		show_selected_region = true;
 	}
 	if (ImGui::Button("Grow Selected", ImVec2(-1, 0))) {
 		if (selected_region < 0) return;
 		state.grow_region(selected_region);
-		igl::jet(create_region_label(), true, mesh_color);
+		create_region_label();
 		viewer_control();
 	}
 	if (ImGui::Button("Solve Selected", ImVec2(-1, 0))) {
@@ -337,7 +365,7 @@ void UIState::draw_custom_window() {
 
 		selected_region = -1;
 		current_region_status = "";
-		igl::jet(create_region_label(), true, mesh_color);
+		create_region_label();
 		viewer_control();
 	}
 
@@ -368,6 +396,12 @@ void UIState::draw_custom_window() {
 	if (ImGui::Button("Split region", ImVec2(-1, 0))) {
 		// select vertices and mark them as good permanently
 		make_vertex_good = true;
+		viewer_control();
+	}
+
+	if (ImGui::Button("Color code", ImVec2(-1, 0))) {
+		// select vertices and mark them as good permanently
+		color_code = !color_code;
 		viewer_control();
 	}
 

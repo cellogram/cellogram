@@ -33,6 +33,7 @@ public:
 	int image_id;
 	int bad_region_id;
 	int matching_id;
+	int selected_id;
 
 	int selected_region = -1;
 	int selected_param = 0;
@@ -52,6 +53,7 @@ public:
 	bool show_matching = false;
 	bool show_bad_regions = false;
 	bool color_code = false;
+	bool show_selected_region = true;
 
 	// Clicking flags
 	bool select_region = false;
@@ -95,11 +97,12 @@ public:
 	igl::opengl::ViewerData & image_data() { return mesh_by_id(image_id); }
 	igl::opengl::ViewerData & bad_region_data() { return mesh_by_id(bad_region_id); }
 	igl::opengl::ViewerData & matching_data() { return mesh_by_id(matching_id); }
+	igl::opengl::ViewerData & selected_data() { return mesh_by_id(selected_id); }
 private:
 	void viewer_control();
 	void draw_mesh();
 	void fix_color(igl::opengl::ViewerData &data);
-	Eigen::VectorXd create_region_label();
+	void create_region_label();
 	void build_region_edges(const Eigen::MatrixXd &pts, Eigen::MatrixXd &bad_P1, Eigen::MatrixXd &bad_P2);
 
 public:

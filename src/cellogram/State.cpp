@@ -349,7 +349,7 @@ namespace cellogram {
 		for (auto & r : regions)
 		{
 			r.status = r.check_region(mesh.detected, mesh.points, mesh.triangles, mesh.adj);
-			std::cout << r.status << std::endl;
+			//std::cout << r.status << std::endl;
 		}
 	}
 
@@ -468,10 +468,8 @@ namespace cellogram {
 
 		auto &region = regions[index];
 
-		if (region.status != 0)
-			return;
-
-		auto status = region.resolve(mesh.detected, mesh.points, perm_possibilities, new_points, new_triangles);
+		double gurobi_max_time = gurobi_time_limit_long;
+		auto status = region.resolve(mesh.detected, mesh.points, perm_possibilities, gurobi_max_time, new_points, new_triangles, true);
 		region.status = status;
 		//gurobi r
 		if (status == Region::NOT_PROPERLY_CLOSED)
@@ -523,7 +521,8 @@ namespace cellogram {
 
 			auto &region = *it;
 			region.find_triangles(mesh.triangles);
-			auto status = region.resolve(mesh.detected, mesh.points, perm_possibilities, new_points, new_triangles);
+			double gurobi_max_time = gurobi_time_limit_short;
+			auto status = region.resolve(mesh.detected, mesh.points, perm_possibilities, gurobi_max_time, new_points, new_triangles);
 			region.status = status;
 			//gurobi r
 			if (status == Region::NOT_PROPERLY_CLOSED)

@@ -12,7 +12,7 @@ public:
 	VectorXi resultX;
 
 	// Generate and solve Model
-	void model(const SparseMatrix<double> &Q, const SparseMatrix<int> &Aeq);
+	void model(const SparseMatrix<double> &Q, const SparseMatrix<int> &Aeq, double time_limit);
 
 };
 

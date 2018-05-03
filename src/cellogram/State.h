@@ -19,10 +19,13 @@ private:
 	State() { }
 
 public:
-	int lloyd_iterations = 12;
-	double energy_variation_from_mean = 1.8;
+	int lloyd_iterations = 20;
+	float energy_variation_from_mean = 1.7;
 	int perm_possibilities = 12;
-	float sigma = 1.5;
+	float sigma = 2.2;
+	static const int max_region_vertices = 50;
+	static const int gurobi_time_limit_short = 60;
+	static const int gurobi_time_limit_long = 60;
 
 	int counter_invalid_neigh;
 	int counter_small_region;

@@ -5,6 +5,7 @@
 #include <cellogram/vertex_degree.h>
 #include <cellogram/region_grow.h>
 #include <cellogram/Mesh.h>
+#include <cellogram/State.h>
 #include <gurobi_solver/state.h>
 #include <gurobi_solver/generateQ.h>
 #include <gurobi_solver/gurobiModel.h>
@@ -390,13 +391,22 @@ namespace cellogram {
 		else if (s.Vperfect.rows() < s.Vdeformed.rows()) {
 			return TOO_MANY_VERTICES;
 		}
+
+		if (region_interior.size() > cellogram::State::max_region_vertices)
+		{
+			return REGION_TOO_LARGE;
+		}
+
 		return 0;
 	}
 
-	int Region::resolve(const Eigen::MatrixXd &V_detected, const Eigen::MatrixXd &V_current, const int perm_possibilities, Eigen::MatrixXd  &new_points, Eigen::MatrixXi &new_triangles)
+	int Region::resolve(const Eigen::MatrixXd &V_detected, const Eigen::MatrixXd &V_current, const int perm_possibilities, const double gurobi_time_limit, Eigen::MatrixXd  &new_points, Eigen::MatrixXi &new_triangles, bool force_solve)
 	{
-		if (status != 0)
-			return status;
+		if (status != OK)
+		{
+			if(!force_solve || status != REGION_TOO_LARGE)
+				return status;
+		}
 
 		int nPolygon = region_boundary.size(); // length of current edge
 
@@ -423,7 +433,7 @@ namespace cellogram {
 
 
 		// Generate and solve model for gurobi
-		g.model(q.Q, q.Aeq);
+		g.model(q.Q, q.Aeq, gurobi_time_limit);
 		if (g.resultX(0) == -1) {
 			// no solution found
 			return NO_SOLUTION;
@@ -492,7 +502,7 @@ namespace cellogram {
 
 	bool Region::fix_missing_points(const Eigen::MatrixXi &F)
 	{
-		igl::Timer timer;  timer.start();
+		//igl::Timer timer;  timer.start();
 		std::vector<int> internal(region_interior.data(), region_interior.data() + region_interior.size());
 		std::vector<int> boundary(region_boundary.data(), region_boundary.data() + region_boundary.size());
 
@@ -523,14 +533,14 @@ namespace cellogram {
 			region_interior(j) = internal[j];
 		}
 
-		timer.stop();
-		std::cout << " find missing took " << timer.getElapsedTime() << "s" << std::endl;
+		//timer.stop();
+		//std::cout << " find missing took " << timer.getElapsedTime() << "s" << std::endl;
 
-		timer.start();
+		//timer.start();
 		find_triangles(F);
 
-		timer.stop();
-		std::cout << " find_triangles took " << timer.getElapsedTime() << "s" << std::endl;
+		//timer.stop();
+		//std::cout << " find_triangles took " << timer.getElapsedTime() << "s" << std::endl;
 		return true;
 	}
 
