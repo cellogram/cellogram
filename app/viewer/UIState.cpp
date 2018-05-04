@@ -180,20 +180,6 @@ bool UIState::mouse_down(int button, int modifier) {
 }
 
 void UIState::initialize() {
-
-	//// KEY and MOUSE handling example
-	//viewer.callback_key_down = [&](igl::opengl::glfw::Viewer& viewer, int key, int mod)->bool
-	//{
-	//	std::cout << (char)key << " "<< mod << std::endl;
-	//	return false;
-	//};
-
-	//viewer.callback_key_up = [&](igl::opengl::glfw::Viewer& viewer, int key, int mod)->bool
-	//{
-	//	std::cout << (char)key << " " << mod << std::endl;
-	//	return false;
-	//};
-
 	viewer.plugins.push_back(this);
 
 	/*state.load("C:\\Users\\Tobias\\Documents\\cellogram\\data\\small2.xyz");
@@ -273,16 +259,13 @@ void UIState::detect_vertices() {
 	mesh_color.row(0) = Eigen::RowVector3d(255, 255, 120) / 255.0;
 	//reset_viewer();
 	show_points = true;
-	// Show points and align camera
-	//points_data().clear();
-	//points_data().set_points(state.mesh.points, Eigen::RowVector3d(1, 0, 0));
 
-	//fix_color(points_data());
-
-	// Compute and show convex hull + triangulation
 	compute_hull();
 	//clean_hull();
 	compute_triangulation();
+
+	color_code = true;
+	selected_region = -1;
 	viewer_control();
 }
 
@@ -509,7 +492,7 @@ void UIState::viewer_control()
 				{
 					param(i) = state.mesh.params.pval_Ar(i);
 				}
-				//igl::parula(param, true, C);
+
 				igl::ColorMapType cm = igl::ColorMapType::COLOR_MAP_TYPE_INFERNO;
 				igl::colormap(cm,param, true, C);
 			}

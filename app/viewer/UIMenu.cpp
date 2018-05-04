@@ -183,14 +183,6 @@ void UIState::draw_custom_window() {
 		if (state.mesh.points.size() == 0) push_disabled();
 
 		ImGui::InputInt("Num Iter", &state.lloyd_iterations);
-		/*if (ImGui::Button("Lloyd", ImVec2((w - p) / 2.f, 0))) {
-		state.relax_with_lloyd();
-		t = 1;
-		mesh_color.resize(0, 0);
-		viewer_control();
-		}*/
-
-		//}
 
 		if (ImGui::SliderFloat("t", &t, 0, 1)) {
 			viewer_control();
@@ -228,6 +220,9 @@ void UIState::draw_custom_window() {
 		}
 
 		if (ImGui::Button("build regions", ImVec2((w - p), 0))) {
+
+			selected_region = -1;
+
 			state.detect_bad_regions();
 			state.check_regions();
 			state.fix_regions();
@@ -247,14 +242,6 @@ void UIState::draw_custom_window() {
 
 			viewer_control();
 		}
-
-		//if (ImGui::Button("grow regions", ImVec2((w - p), 0))) {
-		//	state.grow_regions();
-
-		//	create_region_label();
-
-		//	viewer_control();
-		//}
 
 		if (ImGui::Button("Ultimate relaxation", ImVec2((w - p), 0))) {
 			state.final_relax();
@@ -369,14 +356,6 @@ void UIState::draw_custom_window() {
 		add_vertex = !add_vertex;
 	}
 	if (was_add) pop_selected();
-
-	//ImGui::InputInt("Param", &selected_param);
-	//if (ImGui::Button("Color Code", ImVec2(-1, 0))) {
-	//	// determine color map for interior vertices
-	//	color_code = true;
-	//	show_points = true;
-	//	viewer_control();
-	//}
 
 	if (ImGui::Button("Split region", ImVec2(-1, 0))) {
 		// select vertices and mark them as good permanently

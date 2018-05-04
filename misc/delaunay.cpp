@@ -1122,7 +1122,7 @@ namespace {
 		q.optimizationConstraints(s.V_boundary.rows());
 
 		// Generate and solve model for gurobi
-		g.model(q.Q, q.Aeq);
+		g.model(q.Q, q.Aeq, 10);
 
 		// Map back to indices of coordinates
 		q.mapBack(g.resultX);
