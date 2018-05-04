@@ -3,7 +3,7 @@
 #include <cellogram/navigation.h>
 #include <igl/is_border_vertex.h>
 #include <igl/edges.h>
-#include <Eigen/dense>
+#include <Eigen/Dense>
 #include <vector>
 #include <iostream>
 ////////////////////////////////////////////////////////////////////////////////
@@ -50,12 +50,12 @@ void boundary_graph(const Eigen::MatrixXi &F, std::vector<std::vector<int>> &adj
 }
 
 void boundary_loop(const Eigen::MatrixXi &F, Eigen::VectorXi &longest_path) {
-	
+
 	int n = F.maxCoeff() + 1;
 
 	Eigen::VectorXd Vdummy(F.maxCoeff() + 1, 1);
 	std::vector<bool> border_vertex = igl::is_border_vertex(Vdummy, F);
-	
+
 	std::vector<std::vector<int>> adj;
 	//tri2hex(F, adj);
 	boundary_graph(F, adj);
@@ -129,7 +129,7 @@ void boundary_loop(const Eigen::MatrixXi &F, Eigen::VectorXi &longest_path) {
 
 
 	longest_path = path_to_vecXi( get_longest_path(paths) );
-	
+
 }
 
 // -----------------------------------------------------------------------------
