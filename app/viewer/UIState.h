@@ -105,6 +105,8 @@ private:
 	void create_region_label();
 	void build_region_edges(const Eigen::MatrixXd &pts, Eigen::MatrixXd &bad_P1, Eigen::MatrixXd &bad_P2);
 
+	virtual bool mouse_down(int button, int modifier) override;
+
 public:
 	// Menu stuff
 	void draw_viewer_window() override { }

@@ -21,9 +21,8 @@ namespace cellogram {
 
 		static std::string pretty_status(const int status);
 
-
-
 		int status = NOT_CHECKED;
+		int points_delta = 0; // difference between points in region an expected (<0: missing; >0: too many)
 
 		bool verbose = true;
 		Eigen::VectorXi region_boundary;

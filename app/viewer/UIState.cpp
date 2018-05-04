@@ -42,6 +42,142 @@ UIState &UIState::ui_state() {
 	return instance;
 }
 
+bool UIState::mouse_down(int button, int modifier) {
+	if (ImGuiMenu::mouse_down(button, modifier)) {
+		return true;
+	}
+
+
+	if (button != 0)
+		return false;
+
+	if (!select_region && !add_vertex && !delete_vertex && !make_vertex_good) {
+
+		if (button == 0)
+		{
+			this->viewer.mouse_mode = igl::opengl::glfw::Viewer::MouseMode::None;
+			return true;
+		}
+
+		return false;
+	}
+
+	int fid;
+	Eigen::Vector3f bc;
+	bool found = false;
+	double x = viewer.current_mouse_x;
+	double y = viewer.core.viewport(3) - viewer.current_mouse_y;
+	Eigen::MatrixXd V = t * state.mesh.points + (1 - t) * state.mesh.detected;
+
+	if (igl::unproject_onto_mesh(Eigen::Vector2f(x, y), viewer.core.view * viewer.core.model,
+		viewer.core.proj, viewer.core.viewport, V, state.mesh.triangles, fid, bc))
+	{
+		//std::cout << fid << " " << bc.transpose() << std::endl;
+		found = true;
+	}
+
+	if (!found) {
+		if (button == 0)
+		{
+			this->viewer.mouse_mode = igl::opengl::glfw::Viewer::MouseMode::None;
+			return true;
+		}
+
+		return false;
+	}
+
+
+	if (select_region)
+	{
+		select_region = false;
+
+		// set selected_region
+		for (int i = 0; i < state.regions.size(); i++)
+		{
+			for (int j = 0; j < state.regions[i].region_triangles.rows(); j++)
+			{
+				if (fid == state.regions[i].region_triangles(j))
+				{
+					selected_region = i;
+					viewer_control();
+					current_region_status = Region::pretty_status(state.regions[i].status);
+					return true;
+				}
+			}
+		}
+	}
+	else if (add_vertex)
+	{
+		//add_vertex = false;
+		double xNew = 0, yNew = 0, zNew = 0;
+		for (int i = 0; i < 3; i++)
+		{
+			xNew += bc(i) * V(state.mesh.triangles(fid, i), 0);
+			yNew += bc(i) * V(state.mesh.triangles(fid, i), 1);
+			zNew += 0;
+		}
+		state.add_vertex(Eigen::Vector3d(xNew, yNew, zNew));
+		state.reset_state();
+		reset_viewer();
+		viewer_control();
+
+		return true;
+	}
+	else if (delete_vertex)
+	{
+		//delete_vertex = false;
+		// find maximum barycenter coordinates and get vertex id
+		int vid;
+		int maxBC = 0;
+		double maxBCVal = bc(maxBC);
+		for (int i = 1; i < 3; i++)
+		{
+			if (maxBCVal < bc(i)) {
+				maxBC = i;
+				maxBCVal = bc(i);
+			}
+		}
+		//std::cout << "\n max\n" <<  maxBC;
+		vid = state.mesh.triangles(fid, maxBC);
+		state.delete_vertex(vid);
+		//state.reset_state();
+		reset_viewer();
+		viewer_control();
+
+		return true;
+	}
+	else if (make_vertex_good)
+	{
+		make_vertex_good = false;
+		// find maximum barycenter coordinates and get vertex id
+		int vid;
+		int maxBC = 0;
+		double maxBCVal = bc(maxBC);
+		for (int i = 1; i < 3; i++)
+		{
+			if (maxBCVal < bc(i)) {
+				maxBC = i;
+				maxBCVal = bc(i);
+			}
+		}
+		//std::cout << "\n max\n" <<  maxBC;
+		vid = state.mesh.triangles(fid, maxBC);
+		state.fixed_as_good.push_back(vid);
+
+
+		return true;
+	}
+
+	if (button == 0)
+	{
+		this->viewer.mouse_mode = igl::opengl::glfw::Viewer::MouseMode::None;
+		return true;
+	}
+	return false;
+
+	
+}
+
 void UIState::initialize() {
 
 	//// KEY and MOUSE handling example
@@ -56,107 +192,6 @@ void UIState::initialize() {
 	//	std::cout << (char)key << " " << mod << std::endl;
 	//	return false;
 	//};
-
-
-	viewer.callback_mouse_down = [&](igl::opengl::glfw::Viewer& viewer, int, int)->bool
-	{
-		if (!select_region && !add_vertex && !delete_vertex && !make_vertex_good)
-			return false;
-
-		int fid;
-		Eigen::Vector3f bc;
-		bool found = false;
-		double x = viewer.current_mouse_x;
-		double y = viewer.core.viewport(3) - viewer.current_mouse_y;
-		Eigen::MatrixXd V = t * state.mesh.points + (1 - t) * state.mesh.detected;
-
-		if (igl::unproject_onto_mesh(Eigen::Vector2f(x, y), viewer.core.view * viewer.core.model,
-			viewer.core.proj, viewer.core.viewport, V, state.mesh.triangles, fid, bc))
-		{
-			//std::cout << fid << " " << bc.transpose() << std::endl;
-			found = true;
-		}
-
-		if (!found)
-			return false;
-
-
-		if (select_region)
-		{
-			select_region = false;
-			
-			// set selected_region
-			for (int i = 0; i < state.regions.size(); i++)
-			{
-				for (int  j = 0; j < state.regions[i].region_triangles.rows(); j++)
-				{
-					if (fid == state.regions[i].region_triangles(j))
-					{
-						selected_region = i;
-						viewer_control();
-						current_region_status = Region::pretty_status(state.regions[i].status);
-						std::cout << current_region_status << std::endl;
-						return true;
-					}
-				}
-			}
-		}
-		else if(add_vertex)
-		{ 
-			//add_vertex = false;
-			double xNew = 0, yNew = 0, zNew = 0;
-			for (int i = 0; i < 3; i++)
-			{
-				xNew += bc(i) * V(state.mesh.triangles(fid, i), 0);
-				yNew += bc(i) * V(state.mesh.triangles(fid, i), 1);
-				zNew += 0;
-			}
-			state.add_vertex(Eigen::Vector3d(xNew,yNew,zNew));
-			state.reset_state();
-			reset_viewer();
-			viewer_control();
-		}
-		else if (delete_vertex)
-		{
-			//delete_vertex = false;
-			// find maximum barycenter coordinates and get vertex id
-			int vid;
-			int maxBC = 0;
-			double maxBCVal = bc(maxBC);
-			for (int i = 1; i < 3; i++)
-			{
-				if (maxBCVal < bc(i)) {
-					maxBC = i;
-					maxBCVal = bc(i);
-				}
-			}
-			//std::cout << "\n max\n" <<  maxBC;
-			vid = state.mesh.triangles(fid, maxBC);
-			state.delete_vertex(vid);
-			//state.reset_state();
-			reset_viewer();
-			viewer_control();
-		}
-		else if (make_vertex_good)
-		{
-			make_vertex_good = false;
-			// find maximum barycenter coordinates and get vertex id
-			int vid;
-			int maxBC = 0;
-			double maxBCVal = bc(maxBC);
-			for (int i = 1; i < 3; i++)
-			{
-				if (maxBCVal < bc(i)) {
-					maxBC = i;
-					maxBCVal = bc(i);
-				}
-			}
-			//std::cout << "\n max\n" <<  maxBC;
-			vid = state.mesh.triangles(fid, maxBC);
-			state.fixed_as_good.push_back(vid);
-		}
-		return false;
-	};
 
 	viewer.plugins.push_back(this);
 
@@ -536,21 +571,34 @@ void UIState::viewer_control()
 	}
 
 	// show selected region
-	if (show_selected_region && selected_region >0)
+	if (show_selected_region && selected_region > 0)
 	{
-		selected_data.clear();
+		selected_data().clear();
 		int nTri = state.regions[selected_region].region_triangles.size();
-		Eigen::MatrixXd tri_color(nTri,3);
 		Eigen::MatrixXi region_tri(nTri, 3);
 		for (int j = 0; j < nTri; ++j)
 		{
-			Eigen::RowVector3d color;
-			color << 50, 255, 126;
-			tri_color.row(j) = color / 255;
 			region_tri.row(j) = state.mesh.triangles.row(state.regions[selected_region].region_triangles(j));
 		}
-		selected_data().set_mesh(V, state.regions[selected_region].region_triangles);
-		selected_data().set_colors(tri_color);
+		//Eigen::MatrixXd vtmp = V;
+		//vtmp.col(2).setConstant(0.001);
+		Eigen::RowVector3d color;
+		color << 231, 76, 60;
+		color /= 255;
+		//selected_data().set_mesh(V, region_tri);
+		//selected_data().set_colors(color);
+		//selected_data().show_faces = true;
+
+		int nEdgePts = state.regions[selected_region].region_boundary.size();
+		Eigen::MatrixXd region_edge1(nEdgePts,3), region_edge2(nEdgePts, 3);
+		for (int j = 0; j < nEdgePts; ++j)
+		{
+			region_edge1.row(j) = V.row(state.regions[selected_region].region_boundary(j));
+			region_edge2.row(j) = V.row(state.regions[selected_region].region_boundary((j + 1) % nEdgePts));
+		}
+
+		selected_data().add_edges(region_edge1, region_edge2, color);
+		selected_data().line_width = 3.0;
 	}
 
 	// Fix shininess for all layers

@@ -25,7 +25,7 @@ public:
 	float sigma = 2.2;
 	static const int max_region_vertices = 50;
 	static const int gurobi_time_limit_short = 60;
-	static const int gurobi_time_limit_long = 60;
+	static const int gurobi_time_limit_long = 600;
 
 	int counter_invalid_neigh;
 	int counter_small_region;

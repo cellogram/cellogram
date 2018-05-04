@@ -132,8 +132,8 @@ void UIState::draw_viewer_menu() {
 static float menu_offset = 5;
 static float menu_y = 190;
 static float main_menu_height = 800;
-static float clicking_menu_height = 300;
-static float viewer_menu_height = 300;
+static float clicking_menu_height = 450;
+static float viewer_menu_height = 350;
 static float menu_width = 300;
 void UIState::draw_custom_window() {
 	ImGui::SetNextWindowPos(ImVec2(menu_offset, menu_offset), ImGuiSetCond_FirstUseEver);
@@ -178,6 +178,10 @@ void UIState::draw_custom_window() {
 
 		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.40f);
 		// Lloyds relaxation panel
+
+		// disable if points are not detected
+		if (state.mesh.points.size() == 0) push_disabled();
+
 		ImGui::InputInt("Num Iter", &state.lloyd_iterations);
 		/*if (ImGui::Button("Lloyd", ImVec2((w - p) / 2.f, 0))) {
 		state.relax_with_lloyd();
@@ -260,6 +264,9 @@ void UIState::draw_custom_window() {
 			viewer_control();
 		}
 
+
+		if (state.mesh.points.size() == 0) pop_disabled();
+
 		ImGui::Separator();
 
 		draw_legend_item(46, 204, 113, "Ok");
@@ -281,7 +288,7 @@ void UIState::draw_custom_window() {
 	//------------- Viewer Options--------------------//
 	//------------------------------------------------//
 	ImGui::SetNextWindowPos(ImVec2(menu_offset, main_menu_height + 2* menu_offset), ImGuiSetCond_FirstUseEver);
-	ImGui::SetNextWindowSize(ImVec2(menu_width, 300), ImGuiSetCond_FirstUseEver);
+	ImGui::SetNextWindowSize(ImVec2(menu_width, viewer_menu_height), ImGuiSetCond_FirstUseEver);
 	ImGui::Begin(
 		"View settings", nullptr,
 		ImGuiWindowFlags_NoSavedSettings
@@ -316,28 +323,6 @@ void UIState::draw_custom_window() {
 
 	ImGui::End();
 
-
-	if (delete_vertex || add_vertex)
-	{
-		//Cross hair
-		ImGui::SetNextWindowPos(ImVec2(-100, -100), ImGuiSetCond_Always);
-		ImGui::Begin("mouse_layer");
-		ImVec2 p = ImGui::GetIO().MousePos;
-		ImDrawList* draw_list = ImGui::GetWindowDrawList();
-		draw_list->PushClipRectFullScreen();
-		draw_list->AddLine(ImVec2(p.x - 50, p.y), ImVec2(p.x + 50, p.y), IM_COL32(delete_vertex ? 255 : 0, add_vertex ? 255 : 0, 0, 255), 2.0f);
-		draw_list->AddLine(ImVec2(p.x, p.y - 50), ImVec2(p.x, p.y + 50), IM_COL32(delete_vertex ? 255 : 0, add_vertex ? 255 : 0, 0, 255), 2.0f);
-		draw_list->PopClipRect();
-
-		ImGui::GetIO().MouseDrawCursor = true;
-		ImGui::SetMouseCursor(-1);
-		ImGui::End();
-	}
-	else
-	{
-		ImGui::GetIO().MouseDrawCursor = false;
-		ImGui::SetMouseCursor(0);
-	}
 
 	//------------------------------------------------//
 	//------------- Clicking Menu --------------------//
@@ -406,10 +391,44 @@ void UIState::draw_custom_window() {
 	}
 
 	if (selected_region >= 0) {
-		ImGui::LabelText("", "Region %d", selected_region);
-		ImGui::LabelText("", "%s", current_region_status.c_str());
+		ImGui::PushItemWidth(ImGui::GetWindowWidth());
+		int nVi = state.regions[selected_region].region_interior.size();
+		int nVtotal = state.regions[selected_region].region_boundary.size() + nVi;
+		int nTri = state.regions[selected_region].region_triangles.size();
+		ImGui::LabelText("", "Region %d ", selected_region);
+		if (state.regions[selected_region].points_delta != 0)
+			ImGui::LabelText("", "%s (%i) ", current_region_status.c_str(), state.regions[selected_region].points_delta);
+		else
+			ImGui::LabelText("", "%s ", current_region_status.c_str());
+		ImGui::LabelText("", "#V: %i (%i) ", nVtotal, nVi);
+		ImGui::LabelText("", "#F: %i ", nTri);
+		ImGui::PopItemWidth();
 	}
 	ImGui::End();
+
+
+	if (delete_vertex || add_vertex)
+	{
+		//Cross hair
+		ImGui::SetNextWindowPos(ImVec2(-100, -100), ImGuiSetCond_Always);
+		ImGui::Begin("mouse_layer");
+		ImVec2 p = ImGui::GetIO().MousePos;
+		ImDrawList* draw_list = ImGui::GetWindowDrawList();
+		draw_list->PushClipRectFullScreen();
+		draw_list->AddLine(ImVec2(p.x - 50, p.y), ImVec2(p.x + 50, p.y), IM_COL32(delete_vertex ? 255 : 0, add_vertex ? 255 : 0, 0, 255), 2.0f);
+		draw_list->AddLine(ImVec2(p.x, p.y - 50), ImVec2(p.x, p.y + 50), IM_COL32(delete_vertex ? 255 : 0, add_vertex ? 255 : 0, 0, 255), 2.0f);
+		draw_list->PopClipRect();
+
+		ImGui::GetIO().MouseDrawCursor = true;
+		ImGui::SetMouseCursor(-1);
+		ImGui::End();
+	}
+	else
+	{
+		ImGui::GetIO().MouseDrawCursor = false;
+		ImGui::SetMouseCursor(0);
+	}
+
 
 }
 

@@ -165,6 +165,7 @@ namespace cellogram {
 		case TOO_MANY_VERTICES: return "Too many vertices";
 		case NOT_PROPERLY_CLOSED: return "Not properly closed";
 		case NO_SOLUTION: return "No solution";
+		case REGION_TOO_LARGE: return "Region too large";
 		case OK: return "Ok";
 		default: return "";
 		}
@@ -386,9 +387,11 @@ namespace cellogram {
 
 		// Check whether vertices inside region is equal to the ones expected
 		if (s.Vperfect.rows() > s.Vdeformed.rows()) {
+			points_delta = s.Vdeformed.rows() - s.Vperfect.rows();
 			return TOO_FEW_VERTICES;
 		}
 		else if (s.Vperfect.rows() < s.Vdeformed.rows()) {
+			points_delta = s.Vdeformed.rows() - s.Vperfect.rows();
 			return TOO_MANY_VERTICES;
 		}
 

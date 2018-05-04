@@ -303,7 +303,15 @@ namespace cellogram {
 	/*			if (!ok)
 					continue;*/
 
-				V.row(index) = xy.row(p).cast<double>().array() + xy_detected.transpose().array()+0.5; //+0.5 middle of the pixel
+				// check status and validity of x and y here!!
+				Eigen::RowVector2d Vrow = xy.row(p).cast<double>().array() + xy_detected.transpose().array() + 0.5; //+0.5 middle of the pixel
+				if (Vrow(0) < 0 || Vrow(1) < 0 || Vrow(0) > img.cols() || Vrow(1) > img.rows())
+				{
+					//std::cout << Vrow << " - Status" << ok << std::endl;
+					continue;
+				}
+
+				V.row(index) = Vrow;
 				params_out.set_from(params, index);
 
 				//df2 & T for pval_Ar
