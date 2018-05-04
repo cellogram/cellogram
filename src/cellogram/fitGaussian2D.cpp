@@ -9,6 +9,7 @@
 
 #include "fitGaussian2D.h"
 
+#include <vector>
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
@@ -399,7 +400,7 @@ namespace cellogram
 		double RSS = 0.0;
 		double mean = 0.0, std = 0.0;
 
-		double* resValid = resValid = (double*)malloc(data.nValid * sizeof(double));
+		std::vector<double> resValid(data.nValid);
 		for (i = 0; i < data.nValid; ++i) {
 			resValid[i] = gsl_vector_get(data.residuals, i);
 			RSS += resValid[i] * resValid[i];

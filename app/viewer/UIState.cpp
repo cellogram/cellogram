@@ -12,6 +12,7 @@
 
 #include <sys/types.h> // required for stat.h
 #include <sys/stat.h> // no clue why required -- man pages say so
+
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
@@ -23,8 +24,8 @@ namespace cellogram {
 #if defined(_WIN32)
 			std::wstring widestr = std::wstring(path.begin(), path.end());
 			nError = _wmkdir(widestr.c_str()); // can be used on Windows
-#else 
-			nError = mkdir(path.c_str()); // can be used on non-Windows
+#else
+			nError = mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH); // can be used on non-Windows
 #endif
 			return nError;
 		}
@@ -33,7 +34,7 @@ namespace cellogram {
 
 UIState::UIState()
 	: state(State::state())
-{ 
+{
 	reset_viewer();
 }
 
@@ -315,7 +316,7 @@ bool UIState::mouse_scroll(float delta_y) {
 void UIState::compute_hull() {
 	// State
 	state.compute_hull();
-	
+
 	// UI
 	show_hull = true;
 }
@@ -377,7 +378,7 @@ void UIState::load_image(std::string fname) {
 
 	double extent = (V.colwise().maxCoeff() -V.colwise().minCoeff()).maxCoeff();
 	//HIGH dpi
-	
+
 	//int width, height;
 	//glfwGetFramebufferSize(viewer.window, &width, &height);
 	//int width_window, height_window;
@@ -666,7 +667,7 @@ void UIState::create_region_label()
 			mesh_color.row(state.regions[i].region_triangles(j)) = color;
 		}
 	}
-	
+
 }
 
 void UIState::build_region_edges(const Eigen::MatrixXd &pts, Eigen::MatrixXd &bad_P1, Eigen::MatrixXd &bad_P2)

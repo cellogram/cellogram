@@ -30,7 +30,7 @@ namespace cellogram {
 			double min = tmp.minCoeff();
 			double max = tmp.maxCoeff();
 
-			img = ((tmp.cast<double>().array() - min) / (max - min)).rowwise().reverse();
+			img = ((tmp.template cast<double>().array() - min) / (max - min)).rowwise().reverse();
 		}
 	}
 
@@ -43,7 +43,7 @@ namespace cellogram {
 			std::cerr<<"    ERROR reading (not existent, not accessible or no TIFF file)"<< std::endl;
 		} else {
 			uint16_t samples = TinyTIFFReader_getBitsPerSample(tiffr);
-			
+
 
 			ok = true;
 
