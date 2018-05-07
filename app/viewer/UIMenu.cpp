@@ -160,6 +160,12 @@ void UIState::draw_custom_window() {
 		save();
 	}
 
+	ImGui::SameLine();
+
+	if (ImGui::Button("Load##Points", ImVec2((w - p) / 2.f, 0))) {
+		load();
+	}
+
 	//-------- Points ---------
 	if (ImGui::CollapsingHeader("Points", ImGuiTreeNodeFlags_DefaultOpen)) {
 
@@ -235,6 +241,11 @@ void UIState::draw_custom_window() {
 			viewer_control();
 		}
 
+		if (state.mesh.points.size() == 0) pop_disabled();
+
+		// disable if regions are not availabe
+		if (state.regions.size() == 0) push_disabled();
+
 		if (ImGui::Button("solve regions", ImVec2((w - p), 0))) {
 			state.resolve_regions();
 
@@ -245,14 +256,14 @@ void UIState::draw_custom_window() {
 
 		if (ImGui::Button("Ultimate relaxation", ImVec2((w - p), 0))) {
 			state.final_relax();
-
+			t = 1;
 			create_region_label();
 
 			viewer_control();
 		}
 
+		if (state.regions.size() == 0) pop_disabled();
 
-		if (state.mesh.points.size() == 0) pop_disabled();
 
 		ImGui::Separator();
 
@@ -320,14 +331,17 @@ void UIState::draw_custom_window() {
 		"Clicking", nullptr,
 		ImGuiWindowFlags_NoSavedSettings
 	);
-
+	if (state.regions.size() == 0) push_disabled();
 	if (ImGui::Button("Select Region", ImVec2(-1, 0))) {
 		create_region_label();
 		select_region = true;
 		show_selected_region = true;
 	}
+	if (state.regions.size() == 0) pop_disabled();
+
+	int n_was_selected = selected_region;
+	if (n_was_selected < 0) push_disabled();
 	if (ImGui::Button("Grow Selected", ImVec2(-1, 0))) {
-		if (selected_region < 0) return;
 		state.grow_region(selected_region);
 		create_region_label();
 		viewer_control();
@@ -340,6 +354,7 @@ void UIState::draw_custom_window() {
 		create_region_label();
 		viewer_control();
 	}
+	if (n_was_selected < 0) pop_disabled();
 
 	bool was_delete = delete_vertex;
 	if (was_delete) push_selected();
@@ -357,11 +372,18 @@ void UIState::draw_custom_window() {
 	}
 	if (was_add) pop_selected();
 
-	if (ImGui::Button("Split region", ImVec2(-1, 0))) {
+
+	if (ImGui::Button("Mark good", ImVec2(-1, 0))) {
 		// select vertices and mark them as good permanently
 		make_vertex_good = true;
 		viewer_control();
 	}
+	if (ImGui::Button("Mark bad", ImVec2(-1, 0))) {
+		// select vertices and mark them as good permanently
+		make_vertex_bad = true;
+		viewer_control();
+	}
+
 
 	if (ImGui::Button("Color code", ImVec2(-1, 0))) {
 		// select vertices and mark them as good permanently

@@ -43,12 +43,12 @@ namespace cellogram {
 		}
 		return -1;
 	}
-	
 
 	// -----------------------------------------------------------------------------
 
 	bool State::load(const std::string & path)
 	{
+		bool ok = false;
 		// clear previous
 		hull_vertices.resize(0, 0); //needed for lloyd
 		hull_faces.resize(0,0);
@@ -56,7 +56,25 @@ namespace cellogram {
 		regions.clear();
 
 		// Load points
-		return mesh.load(path);
+		ok = mesh.load(path);
+
+		compute_hull();
+
+		// load settings
+		using json = nlohmann::json;
+		std::ifstream json_in(path + "/cellogram/settings.json");
+
+		json json_data;
+		json_in >> json_data;
+
+		std::vector<double> tmp;
+		lloyd_iterations = json_data["lloyd_iterations"];
+		energy_variation_from_mean = json_data["energy_variation_from_mean"];
+		perm_possibilities = json_data["perm_possibilities"];
+		sigma = json_data["sigma"];
+
+		return ok;
+
 	}
 
 	bool State::load_image(const std::string fname)
@@ -73,10 +91,10 @@ namespace cellogram {
 		return ok;
 	}
 
-	bool State::load_param(const std::string & path)
-	{
-		return mesh.load_params(path);
-	}
+	//bool State::load_param(const std::string & path)
+	//{
+	//	return mesh.load_params(path);
+	//}
 
 	bool State::save(const std::string & path)
 	{
@@ -120,7 +138,7 @@ namespace cellogram {
 	void State::compute_hull()
 	{
 		//convex_hull(points, boundary);
-		loose_convex_hull(mesh.detected, mesh.boundary);
+		loose_convex_hull(mesh.detected, mesh.boundary, 6);
 		int dims = (int)mesh.detected.cols();
 
 
@@ -271,12 +289,6 @@ namespace cellogram {
 			crit_pass(boundary(i)) = false;
 		}
 
-		// vertices manually picked as good must be removed from bad
-		for (int i = 0; i < fixed_as_good.size(); i++)
-		{
-			crit_pass(fixed_as_good[i]) = false;
-		}
-
 		// Don't find regions that have been solved
 		for (int i = 0; i < mesh.solved_vertex.size(); i++)
 		{
@@ -284,7 +296,14 @@ namespace cellogram {
 				crit_pass(i) = false;
 		}
 
-
+		// vertices manually picked as good must be removed from bad
+		for (int i = 0; i < mesh.vertex_status_fixed.size(); i++)
+		{
+			if(mesh.vertex_status_fixed(i) == 1)
+				crit_pass(i) = false;
+			if (mesh.vertex_status_fixed(i) == -1)
+				crit_pass(i) = true;
+		}
 
 		// Find connected regions where the criterium was not passed
 
@@ -616,7 +635,6 @@ namespace cellogram {
 
 	void State::reset_state()
 	{
-		fixed_as_good.clear();
 		mesh.reset();
 		regions.clear();
 		compute_hull();

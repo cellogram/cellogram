@@ -53,6 +53,45 @@ namespace cellogram {
 
 			triangles << tmp, tNew;
 		}
+
+		template<typename Matrix>
+		bool load_data(const std::string & path, Matrix & data_matrix)
+		{
+			typedef Matrix::Scalar Scalar;
+			std::fstream file;
+			file.open(path);
+
+			if (!file.good())
+			{
+				std::cerr << "Failed to open file : " << path << std::endl;
+				file.close();
+				return false;
+			}
+
+			std::string s;
+			std::vector<std::vector<Scalar>> matrix;
+
+			while (getline(file, s))
+			{
+				std::stringstream input(s);
+				double temp;
+				matrix.emplace_back();
+
+				auto &currentLine = matrix.back();
+
+				while (input >> temp)
+					currentLine.push_back(temp);
+			}
+
+			if (!igl::list_to_matrix(matrix, data_matrix))
+			{
+				std::cerr << "list to matrix error" << std::endl;
+				file.close();
+				return false;
+			}
+
+			return true;
+		}
 	}
 
 
@@ -60,64 +99,76 @@ namespace cellogram {
 	{
 		if (path.empty()) { return false; }
 		// clear previous
+		params = {};
 		detected.resize(0, 0); // detected (unmoved) point positions
 		points.resize(0, 0); // relaxed point positions
 		triangles.resize(0, 0); // triangular mesh
 		adj.clear(); // adjaceny list of triangluar mesh
 		vertex_to_tri.clear();
 		boundary.resize(0); // list of vertices on the boundary
+		vertex_status_fixed.resize(0);
 
-		// Load points
-		load_points(path, detected);
-		points = detected;
+		// Load data
+		load_data(path + "/cellogram/detected.vert", detected);
+		load_data(path + "/cellogram/points.vert", points);
+		load_data(path + "/cellogram/mesh.tri", triangles);
+
+		params.load(path + "/cellogram/params.json");
+
 		solved_vertex.resize(points.rows(), 1);
 		solved_vertex.setConstant(false);
+		
+		adjacency_list(triangles, adj);
+		generate_vertex_to_tri();
 
-		compute_triangulation();
-
-		// automatically load params if available
+		vertex_status_fixed.resize(points.rows(), 1);
+		vertex_status_fixed.setZero();
 
 		return true;
 	}
 
-	bool Mesh::load_params(const std::string & path)
-	{
-		/*params.resize(0, 0);
-		std::fstream file;
-		file.open(path.c_str());
+	//bool Mesh::load_params(const std::string & path)
+	//{
+	//	//params.resize(0, 0);
+	//	std::fstream file;
+	//	file.open(path + "/cellogram/params.json");
 
-		if (!file.good())
-		{
-			std::cerr << "Failed to open file : " << path << std::endl;
-			file.close();
-			return false;
-		}
+	//	if (!file.good())
+	//	{
+	//		std::cerr << "Failed to open file : " << path << std::endl;
+	//		file.close();
+	//		return false;
+	//	}
 
 
-		std::string s;
-		std::vector<std::vector<double>> matrix;
+	//	std::string s;
+	//	std::vector<std::vector<double>> matrix;
 
-		while (getline(file, s))
-		{
-			std::stringstream input(s);
-			double temp;
-			matrix.emplace_back();
+	//	while (getline(file, s))
+	//	{
+	//		std::stringstream input(s);
+	//		double temp;
+	//		matrix.emplace_back();
 
-			std::vector<double> &currentLine = matrix.back();
+	//		std::vector<double> &currentLine = matrix.back();
 
-			while (input >> temp)
-				currentLine.push_back(temp);
-		}
+	//		while (input >> temp)
+	//			currentLine.push_back(temp);
+	//	}
 
-		if (!igl::list_to_matrix(matrix, params))
-		{
-			std::cerr << "list to matrix error" << std::endl;
-			file.close();
-			return false;
-		}
-		assert(detected.rows() == params.rows());*/
-		return true;
-	}
+	//	Eigen::MatrixXd params_matrix;
+	//	if (!igl::list_to_matrix(matrix, params_matrix))
+	//	{
+	//		std::cerr << "list to matrix error" << std::endl;
+	//		file.close();
+	//		return false;
+	//	}
+	//	std::cout << params_matrix << std::endl;
+	//	assert(detected.rows() == params_matrix.rows());
+	//	return true;
+	//}
+
+	
 
 	void Mesh::relax_with_lloyd(const int lloyd_iterations, const Eigen::MatrixXd &hull_vertices,const Eigen::MatrixXi &hull_faces)
 	{
@@ -147,6 +198,8 @@ namespace cellogram {
 		detected = V;
 
 		points = detected;
+		vertex_status_fixed.resize(points.rows(), 1);
+		vertex_status_fixed.setZero();
 		solved_vertex.resize(points.rows(), 1);
 		solved_vertex.setConstant(false);
 
@@ -161,6 +214,7 @@ namespace cellogram {
 		// Delete vertex
 		removeRow(detected, index);
 		removeRow(solved_vertex, index);
+		removeRow(vertex_status_fixed, index);
 
 		// Delete entry in params
 		if (params.A.size() > 0)
@@ -219,6 +273,13 @@ namespace cellogram {
 		tmp_bool.block(0, 0, solved_vertex.rows(), solved_vertex.cols()) = solved_vertex;
 		tmp_bool(solved_vertex.rows()) = false;
 		solved_vertex = tmp_bool;
+
+		// Add new entry to vertex_status_fixed
+		Eigen::MatrixXi tmp_i;
+		tmp_i.resize(vertex_status_fixed.rows() + 1, vertex_status_fixed.cols());
+		tmp_i.block(0, 0, vertex_status_fixed.rows(), vertex_status_fixed.cols()) = vertex_status_fixed;
+		tmp_i(vertex_status_fixed.rows()) = 0;
+		vertex_status_fixed = tmp_i;
 
 		// Add zero row to params
 		params.push_back(0);

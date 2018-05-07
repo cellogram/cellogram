@@ -42,6 +42,8 @@ namespace cellogram {
 		void push_back(const double value);
 
 		void save(const std::string &path);
+
+		void load(const std::string &path);
 	};
 
 	void point_source_detection(const Eigen::MatrixXd &img, const double sigma, Eigen::MatrixXd &V, DetectionParams &params);

@@ -60,7 +60,7 @@ public:
 	bool add_vertex = false;
 	bool delete_vertex = false;
 	bool make_vertex_good = false;
-
+	bool make_vertex_bad = false;
 	// Image
 	//Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> img;
 
@@ -74,8 +74,8 @@ public:
 
 	igl::opengl::ViewerData & mesh_by_id(int id);
 
-	virtual bool load(std::string name) override;
-	bool load_param(std::string name);
+	bool load();
+	//bool load_param(std::string name);
 
 	bool save();
 

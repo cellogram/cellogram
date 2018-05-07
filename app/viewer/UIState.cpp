@@ -52,16 +52,16 @@ bool UIState::mouse_down(int button, int modifier) {
 	if (button != 0)
 		return false;
 
-	if (!select_region && !add_vertex && !delete_vertex && !make_vertex_good) {
+	//if (!select_region && !add_vertex && !delete_vertex && !make_vertex_good && !make_vertex_bad) {
 
-		if (button == 0)
-		{
-			this->viewer.mouse_mode = igl::opengl::glfw::Viewer::MouseMode::None;
-			return true;
-		}
+	//	if (button == 0)
+	//	{
+	//		this->viewer.mouse_mode = igl::opengl::glfw::Viewer::MouseMode::None;
+	//		return true;
+	//	}
 
-		return false;
-	}
+	//	return false;
+	//}
 
 	int fid;
 	Eigen::Vector3f bc;
@@ -141,15 +141,15 @@ bool UIState::mouse_down(int button, int modifier) {
 		//std::cout << "\n max\n" <<  maxBC;
 		vid = state.mesh.triangles(fid, maxBC);
 		state.delete_vertex(vid);
-		//state.reset_state();
+		state.reset_state();
 		reset_viewer();
 		viewer_control();
 
 		return true;
 	}
-	else if (make_vertex_good)
+	else if (make_vertex_good || make_vertex_bad)
 	{
-		make_vertex_good = false;
+		
 		// find maximum barycenter coordinates and get vertex id
 		int vid;
 		int maxBC = 0;
@@ -161,10 +161,24 @@ bool UIState::mouse_down(int button, int modifier) {
 				maxBCVal = bc(i);
 			}
 		}
-		//std::cout << "\n max\n" <<  maxBC;
-		vid = state.mesh.triangles(fid, maxBC);
-		state.fixed_as_good.push_back(vid);
 
+		vid = state.mesh.triangles(fid, maxBC);
+		if (make_vertex_good)
+		{
+			state.mesh.vertex_status_fixed(vid) = 1;
+		}
+		else if (make_vertex_bad)
+		{
+			state.mesh.vertex_status_fixed(vid) = -1;
+		}
+
+		make_vertex_good = false;
+		make_vertex_bad = false;
+
+		state.detect_bad_regions();
+		state.check_regions();
+		create_region_label();
+		viewer_control();
 
 		return true;
 	}
@@ -224,10 +238,37 @@ igl::opengl::ViewerData & UIState::mesh_by_id(int id) {
 	return viewer.data_list[index];
 }
 
-bool UIState::load(std::string name) {
-	assert(false);
-	if (!state.load(name)) { return false; }
-	selected_region = -1;
+//bool UIState::load(std::string name) {
+//	assert(false);
+//	if (!state.load(name)) { return false; }
+//	selected_region = -1;
+//	current_region_status = "";
+//	//img.resize(0, 0);
+//	// reset flags
+//
+//	mesh_color.resize(1, 3);
+//	mesh_color.row(0) = Eigen::RowVector3d(255, 255, 120) / 255.0;
+//	reset_viewer();
+//
+//	// Show points and align camera
+//	points_data().clear();
+//	points_data().set_points(state.mesh.points, Eigen::RowVector3d(1, 0, 0));
+//	viewer.core.align_camera_center(state.mesh.points);
+//	double extent = (state.mesh.points.colwise().maxCoeff() - state.mesh.points.colwise().minCoeff()).maxCoeff();
+//	points_data().point_size = float(0.008 * extent);
+//	fix_color(points_data());
+//
+//	// Compute and show convex hull + triangulation
+//	compute_hull();
+//	//clean_hull();
+//	compute_triangulation();
+//	viewer_control();
+//	return true;
+//}
+
+bool UIState::load() {
+	//assert(false);
+	if (!state.load(save_dir)) { return false; }
 	current_region_status = "";
 	//img.resize(0, 0);
 	// reset flags
@@ -236,18 +277,9 @@ bool UIState::load(std::string name) {
 	mesh_color.row(0) = Eigen::RowVector3d(255, 255, 120) / 255.0;
 	reset_viewer();
 
-	// Show points and align camera
-	points_data().clear();
-	points_data().set_points(state.mesh.points, Eigen::RowVector3d(1, 0, 0));
-	viewer.core.align_camera_center(state.mesh.points);
-	double extent = (state.mesh.points.colwise().maxCoeff() - state.mesh.points.colwise().minCoeff()).maxCoeff();
-	points_data().point_size = float(0.008 * extent);
-	fix_color(points_data());
+	color_code = true;
 
-	// Compute and show convex hull + triangulation
-	compute_hull();
-	//clean_hull();
-	compute_triangulation();
+	selected_region = -1;
 	viewer_control();
 	return true;
 }
@@ -266,13 +298,14 @@ void UIState::detect_vertices() {
 
 	color_code = true;
 	selected_region = -1;
+	current_region_status = "";
 	viewer_control();
 }
 
-bool UIState::load_param(std::string name)
-{
-	return state.load_param(name);
-}
+//bool UIState::load_param(std::string name)
+//{
+//	return state.load_param(name);
+//}
 
 bool UIState::save() {
 	int nError = 0;
@@ -324,17 +357,18 @@ void UIState::reset_viewer()
 	// Display flags
 	t = 0;
 	vertex_color = Eigen::RowVector3f(1,0,0);
-	mesh_color.resize(0, 0);
-	//show_hull = false;
-	//show_points = false;
-	//show_mesh_fill = true;
-	//show_image = false;
+	show_hull = true;
+	show_points = true;
+	show_mesh_fill = true;
+	show_image = true;
 	show_matching = false;
 	show_bad_regions = false;
+	show_mesh_fill = false;
 }
 
 //TODO refactor when more clear
 void UIState::load_image(std::string fname) {
+	
 	state.load_image(fname);
 
 	const int index = fname.find_last_of(".");
@@ -345,6 +379,7 @@ void UIState::load_image(std::string fname) {
 	selected_region = -1;
 	current_region_status = "";
 
+	color_code = false;
 	show_mesh_fill = false;
 	show_image = true;
 

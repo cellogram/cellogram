@@ -658,7 +658,6 @@ namespace cellogram {
 	{
 		using json = nlohmann::json;
 
-
 		json json_data;
 		json_data["A"] = std::vector<double>(A.data(), A.data() + A.size());
 		json_data["sigma"] = std::vector<double>(sigma.data(), sigma.data() + sigma.size());
@@ -671,10 +670,49 @@ namespace cellogram {
 		json_data["mean"] = std::vector<double>(mean.data(), mean.data() + mean.size());
 		json_data["std"] = std::vector<double>(std.data(), std.data() + std.size());
 		json_data["RSS"] = std::vector<double>(RSS.data(), RSS.data() + RSS.size());
+		json_data["pval_Ar"] = std::vector<double>(pval_Ar.data(), pval_Ar.data() + pval_Ar.size());
 
 		std::ofstream json_out(path + "/params.json");
 		json_out << json_data.dump(4) << std::endl;
 		json_out.close();
+	}
+
+	void DetectionParams::load(const std::string & path)
+	{
+		using json = nlohmann::json;
+		std::ifstream json_in(path);
+
+		json json_data;
+		json_in >> json_data;
+
+		std::vector<double> tmp;
+
+		tmp.clear();  tmp.insert(tmp.end(), json_data["A"].begin(), json_data["A"].end());
+		A = Eigen::Map<Eigen::VectorXd>(&tmp[0], tmp.size());
+		tmp.clear();  tmp.insert(tmp.end(), json_data["sigma"].begin(), json_data["sigma"].end());
+		sigma = Eigen::Map<Eigen::VectorXd>(&tmp[0], tmp.size());
+		tmp.clear();  tmp.insert(tmp.end(), json_data["C"].begin(), json_data["C"].end());
+		C = Eigen::Map<Eigen::VectorXd>(&tmp[0], tmp.size()); 
+		tmp.clear();  tmp.insert(tmp.end(), json_data["std_x"].begin(), json_data["std_x"].end());
+		std_x = Eigen::Map<Eigen::VectorXd>(&tmp[0], tmp.size());
+		tmp.clear();  tmp.insert(tmp.end(), json_data["std_y"].begin(), json_data["std_y"].end());
+		std_y = Eigen::Map<Eigen::VectorXd>(&tmp[0], tmp.size());
+		tmp.clear();  tmp.insert(tmp.end(), json_data["std_A"].begin(), json_data["std_A"].end());
+		std_A = Eigen::Map<Eigen::VectorXd>(&tmp[0], tmp.size());
+		tmp.clear();  tmp.insert(tmp.end(), json_data["std_sigma"].begin(), json_data["std_sigma"].end());
+		std_sigma = Eigen::Map<Eigen::VectorXd>(&tmp[0], tmp.size());
+		tmp.clear();  tmp.insert(tmp.end(), json_data["std_C"].begin(), json_data["std_C"].end());
+		std_C = Eigen::Map<Eigen::VectorXd>(&tmp[0], tmp.size());
+		tmp.clear();  tmp.insert(tmp.end(), json_data["mean"].begin(), json_data["mean"].end());
+		mean = Eigen::Map<Eigen::VectorXd>(&tmp[0], tmp.size());
+		tmp.clear();  tmp.insert(tmp.end(), json_data["std"].begin(), json_data["std"].end());
+		std = Eigen::Map<Eigen::VectorXd>(&tmp[0], tmp.size());
+		tmp.clear();  tmp.insert(tmp.end(), json_data["RSS"].begin(), json_data["RSS"].end());
+		RSS = Eigen::Map<Eigen::VectorXd>(&tmp[0], tmp.size());
+		tmp.clear();  tmp.insert(tmp.end(), json_data["pval_Ar"].begin(), json_data["pval_Ar"].end());
+		pval_Ar = Eigen::Map<Eigen::VectorXd>(&tmp[0], tmp.size());
+
+		json_in.close();
 	}
 
 } // namespace cellogram

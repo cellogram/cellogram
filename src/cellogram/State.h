@@ -42,8 +42,6 @@ public:
 
 	std::vector<Region> regions;
 
-	std::vector<int> fixed_as_good;
-
 	bool load(const std::string &path);
 	bool load_image(const std::string fname);
 	bool load_param(const std::string &path);

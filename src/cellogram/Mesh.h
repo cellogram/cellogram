@@ -26,9 +26,10 @@ public:
 	std::vector<std::vector<int>> vertex_to_tri;
 
 	Eigen::Matrix<bool, Eigen::Dynamic, 1> solved_vertex;
+	Eigen::VectorXi vertex_status_fixed;
+
 
 	bool load(const std::string &path);
-	bool load_params(const std::string &path);
 
 	void relax_with_lloyd(const int lloyd_iterations, const Eigen::MatrixXd &hull_vertices, const Eigen::MatrixXi &hull_faces);
 	void vertex_degree(Eigen::VectorXi &degree);
