@@ -79,12 +79,4 @@ src/gurobiImplementation/LICENSE
 data/2_param.txt
 data/1.txt
 
-.git_old*
-data/perfects/points.vert
-data/perfects/mesh.tri
-data/perfects/hull.vert
-data/perfects/hull.tri
-data/perfects/displacement.txt
-data/perfects/detected.vert
-data/perfects/boundary.txt
-data/2.tif
+data/*

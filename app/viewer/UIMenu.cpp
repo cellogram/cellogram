@@ -131,7 +131,7 @@ void UIState::draw_viewer_menu() {
 // -----------------------------------------------------------------------------
 static float menu_offset = 5;
 static float menu_y = 190;
-static float main_menu_height = 800;
+static float main_menu_height = 870;
 static float clicking_menu_height = 450;
 static float viewer_menu_height = 350;
 static float menu_width = 300;
@@ -275,6 +275,70 @@ void UIState::draw_custom_window() {
 		draw_legend_item(149, 165, 166, "Not Properly Closed");
 		draw_legend_item(52, 73, 94, "Other");
 
+
+		const float hist_w = ImGui::GetWindowWidth() * 0.80f;
+		ImGui::PushItemWidth(hist_w);
+		// Image Scaling
+		const int n_bins = 50;
+		Eigen::Matrix<float, n_bins + 1, 1> hist;
+		hist.setZero();
+
+		for (long i = 0; i < state.img.size(); ++i)
+		{
+			hist(state.img(i)*n_bins)++;
+		}
+
+
+		static float min_img = 0;
+		static float max_img = 1;
+
+		auto pos = ImGui::GetWindowPos();
+		int startX = pos.x + 10;
+		int startY = pos.y + 765;
+
+
+
+		ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+		ImGui::PlotHistogram("", hist.data(), hist.size(), 0, NULL, 0.0f, hist.maxCoeff(), ImVec2(0, 80));
+
+		ImDrawList* draw_list = ImGui::GetWindowDrawList();
+		draw_list->PushClipRectFullScreen();
+		draw_list->AddLine(ImVec2(startX + hist_w * min_img, startY), ImVec2(startX + hist_w * min_img, startY + 75), IM_COL32(0, 255, 0, 255), 2.0f);
+		draw_list->AddLine(ImVec2(startX + hist_w * max_img, startY), ImVec2(startX + hist_w * max_img, startY + 75), IM_COL32(0, 255, 0, 255), 2.0f);
+		draw_list->PopClipRect();
+
+		ImGui::PopItemFlag();
+
+		static const auto clamping = [](const double x) {
+			if (x > 0) {
+				if (x < 1)
+					return x;
+				else
+					return 1.;
+			}
+			else
+				return 0.0;
+		};
+
+		if (ImGui::SliderFloat("min", &min_img, 0.f, 1.f))
+		{
+			Eigen::MatrixXd tmp = (state.img.array() - min_img) / (max_img - min_img);
+			tmp = tmp.unaryExpr(clamping);
+
+			texture = (tmp.array() * 255).cast<unsigned char>();
+
+			viewer_control();
+		}
+		if(ImGui::SliderFloat("max", &max_img, 0.f, 1.f))
+		{
+			Eigen::MatrixXd tmp = (state.img.array() - min_img) / (max_img - min_img);
+			tmp = tmp.unaryExpr(clamping);
+			texture = (tmp.array() * 255).cast<unsigned char>();
+
+			viewer_control();
+		}
+
+		ImGui::PopItemWidth();
 
 	}
 	ImGui::End();
