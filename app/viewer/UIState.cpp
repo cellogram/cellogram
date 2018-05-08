@@ -43,6 +43,50 @@ UIState &UIState::ui_state() {
 	return instance;
 }
 
+bool UIState::mouse_move(int button, int modifier)
+{
+	if (dragging_id == -1)
+		return false;
+
+	double x = viewer.current_mouse_x;
+	double y = viewer.core.viewport(3) - viewer.current_mouse_y;
+
+	//reset update position with x and y, store prevx and y to compute delatax, (use current zoom to move point accordingly???)
+	int fid;
+	Eigen::Vector3f bc;
+	igl::unproject_onto_mesh(Eigen::Vector2f(x, y), viewer.core.view * viewer.core.model,
+		viewer.core.proj, viewer.core.viewport, img_V, img_F, fid, bc);
+
+	double xNew = 0, yNew = 0, zNew = 0;
+	for (int i = 0; i < 3; i++)
+	{
+		//xNew += bc(i) * V(state.mesh.triangles(fid, i), 0);
+		xNew += bc(i) * img_V(img_F(fid, i), 0);
+		yNew += bc(i) * img_V(img_F(fid, i), 1);
+		zNew += 0;
+	}
+
+	state.mesh.moved.row(dragging_id) = RowVector3d(xNew, yNew, zNew);
+	
+
+	viewer_control();
+
+	return true;
+}
+
+bool UIState::mouse_up(int button, int modifier)
+{
+	if (button != 0 || dragging_id == -1)
+		return false;
+	//move_vertex = false;
+	dragging_id = -1;
+
+	state.reset_state();
+	viewer_control();
+
+	return true;
+}
+
 bool UIState::mouse_down(int button, int modifier) {
 	if (ImGuiMenu::mouse_down(button, modifier)) {
 		return true;
@@ -65,31 +109,26 @@ bool UIState::mouse_down(int button, int modifier) {
 
 	int fid;
 	Eigen::Vector3f bc;
-	bool found = false;
 	double x = viewer.current_mouse_x;
 	double y = viewer.core.viewport(3) - viewer.current_mouse_y;
-	Eigen::MatrixXd V = t * state.mesh.points + (1 - t) * state.mesh.detected;
+	Eigen::MatrixXd V = t * state.mesh.moved + (1 - t) * state.mesh.moved;
 
-	if (igl::unproject_onto_mesh(Eigen::Vector2f(x, y), viewer.core.view * viewer.core.model,
-		viewer.core.proj, viewer.core.viewport, V, state.mesh.triangles, fid, bc))
-	{
-		//std::cout << fid << " " << bc.transpose() << std::endl;
-		found = true;
-	}
-
-	if (!found) {
-		if (button == 0)
-		{
-			this->viewer.mouse_mode = igl::opengl::glfw::Viewer::MouseMode::None;
-			return true;
-		}
-
+	if (V.size() <= 0)
 		return false;
-	}
-
 
 	if (select_region)
 	{
+		if (!igl::unproject_onto_mesh(Eigen::Vector2f(x, y), viewer.core.view * viewer.core.model,
+			viewer.core.proj, viewer.core.viewport, V, state.mesh.triangles, fid, bc)) {
+			if (button == 0)
+			{
+				this->viewer.mouse_mode = igl::opengl::glfw::Viewer::MouseMode::None;
+				return true;
+			}
+
+			return false;
+		}
+
 		select_region = false;
 
 		// set selected_region
@@ -107,80 +146,82 @@ bool UIState::mouse_down(int button, int modifier) {
 			}
 		}
 	}
-	else if (add_vertex)
+	else
 	{
-		//add_vertex = false;
+		if (!igl::unproject_onto_mesh(Eigen::Vector2f(x, y), viewer.core.view * viewer.core.model,
+			viewer.core.proj, viewer.core.viewport, img_V, img_F, fid, bc))
+		{
+			if (button == 0)
+			{
+				this->viewer.mouse_mode = igl::opengl::glfw::Viewer::MouseMode::None;
+				return true;
+			}
+
+			return false;
+		}
+
+
 		double xNew = 0, yNew = 0, zNew = 0;
 		for (int i = 0; i < 3; i++)
 		{
-			xNew += bc(i) * V(state.mesh.triangles(fid, i), 0);
-			yNew += bc(i) * V(state.mesh.triangles(fid, i), 1);
+			//xNew += bc(i) * V(state.mesh.triangles(fid, i), 0);
+			xNew += bc(i) * img_V(img_F(fid, i), 0);
+			yNew += bc(i) * img_V(img_F(fid, i), 1);
 			zNew += 0;
 		}
-		state.add_vertex(Eigen::Vector3d(xNew, yNew, zNew));
-		state.reset_state();
-		reset_viewer();
-		viewer_control();
 
-		return true;
-	}
-	else if (delete_vertex)
-	{
-		//delete_vertex = false;
-		// find maximum barycenter coordinates and get vertex id
+		Eigen::VectorXd delta;
+		delta = (V.col(0).array() - xNew).cwiseAbs2() + (V.col(1).array() - yNew).cwiseAbs2();
 		int vid;
-		int maxBC = 0;
-		double maxBCVal = bc(maxBC);
-		for (int i = 1; i < 3; i++)
+		delta.minCoeff(&vid);
+
+		//add_vertex = false;
+		if (add_vertex)
 		{
-			if (maxBCVal < bc(i)) {
-				maxBC = i;
-				maxBCVal = bc(i);
+			state.add_vertex(Eigen::Vector3d(xNew, yNew, zNew));
+
+			state.reset_state();
+			reset_viewer();
+			viewer_control();
+			return true;
+		}
+		else if (delete_vertex)
+		{
+			// find vertex in V closest to xNew,yNew
+			state.delete_vertex(vid);
+
+			state.reset_state();
+			reset_viewer();
+			viewer_control();
+			return true;
+		}	
+		else if (move_vertex)
+		{
+			dragging_id = vid;
+			return true;
+		}
+		else if (make_vertex_good || make_vertex_bad)
+		{
+			// find maximum barycenter coordinates and get vertex id
+			if (make_vertex_good)
+			{
+				state.mesh.vertex_status_fixed(vid) = 1;
 			}
-		}
-		//std::cout << "\n max\n" <<  maxBC;
-		vid = state.mesh.triangles(fid, maxBC);
-		state.delete_vertex(vid);
-		state.reset_state();
-		reset_viewer();
-		viewer_control();
-
-		return true;
-	}
-	else if (make_vertex_good || make_vertex_bad)
-	{
-		
-		// find maximum barycenter coordinates and get vertex id
-		int vid;
-		int maxBC = 0;
-		double maxBCVal = bc(maxBC);
-		for (int i = 1; i < 3; i++)
-		{
-			if (maxBCVal < bc(i)) {
-				maxBC = i;
-				maxBCVal = bc(i);
+			else if (make_vertex_bad)
+			{
+				state.mesh.vertex_status_fixed(vid) = -1;
 			}
+
+			make_vertex_good = false;
+			make_vertex_bad = false;
+
+			state.detect_bad_regions();
+			state.check_regions();
+			create_region_label();
+			viewer_control();
+
+			return true;
 		}
-
-		vid = state.mesh.triangles(fid, maxBC);
-		if (make_vertex_good)
-		{
-			state.mesh.vertex_status_fixed(vid) = 1;
-		}
-		else if (make_vertex_bad)
-		{
-			state.mesh.vertex_status_fixed(vid) = -1;
-		}
-
-		make_vertex_good = false;
-		make_vertex_bad = false;
-
-		state.detect_bad_regions();
-		state.check_regions();
-		create_region_label();
-		viewer_control();
-
-		return true;
 	}
 
 	if (button == 0)
@@ -190,7 +231,6 @@ bool UIState::mouse_down(int button, int modifier) {
 	}
 	return false;
 
-	
 }
 
 void UIState::initialize() {
@@ -417,14 +457,14 @@ void UIState::display_image()
 	int yMax = state.img.rows();
 
 	// Replace the mesh with a triangulated square
-	Eigen::MatrixXd V(4, 3);
-	V <<
+	img_V.resize(4, 3);
+	img_V <<
 		0, 0, 0,
 		yMax, 0, 0,
 		yMax, xMax, 0,
 		0, xMax, 0;
-	Eigen::MatrixXi F(2, 3);
-	F <<
+	img_F.resize(2, 3);
+	img_F <<
 		0, 1, 2,
 		2, 3, 0;
 	Eigen::MatrixXd UV(4, 2);
@@ -434,7 +474,7 @@ void UIState::display_image()
 		1, 1,
 		0, 1;
 
-	image_data().set_mesh(V, F);
+	image_data().set_mesh(img_V, img_F);
 	image_data().set_uv(UV);
 	image_data().show_faces = true;
 	image_data().show_lines = false;
@@ -475,10 +515,13 @@ void UIState::viewer_control()
 	}
 
 	// points
-	Eigen::MatrixXd V = t * state.mesh.points + (1 - t) * state.mesh.detected;
+	Eigen::MatrixXd V = t * state.mesh.moved + (1 - t) * state.mesh.moved;
 
 	if (V.size() > 0)
 		points_data().set_mesh(V, state.mesh.triangles);
+
+	points_data().show_lines = dragging_id < 0;
+
 	/*if (image_loaded)
 	{
 		Eigen::MatrixXd UV(state.detected.rows(), 2);

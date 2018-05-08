@@ -35,10 +35,16 @@ public:
 	int matching_id;
 	int selected_id;
 
+
 	int selected_region = -1;
 	int selected_param = 0;
+	int dragging_id = -1;
 	// UI options
 	// double foo;
+	
+	Eigen::MatrixXi img_F;
+	Eigen::MatrixXd img_V;
+
 
 	// Display flags
 	float t;
@@ -61,6 +67,7 @@ public:
 	bool delete_vertex = false;
 	bool make_vertex_good = false;
 	bool make_vertex_bad = false;
+	bool move_vertex = false;
 	// Image
 	//Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> img;
 
@@ -79,6 +86,9 @@ public:
 
 	bool save();
 
+	virtual bool mouse_down(int button, int modifier) override;
+	virtual bool mouse_move(int button, int modifier) override;
+	virtual bool mouse_up(int button, int modifier) override;
 	virtual bool mouse_scroll(float delta_y) override;
 
 	void load_image(std::string name);
@@ -105,8 +115,22 @@ private:
 	void create_region_label();
 	void build_region_edges(const Eigen::MatrixXd &pts, Eigen::MatrixXd &bad_P1, Eigen::MatrixXd &bad_P2);
 
-	virtual bool mouse_down(int button, int modifier) override;
+	void build_menu_bar();
 
+	bool show_file_menu = true;
+	void draw_file_menu(int x, int y);
+
+	bool show_points_menu = true;
+	void draw_points_menu(int x, int y);
+
+	bool show_mesh_menu = true;
+	void draw_mesh_menu(int x, int y);
+
+	bool show_histogram = true;
+	void draw_histogram(int x, int y);
+
+	bool show_legend = true;
+	void draw_legend(int x, int y);
 public:
 	// Menu stuff
 	void draw_viewer_window() override { }

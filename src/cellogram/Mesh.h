@@ -18,6 +18,7 @@ public:
 
 	Eigen::MatrixXd detected; // detected (unmoved) point positions
 	DetectionParams params; // parameters of detected
+	Eigen::MatrixXd moved; // manually moved point from detected positions
 	Eigen::MatrixXd points; // relaxed point positions
 	Eigen::VectorXi boundary; // list of vertices on the boundary
 

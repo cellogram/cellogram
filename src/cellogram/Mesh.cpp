@@ -101,6 +101,7 @@ namespace cellogram {
 		// clear previous
 		params = {};
 		detected.resize(0, 0); // detected (unmoved) point positions
+		moved.resize(0, 0); // manually moved
 		points.resize(0, 0); // relaxed point positions
 		triangles.resize(0, 0); // triangular mesh
 		adj.clear(); // adjaceny list of triangluar mesh
@@ -112,6 +113,9 @@ namespace cellogram {
 		load_data(path + "/cellogram/detected.vert", detected);
 		load_data(path + "/cellogram/points.vert", points);
 		load_data(path + "/cellogram/mesh.tri", triangles);
+
+		// change when moved is also saved
+		moved = detected;
 
 		params.load(path + "/cellogram/params.json");
 
@@ -127,53 +131,11 @@ namespace cellogram {
 		return true;
 	}
 
-	//bool Mesh::load_params(const std::string & path)
-	//{
-	//	//params.resize(0, 0);
-	//	std::fstream file;
-	//	file.open(path + "/cellogram/params.json");
-
-	//	if (!file.good())
-	//	{
-	//		std::cerr << "Failed to open file : " << path << std::endl;
-	//		file.close();
-	//		return false;
-	//	}
-
-
-	//	std::string s;
-	//	std::vector<std::vector<double>> matrix;
-
-	//	while (getline(file, s))
-	//	{
-	//		std::stringstream input(s);
-	//		double temp;
-	//		matrix.emplace_back();
-
-	//		std::vector<double> &currentLine = matrix.back();
-
-	//		while (input >> temp)
-	//			currentLine.push_back(temp);
-	//	}
-
-	//	Eigen::MatrixXd params_matrix;
-	//	if (!igl::list_to_matrix(matrix, params_matrix))
-	//	{
-	//		std::cerr << "list to matrix error" << std::endl;
-	//		file.close();
-	//		return false;
-	//	}
-	//	std::cout << params_matrix << std::endl;
-	//	assert(detected.rows() == params_matrix.rows());
-	//	return true;
-	//}
-
-	
-
 	void Mesh::relax_with_lloyd(const int lloyd_iterations, const Eigen::MatrixXd &hull_vertices,const Eigen::MatrixXi &hull_faces)
 	{
 		//reset the state
-		points = detected;
+		//points = detected;
+		points = moved;
 		compute_triangulation();
 
 		lloyd_relaxation(points, boundary, lloyd_iterations, hull_vertices, hull_faces);
@@ -197,6 +159,7 @@ namespace cellogram {
 		this->params = params;
 		detected = V;
 
+		moved = detected;
 		points = detected;
 		vertex_status_fixed.resize(points.rows(), 1);
 		vertex_status_fixed.setZero();
@@ -213,6 +176,7 @@ namespace cellogram {
 	{
 		// Delete vertex
 		removeRow(detected, index);
+		removeRow(moved, index);
 		removeRow(solved_vertex, index);
 		removeRow(vertex_status_fixed, index);
 
@@ -262,11 +226,19 @@ namespace cellogram {
 	void Mesh::add_vertex(Eigen::Vector3d & new_point)
 	{
 		// Add vertex
-		Eigen::MatrixXd tmp(detected.rows() + 1, detected.cols());
-		tmp.block(0, 0, detected.rows(), detected.cols()) = detected;
-		tmp.row(detected.rows()) = new_point.transpose();
-		detected = tmp;
-
+		{
+			Eigen::MatrixXd tmp(detected.rows() + 1, detected.cols());
+			tmp.block(0, 0, detected.rows(), detected.cols()) = detected;
+			tmp.row(detected.rows()) = new_point.transpose();
+			detected = tmp;
+		}
+		// Add vertex to moved
+		{
+			Eigen::MatrixXd tmp(moved.rows() + 1, moved.cols());
+			tmp.block(0, 0, moved.rows(), moved.cols()) = moved;
+			tmp.row(moved.rows()) = new_point.transpose();
+			moved = tmp;
+		}
 		// Add new entry to solved_vertex
 		Eigen::Matrix<bool, Eigen::Dynamic,1> tmp_bool;
 		tmp_bool.resize(solved_vertex.rows()+1);
@@ -604,7 +576,8 @@ namespace cellogram {
 
 	void Mesh::reset()
 	{
-		points = detected;
+		//points = detected;
+		points = moved;
 		solved_vertex.setConstant(false);
 		compute_triangulation();
 	}
