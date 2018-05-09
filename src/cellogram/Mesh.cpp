@@ -57,7 +57,7 @@ namespace cellogram {
 		template<typename Matrix>
 		bool load_data(const std::string & path, Matrix & data_matrix)
 		{
-			typedef Matrix::Scalar Scalar;
+			typedef typename Matrix::Scalar Scalar;
 			std::fstream file;
 			file.open(path);
 
