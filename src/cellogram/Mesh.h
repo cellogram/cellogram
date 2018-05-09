@@ -29,6 +29,7 @@ public:
 	Eigen::Matrix<bool, Eigen::Dynamic, 1> solved_vertex;
 	Eigen::VectorXi vertex_status_fixed;
 
+	float scaling = 1; // [um/px]
 
 	bool load(const std::string &path);
 
@@ -43,6 +44,8 @@ public:
 	void local_update(Eigen::VectorXi & local2global, const int global_to_remove, Eigen::MatrixXi & new_triangles);
 
 	void mark_vertex_as_solved(const Eigen::VectorXi & region_interior);
+
+	//void get_physical_bounding_box(Eigen::Vector2d &min, Eigen::Vector2d &max);
 
 	void final_relax();
 	void generate_vertex_to_tri();

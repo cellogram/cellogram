@@ -531,6 +531,7 @@ namespace cellogram {
 	void Mesh::clear()
 	{
 		detected.resize(0, 0); // detected (unmoved) point positions
+		moved.resize(0, 0); // relaxed point positions
 		points.resize(0, 0); // relaxed point positions
 		triangles.resize(0, 0); // triangular mesh
 		adj.clear(); // adjaceny list of triangluar mesh
@@ -544,6 +545,12 @@ namespace cellogram {
 		{
 			std::ofstream out(path + "/detected.vert");
 			out << detected << std::endl;
+			out.close();
+		}
+
+		{
+			std::ofstream out(path + "/moved.vert");
+			out << moved << std::endl;
 			out.close();
 		}
 

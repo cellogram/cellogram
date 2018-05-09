@@ -126,16 +126,25 @@ private:
 	bool show_mesh_menu = true;
 	void draw_mesh_menu(int x, int y);
 
+	bool show_analysis_menu = true;
+	void draw_analysis_menu(int x, int y);
+
 	bool show_histogram = true;
 	void draw_histogram(int x, int y);
 
 	bool show_legend = true;
 	void draw_legend(int x, int y);
+
+	bool show_view_options = true;
+	void draw_view_options(int x, int y);
 public:
 	// Menu stuff
 	void draw_viewer_window() override { }
 	void draw_viewer_menu() override;
 	void draw_custom_window() override;
+
+	bool key_pressed(unsigned int unicode_key, int modifiers) override;
+	bool key_up(int key, int modifiers) override;
 };
 
 // -----------------------------------------------------------------------------

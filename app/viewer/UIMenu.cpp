@@ -135,7 +135,7 @@ void UIState::build_menu_bar()
 	{
 		if (ImGui::BeginMenu("File"))
 		{
-			if (ImGui::MenuItem("Open", "Alt+O")) {
+			if (ImGui::MenuItem("Open", "Ctrl+O")) {
 				std::string fname = FileDialog::openFileName(DATA_DIR, { "*.png", "*.tif", "*.tiff" });
 				if (!fname.empty()) {
 					load_image(fname);
@@ -194,11 +194,17 @@ void UIState::build_menu_bar()
 		if (ImGui::BeginMenu("View"))
 		{
 			if (ImGui::MenuItem("File menu", NULL, show_file_menu, true)) { show_file_menu = !show_file_menu; }
+			if (ImGui::MenuItem("Points", NULL, show_points_menu, true)) { show_points_menu = !show_points_menu; }
+			if (ImGui::MenuItem("Mesh", NULL, show_mesh_menu, true)) { show_mesh_menu = !show_mesh_menu; }
+			if (ImGui::MenuItem("Histogram", NULL, show_histogram, true)) { show_histogram = !show_histogram; }
 			if (ImGui::MenuItem("Legend", NULL, show_legend, true)) { show_legend = !show_legend; }
-			ImGui::Separator();
-			if (ImGui::MenuItem("Cut", "CTRL+X")) {}
-			if (ImGui::MenuItem("Copy", "CTRL+C")) {}
-			if (ImGui::MenuItem("Paste", "CTRL+V")) {}
+			if (ImGui::MenuItem("Viewer", NULL, show_view_options, true)) { show_view_options = !show_view_options; }
+
+
+			//ImGui::Separator();
+			//if (ImGui::MenuItem("Cut", "CTRL+X")) {}
+			//if (ImGui::MenuItem("Copy", "CTRL+C")) {}
+			//if (ImGui::MenuItem("Paste", "CTRL+V")) {}
 			ImGui::EndMenu();
 		}
 		ImGui::EndMainMenuBar();
@@ -212,13 +218,16 @@ static float padding_top = 38;
 static float padding_left = 5;
 static float padding_right = 5;
 static float menu_y = 190;
-static float height_file_menu = 200;
-static float height_points_menu = 200;
-static float height_mesh_menu = 200;
+static float height_file_menu = 120;
+static float height_points_menu = 230;
+static float height_mesh_menu = 500;
+static float height_analysis_menu = 300;
 static float height_histogram = 200;
 static float height_legend = 310;
+static float height_view_options = 350;
+
 static float clicking_menu_height = 450;
-static float viewer_menu_height = 350;
+
 static float menu_width = 300;
 
 static const ImGuiWindowFlags main_window_flags = ImGuiWindowFlags_NoScrollbar |
@@ -262,7 +271,7 @@ void UIState::draw_file_menu(int x, int y) {
 }
 
 void UIState::draw_points_menu(int x, int y) {
-	ImGui::SetNextWindowPos(ImVec2(x, y), ImGuiSetCond_FirstUseEver);
+	ImGui::SetNextWindowPos(ImVec2(x, y), ImGuiCond_Always);
 	ImGui::SetNextWindowSize(ImVec2(menu_width, height_points_menu), ImGuiSetCond_FirstUseEver);
 
 	ImGui::Begin("Points", &show_file_menu, main_window_flags);
@@ -277,13 +286,38 @@ void UIState::draw_points_menu(int x, int y) {
 		detect_vertices();
 	}
 
+	bool was_delete = delete_vertex;
+	if (was_delete) push_selected();
+	if (ImGui::Button("Delete Vertex", ImVec2(-1, 0))) {
+		add_vertex = false;
+		delete_vertex = !delete_vertex;
+	}
+	if (was_delete) pop_selected();
+
+	bool was_add = add_vertex;
+	if (was_add) push_selected();
+	if (ImGui::Button("Add Vertex", ImVec2(-1, 0))) {
+		delete_vertex = false;
+		add_vertex = !add_vertex;
+	}
+	if (was_add) pop_selected();
+
+	bool was_moved = move_vertex;
+	if (was_moved) push_selected();
+	if (ImGui::Button("Move vertex", ImVec2(-1, 0))) {
+		// drag a single vertex to a new starting position
+		move_vertex = !move_vertex;
+		viewer_control();
+	}
+	if (was_moved) pop_selected();
+
 	ImGui::End();
 }
 
 void UIState::draw_mesh_menu(int x, int y)
 {
 	ImGui::SetNextWindowPos(ImVec2(x, y), ImGuiSetCond_FirstUseEver);
-	ImGui::SetNextWindowSize(ImVec2(menu_width, 400), ImGuiSetCond_FirstUseEver);
+	ImGui::SetNextWindowSize(ImVec2(menu_width, height_mesh_menu), ImGuiSetCond_FirstUseEver);
 
 	ImGui::Begin("Mesh", &show_file_menu, main_window_flags);
 
@@ -371,15 +405,67 @@ void UIState::draw_mesh_menu(int x, int y)
 
 		viewer_control();
 	}
-
 	if (state.regions.size() == 0) pop_disabled();
+
+	ImGui::Separator();
+
+	if (state.regions.size() == 0) push_disabled();
+	if (ImGui::Button("Select Region", ImVec2(-1, 0))) {
+		create_region_label();
+		select_region = true;
+		show_selected_region = true;
+	}
+	if (state.regions.size() == 0) pop_disabled();
+
+	int n_was_selected = selected_region;
+	if (n_was_selected < 0) push_disabled();
+	if (ImGui::Button("Grow Selected", ImVec2(-1, 0))) {
+		state.grow_region(selected_region);
+		create_region_label();
+		viewer_control();
+	}
+	if (ImGui::Button("Solve Selected", ImVec2(-1, 0))) {
+		state.resolve_region(selected_region);
+
+		selected_region = -1;
+		current_region_status = "";
+		create_region_label();
+		viewer_control();
+	}
+	if (n_was_selected < 0) pop_disabled();
+
+	ImGui::Separator();
+
+	if (ImGui::Button("Mark good", ImVec2(-1, 0))) {
+		// select vertices and mark them as good permanently
+		make_vertex_good = true;
+		viewer_control();
+	}
+	if (ImGui::Button("Mark bad", ImVec2(-1, 0))) {
+		// select vertices and mark them as good permanently
+		make_vertex_bad = true;
+		viewer_control();
+	}
+
+	ImGui::End();
+}
+
+void UIState::draw_analysis_menu(int x, int y)
+{
+	ImGui::SetNextWindowPos(ImVec2(x, y), ImGuiCond_Always);
+	ImGui::SetNextWindowSize(ImVec2(menu_width, height_analysis_menu), ImGuiSetCond_FirstUseEver);
+
+	ImGui::Begin("Analysis", &show_analysis_menu, main_window_flags);
+
+	ImGui::InputFloat("Scaling [um/px]", &state.mesh.scaling, 0.01, 0, 3);
+
 
 	ImGui::End();
 }
 
 void UIState::draw_histogram(int x, int y)
 {
-	ImGui::SetNextWindowPos(ImVec2(x, y), ImGuiSetCond_FirstUseEver);
+	ImGui::SetNextWindowPos(ImVec2(x, y), ImGuiCond_Always);
 	ImGui::SetNextWindowSize(ImVec2(menu_width, height_histogram), ImGuiSetCond_FirstUseEver);
 	ImGui::Begin("Histogram", &show_histogram, main_window_flags);
 	const float hist_w = ImGui::GetWindowWidth() * 0.80f -2;
@@ -447,7 +533,7 @@ void UIState::draw_histogram(int x, int y)
 }
 
 void UIState::draw_legend(int x, int y) {
-	ImGui::SetNextWindowPos(ImVec2(x, y), ImGuiSetCond_FirstUseEver);
+	ImGui::SetNextWindowPos(ImVec2(x, y), ImGuiCond_Always);
 	ImGui::SetNextWindowSize(ImVec2(menu_width, height_legend), ImGuiSetCond_FirstUseEver);
 	if (!ImGui::Begin("Legend", &show_legend, main_window_flags))
 	{
@@ -463,6 +549,43 @@ void UIState::draw_legend(int x, int y) {
 	draw_legend_item(149, 165, 166, "Not Properly Closed");
 	draw_legend_item(52, 73, 94, "Other");
 
+	ImGui::End();
+}
+
+void UIState::draw_view_options(int x, int y) {
+	ImGui::SetNextWindowPos(ImVec2(x, y), ImGuiCond_Always);
+	ImGui::SetNextWindowSize(ImVec2(menu_width, height_view_options), ImGuiSetCond_FirstUseEver);
+	ImGui::Begin(
+	"View settings", nullptr,
+	ImGuiWindowFlags_NoSavedSettings
+	);
+
+	if (ImGui::ColorEdit4("Mesh color", points_data().line_color.data(),
+	ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueWheel)) {
+	viewer_control();
+	}
+
+	if (ImGui::Checkbox("Show hull", &show_hull)) {
+	viewer_control();
+	}
+	if (ImGui::Checkbox("Show points", &show_points)) {
+	viewer_control();
+	}
+	if (ImGui::Checkbox("Mesh Fill", &show_mesh_fill)) {
+	viewer_control();
+	}
+	if (ImGui::Checkbox("Show image", &show_image)) {
+	viewer_control();
+	}
+	if (ImGui::Checkbox("Show matching", &show_matching)) {
+	viewer_control();
+	}
+	if (ImGui::Checkbox("Bad regions", &show_bad_regions)) {
+	viewer_control();
+	}
+	if (ImGui::Checkbox("Selected region", &show_selected_region)) {
+		viewer_control();
+	}
 	ImGui::End();
 }
 
@@ -487,6 +610,12 @@ void UIState::draw_custom_window() {
 		draw_mesh_menu(x, y);
 		y += height_mesh_menu + padding_general;
 	}
+	if (show_analysis_menu)
+	{
+		draw_analysis_menu(x, y);
+		y += height_analysis_menu + padding_general;
+	}
+
 
 	// Menu on right
 	auto canvas = ImGui::GetIO().DisplaySize;
@@ -502,42 +631,13 @@ void UIState::draw_custom_window() {
 		draw_legend(x, y);
 		y += height_legend + padding_general;
 	}
-	//------------------------------------------------//
-	//------------- Viewer Options--------------------//
-	//------------------------------------------------//
-	/*ImGui::SetNextWindowPos(ImVec2(menu_offset, main_menu_height + 2* menu_offset), ImGuiSetCond_FirstUseEver);
-	ImGui::SetNextWindowSize(ImVec2(menu_width, viewer_menu_height), ImGuiSetCond_FirstUseEver);
-	ImGui::Begin(
-		"View settings", nullptr,
-		ImGuiWindowFlags_NoSavedSettings
-	);
 
-	if (ImGui::ColorEdit4("Mesh color", points_data().line_color.data(),
-		ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueWheel)) {
-		viewer_control();
+	if (show_view_options)
+	{
+		draw_view_options(x, y);
+		y += height_view_options + padding_general;
 	}
-
-	if (ImGui::Checkbox("Show hull", &show_hull)) {
-		viewer_control();
-	}
-	if (ImGui::Checkbox("Show points", &show_points)) {
-		viewer_control();
-	}
-	if (ImGui::Checkbox("Mesh Fill", &show_mesh_fill)) {
-		viewer_control();
-	}
-	if (ImGui::Checkbox("Show image", &show_image)) {
-		viewer_control();
-	}
-	if (ImGui::Checkbox("Show matching", &show_matching)) {
-		viewer_control();
-	}
-	if (ImGui::Checkbox("Bad regions", &show_bad_regions)) {
-		viewer_control();
-	}
-	if (ImGui::Checkbox("Selected region", &show_selected_region)) {
-		viewer_control();
-	}*/
+	
 
 
 	//------------------------------------------------//
@@ -549,67 +649,7 @@ void UIState::draw_custom_window() {
 	//	"Clicking", nullptr,
 	//	ImGuiWindowFlags_NoSavedSettings
 	//);
-	//if (state.regions.size() == 0) push_disabled();
-	//if (ImGui::Button("Select Region", ImVec2(-1, 0))) {
-	//	create_region_label();
-	//	select_region = true;
-	//	show_selected_region = true;
-	//}
-	//if (state.regions.size() == 0) pop_disabled();
-
-	//int n_was_selected = selected_region;
-	//if (n_was_selected < 0) push_disabled();
-	//if (ImGui::Button("Grow Selected", ImVec2(-1, 0))) {
-	//	state.grow_region(selected_region);
-	//	create_region_label();
-	//	viewer_control();
-	//}
-	//if (ImGui::Button("Solve Selected", ImVec2(-1, 0))) {
-	//	state.resolve_region(selected_region);
-
-	//	selected_region = -1;
-	//	current_region_status = "";
-	//	create_region_label();
-	//	viewer_control();
-	//}
-	//if (n_was_selected < 0) pop_disabled();
-
-	//bool was_delete = delete_vertex;
-	//if (was_delete) push_selected();
-	//if (ImGui::Button("Delete Vertex", ImVec2(-1, 0))) {
-	//	add_vertex = false;
-	//	delete_vertex = !delete_vertex;
-	//}
-	//if (was_delete) pop_selected();
-
-	//bool was_add = add_vertex;
-	//if (was_add) push_selected();
-	//if (ImGui::Button("Add Vertex", ImVec2(-1, 0))) {
-	//	delete_vertex = false;
-	//	add_vertex = !add_vertex;
-	//}
-	//if (was_add) pop_selected();
-
-
-	//if (ImGui::Button("Mark good", ImVec2(-1, 0))) {
-	//	// select vertices and mark them as good permanently
-	//	make_vertex_good = true;
-	//	viewer_control();
-	//}
-	//if (ImGui::Button("Mark bad", ImVec2(-1, 0))) {
-	//	// select vertices and mark them as good permanently
-	//	make_vertex_bad = true;
-	//	viewer_control();
-	//}
-
-	//bool was_moved = move_vertex;
-	//if (was_moved) push_selected();
-	//if (ImGui::Button("Move vertex", ImVec2(-1, 0))) {
-	//	// drag a single vertex to a new starting position
-	//	move_vertex = !move_vertex;
-	//	viewer_control();
-	//}
-	//if (was_moved) pop_selected();
+	
 
 
 	//if (ImGui::Button("Color code", ImVec2(-1, 0))) {

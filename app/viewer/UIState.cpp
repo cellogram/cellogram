@@ -7,8 +7,13 @@
 #include <igl/unproject_onto_mesh.h>
 #include <igl/colormap.h>
 
+#include "FileDialog.h"
+
 
 #include <GLFW/glfw3.h>
+
+
+#include <imgui/imgui.h>
 
 #include <sys/types.h> // required for stat.h
 #include <sys/stat.h> // no clue why required -- man pages say so
@@ -68,7 +73,6 @@ bool UIState::mouse_move(int button, int modifier)
 
 	state.mesh.moved.row(dragging_id) = RowVector3d(xNew, yNew, zNew);
 	
-
 	viewer_control();
 
 	return true;
@@ -234,6 +238,7 @@ bool UIState::mouse_down(int button, int modifier) {
 }
 
 void UIState::initialize() {
+
 	viewer.plugins.push_back(this);
 
 	/*state.load("C:\\Users\\Tobias\\Documents\\cellogram\\data\\small2.xyz");
@@ -382,6 +387,56 @@ void UIState::clean_hull() {
 	state.clean_hull();
 }
 
+bool UIState::key_pressed(unsigned int unicode_key, int modifiers)
+{
+	if (modifiers != 0) return false;
+
+	switch (unicode_key)
+	{
+	case 'a':
+	case 'A':
+		delete_vertex = false;
+		add_vertex = !add_vertex;
+		return true;
+	case 'd':
+	case 'D':
+		add_vertex = false;
+		delete_vertex = !delete_vertex;
+		return true;
+	}
+
+	
+
+	return false;
+}
+
+bool UIState::key_up(int key, int modifiers)
+{
+	if (modifiers == 2)
+	{
+		if (key == 'o' || key == 'O')
+		{
+			std::string fname = FileDialog::openFileName(DATA_DIR, { "*.png", "*.tif", "*.tiff" });
+			if (!fname.empty()) {
+				load_image(fname);
+
+				show_image = true;
+
+				// update UI
+				viewer_control();
+			}
+
+			return true;
+		}
+		if (key == 's' || key == 'S')
+		{
+			save();
+
+			return true;
+		}
+	}
+	return false;
+}
 // -----------------------------------------------------------------------------
 
 void UIState::compute_triangulation() {
@@ -444,7 +499,7 @@ void UIState::load_image(std::string fname) {
 	//const int highdpi = width / width_window;
 
 
-	std::cout << extent << std::endl;
+
 	points_data().point_size =  float(700. / extent)+5;
 
 
@@ -515,7 +570,7 @@ void UIState::viewer_control()
 	}
 
 	// points
-	Eigen::MatrixXd V = t * state.mesh.moved + (1 - t) * state.mesh.moved;
+	Eigen::MatrixXd V = t * state.mesh.points + (1 - t) * state.mesh.moved;
 
 	if (V.size() > 0)
 		points_data().set_mesh(V, state.mesh.triangles);

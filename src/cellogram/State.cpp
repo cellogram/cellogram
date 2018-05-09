@@ -138,15 +138,15 @@ namespace cellogram {
 	void State::compute_hull()
 	{
 		//convex_hull(points, boundary);
-		loose_convex_hull(mesh.detected, mesh.boundary, 6);
-		int dims = (int)mesh.detected.cols();
+		loose_convex_hull(mesh.moved, mesh.boundary, 6);
+		int dims = (int)mesh.moved.cols();
 
 
 		// Compute polygon of the convex hull
 		Eigen::VectorXi I = mesh.boundary;
 		Eigen::VectorXi J = Eigen::VectorXi::LinSpaced(dims, 0, dims - 1);
 
-		igl::slice(mesh.detected, I, J, hull_polygon);
+		igl::slice(mesh.moved, I, J, hull_polygon);
 
 		// Offset by epsilon
 		// offset_polygon(hull_polygon, hull_polygon, 1);
@@ -225,16 +225,6 @@ namespace cellogram {
 		
 		Eigen::MatrixXd V;
 		DetectionParams params;
-
-		/*Eigen::MatrixXd tmp = img.cast<double>().transpose();
-		double min = tmp.minCoeff();
-		double max = tmp.maxCoeff();
-		Eigen::MatrixXd imgNorm = (tmp.array() - min) / (max - min);*/
-		//imgNorm = tmp;
-		//imgNorm = imgNorm.colwise().reverse().eval();
-		
-
-		//std::cout << imgNorm << std::endl;
 
 		point_source_detection(img, sigma, V, params);
 
