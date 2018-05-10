@@ -631,6 +631,7 @@ namespace cellogram {
 	void State::reset_state()
 	{
 		mesh.reset();
+		mesh3d.reset();
 		regions.clear();
 		compute_hull();
 	}

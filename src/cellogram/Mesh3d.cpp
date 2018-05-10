@@ -67,6 +67,12 @@ namespace cellogram {
 
 	}
 
+	void Mesh3d::reset()
+	{
+		F.resize(0, 0);
+		V.resize(0, 0);
+	}
+
 }// namespace cellogram
 
 

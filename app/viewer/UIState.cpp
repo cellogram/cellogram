@@ -478,6 +478,7 @@ void UIState::load_image(std::string fname) {
 	current_region_status = "";
 
 	color_code = false;
+	analysis_mode = false;
 	show_mesh_fill = false;
 	show_image = true;
 
