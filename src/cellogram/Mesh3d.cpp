@@ -4,6 +4,7 @@
 #include <Eigen/Dense>
 
 #include <igl/copyleft/tetgen/tetrahedralize.h>
+#include <geogram/mesh/mesh_io.h>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
@@ -28,39 +29,59 @@ namespace cellogram {
 
 		V.resize(8, 3);
 		V << xMin, yMin, zMin,
-			xMin, yMax, zMin,
-			xMax, yMax, zMin,
-			xMax, yMin, zMin,
+		xMin, yMax, zMin,
+		xMax, yMax, zMin,
+		xMax, yMin, zMin,
 
 			//4
-			xMin, yMin, zMax,
-			xMin, yMax, zMax,
-			xMax, yMax, zMax,
-			xMax, yMin, zMax;
+		xMin, yMin, zMax,
+		xMin, yMax, zMax,
+		xMax, yMax, zMax,
+		xMax, yMin, zMax;
 
 		F.resize(12, 3);
 		F << 1, 2, 0,
-			0, 2, 3,
+		0, 2, 3,
 
-			5, 4, 6,
-			4, 7, 6,
+		5, 4, 6,
+		4, 7, 6,
 
-			1, 0, 4,
-			1, 4, 5,
+		1, 0, 4,
+		1, 4, 5,
 
-			2, 1, 5,
-			2, 5, 6,
+		2, 1, 5,
+		2, 5, 6,
 
-			3, 2, 6,
-			3, 6, 7,
+		3, 2, 6,
+		3, 6, 7,
 
-			0, 3, 7,
-			0, 7, 4;
+		0, 3, 7,
+		0, 7, 4;
 
 		Eigen::MatrixXd TV;
 		Eigen::MatrixXi TT;
 		Eigen::MatrixXi TF;
 		igl::copyleft::tetgen::tetrahedralize(V, F, "Qpq1.414a10", TV, TT, TF);
+
+		std::cout<<"n tets: "<<TF.rows()<<std::endl;
+
+		GEO::Mesh M;
+		M.vertices.create_vertices((int) V.rows());
+		for (int i = 0; i < (int) M.vertices.nb(); ++i) {
+			GEO::vec3 &p = M.vertices.point(i);
+			p[0] = V(i, 0);
+			p[1] = V(i, 1);
+			p[2] = V(i, 2);
+		}
+
+		M.cells.create_tets((int) TT.rows());
+
+		for (int c = 0; c < (int) M.cells.nb(); ++c) {
+			for (int lv = 0; lv < TT.cols(); ++lv) {
+					M.cells.set_vertex(c, lv, TT(c, lv));
+			}
+		}
+		GEO::mesh_save(M, "mesh.mesh");
 
 		F = TF;
 		V = TV;

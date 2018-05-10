@@ -31,7 +31,7 @@ namespace cellogram {
 				double min = tmp.minCoeff();
 				double max = tmp.maxCoeff();
 
-				img = ((tmp.cast<double>().array() - min) / (max - min)).rowwise().reverse();
+				img = ((tmp.template cast<double>().array() - min) / (max - min)).rowwise().reverse();
 			}
 
 			free(image);
