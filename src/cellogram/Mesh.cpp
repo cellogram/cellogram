@@ -112,10 +112,11 @@ namespace cellogram {
 		// Load data
 		load_data(path + "/cellogram/detected.vert", detected);
 		load_data(path + "/cellogram/points.vert", points);
+		load_data(path + "/cellogram/moved.vert", moved);
 		load_data(path + "/cellogram/mesh.tri", triangles);
 
 		// change when moved is also saved
-		moved = detected;
+		//moved = detected;
 
 		params.load(path + "/cellogram/params.json");
 
@@ -291,6 +292,17 @@ namespace cellogram {
 		{
 			solved_vertex(region_interior(i)) = true;
 		}
+	}
+
+	void Mesh::get_physical_bounding_box(Eigen::Vector2d & min, Eigen::Vector2d & max) const
+	{
+		Eigen::RowVector3d maxVal = points.colwise().maxCoeff();
+		Eigen::RowVector3d minVal = points.colwise().minCoeff();
+
+		max = maxVal.block<1,2>(0, 0)*scaling;
+		min = minVal.block<1,2>(0, 0)*scaling;
+
+		std::cout << "max:\n" << max << "\n\nmin:\n" << min << std::endl;
 	}
 
 	void Mesh::local_update(Eigen::VectorXi & local2global, Eigen::MatrixXd & new_points, Eigen::MatrixXi & new_triangles, Eigen::VectorXi & old_triangles)

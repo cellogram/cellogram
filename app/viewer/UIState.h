@@ -16,6 +16,7 @@ private:
 	UIState();
 
 public:
+	typedef igl::opengl::glfw::imgui::ImGuiMenu super;
 	static UIState &ui_state();
 
 	virtual ~UIState() = default;
@@ -34,6 +35,7 @@ public:
 	int bad_region_id;
 	int matching_id;
 	int selected_id;
+	int physical_id;
 
 
 	int selected_region = -1;
@@ -60,6 +62,7 @@ public:
 	bool show_bad_regions = false;
 	bool color_code = false;
 	bool show_selected_region = true;
+	bool analysis_mode = false;
 
 	// Clicking flags
 	bool select_region = false;
@@ -108,8 +111,13 @@ public:
 	igl::opengl::ViewerData & bad_region_data() { return mesh_by_id(bad_region_id); }
 	igl::opengl::ViewerData & matching_data() { return mesh_by_id(matching_id); }
 	igl::opengl::ViewerData & selected_data() { return mesh_by_id(selected_id); }
+	igl::opengl::ViewerData & physical_data() { return mesh_by_id(physical_id); }
+
 private:
+	bool block_mouse_behavior(int button);
 	void viewer_control();
+	void viewer_control_2d();
+	void viewer_control_3d();
 	void draw_mesh();
 	void fix_color(igl::opengl::ViewerData &data);
 	void create_region_label();

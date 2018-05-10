@@ -2,6 +2,7 @@
 #pragma once
 
 #include "Mesh.h"
+#include "Mesh3d.h"
 #include "common.h"
 #include "Region.h"
 #include <vector>
@@ -23,9 +24,13 @@ public:
 	float energy_variation_from_mean = 1.7;
 	int perm_possibilities = 12;
 	float sigma = 2.2;
+
+	float padding_size = 25;
+	float thickness = 30;
+
 	static const int max_region_vertices = 50;
 	static const int gurobi_time_limit_short = 60;
-	static const int gurobi_time_limit_long = 600;
+	static const int gurobi_time_limit_long = 300;
 
 	int counter_invalid_neigh;
 	int counter_small_region;
@@ -33,6 +38,7 @@ public:
 	int counter_solved_regions;
 
 	Mesh mesh;
+	Mesh3d mesh3d;
 
 	Eigen::MatrixXd hull_vertices; //needed for lloyd
 	Eigen::MatrixXi hull_faces;
@@ -44,7 +50,7 @@ public:
 
 	bool load(const std::string &path);
 	bool load_image(const std::string fname);
-	bool load_param(const std::string &path);
+	//bool load_param(const std::string &path);
 	bool save(const std::string &path);
 	void compute_hull();
 	void clean_hull();
@@ -71,6 +77,10 @@ public:
 
 	void delete_vertex(const int index);
 	void add_vertex(Eigen::Vector3d new_point);
+
+
+	void init_3d_mesh();
+
 
 	void reset_state();
 

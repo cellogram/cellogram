@@ -457,8 +457,22 @@ void UIState::draw_analysis_menu(int x, int y)
 
 	ImGui::Begin("Analysis", &show_analysis_menu, main_window_flags);
 
-	ImGui::InputFloat("Scaling [um/px]", &state.mesh.scaling, 0.01, 0, 3);
 
+	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.40f);
+	ImGui::InputFloat("Scaling [um/px]", &state.mesh.scaling, 0.01, 0, 3);
+	ImGui::InputFloat("Padding [um]", &state.padding_size, 1, 0, 0);
+	ImGui::InputFloat("Thickness [um]", &state.thickness, 1, 0, 0);
+	ImGui::PopItemWidth();
+
+	if (ImGui::Checkbox("3D Mode", &analysis_mode)) {
+		if(!analysis_mode)
+			viewer.core.trackball_angle = Eigen::Quaternionf::Identity();
+		viewer_control();
+	}
+
+	if (ImGui::Button("Init 3D Mesh")) {
+		state.init_3d_mesh();
+	}
 
 	ImGui::End();
 }

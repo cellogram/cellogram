@@ -623,6 +623,11 @@ namespace cellogram {
 		mesh.add_vertex(new_point);		
 	}
 
+	void State::init_3d_mesh()
+	{
+		mesh3d.init(mesh, padding_size, thickness);
+	}
+
 	void State::reset_state()
 	{
 		mesh.reset();

@@ -45,7 +45,7 @@ public:
 
 	void mark_vertex_as_solved(const Eigen::VectorXi & region_interior);
 
-	//void get_physical_bounding_box(Eigen::Vector2d &min, Eigen::Vector2d &max);
+	void get_physical_bounding_box(Eigen::Vector2d &min, Eigen::Vector2d &max) const;
 
 	void final_relax();
 	void generate_vertex_to_tri();

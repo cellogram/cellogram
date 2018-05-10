@@ -21,6 +21,8 @@ set(source_list
 	Mesh.h
 	MeshUtils.cpp
 	MeshUtils.h
+	Mesh3d.cpp
+	Mesh3d.h
 	navigation.cpp
 	navigation.h
 	PolygonUtils.cpp
@@ -54,6 +56,7 @@ target_link_libraries(${PROJECT_NAME}
 	geogram
 	igl::core
 	igl::triangle
+	igl::tetgen
 	igl::opengl_glfw_imgui #needs to be removed when all ok
 	igl::png
 	json

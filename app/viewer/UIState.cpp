@@ -6,6 +6,7 @@
 #include <igl/colon.h>
 #include <igl/unproject_onto_mesh.h>
 #include <igl/colormap.h>
+#include <igl/per_face_normals.h>
 
 #include "FileDialog.h"
 
@@ -78,6 +79,20 @@ bool UIState::mouse_move(int button, int modifier)
 	return true;
 }
 
+bool UIState::block_mouse_behavior(int button)
+{
+	if (analysis_mode)
+		return false;
+
+	if (button == 0)
+	{
+		this->viewer.mouse_mode = igl::opengl::glfw::Viewer::MouseMode::None;
+		return true;
+	}
+
+	return false;
+}
+
 bool UIState::mouse_up(int button, int modifier)
 {
 	if (button != 0 || dragging_id == -1)
@@ -118,19 +133,13 @@ bool UIState::mouse_down(int button, int modifier) {
 	Eigen::MatrixXd V = t * state.mesh.moved + (1 - t) * state.mesh.moved;
 
 	if (V.size() <= 0)
-		return false;
+		return block_mouse_behavior(button);
 
 	if (select_region)
 	{
 		if (!igl::unproject_onto_mesh(Eigen::Vector2f(x, y), viewer.core.view * viewer.core.model,
 			viewer.core.proj, viewer.core.viewport, V, state.mesh.triangles, fid, bc)) {
-			if (button == 0)
-			{
-				this->viewer.mouse_mode = igl::opengl::glfw::Viewer::MouseMode::None;
-				return true;
-			}
-
-			return false;
+			return block_mouse_behavior(button);
 		}
 
 		select_region = false;
@@ -155,13 +164,7 @@ bool UIState::mouse_down(int button, int modifier) {
 		if (!igl::unproject_onto_mesh(Eigen::Vector2f(x, y), viewer.core.view * viewer.core.model,
 			viewer.core.proj, viewer.core.viewport, img_V, img_F, fid, bc))
 		{
-			if (button == 0)
-			{
-				this->viewer.mouse_mode = igl::opengl::glfw::Viewer::MouseMode::None;
-				return true;
-			}
-
-			return false;
+			return block_mouse_behavior(button);
 		}
 
 
@@ -228,13 +231,7 @@ bool UIState::mouse_down(int button, int modifier) {
 		}
 	}
 
-	if (button == 0)
-	{
-		this->viewer.mouse_mode = igl::opengl::glfw::Viewer::MouseMode::None;
-		return true;
-	}
-	return false;
-
+	return block_mouse_behavior(button);
 }
 
 void UIState::initialize() {
@@ -263,11 +260,15 @@ void UIState::initialize() {
 	viewer.append_mesh();
 	viewer.append_mesh();
 	viewer.append_mesh();
+	viewer.append_mesh();
+	viewer.append_mesh();
 	viewer.data_list[0].id = hull_id = 0;
 	viewer.data_list[1].id = points_id = 1;
 	viewer.data_list[2].id = image_id = 2;
 	viewer.data_list[3].id = bad_region_id = 3;
 	viewer.data_list[4].id = matching_id = 4;
+	viewer.data_list[5].id = selected_id = 5;
+	viewer.data_list[6].id = physical_id = 6;
 }
 
 void UIState::launch() {
@@ -369,7 +370,8 @@ bool UIState::mouse_scroll(float delta_y) {
 		const float min_zoom = 0.1f;
 		viewer.core.camera_zoom = (viewer.core.camera_zoom * mult > min_zoom ? viewer.core.camera_zoom * mult : min_zoom);
 	}
-	return true;
+
+	return super::mouse_scroll(delta_y);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -389,7 +391,7 @@ void UIState::clean_hull() {
 
 bool UIState::key_pressed(unsigned int unicode_key, int modifiers)
 {
-	if (modifiers != 0) return false;
+	if (modifiers != 0) return super::key_pressed(unicode_key, modifiers);
 
 	switch (unicode_key)
 	{
@@ -407,7 +409,7 @@ bool UIState::key_pressed(unsigned int unicode_key, int modifiers)
 
 	
 
-	return false;
+	return super::key_pressed(unicode_key, modifiers);;
 }
 
 bool UIState::key_up(int key, int modifiers)
@@ -435,7 +437,8 @@ bool UIState::key_up(int key, int modifiers)
 			return true;
 		}
 	}
-	return false;
+
+	return super::key_up(key, modifiers);
 }
 // -----------------------------------------------------------------------------
 
@@ -541,6 +544,22 @@ void UIState::display_image()
 
 void UIState::viewer_control()
 {
+	if (analysis_mode)
+	{
+		viewer_control_3d();
+		viewer.core.orthographic = false;
+	}
+	else
+	{
+		viewer_control_2d();
+		viewer.core.orthographic = true;
+	}
+}
+
+void UIState::viewer_control_2d()
+{
+	viewer.core.set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_NO_ROTATION);
+
 	hull_data().clear();
 	points_data().clear();
 	image_data().clear();
@@ -725,6 +744,27 @@ void UIState::viewer_control()
 	fix_color(bad_region_data());
 	fix_color(matching_data());
 	fix_color(selected_data());
+}
+
+void UIState::viewer_control_3d()
+{
+	viewer_control_2d();
+
+	//ROTATION_TYPE_TRACKBALL
+	//ROTATION_TYPE_TWO_AXIS_VALUATOR_FIXED_UP
+	viewer.core.set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_TWO_AXIS_VALUATOR_FIXED_UP);
+	Eigen::MatrixXd Vtmp = state.mesh3d.V / state.mesh.scaling;
+	Vtmp.col(2).array() -= 0.1;
+	physical_data().set_mesh(Vtmp, state.mesh3d.F);
+	physical_data().set_colors(Eigen::RowVector3d(129. / 255, 236. / 255, 236. / 255));
+	MatrixXd normals;
+
+	igl::per_face_normals(Vtmp, state.mesh3d.F, normals);
+	normals *= -1;
+	physical_data().set_normals(normals);
+
+	//physical_data().show_lines = false;
+	fix_color(physical_data());
 }
 
 void UIState::draw_mesh()
