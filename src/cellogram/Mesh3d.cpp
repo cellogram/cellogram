@@ -61,17 +61,17 @@ namespace cellogram {
 		Eigen::MatrixXd TV;
 		Eigen::MatrixXi TT;
 		Eigen::MatrixXi TF;
-		igl::copyleft::tetgen::tetrahedralize(V, F, "Qpq1.414a10", TV, TT, TF);
+		igl::copyleft::tetgen::tetrahedralize(V, F, "Qpq1.414a1000000000000000000", TV, TT, TF);
 
 		std::cout<<"n tets: "<<TF.rows()<<std::endl;
 
 		GEO::Mesh M;
-		M.vertices.create_vertices((int) V.rows());
+		M.vertices.create_vertices((int) TV.rows());
 		for (int i = 0; i < (int) M.vertices.nb(); ++i) {
 			GEO::vec3 &p = M.vertices.point(i);
-			p[0] = V(i, 0);
-			p[1] = V(i, 1);
-			p[2] = V(i, 2);
+			p[0] = TV(i, 0);
+			p[1] = TV(i, 1);
+			p[2] = TV(i, 2);
 		}
 
 		M.cells.create_tets((int) TT.rows());
