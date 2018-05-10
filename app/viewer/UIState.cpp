@@ -130,7 +130,7 @@ bool UIState::mouse_down(int button, int modifier) {
 	Eigen::Vector3f bc;
 	double x = viewer.current_mouse_x;
 	double y = viewer.core.viewport(3) - viewer.current_mouse_y;
-	Eigen::MatrixXd V = t * state.mesh.moved + (1 - t) * state.mesh.moved;
+	Eigen::MatrixXd V = t * state.mesh.points + (1 - t) * state.mesh.moved;
 
 	if (V.size() <= 0)
 		return block_mouse_behavior(button);
@@ -464,6 +464,16 @@ void UIState::reset_viewer()
 	show_mesh_fill = false;
 }
 
+void UIState::deselect_all_buttons()
+{
+	bool select_region = false;
+	bool add_vertex = false;
+	bool delete_vertex = false;
+	bool make_vertex_good = false;
+	bool make_vertex_bad = false;
+	bool move_vertex = false;
+}
+
 //TODO refactor when more clear
 void UIState::load_image(std::string fname) {
 	
@@ -553,6 +563,7 @@ void UIState::viewer_control()
 	else
 	{
 		viewer_control_2d();
+		viewer.core.trackball_angle = Eigen::Quaternionf::Identity();
 		viewer.core.orthographic = true;
 	}
 }
@@ -567,6 +578,7 @@ void UIState::viewer_control_2d()
 	matching_data().clear();
 	bad_region_data().clear();
 	selected_data().clear();
+	physical_data().clear();
 
 	// Read all the UIState flags and update display
 	// hull
@@ -708,7 +720,7 @@ void UIState::viewer_control_2d()
 	}
 
 	// show selected region
-	if (show_selected_region && selected_region > 0)
+	if (show_selected_region && selected_region != -1)
 	{
 		selected_data().clear();
 		int nTri = state.regions[selected_region].region_triangles.size();
@@ -734,6 +746,9 @@ void UIState::viewer_control_2d()
 			region_edge2.row(j) = V.row(state.regions[selected_region].region_boundary((j + 1) % nEdgePts));
 		}
 
+		region_edge1.col(2).array() += 1e-3;
+		region_edge2.col(2).array() += 1e-3;
+
 		selected_data().add_edges(region_edge1, region_edge2, color);
 		selected_data().line_width = 3.0;
 	}
@@ -754,6 +769,10 @@ void UIState::viewer_control_3d()
 	//ROTATION_TYPE_TRACKBALL
 	//ROTATION_TYPE_TWO_AXIS_VALUATOR_FIXED_UP
 	viewer.core.set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_TWO_AXIS_VALUATOR_FIXED_UP);
+	
+	if (state.mesh3d.V.size() == 0)
+		return;
+
 	Eigen::MatrixXd Vtmp = state.mesh3d.V / state.mesh.scaling;
 	Vtmp.col(2).array() -= 0.1;
 	physical_data().set_mesh(Vtmp, state.mesh3d.F);

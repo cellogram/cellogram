@@ -14,7 +14,7 @@ namespace cellogram {
 		Eigen::MatrixXi F;
 
 		void init(const Mesh &mesh, float padding_size, float thickness);
-		void reset();
+		void clear();
 	};
 
 } // namespace cellogram

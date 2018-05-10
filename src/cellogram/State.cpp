@@ -86,7 +86,7 @@ namespace cellogram {
 		hull_polygon.resize(0, 0);
 		regions.clear();
 		mesh.clear();
-
+		mesh3d.clear();
 
 		return ok;
 	}
@@ -631,7 +631,7 @@ namespace cellogram {
 	void State::reset_state()
 	{
 		mesh.reset();
-		mesh3d.reset();
+		mesh3d.clear();
 		regions.clear();
 		compute_hull();
 	}

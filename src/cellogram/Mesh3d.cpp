@@ -88,7 +88,7 @@ namespace cellogram {
 
 	}
 
-	void Mesh3d::reset()
+	void Mesh3d::clear()
 	{
 		F.resize(0, 0);
 		V.resize(0, 0);

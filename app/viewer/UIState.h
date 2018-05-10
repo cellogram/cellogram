@@ -103,7 +103,7 @@ public:
 
 
 	void reset_viewer();
-
+	void deselect_all_buttons();
 public:
 	igl::opengl::ViewerData & points_data() { return mesh_by_id(points_id); }
 	igl::opengl::ViewerData & hull_data() { return mesh_by_id(hull_id); }
@@ -145,6 +145,9 @@ private:
 
 	bool show_view_options = true;
 	void draw_view_options(int x, int y);
+
+	bool show_region_options = true;
+	void draw_region_menu(int x, int y);
 public:
 	// Menu stuff
 	void draw_viewer_window() override { }
