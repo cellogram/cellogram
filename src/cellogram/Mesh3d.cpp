@@ -61,7 +61,7 @@ namespace cellogram {
 		Eigen::MatrixXd TV;
 		Eigen::MatrixXi TT;
 		Eigen::MatrixXi TF;
-		igl::copyleft::tetgen::tetrahedralize(V, F, "Qpq1.414a1000000000000000000", TV, TT, TF);
+		igl::copyleft::tetgen::tetrahedralize(V, F, "Qpq1.414a100", TV, TT, TF);
 
 		std::cout<<"n tets: "<<TF.rows()<<std::endl;
 
