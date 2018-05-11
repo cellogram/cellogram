@@ -53,20 +53,14 @@ target_include_directories(${PROJECT_NAME} PUBLIC ..)
 
 # Dependencies
 target_link_libraries(${PROJECT_NAME}
-	geogram
-	igl::core
-	igl::triangle
-	igl::tetgen
+	polyfem
+
 	igl::opengl_glfw_imgui #needs to be removed when all ok
 	igl::png
-	json
-	polyclipping
-	tinyformat
 	gurobi_solver
 	tcdf
 	gsl
 	TinyTiff
-	polyfem
 )
 
 if(CELLOGRAM_WTIH_UNTANGLER)

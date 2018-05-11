@@ -72,13 +72,14 @@ option(CELLOGRAM_WTIH_UNTANGLER           "Use Marco untangler"          OFF)
 # Required libraries
 ################################################################################
 
+add_subdirectory(${THIRD_PARTY_DIR}/polyfem/cpp)
 # Eigen
 # Uncomment to use the system's version of Eigen (e.g. to use Eigen 3.3)
 # find_package(Eigen3 REQUIRED)
 # target_link_libraries(polyfem PUBLIC Eigen3::Eigen)
 
 # libigl
-find_package(LIBIGL REQUIRED)
+#find_package(LIBIGL REQUIRED)
 
 # Geogram
 # include(geogram)
@@ -105,7 +106,6 @@ target_include_directories(gsl PUBLIC ${GSL_BINARY_DIR})
 # add_library(tinyformat INTERFACE)
 # target_include_directories(tinyformat SYSTEM INTERFACE ${THIRD_PARTY_DIR}/tinyformat)
 
-add_subdirectory(${THIRD_PARTY_DIR}/polyfem/cpp)
 
 # Gurobi library
 find_package(GUROBI)

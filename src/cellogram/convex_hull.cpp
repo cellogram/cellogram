@@ -9,7 +9,10 @@
 #include <numeric>
 #include <stack>
 #include <geogram/basic/geometry.h>
+
+#include <igl/triangle/triangulate.h>
 #undef IGL_STATIC_LIBRARY
+
 #include <igl/edge_lengths.h>
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -189,7 +192,9 @@ void triangulate_polygon(const Eigen::MatrixXd &P, Eigen::MatrixXd &V, Eigen::Ma
 	for (int i = 0; i < n; ++i) {
 		E.row(i) << i, (i+1)%n;
 	}
-	igl::triangle::cdt(PV, E, "Q", V, F, WE, J);
+	//igl::triangle::cdt(PV, E, "Q", V, F, WE, J);
+	igl::triangle::triangulate(PV, E, Eigen::MatrixXd(0, 2),"Q", V, F);
+
 	if (P.cols() == 3) {
 		V.conservativeResize(V.rows(), 3);
 		V.col(2).setZero();
