@@ -107,7 +107,9 @@ namespace cellogram {
 			state.solve_problem();
 
 			// state.interpolate_function(vertices.rows(), state.sol, vals);
-			vals = state.sol;
+			//vals = state.sol;
+			vals = Eigen::Map<Eigen::MatrixXd>(state.sol.data(), 3, vertices.rows());
+			vals = vals.transpose().eval();
 		}
 	}
 

@@ -777,7 +777,37 @@ void UIState::viewer_control_3d()
 	Eigen::MatrixXd Vtmp = state.mesh3d.V / state.mesh.scaling;
 	Vtmp.col(2).array() -= 0.1;
 	physical_data().set_mesh(Vtmp, state.mesh3d.F);
-	physical_data().set_colors(Eigen::RowVector3d(129. / 255, 236. / 255, 236. / 255));
+	
+	Eigen::MatrixXd C, disp;
+	igl::ColorMapType cm;
+	cm = igl::ColorMapType::COLOR_MAP_TYPE_PARULA;
+
+
+	switch (view_mode_3d) {
+	case NO_VIEW_SELECTED: 
+		C = Eigen::RowVector3d(129. / 255, 236. / 255, 236. / 255);
+		break;
+	case X_DISP_SELECTED:
+		igl::colormap(cm, state.mesh3d.sol.col(0).eval(), true, C);
+		break;
+	case Y_DISP_SELECTED:
+		//igl::colormap(cm, state.mesh3d.sol.col(1), true, C);
+		break;
+	case Z_DISP_SELECTED:
+		//igl::colormap(cm, state.mesh3d.sol.col(2), true, C);
+		break;
+	case MAG_DISP_SELECTED:
+		//igl::colormap(cm, state.mesh3d.sol.colwise.squaredNorm(), true, C);
+		break;
+	}
+
+	std::cout << C << std::endl;
+
+	std::cout << "\n\ncol\n" << state.mesh3d.sol.col(0).eval() << std::endl;
+
+
+
+	physical_data().set_colors(C);
 	MatrixXd normals;
 
 	igl::per_face_normals(Vtmp, state.mesh3d.F, normals);
@@ -785,7 +815,7 @@ void UIState::viewer_control_3d()
 	physical_data().set_normals(normals);
 
 	//physical_data().show_lines = false;
-	fix_color(physical_data());
+	//fix_color(physical_data());
 }
 
 void UIState::draw_mesh()

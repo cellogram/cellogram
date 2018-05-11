@@ -224,7 +224,7 @@ static float height_mesh_menu = 300;
 static float height_analysis_menu = 300;
 static float height_histogram = 200;
 static float height_legend = 310;
-static float height_view_options = 350;
+static float height_view_options = 380;
 static float height_region_menu = 230;
 static float height_region_text = 145;
 
@@ -426,12 +426,6 @@ void UIState::draw_analysis_menu(int x, int y)
 	ImGui::InputFloat("Thickness [um]", &state.thickness, 1, 0, 0);
 	ImGui::PopItemWidth();
 
-	if (ImGui::Checkbox("3D Mode", &analysis_mode)) {
-		if(!analysis_mode)
-			viewer.core.trackball_angle = Eigen::Quaternionf::Identity();
-		viewer_control();
-	}
-
 	if (ImGui::Button("Init 3D Mesh")) {
 		state.init_3d_mesh();
 	}
@@ -562,6 +556,19 @@ void UIState::draw_view_options(int x, int y) {
 	if (ImGui::Checkbox("Selected region", &show_selected_region)) {
 		viewer_control();
 	}
+
+	if (ImGui::Checkbox("", &analysis_mode)) {
+		if (!analysis_mode)
+			viewer.core.trackball_angle = Eigen::Quaternionf::Identity();
+		viewer_control();
+	}
+	ImGui::SameLine();
+	
+	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.30f);
+	if (ImGui::Combo("3D Mode", &view_mode_3d, " \0u\0v\0w\0mag")) {
+		viewer_control();
+	}
+	ImGui::PopItemWidth();
 	ImGui::End();
 }
 
