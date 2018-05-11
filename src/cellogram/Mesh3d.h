@@ -12,6 +12,7 @@ namespace cellogram {
 
 		Eigen::MatrixXd V;
 		Eigen::MatrixXi F;
+		Eigen::MatrixXd sol;
 
 		void init(const Mesh &mesh, float padding_size, float thickness);
 		void clear();
