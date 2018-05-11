@@ -66,6 +66,7 @@ target_link_libraries(${PROJECT_NAME}
 	tcdf
 	gsl
 	TinyTiff
+	polyfem
 )
 
 if(CELLOGRAM_WTIH_UNTANGLER)
