@@ -81,29 +81,31 @@ option(CELLOGRAM_WTIH_UNTANGLER           "Use Marco untangler"          OFF)
 find_package(LIBIGL REQUIRED)
 
 # Geogram
-include(geogram)
+# include(geogram)
 
 # CLI11
-add_library(cli11 INTERFACE)
-target_include_directories(cli11 SYSTEM INTERFACE ${THIRD_PARTY_DIR}/cli11)
+# add_library(cli11 INTERFACE)
+# target_include_directories(cli11 SYSTEM INTERFACE ${THIRD_PARTY_DIR}/cli11)
 
 # Clipper
-add_subdirectory(${THIRD_PARTY_DIR}/clipper)
+# add_subdirectory(${THIRD_PARTY_DIR}/clipper)
 
 # Json
-add_library(json INTERFACE)
-target_include_directories(json SYSTEM INTERFACE ${THIRD_PARTY_DIR}/json/single_include)
+# add_library(json INTERFACE)
+# target_include_directories(json SYSTEM INTERFACE ${THIRD_PARTY_DIR}/json/single_include)
 
 # GSL
 add_subdirectory(${THIRD_PARTY_DIR}/gsl)
 target_include_directories(gsl PUBLIC ${GSL_BINARY_DIR})
 
 # Tiny file dialogs library
-add_subdirectory(${THIRD_PARTY_DIR}/tinyfiledialogs tinyfiledialogs)
+# add_subdirectory(${THIRD_PARTY_DIR}/tinyfiledialogs tinyfiledialogs)
 
 # Tiny format library
-add_library(tinyformat INTERFACE)
-target_include_directories(tinyformat SYSTEM INTERFACE ${THIRD_PARTY_DIR}/tinyformat)
+# add_library(tinyformat INTERFACE)
+# target_include_directories(tinyformat SYSTEM INTERFACE ${THIRD_PARTY_DIR}/tinyformat)
+
+add_subdirectory(${THIRD_PARTY_DIR}/polyfem/cpp)
 
 # Gurobi library
 find_package(GUROBI)
