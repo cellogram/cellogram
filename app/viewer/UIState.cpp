@@ -455,6 +455,7 @@ void UIState::reset_viewer()
 	// Display flags
 	t = 0;
 	vertex_color = Eigen::RowVector3f(1,0,0);
+	selected_region = -1;
 	show_hull = true;
 	show_points = true;
 	show_mesh_fill = true;
@@ -722,13 +723,13 @@ void UIState::viewer_control_2d()
 	// show selected region
 	if (show_selected_region && selected_region != -1)
 	{
-		selected_data().clear();
-		int nTri = state.regions[selected_region].region_triangles.size();
-		Eigen::MatrixXi region_tri(nTri, 3);
-		for (int j = 0; j < nTri; ++j)
-		{
-			region_tri.row(j) = state.mesh.triangles.row(state.regions[selected_region].region_triangles(j));
-		}
+		//selected_data().clear();
+		//int nTri = state.regions[selected_region].region_triangles.size();
+		//Eigen::MatrixXi region_tri(nTri, 3);
+		//for (int j = 0; j < nTri; ++j)
+		//{
+		//	region_tri.row(j) = state.mesh.triangles.row(state.regions[selected_region].region_triangles(j));
+		//}
 		//Eigen::MatrixXd vtmp = V;
 		//vtmp.col(2).setConstant(0.001);
 		Eigen::RowVector3d color;
