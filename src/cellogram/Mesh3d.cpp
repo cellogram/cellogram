@@ -36,47 +36,17 @@ namespace cellogram {
 			}
 
 			json j_args = {
-				{"mesh", ""},
-				{"n_refs", 0},
-				{"refinenemt_location", 0.5},
-				{"n_boundary_samples", 10},
 				{"problem", "Custom"},
 				{"normalize_mesh", false},
 
-				{"scalar_formulation", "Laplacian"},
 				{"tensor_formulation", "LinearElasticity"},
 
-				{"quadrature_order", 4},
 				{"discr_order", 1},
-				{"boundary_samples", 10},
-				{"use_spline", false},
-				{"iso_parametric", true},
-				{"integral_constraints", 2},
-
-				{"fit_nodes", false},
-
-				{"n_harmonic_samples", 10},
-
-				{"solver_type", ""},
-				{"precond_type", ""},
-
-				{"solver_params", {}},
 
 				{"params", {
 					{"lambda", 0.75},
 					{"mu", 0.375},
-					{"k", 1.0},
-					{"elasticity_tensor", {}},
-					{"young", 1.0},
-					{"nu", 0.0},
-					{"alphas", {2.13185026692482, -0.600299816209491}},
-					{"mus", {0.00407251192475097, 0.000167202574129608}},
-					{"Ds", {9.4979, 1000000}}
 				}},
-
-				{"problem_params", {}},
-
-				{"output", {}}
 			};
 
 			poly_fem::State &state = poly_fem::State::state();
@@ -119,7 +89,8 @@ namespace cellogram {
 
 			// state.interpolate_function(vertices.rows(), state.sol, vals);
 			//vals = state.sol;
-			vals = Eigen::Map<Eigen::MatrixXd>(state.sol.data(), 3, vertices.rows());
+			// vals = Eigen::Map<Eigen::MatrixXd>(state.sol.data(), 3, vertices.rows());
+			vals = Eigen::Map<Eigen::MatrixXd>(state.rhs.data(), 3, vertices.rows());
 			vals = vals.transpose().eval();
 		}
 	}

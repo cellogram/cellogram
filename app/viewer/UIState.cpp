@@ -766,6 +766,7 @@ void UIState::viewer_control_2d()
 void UIState::viewer_control_3d()
 {
 	viewer_control_2d();
+	physical_data().clear();
 
 	//ROTATION_TYPE_TRACKBALL
 	//ROTATION_TYPE_TWO_AXIS_VALUATOR_FIXED_UP
@@ -805,14 +806,13 @@ void UIState::viewer_control_3d()
 
 	std::cout << "\n\ncol\n" << state.mesh3d.sol.col(0).eval() << std::endl;
 
-
-
-	physical_data().set_colors(C);
 	MatrixXd normals;
 
 	igl::per_face_normals(Vtmp, state.mesh3d.F, normals);
 	normals *= -1;
 	physical_data().set_normals(normals);
+
+	physical_data().set_colors(C);
 
 	//physical_data().show_lines = false;
 	//fix_color(physical_data());
