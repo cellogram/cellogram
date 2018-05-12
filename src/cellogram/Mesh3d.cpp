@@ -13,7 +13,7 @@ namespace cellogram {
 
 	namespace
 	{
-		void compute_analysis(const Eigen::MatrixXd &vertices, const Eigen::MatrixXi &tets, const Mesh &mesh, Eigen::MatrixXd &vals)
+		void compute_analysis(const Eigen::MatrixXd &vertices, const Eigen::MatrixXi &tets, const Mesh &mesh, float thickness, Eigen::MatrixXd &vals)
 		{
 			assert(tets.cols() == 4);
 			assert(vertices.cols() == 3);
@@ -83,7 +83,18 @@ namespace cellogram {
 			state.init(j_args);
 
 
-			state.load_mesh(M);
+			state.load_mesh(M, [thickness](const poly_fem::RowVectorNd &bary){
+				//TOP
+				if(bary(2) < 1e-8)
+					return 1;
+
+				//Bottom
+				if(std::abs(bary(2)- -thickness) < 1e-8)
+					return 3;
+
+				//any other
+				return 2;
+			});
 			// state.compute_mesh_stats();
 
 			//TODO flags
@@ -164,7 +175,7 @@ namespace cellogram {
 
 		std::cout<<"n tets: "<<TF.rows()<<std::endl;
 
-		compute_analysis(TV, TT, mesh, sol);
+		compute_analysis(TV, TT, mesh, thickness, sol);
 
 		F = TF;
 		V = TV;
