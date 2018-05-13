@@ -269,6 +269,8 @@ void UIState::initialize() {
 	viewer.data_list[4].id = matching_id = 4;
 	viewer.data_list[5].id = selected_id = 5;
 	viewer.data_list[6].id = physical_id = 6;
+
+	 assert(viewer.data_list.size() == physical_id + 1);
 }
 
 void UIState::launch() {
