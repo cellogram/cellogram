@@ -240,6 +240,7 @@ bool UIState::mouse_down(int button, int modifier) {
 			{
 				state.split_region(split_end_points);
 				split_region = -1;
+				viewer_control();
 			}
 			return true;
 		}
@@ -529,10 +530,7 @@ void UIState::load_image(std::string fname) {
 	//glfwGetWindowSize(viewer.window, &width_window, &height_window);
 	//const int highdpi = width / width_window;
 
-
-
 	points_data().point_size =  float(700. / extent)+5;
-
 
 	viewer_control();
 }
@@ -666,7 +664,7 @@ void UIState::viewer_control_2d()
 			C.col(0).setConstant(vertex_color(0));
 			C.col(1).setConstant(vertex_color(1));
 			C.col(2).setConstant(vertex_color(2));
-
+			color_code = false;
 			if (color_code)
 			{
 				Eigen::VectorXd param(V.rows());
@@ -704,6 +702,8 @@ void UIState::viewer_control_2d()
 
 	// fill
 	points_data().show_faces = show_mesh_fill;
+	if (show_mesh_fill && !state.regions.empty())
+		create_region_label();
 	points_data().set_colors(mesh_color);
 
 	// bad regions

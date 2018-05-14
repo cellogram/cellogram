@@ -286,6 +286,39 @@ namespace cellogram {
 		generate_vertex_to_tri();
 	}
 
+	void Mesh::update_triangles_from_split(const Eigen::VectorXi & t_ind_old, const  Eigen::MatrixXi & t1, const Eigen::MatrixXi & t2, Eigen::VectorXi & t_ind_1, Eigen::VectorXi & t_ind_2)
+	{
+		// first remove all the old triangles
+		for (int i = t_ind_old.size()-1; i >= 0; i--)
+		{
+			removeRow(triangles, t_ind_old(i));
+		}
+
+		int nT = triangles.rows();
+
+		// append the new triangles and return their indices in triangles
+		Eigen::MatrixXi tmp(triangles.rows() + t1.rows() + t2.rows(), 3);
+		tmp << triangles, t1, t2;
+		triangles.resizeLike(tmp);
+		triangles = tmp;
+
+		t_ind_1.resize(t1.rows());
+		for (int i = 0; i < t_ind_1.size(); i++)
+		{
+			t_ind_1(i) = nT;
+			nT++;
+		}
+		t_ind_2.resize(t2.rows());
+		for (int i = 0; i < t_ind_2.size(); i++)
+		{
+			t_ind_2(i) = nT;
+			nT++;
+		}
+
+		adjacency_list(triangles, adj);
+		generate_vertex_to_tri();
+	}
+
 	void Mesh::mark_vertex_as_solved(const Eigen::VectorXi & region_interior)
 	{
 		for (int i = 0; i < region_interior.size(); i++)

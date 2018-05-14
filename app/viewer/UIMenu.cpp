@@ -411,7 +411,8 @@ void UIState::draw_mesh_menu(int x, int y)
 
 	if (ImGui::Button("solve regions", ImVec2((w - p), 0))) {
 		state.resolve_regions();
-
+		selected_region = -1;
+		current_region_status = "";
 		create_region_label();
 
 		viewer_control();
@@ -616,7 +617,6 @@ void UIState::draw_region_menu(int x, int y) {
 	if (n_was_selected < 0) push_disabled();
 	if (ImGui::Button("Grow Selected", ImVec2(-1, 0))) {
 		state.grow_region(selected_region);
-		create_region_label();
 		viewer_control();
 	}
 
@@ -625,7 +625,6 @@ void UIState::draw_region_menu(int x, int y) {
 
 		selected_region = -1;
 		current_region_status = "";
-		create_region_label();
 		viewer_control();
 	}
 	if (n_was_selected < 0) pop_disabled();

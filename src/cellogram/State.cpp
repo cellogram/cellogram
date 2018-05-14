@@ -79,9 +79,17 @@ namespace cellogram {
 		}
 
 		std::cout << "splitting region: " << index << std::endl;
+		Region r1, r2;
+		regions[index].split_region(mesh, split_end_points,r1,r2);
 
-		regions[index].split_region(split_end_points);
+		regions.erase(regions.begin() + index);
+		regions.push_back(r1);
+		regions.push_back(r2);
 
+		for(int i = 0; i < regions.size();++i)
+		{
+			regions[i].find_triangles(mesh.triangles);
+		}
 	}
 
 	// -----------------------------------------------------------------------------
@@ -397,14 +405,14 @@ namespace cellogram {
 	{
 		for (auto & r : regions)
 		{
-			r.status = r.check_region(mesh.detected, mesh.points, mesh.triangles, mesh.adj);
+			r.check_region(mesh.detected, mesh.points, mesh.triangles, mesh.adj);
 			//std::cout << r.status << std::endl;
 		}
 	}
 
 	void State::check_region(const int index)
 	{
-		regions[index].status = regions[index].check_region(mesh.detected, mesh.points, mesh.triangles, mesh.adj);
+		regions[index].check_region(mesh.detected, mesh.points, mesh.triangles, mesh.adj);
 	}
 
 	void State::fix_regions()
@@ -518,15 +526,14 @@ namespace cellogram {
 		auto &region = regions[index];
 
 		double gurobi_max_time = gurobi_time_limit_long;
-		auto status = region.resolve(mesh.detected, mesh.points, perm_possibilities, gurobi_max_time, new_points, new_triangles, true);
-		region.status = status;
+		region.resolve(mesh.detected, mesh.points, perm_possibilities, gurobi_max_time, new_points, new_triangles, true);
 		//gurobi r
-		if (status == Region::NOT_PROPERLY_CLOSED)
+		if (region.status == Region::NOT_PROPERLY_CLOSED)
 		{
 			counter_invalid_neigh++;
 			return;
 		}
-		else if (status == Region::NO_SOLUTION)
+		else if (region.status == Region::NO_SOLUTION)
 		{
 			counter_infeasible_region++;
 			return;
@@ -571,22 +578,21 @@ namespace cellogram {
 			auto &region = *it;
 			region.find_triangles(mesh.triangles);
 			double gurobi_max_time = gurobi_time_limit_short;
-			auto status = region.resolve(mesh.detected, mesh.points, perm_possibilities, gurobi_max_time, new_points, new_triangles);
-			region.status = status;
+			region.resolve(mesh.detected, mesh.points, perm_possibilities, gurobi_max_time, new_points, new_triangles);
 			//gurobi r
-			if (status == Region::NOT_PROPERLY_CLOSED)
+			if (region.status == Region::NOT_PROPERLY_CLOSED)
 			{
 				counter_invalid_neigh++;
 				++it;
 				continue;
 			}
-			else if (status == Region::NO_SOLUTION)
+			else if (region.status == Region::NO_SOLUTION)
 			{
 				counter_infeasible_region++;
 				++it;
 				continue;
 			}
-			else if (status != 0)
+			else if (region.status != 0)
 			{
 				++it;
 				continue;
@@ -661,6 +667,7 @@ namespace cellogram {
 	void State::add_vertex(Eigen::Vector3d new_point)
 	{
 		mesh.add_vertex(new_point);		
+
 	}
 
 	void State::init_3d_mesh()

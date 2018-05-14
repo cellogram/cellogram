@@ -42,6 +42,8 @@ public:
 
 	void local_update(Eigen::VectorXi &local2global, Eigen::MatrixXd &new_points, Eigen::MatrixXi &new_triangles, Eigen::VectorXi & old_triangles);
 	void local_update(Eigen::VectorXi & local2global, const int global_to_remove, Eigen::MatrixXi & new_triangles);
+	void update_triangles_from_split(const Eigen::VectorXi & t_old, const Eigen::MatrixXi & t1, const Eigen::MatrixXi & t2, Eigen::VectorXi & t_ind1, Eigen::VectorXi & t_ind2);
+
 
 	void mark_vertex_as_solved(const Eigen::VectorXi & region_interior);
 
