@@ -3,9 +3,14 @@
 #include "Mesh.h"
 #include <Eigen/Dense>
 
+
+#include <igl/opengl/glfw/Viewer.h>
+#include <Mesh3D.hpp>
+
 #include <igl/copyleft/tetgen/tetrahedralize.h>
 #include <geogram/mesh/mesh_io.h>
 #include <State.hpp>
+
 #include <CustomProblem.hpp>
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -52,22 +57,23 @@ namespace cellogram {
 			poly_fem::State &state = poly_fem::State::state();
 			state.init(j_args);
 
-
 			state.load_mesh(M, [thickness](const poly_fem::RowVectorNd &bary){
-				//TOP
-				if(bary(2) < 1e-8)
+				// std::cout<<bary(2) <<" t "<<thickness<< " 1 "<< (bary(2) < 1e-8) <<std::endl;
+				if(std::abs(bary(2)) < 1e-8){
 					return 1;
+				}
 
 				//Bottom
-				if(std::abs(bary(2)- -thickness) < 1e-8)
+				if(std::abs(bary(2)- -thickness) < 1e-8){
 					return 3;
+				}
 
 				//any other
 				return 2;
 			});
+
 			// state.compute_mesh_stats();
 
-			//TODO flags
 			poly_fem::CustomProblem &problem = *dynamic_cast<poly_fem::CustomProblem *>(state.problem.get());
 			problem.init({1, 3});
 
@@ -88,10 +94,36 @@ namespace cellogram {
 			state.solve_problem();
 
 			// state.interpolate_function(vertices.rows(), state.sol, vals);
-			//vals = state.sol;
 			// vals = Eigen::Map<Eigen::MatrixXd>(state.sol.data(), 3, vertices.rows());
 			vals = Eigen::Map<Eigen::MatrixXd>(state.rhs.data(), 3, vertices.rows());
 			vals = vals.transpose().eval();
+
+
+			// auto &tmp_mesh = *dynamic_cast<poly_fem::Mesh3D *>(state.mesh.get());
+			// igl::opengl::glfw::Viewer viewer;
+			// Eigen::MatrixXi asdT;
+			// Eigen::MatrixXd asdP, asdC;
+			// std::vector<int> asdR;
+			// tmp_mesh.triangulate_faces(asdT,asdP,asdR);
+
+			// asdC.resize(asdT.rows(), 3);
+			// asdC.setZero();
+
+			// for(std::size_t i = 0; i < tmp_mesh.n_faces(); ++i)
+			// {
+			// 	const int a =tmp_mesh.get_boundary_id(i);
+			// 	const auto bb = tmp_mesh.face_barycenter(i);
+
+			// 	if(a == 1)
+			// 		viewer.data().add_points(bb, Eigen::RowVector3d(1, 0, 0));
+			// 	else if(a == 3)
+			// 		viewer.data().add_points(bb, Eigen::RowVector3d(0, 1, 0));
+			// 	else if(a == 2)
+			// 		viewer.data().add_points(bb, Eigen::RowVector3d(0, 0, 1));
+			// }
+
+			// viewer.data().set_mesh(asdP, asdT);
+			// viewer.launch();
 		}
 	}
 
@@ -142,7 +174,7 @@ namespace cellogram {
 		Eigen::MatrixXd TV;
 		Eigen::MatrixXi TT;
 		Eigen::MatrixXi TF;
-		igl::copyleft::tetgen::tetrahedralize(V, F, "Qpq1.414a100000", TV, TT, TF);
+		igl::copyleft::tetgen::tetrahedralize(V, F, "Qpq1.414a100", TV, TT, TF);
 
 		std::cout<<"n tets: "<<TF.rows()<<std::endl;
 
