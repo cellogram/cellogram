@@ -79,6 +79,8 @@ public:
 	bool make_vertex_good = false;
 	bool make_vertex_bad = false;
 	bool move_vertex = false;
+	int split_region = -1;
+	Eigen::Vector2i split_end_points;
 	// Image
 	//Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> img;
 
@@ -134,7 +136,7 @@ private:
 	void build_menu_bar();
 
 	bool show_file_menu = true;
-	void draw_file_menu(int x, int y);
+	void draw_file_menu(int x, int y, int &y_return);
 
 	bool show_points_menu = true;
 	void draw_points_menu(int x, int y);

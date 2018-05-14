@@ -218,14 +218,14 @@ static float padding_top = 38;
 static float padding_left = 5;
 static float padding_right = 5;
 static float menu_y = 190;
-static float height_file_menu = 120;
+static float height_file_menu = 150;
 static float height_points_menu = 230;
 static float height_mesh_menu = 300;
 static float height_analysis_menu = 300;
 static float height_histogram = 200;
 static float height_legend = 310;
 static float height_view_options = 380;
-static float height_region_menu = 230;
+static float height_region_menu = 270;
 static float height_region_text = 145;
 
 static float clicking_menu_height = 450;
@@ -237,7 +237,7 @@ static const ImGuiWindowFlags main_window_flags = ImGuiWindowFlags_NoScrollbar |
 	ImGuiWindowFlags_NoCollapse |
 	ImGuiWindowFlags_NoNav;
 
-void UIState::draw_file_menu(int x, int y) {
+void UIState::draw_file_menu(int x, int y, int &y_return) {
 	ImGui::SetNextWindowPos(ImVec2(x,y), ImGuiSetCond_FirstUseEver);
 	ImGui::SetNextWindowSize(ImVec2(menu_width, height_file_menu), ImGuiSetCond_FirstUseEver);
 
@@ -246,8 +246,25 @@ void UIState::draw_file_menu(int x, int y) {
 	float w = ImGui::GetContentRegionAvailWidth();
 	float p = ImGui::GetStyle().FramePadding.x;
 
+	// Text filed showing loaded image
+	std::vector<std::string> strings;
+	std::istringstream f(save_dir);
+	std::string s;
+	while (std::getline(f, s, '\\')) {
+		strings.push_back(s);
+	}
 
-	if (ImGui::Button("Load Image", ImVec2((w - p), 0))) {
+	ImGui::Text("File: %s", strings.back().c_str());
+	if (ImGui::IsItemHovered())
+	{
+		ImGui::BeginTooltip();
+		ImGui::PushTextWrapPos(w * 35.0f);
+		ImGui::TextUnformatted(save_dir.c_str());
+		ImGui::PopTextWrapPos();
+		ImGui::EndTooltip();
+	}
+
+	if (ImGui::Button("Load Image",ImVec2((w - p), 0))) {
 		std::string fname = FileDialog::openFileName(DATA_DIR, { "*.png", "*.tif", "*.tiff" });
 		if (!fname.empty()) {
 			load_image(fname);
@@ -290,7 +307,7 @@ void UIState::draw_points_menu(int x, int y) {
 
 	bool was_delete = delete_vertex;
 	if (was_delete) push_selected();
-	if (ImGui::Button("Delete Vertex", ImVec2(-1, 0))) {
+	if (ImGui::Button("Delete Vertex", ImVec2((w - p), 0))) {
 		add_vertex = false;
 		delete_vertex = !delete_vertex;
 	}
@@ -298,7 +315,7 @@ void UIState::draw_points_menu(int x, int y) {
 
 	bool was_add = add_vertex;
 	if (was_add) push_selected();
-	if (ImGui::Button("Add Vertex", ImVec2(-1, 0))) {
+	if (ImGui::Button("Add Vertex", ImVec2((w - p), 0))) {
 		delete_vertex = false;
 		add_vertex = !add_vertex;
 	}
@@ -306,7 +323,7 @@ void UIState::draw_points_menu(int x, int y) {
 
 	bool was_moved = move_vertex;
 	if (was_moved) push_selected();
-	if (ImGui::Button("Move vertex", ImVec2(-1, 0))) {
+	if (ImGui::Button("Move vertex", ImVec2((w - p), 0))) {
 		// drag a single vertex to a new starting position
 		move_vertex = !move_vertex;
 		viewer_control();
@@ -635,6 +652,20 @@ void UIState::draw_region_menu(int x, int y) {
 	}
 	if (was_marked_bad) pop_selected();
 
+	ImGui::Separator();
+
+	if (state.regions.size() == 0) push_disabled();
+	bool was_split = split_region > -1;
+	if (was_split) push_selected();
+	if (ImGui::Button("Split Region", ImVec2(-1, 0))) {
+		split_region = 0;
+		deselect_all_buttons();
+		//split_region = true;
+		viewer_control();
+	}
+	if (was_split) pop_selected();
+	if (state.regions.size() == 0) pop_disabled();
+
 	if (selected_region >= 0) {
 		ImGui::Separator();
 		ImGui::PushItemWidth(ImGui::GetWindowWidth());
@@ -663,7 +694,8 @@ void UIState::draw_custom_window() {
 	// Menu on left
 	if (show_file_menu)
 	{
-		draw_file_menu(x, y);
+		int current_window_height;
+		draw_file_menu(x, y, current_window_height);
 		y += height_file_menu + padding_general;
 	}
 	if (show_points_menu)

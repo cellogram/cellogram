@@ -73,15 +73,16 @@ public:
 	void resolve_regions();
 	void final_relax();
 
-	int find_region_by_vertex(const int index);
+	int find_region_by_interior_vertex(const int index);
+	void find_region_by_boundary_vertex(const int index, std::vector<int> & regions);
+
+	void split_region(const Eigen::Vector2i& split_end_points);
 
 	void delete_vertex(const int index);
 	void add_vertex(Eigen::Vector3d new_point);
 
-
 	void init_3d_mesh();
-
-
+	
 	void reset_state();
 
 public:

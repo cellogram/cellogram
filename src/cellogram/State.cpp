@@ -28,7 +28,7 @@ namespace cellogram {
 
 
 
-	int State::find_region_by_vertex(const int index)
+	int State::find_region_by_interior_vertex(const int index)
 	{
 		for(int i = 0; i < regions.size(); i++)
 		{
@@ -42,6 +42,46 @@ namespace cellogram {
 			}
 		}
 		return -1;
+	}
+
+	void State::find_region_by_boundary_vertex(const int index, std::vector<int> & found_regions)
+	{
+		for (int i = 0; i < regions.size(); i++)
+		{
+			for (int j = 0; j < regions[i].region_boundary.rows(); j++)
+			{
+				if (regions[i].region_boundary(j) == index)
+				{
+					found_regions.push_back(i);
+				}
+			}
+		}
+	}
+
+	void State::split_region(const Eigen::Vector2i & split_end_points)
+	{
+		// find region that contains for points in boundary and call splitting method of region
+		std::vector<int> regions1, regions2;
+		find_region_by_boundary_vertex(split_end_points(0), regions1);
+		find_region_by_boundary_vertex(split_end_points(1), regions2);
+
+		if (size(regions1) == 0 || size(regions2) == 0)
+			return;
+
+		int index;
+		for (int i = 0; i < regions1.size(); i++)
+		{
+			if (std::find(regions2.begin(), regions2.end(), regions1[i]) != regions2.end())
+			{
+				index = regions1[i];
+				break;
+			}
+		}
+
+		std::cout << "splitting region: " << index << std::endl;
+
+		regions[index].split_region(split_end_points);
+
 	}
 
 	// -----------------------------------------------------------------------------
@@ -598,7 +638,7 @@ namespace cellogram {
 		else
 		{
 			//find the region 
-			int region_ind = find_region_by_vertex(index);
+			int region_ind = find_region_by_interior_vertex(index);
 			if (region_ind == -1)
 			{
 				regions.clear();

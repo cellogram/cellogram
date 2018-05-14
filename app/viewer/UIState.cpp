@@ -229,6 +229,20 @@ bool UIState::mouse_down(int button, int modifier) {
 
 			return true;
 		}
+		else if (split_region > -1)
+		{
+			split_end_points(split_region) = vid;
+			split_region++;
+
+			viewer_control();
+
+			if (split_region > 1)
+			{
+				state.split_region(split_end_points);
+				split_region = -1;
+			}
+			return true;
+		}
 	}
 
 	return block_mouse_behavior(button);

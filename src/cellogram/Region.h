@@ -52,6 +52,8 @@ namespace cellogram {
 		//todo
 		//void reduce_index
 
+		void split_region(const Eigen::Vector2i &split_end_points);
+
 	private:
 		Eigen::MatrixXi get_triangulation(const Eigen::MatrixXi &F);
 	};

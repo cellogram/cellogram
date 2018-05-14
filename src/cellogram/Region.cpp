@@ -25,12 +25,31 @@
 #include <imgui/imgui.h>
 
 
+#include <igl/dijkstra.h>
 #include <igl/opengl/glfw/Viewer.h>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
 	namespace
 	{
+		void flip_triangles(const Eigen::MatrixXi& tri_original, Eigen::MatrixXi& tri_flipped)
+		{
+			//tri_flipped.resize(tri_original.rows(), 3);
+
+			//int f = 0;
+			//int lv;
+			//NavigationData data(tri_original);
+			//NavigationIndex n_index = index_from_face(tri_original, data, f, lv);
+			//next_around_edge(data, n_index);
+			//for (int i = 0; i <n_poly_vertices; i++)
+			//{
+			//	const int vertex_id = switch_vertex(data, n_index).vertex;
+			//	local2global(i) = vertex_id;
+			//	boundary_V.row(i) = mesh.points.row(vertex_id);
+			//	n_index = next_around_vertex(data, n_index);
+			//}
+		}
+		
 		void removeRow(Eigen::MatrixXi& matrix, unsigned int rowToRemove)
 		{
 			unsigned int numRows = matrix.rows() - 1;
@@ -491,6 +510,19 @@ namespace cellogram {
 		new_triangles = q.T;
 
 		return OK;
+	}
+
+	void Region::split_region(const Eigen::Vector2i & split_end_points)
+	{
+		Eigen::MatrixXi flipped_region_triangles;
+		flip_triangles(region_triangles, flipped_region_triangles);
+		std::vector<std::vector<int>> adj;
+		adjacency_list(region_triangles, adj);
+
+		// todo: create flipped mesh
+		//Eigen::PlainObjectBase<double> min_distance;
+		//Eigen::PlainObjectBase<int> previous;
+		//igl::dijkstra_compute_paths(split_end_points(0),split_end_points(1),adj,min_distance,previous);
 	}
 
 	Eigen::MatrixXi Region::get_triangulation(const Eigen::MatrixXi &F)
