@@ -33,13 +33,15 @@ namespace cellogram {
 
 		Region() { }
 
+		int size();
+
 		void compute_edges(const Eigen::MatrixXd &V, Eigen::MatrixXd &bad_P1, Eigen::MatrixXd &bad_P2);
 
 		void grow(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F);
 
 		void find_points(const Eigen::VectorXi &region_ids, const int id);
 		void find_triangles(const Eigen::MatrixXi &F, const Eigen::VectorXi &region_ids, const int id);
-		void find_triangles(const Eigen::MatrixXi & F);
+		void find_triangles(const Eigen::MatrixXi & F, bool force_add_boundaries = false);
 		void bounding(const Eigen::MatrixXi &F, const Eigen::MatrixXd &V);
 
 		void check_region(const Eigen::MatrixXd &V_detected, const Eigen::MatrixXd &V_current, const Eigen::MatrixXi &F, const std::vector<std::vector<int>> &adj);
@@ -63,7 +65,7 @@ namespace cellogram {
 		void find_split_boundaries(const Eigen::Vector2i & split_end_points, const Eigen::VectorXi & path, Eigen::VectorXi & boundary1, Eigen::VectorXi & boundary2);
 		void find_interior_V(const Mesh & mesh, const Eigen::VectorXi & boundary, Eigen::VectorXi & interior);
 		void triangluate_region(const Mesh mesh, Eigen::MatrixXi &new_triangles);
-		void clean_up_boundary(const Eigen::MatrixXi &tri, const Eigen::Vector2i & split_end_points, Eigen::MatrixXi & tri_list);
+		bool clean_up_boundary(const Eigen::MatrixXi &tri, const Eigen::MatrixXi & tri_list);
 		Eigen::MatrixXi get_triangulation(const Eigen::MatrixXi &F);
 		State s;
 	};

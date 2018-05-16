@@ -19,3 +19,6 @@
 [submodule "3rdparty/polyfem"]
 	path = 3rdparty/polyfem
 	url = https://github.com/geometryprocessing/polyfem.git
+[submodule "3rdparty/google_or_tools"]
+	path = 3rdparty/google_or_tools
+	url = https://github.com/google/or-tools.git

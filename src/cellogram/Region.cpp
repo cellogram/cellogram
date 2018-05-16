@@ -22,6 +22,7 @@
 
 #include <igl/opengl/glfw/imgui/ImGuiHelpers.h>
 #include <igl/Timer.h>
+#include <igl/sort.h>
 #include <imgui/imgui.h>
 
 
@@ -63,22 +64,33 @@ namespace cellogram {
 			return ans;
 		}
 
-		void flip_triangles(const Eigen::MatrixXi& tri_original, Eigen::MatrixXi& tri_flipped)
+		void flip_triangles(const Eigen::MatrixXd &pts, const Eigen::MatrixXi &tri_original,  std::vector<std::vector<int>>& adj)
 		{
-			//tri_flipped.resize(tri_original.rows(), 3);
+			int lv = 0;
 
-			//int f = 0;
-			//int lv;
-			//NavigationData data(tri_original);
-			//NavigationIndex n_index = index_from_face(tri_original, data, f, lv);
-			//next_around_edge(data, n_index);
-			//for (int i = 0; i <n_poly_vertices; i++)
-			//{
-			//	const int vertex_id = switch_vertex(data, n_index).vertex;
-			//	local2global(i) = vertex_id;
-			//	boundary_V.row(i) = mesh.points.row(vertex_id);
-			//	n_index = next_around_vertex(data, n_index);
-			//}
+			NavigationData data(tri_original);
+			
+			for (int f = 0; f < tri_original.rows(); f++)
+			{
+				NavigationIndex index = index_from_face(tri_original, data, f, lv);
+
+				for (int i = 0; i < 3; i++)
+				{
+					if (switch_face(data, index).face < 0)
+						continue;
+					const int v0 = index.vertex;
+					const int v1 = switch_vertex(data, index).vertex;
+					const int v2 = switch_vertex(data, switch_edge(data, index)).vertex;
+					const int v3 = switch_vertex(data, switch_edge(data, switch_face(data, index))).vertex;
+					const double d0 = (pts.row(v0) - pts.row(v1)).norm();
+					const double d2 = (pts.row(v2) - pts.row(v3)).norm();
+
+					if (std::abs(d0 - d2) / d0 < 0.5)
+						adj[v2].push_back(v3);
+
+					index = next_around_face(data, index);
+				}
+			}
 		}
 		
 		void removeRow(Eigen::MatrixXi& matrix, unsigned int rowToRemove)
@@ -222,6 +234,11 @@ namespace cellogram {
 	}
 
 
+	int Region::size()
+	{
+		return region_interior.size();
+	}
+
 	void Region::compute_edges(const Eigen::MatrixXd &V, Eigen::MatrixXd &bad_P1, Eigen::MatrixXd &bad_P2) {
 		// Line boundary
 
@@ -316,18 +333,26 @@ namespace cellogram {
 		}
 	}
 
-	void Region::find_triangles(const Eigen::MatrixXi &F)
+	void Region::find_triangles(const Eigen::MatrixXi &F, bool force_add_boundaries)
 	{
 		std::vector<std::vector<int>> vertex_to_tri(9999);
 
+		std::vector<int> region_faces;
+
 		for (int f = 0; f < F.rows(); ++f) {
+			int counter = 0;
 			for (int lv = 0; lv < F.cols(); ++lv)
 			{
-				vertex_to_tri[F(f, lv)].push_back(f);
+				const int vid = F(f, lv);
+				if(force_add_boundaries && lv == counter)
+					counter += (region_boundary.array() - vid).abs().minCoeff() == 0 ? 1 : 0;
+				vertex_to_tri[vid].push_back(f);
 			}
+
+			if (counter == F.cols())
+				region_faces.push_back(f);
 		}
 
-		std::vector<int> region_faces;
 		for (int j = 0; j < region_interior.rows(); j++)
 		{
 			int current_vertex = region_interior(j);
@@ -427,6 +452,7 @@ namespace cellogram {
 			vI(i, 0) = V_detected(region_interior[i], 0);
 			vI(i, 1) = V_detected(region_interior[i], 1);
 		}
+
 		// Generate perfect mesh in ROI
 		s.init(vB, vI, neigh);
 		s.fill_hole();
@@ -456,6 +482,30 @@ namespace cellogram {
 			return;
 		}
 
+		//// temporary to save vB,vI,neigh for comparing solvers
+		//if (vI.rows() > 10)
+		//{
+		//	int nError;
+		//	std::string path = "C:/Users/Tobias/Dropbox/NY/test_regions_" + std::to_string(std::rand() % 100);
+		//	std::wstring widestr = std::wstring(path.begin(), path.end());
+		//	nError = _wmkdir(widestr.c_str()); // can be used on Windows
+
+		//	{
+		//		std::ofstream vB_path(path + "/vB.vert");
+		//		vB_path << vB << std::endl;
+		//		vB_path.close();
+		//	}
+		//	{
+		//		std::ofstream vI_path(path + "/vI.vert");
+		//		vI_path << vI << std::endl;
+		//		vI_path.close();
+		//	}
+		//	{
+		//		std::ofstream neigh_path(path + "/neigh.txt");
+		//		neigh_path << neigh << std::endl;
+		//		neigh_path.close();
+		//	}
+		//}
 		status = 0;
 	}
 
@@ -556,9 +606,6 @@ namespace cellogram {
 		//Eigen::VectorXi boundary1, boundary2;
 		find_split_boundaries(split_end_points, path, r1.region_boundary, r2.region_boundary);
 
-		Eigen::MatrixXi region_triangles_copy = region_triangles;
-		r1.clean_up_boundary(mesh.triangles, split_end_points, region_triangles_copy);
-		r2.clean_up_boundary(mesh.triangles, split_end_points, region_triangles_copy);
 		find_interior_V(mesh, r1.region_boundary, r1.region_interior);
 		find_interior_V(mesh, r2.region_boundary, r2.region_interior);
 
@@ -566,24 +613,40 @@ namespace cellogram {
 		r1.triangluate_region(mesh, new_triangles_r1);
 		r2.triangluate_region(mesh, new_triangles_r2);
 
+		mesh.update_triangles_from_split(region_triangles, new_triangles_r1, new_triangles_r2);
+
+		find_triangles(mesh.triangles);
+
+		//Eigen::MatrixXi region_triangles_copy = region_triangles;
+		bool ok = false;
+		do {
+			ok = r1.clean_up_boundary(mesh.triangles, region_triangles);
+		} while (ok);
+		do {
+			ok = r2.clean_up_boundary(mesh.triangles, region_triangles);
+		} while (ok);
+
+		find_interior_V(mesh, r1.region_boundary, r1.region_interior);
+		find_interior_V(mesh, r2.region_boundary, r2.region_interior);
+
 		std::vector<std::vector<int>> adj;
 
-		adjacency_list(new_triangles_r1, adj);
-		r1.check_region_from_local_tris(mesh.detected, mesh.points, new_triangles_r1, adj);
+		if (r1.size() > 0) {
+			r1.find_triangles(mesh.triangles, true);
+			auto tmp = r1.get_triangulation(mesh.triangles);
+			adjacency_list(tmp, adj);
+			r1.check_region_from_local_tris(mesh.detected, mesh.points, tmp, adj);
+		}
 
-		adjacency_list(new_triangles_r2, adj);
-		r2.check_region_from_local_tris(mesh.detected, mesh.points, new_triangles_r2, adj);
+		if (r2.size() > 0) {
+			r2.find_triangles(mesh.triangles, true);
+			auto tmp = r2.get_triangulation(mesh.triangles);
+			adjacency_list(tmp, adj);
+			r2.check_region_from_local_tris(mesh.detected, mesh.points, tmp, adj);
+		}
 
 		//if (something)
 		//	return false;
-
-		// refactor below to not fill r1.region_triangles and r2.reg...
-		mesh.update_triangles_from_split(region_triangles_copy, new_triangles_r1, new_triangles_r2, r1.region_triangles, r2.region_triangles);
-
-
-
-		//missing
-		//something new mesh.local_update(local2global, index, new_triangles);
 
 		
 		//r1.find_triangles(mesh.triangles);
@@ -591,53 +654,53 @@ namespace cellogram {
 		
 		//r2.find_triangles(mesh.triangles);
 
-		/*
-		igl::opengl::glfw::Viewer viewer;
-		int mmax = mesh.points.maxCoeff();
-		Eigen::MatrixXd V(4, 3);
-		V <<
-			0, 0, 0,
-			mmax, 0, 0,
-			mmax, mmax, 0,
-			0, mmax, 0;
+		//
+		//igl::opengl::glfw::Viewer viewer;
+		//int mmax = mesh.points.maxCoeff();
+		//Eigen::MatrixXd V(4, 3);
+		//V <<
+		//	0, 0, 0,
+		//	mmax, 0, 0,
+		//	mmax, mmax, 0,
+		//	0, mmax, 0;
 
-		viewer.core.align_camera_center(V);
-		viewer.data().show_overlay_depth = false;
+		//viewer.core.align_camera_center(V);
+		//viewer.data().show_overlay_depth = false;
 
-		Eigen::MatrixXd asd1, asd2;
-		compute_edges(mesh.points, asd1, asd2);
-		viewer.data().point_size = 10;
-		viewer.data().add_points(asd1, Eigen::RowVector3d(0, 0, 1));
+		//Eigen::MatrixXd asd1, asd2;
+		//compute_edges(mesh.points, asd1, asd2);
+		//viewer.data().point_size = 10;
+		//viewer.data().add_points(asd1, Eigen::RowVector3d(0, 0, 1));
 
-		viewer.data().point_size = 8;
-		r1.compute_edges(mesh.points, asd1, asd2);
-		viewer.data().add_edges(asd1, asd2, Eigen::RowVector3d(1, 0, 0));
-		viewer.data().add_points(asd1, Eigen::RowVector3d(1, 0, 0));
-		r2.compute_edges(mesh.points, asd1, asd2);
-		viewer.data().add_edges(asd1, asd2, Eigen::RowVector3d(0, 1, 0));
-		viewer.data().add_points(asd1, Eigen::RowVector3d(0, 1, 0));
-		Eigen::MatrixXi asd3(new_triangles_r1.rows(), 3);// +new_triangles_r2.rows(), 3);
-		asd3 << new_triangles_r1;// , new_triangles_r2;
-		viewer.data().set_mesh(mesh.points, r1.region_triangles);
-		viewer.data().add_points(asd1.row(0), Eigen::RowVector3d(0, 1, 1));
+		//viewer.data().point_size = 8;
+		//r1.compute_edges(mesh.points, asd1, asd2);
+		//viewer.data().add_edges(asd1, asd2, Eigen::RowVector3d(1, 0, 0));
+		//viewer.data().add_points(asd1, Eigen::RowVector3d(1, 0, 0));
+		//r2.compute_edges(mesh.points, asd1, asd2);
+		//viewer.data().add_edges(asd1, asd2, Eigen::RowVector3d(0, 1, 0));
+		//viewer.data().add_points(asd1, Eigen::RowVector3d(0, 1, 0));
+		//Eigen::MatrixXi asd3(new_triangles_r1.rows(), 3);// +new_triangles_r2.rows(), 3);
+		//asd3 << new_triangles_r1;//, new_triangles_r2;
+		//viewer.data().set_mesh(mesh.points, asd3);
+		//viewer.data().add_points(asd1.row(0), Eigen::RowVector3d(0, 1, 1));
 
-		viewer.data().point_size = 10;
-		for (int i = 0; i < region_interior.size(); ++i) {
-			viewer.data().add_points(mesh.points.row(region_interior(i)), Eigen::RowVector3d(0, 0, 1));
-		}
+		//viewer.data().point_size = 10;
+		//for (int i = 0; i < region_interior.size(); ++i) {
+		//	viewer.data().add_points(mesh.points.row(region_interior(i)), Eigen::RowVector3d(0, 0, 1));
+		//}
 
-		viewer.data().point_size = 8;
-		for (int i = 0; i < r1.region_interior.size(); ++i) {
-			//viewer.data().add_points(mesh.points.row(r1.region_interior(i)), Eigen::RowVector3d(1, 0, 0));
-		}
-		for (int i = 0; i < r2.region_interior.size(); ++i) {
-			viewer.data().add_points(mesh.points.row(r2.region_interior(i)), Eigen::RowVector3d(1, 1, 0));
-		}
-		//viewer.data().set_mesh(boundary_V, new_triangles);
-		//viewer.data().add_points(asd, eigen::rowvector3d(1, 0, 0));
-		//viewer.data().add_points(pv, eigen::rowvector3d(1, 1, 0));
-		viewer.launch();
-		*/
+		//viewer.data().point_size = 8;
+		//for (int i = 0; i < r1.region_interior.size(); ++i) {
+		//	//viewer.data().add_points(mesh.points.row(r1.region_interior(i)), Eigen::RowVector3d(1, 0, 0));
+		//}
+		//for (int i = 0; i < r2.region_interior.size(); ++i) {
+		//	viewer.data().add_points(mesh.points.row(r2.region_interior(i)), Eigen::RowVector3d(1, 1, 0));
+		//}
+		////viewer.data().set_mesh(boundary_V, new_triangles);
+		////viewer.data().add_points(asd, eigen::rowvector3d(1, 0, 0));
+		////viewer.data().add_points(pv, eigen::rowvector3d(1, 1, 0));
+		//viewer.launch();
+		//
 
 		return true;
 	}
@@ -650,9 +713,10 @@ namespace cellogram {
 			tri.row(i) = mesh.triangles.row(region_triangles(i));
 		}
 		//Eigen::MatrixXi flipped_region_triangles;
-		//flip_triangles(region_triangles, flipped_region_triangles);
+
 		std::vector<std::vector<int>> adj;
 		adjacency_list(tri, adj);
+		flip_triangles(mesh.points, tri, adj);
 
 		std::set<int> target;
 		target.insert(split_end_points(1));
@@ -724,6 +788,9 @@ namespace cellogram {
 
 	void Region::find_interior_V(const Mesh & mesh, const Eigen::VectorXi & boundary, Eigen::VectorXi & interior_V)
 	{
+		if (boundary.size() <= 3)
+			return;
+
 		Eigen::MatrixXd poly(boundary.size(), 2);
 
 
@@ -889,10 +956,15 @@ namespace cellogram {
 
 	void Region::triangluate_region(const Mesh mesh, Eigen::MatrixXi &new_triangles)
 	{
+		const int nn = (int)region_boundary.size();
+
+		if (nn <= 3)
+			return;
+
 		Eigen::VectorXi local2global;
 		local_to_global(local2global);
 
-		std::cout << local2global << std::endl;
+		//std::cout << local2global << std::endl;
 
 		Eigen::MatrixXd pts(local2global.size(), 2);
 		for (int i = 0; i < local2global.size(); i++)
@@ -903,7 +975,6 @@ namespace cellogram {
 		}
 		
 		Eigen::MatrixXi E;
-		int nn = (int)region_boundary.size();
 		E.resize(nn, 2);
 		for (int i = 0; i < nn; ++i) {
 			E.row(i) << i, (i + 1) % nn;
@@ -914,12 +985,12 @@ namespace cellogram {
 		VM.setZero();
 		VM.block(0, 0, nn, 1).setConstant(1);
 
-		std::cout << VM << std::endl;
+		//std::cout << VM << std::endl;
 		Eigen::VectorXi EM;
 		Eigen::MatrixXd dummy;
 		Eigen::VectorXi dummy1, dummy2;
 		Eigen::MatrixXi tmp;
-		igl::triangle::triangulate(pts, E, MatrixXd(0, 2), VM, EM, "VpqYYS0", dummy, tmp, dummy1, dummy2);
+		igl::triangle::triangulate(pts, E, MatrixXd(0, 2), VM, EM, "QpqYYS0", dummy, tmp, dummy1, dummy2);
 
 		new_triangles.resizeLike(tmp);
 
@@ -932,9 +1003,55 @@ namespace cellogram {
 		}
 	}
 
-	void Region::clean_up_boundary(const Eigen::MatrixXi & tri, const Eigen::Vector2i & split_end_points, Eigen::MatrixXi & tri_list)
+	bool Region::clean_up_boundary(const Eigen::MatrixXi & tri,const Eigen::MatrixXi & tri_list)
 	{
+		// getting region triangles and sorting them row-wise
+		Eigen::MatrixXi tri_tmp(tri_list.size(),3), region_tri_sorted, dummy;
+		for (int i = 0; i < tri_list.size(); i++)
+		{
+			tri_tmp.row(i) = tri.row(tri_list(i));
+		}
+		
+		// sorting necessary
+		igl::sort(tri_tmp, 2, 1, region_tri_sorted, dummy);
+		
 
+		const int n = region_boundary.size();
+		for (int split_ind = 0; split_ind < n; split_ind++)
+		{
+			//find adjacent points
+			Eigen::MatrixXi adj(1, 3), adj_sorted(1, 3);
+
+			adj = Eigen::RowVector3i(region_boundary((split_ind - 1 + n) % n), region_boundary(split_ind), region_boundary((split_ind + 1) % n));
+			igl::sort(adj, 2, 1, adj_sorted, dummy);
+
+			//check if adjacent points create a triangle in tri
+			std::vector<int> ind_del;
+			for (int i = 0; i < region_tri_sorted.rows(); i++)
+			{
+				if ((adj_sorted - region_tri_sorted.row(i)).cwiseAbs().sum() == 0)
+				{
+					ind_del.push_back(i);
+				}
+			}
+
+			if (ind_del.empty())
+				continue;
+
+			//std::cout << "\n\nBefore: \n" << tri_list << std::endl;
+			for (int i = ind_del.size() - 1; i >= 0; i--)
+			{
+				// remove from tri list, so that it does not get removed from mesh.triangles later
+				//removeRow(tri_list, ind_del[i]);
+
+				// remove from region_boundary
+				removeRow(region_boundary, split_ind);
+			}
+			//std::cout << "\n\nAfter: \n" << tri_list << std::endl;
+			return true;
+		}
+
+		return false;
 	}
 
 	void Region::local_to_global(Eigen::VectorXi & local2global)

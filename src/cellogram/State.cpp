@@ -83,8 +83,10 @@ namespace cellogram {
 		regions[index].split_region(mesh, split_end_points,r1,r2);
 
 		regions.erase(regions.begin() + index);
-		regions.push_back(r1);
-		regions.push_back(r2);
+		if (r1.size() > 0)
+			regions.push_back(r1);
+		if (r2.size() > 0)
+			regions.push_back(r2);
 
 		for(int i = 0; i < regions.size();++i)
 		{
@@ -123,6 +125,14 @@ namespace cellogram {
 
 		return ok;
 
+	}
+
+	bool State::is_data_available(const std::string &path)
+	{
+		std::string save_data = path + "\\cellogram\\moved.vert";
+		std::ifstream f(save_data.c_str());
+		bool ok = f.good();
+		return f.good();
 	}
 
 	bool State::load_image(const std::string fname)
@@ -373,6 +383,8 @@ namespace cellogram {
 			} while (repeat);
 
 			++index;
+
+			//r.find_triangles(mesh.triangles);
 		}
 
 		erase_small_regions();

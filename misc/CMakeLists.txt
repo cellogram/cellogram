@@ -41,12 +41,12 @@ if(CELLOGRAM_WTIH_UNTANGLER)
 endif()
 
 
-
+add_application(optimizer.cpp cellogram)
 add_application(pts_detection.cpp cellogram)
 add_application(tcdf_test.cpp tcdf)
 add_application(tif_test.cpp cellogram)
 
-
+set_target_properties (optimizer PROPERTIES FOLDER test)
 set_target_properties (pts_detection PROPERTIES FOLDER test)
 set_target_properties (tcdf_test PROPERTIES FOLDER test)
 set_target_properties (tif_test PROPERTIES FOLDER test)

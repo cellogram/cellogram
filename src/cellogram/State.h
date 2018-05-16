@@ -49,6 +49,7 @@ public:
 	std::vector<Region> regions;
 
 	bool load(const std::string &path);
+	bool is_data_available(const std::string &path);
 	bool load_image(const std::string fname);
 	//bool load_param(const std::string &path);
 	bool save(const std::string &path);

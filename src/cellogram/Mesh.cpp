@@ -286,7 +286,7 @@ namespace cellogram {
 		generate_vertex_to_tri();
 	}
 
-	void Mesh::update_triangles_from_split(const Eigen::VectorXi & t_ind_old, const  Eigen::MatrixXi & t1, const Eigen::MatrixXi & t2, Eigen::VectorXi & t_ind_1, Eigen::VectorXi & t_ind_2)
+	void Mesh::update_triangles_from_split(const Eigen::VectorXi & t_ind_old, const  Eigen::MatrixXi & t1, const Eigen::MatrixXi & t2)
 	{
 		// first remove all the old triangles
 		for (int i = t_ind_old.size()-1; i >= 0; i--)
@@ -296,25 +296,21 @@ namespace cellogram {
 
 		int nT = triangles.rows();
 
-		// append the new triangles and return their indices in triangles
-		Eigen::MatrixXi tmp(triangles.rows() + t1.rows() + t2.rows(), 3);
-		tmp << triangles, t1, t2;
-		triangles.resizeLike(tmp);
-		triangles = tmp;
+		// append the new triangles and return their indices in triangle
+		int index = triangles.rows();
 
-		t_ind_1.resize(t1.rows());
-		for (int i = 0; i < t_ind_1.size(); i++)
+		triangles.conservativeResize(triangles.rows() + t1.rows() + t2.rows(), 3);
+		if (t1.size() > 0)
 		{
-			t_ind_1(i) = nT;
-			nT++;
+			triangles.block(index, 0, t1.rows(), 3) = t1;
+			index += t1.rows();
 		}
-		t_ind_2.resize(t2.rows());
-		for (int i = 0; i < t_ind_2.size(); i++)
+		if (t2.size() > 0)
 		{
-			t_ind_2(i) = nT;
-			nT++;
+			triangles.block(index, 0, t2.rows(), 3) = t2;
+			index += t2.rows();
 		}
-
+		assert(index == triangles.rows());
 		adjacency_list(triangles, adj);
 		generate_vertex_to_tri();
 	}

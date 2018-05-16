@@ -39,7 +39,7 @@ void gurobiModel::model(const SparseMatrix<double> &Q, const SparseMatrix<int> &
 	model.setObjective(Obj);
 	//model.set(GRB_IntAttr_ModelSense, 1);
 
-	cout << endl << Q.nonZeros() << " " << Q.rows() << " " << Q.cols();
+	//cout << endl << Q.nonZeros() << " " << Q.rows() << " " << Q.cols();
 
 	// constraint declaration Aeq x = 1
 	//cout << endl << endl << Aeq.row(0).col(1);

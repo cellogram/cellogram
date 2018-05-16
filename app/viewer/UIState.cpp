@@ -343,6 +343,7 @@ bool UIState::load() {
 	color_code = true;
 
 	selected_region = -1;
+
 	viewer_control();
 	return true;
 }
@@ -374,7 +375,10 @@ bool UIState::save() {
 	int nError = 0;
 	cellogram_mkdir(save_dir);
 	cellogram_mkdir(save_dir + "/cellogram");
-	return state.save(save_dir + "/cellogram");
+	bool ok = state.save(save_dir + "/cellogram");
+	data_available = state.is_data_available(save_dir);
+
+	return ok;
 }
 
 bool UIState::mouse_scroll(float delta_y) {
@@ -467,6 +471,76 @@ void UIState::compute_triangulation() {
 	show_points = true;
 }
 
+void UIState::compute_histogram()
+{
+	int n_bins = 64;
+	hist.resize(n_bins + 1, 1);
+	hist.setZero();
+
+	for (long i = 0; i < state.img.size(); ++i)
+	{
+		hist(state.img(i)*n_bins)++;
+	}
+}
+
+void UIState::export_region()
+{
+	Eigen::VectorXi boundary = state.regions[selected_region].region_boundary;
+	Eigen::VectorXi internal = state.regions[selected_region].region_interior;
+	
+	Eigen::MatrixXd V(boundary.size() + internal.size(), 3);
+	for (int i = 0; i < boundary.size(); i++)
+	{
+		V(i, 0) = state.mesh.detected(boundary(i), 0);
+		V(i, 1) = state.mesh.detected(boundary(i), 1);
+		double std_x = state.mesh.params.std_x(boundary(i));
+		double std_y = state.mesh.params.std_y(boundary(i));
+		V(i, 2) = std::sqrt(std_x*std_x + std_y * std_y);
+	}
+	for (int i = 0; i < internal.size(); i++)
+	{
+		V(i + boundary.size(), 0) = state.mesh.detected(internal(i), 0);
+		V(i + boundary.size(), 1) = state.mesh.detected(internal(i), 1);
+		double std_x = state.mesh.params.std_x(internal(i));
+		double std_y = state.mesh.params.std_y(internal(i));
+		V(i + boundary.size(), 2) = std::sqrt(std_x*std_x + std_y*std_y);
+	}
+
+	// find vertices whose edges can be regarded as possibly wrong
+	Eigen::VectorXi wrong_boundary = state.increase_boundary(state.mesh.boundary);
+	wrong_boundary = state.increase_boundary(wrong_boundary);
+
+	int index = 0;
+	Eigen::MatrixXi E(boundary.size(), 2);
+	for (int i = 0; i < boundary.size(); i++)
+	{
+		if ((wrong_boundary.array() - boundary(i)).abs().minCoeff() == 0 || (wrong_boundary.array() - boundary((i + 1) % boundary.size())).abs().minCoeff() == 0)
+			continue;
+		E(index, 0) = i;
+		E(index, 1) = (i + 1) % boundary.size();
+		index++;
+	}
+	E.conservativeResize(index, 2);
+
+	cellogram_mkdir(save_dir);
+	cellogram_mkdir(save_dir + "/cellogram");
+	cellogram_mkdir(save_dir + "/cellogram" + "/regions");
+	cellogram_mkdir(save_dir + "/cellogram" + "/regions/" + std::to_string(selected_region));
+
+	std::string path = save_dir + "/cellogram" + "/regions/" + std::to_string(selected_region);
+	
+	{
+		std::ofstream V_path(path + "/V.vert");
+		V_path << V << std::endl;
+		V_path.close();
+	}
+	{
+		std::ofstream E_path(path + "/E.edge");
+		E_path << E << std::endl;
+		E_path.close();
+	}
+}
+
 void UIState::reset_viewer()
 {
 	// Display flags
@@ -499,11 +573,13 @@ void UIState::load_image(std::string fname) {
 
 	const int index = fname.find_last_of(".");
 	save_dir = fname.substr(0, index);
+	data_available = state.is_data_available(save_dir);
 
 	texture = (state.img.array() * 255).cast<unsigned char>();
 
 	selected_region = -1;
 	current_region_status = "";
+
 
 	color_code = false;
 	analysis_mode = false;
@@ -520,6 +596,7 @@ void UIState::load_image(std::string fname) {
 		0, xMax, 0;
 
 	viewer.core.align_camera_center(V);
+	compute_histogram();
 
 	double extent = (V.colwise().maxCoeff() -V.colwise().minCoeff()).maxCoeff();
 	//HIGH dpi
@@ -664,13 +741,13 @@ void UIState::viewer_control_2d()
 			C.col(0).setConstant(vertex_color(0));
 			C.col(1).setConstant(vertex_color(1));
 			C.col(2).setConstant(vertex_color(2));
-			color_code = false;
 			if (color_code)
 			{
 				Eigen::VectorXd param(V.rows());
 				for (int i = 0; i < V.rows(); i++)
 				{
-					param(i) = state.mesh.params.pval_Ar(i);
+					//param(i) = state.mesh.params.pval_Ar(i);
+					param(i) = std::sqrt(state.mesh.params.std_x(i)*state.mesh.params.std_x(i)+ state.mesh.params.std_y(i)*state.mesh.params.std_y(i));
 				}
 
 				igl::ColorMapType cm = igl::ColorMapType::COLOR_MAP_TYPE_INFERNO;

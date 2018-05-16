@@ -46,7 +46,7 @@ public:
 	
 	Eigen::MatrixXi img_F;
 	Eigen::MatrixXd img_V;
-
+	Eigen::MatrixXf hist;
 
 	// Display flags
 	float t;
@@ -87,6 +87,7 @@ public:
 	std::string current_region_status;
 
 	std::string save_dir = "";
+	bool data_available = false;
 public:
 	void initialize();
 
@@ -110,8 +111,9 @@ public:
 	void compute_hull();
 	void clean_hull();
 	void compute_triangulation();
+	void compute_histogram();
 
-
+	void export_region();
 	void reset_viewer();
 	void deselect_all_buttons();
 public:

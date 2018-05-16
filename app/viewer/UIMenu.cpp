@@ -276,16 +276,19 @@ void UIState::draw_file_menu(int x, int y, int &y_return) {
 		}
 	}
 
+
+	if (state.mesh.points.size() == 0) push_disabled();
 	if (ImGui::Button("Save##Points", ImVec2((w - p) / 2.f, 0))) {
 		save();
 	}
-
+	if (state.mesh.points.size() == 0) pop_disabled();
 	ImGui::SameLine();
 
+	if (!data_available) push_disabled();
 	if (ImGui::Button("Load##Points", ImVec2((w - p) / 2.f, 0))) {
 		load();
 	}
-
+	if (!data_available) pop_disabled();
 	ImGui::End();
 }
 
@@ -346,6 +349,7 @@ void UIState::draw_mesh_menu(int x, int y)
 	float p = ImGui::GetStyle().FramePadding.x;
 
 	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.40f);
+
 	// Lloyds relaxation panel
 
 	// disable if points are not detected
@@ -372,6 +376,12 @@ void UIState::draw_mesh_menu(int x, int y)
 
 	if (ImGui::Button("Lloyd", ImVec2((w - p), 0))) {
 		state.relax_with_lloyd();
+		if (!state.regions.empty())
+		{
+			state.detect_bad_regions();
+			state.check_regions();
+			state.fix_regions();
+		}
 		t = 1;
 		mesh_color.resize(0, 0);
 		viewer_control();
@@ -453,22 +463,15 @@ void UIState::draw_analysis_menu(int x, int y)
 
 void UIState::draw_histogram(int x, int y)
 {
+	if (hist.size() == 0)
+		compute_histogram();
+
 	ImGui::SetNextWindowPos(ImVec2(x, y), ImGuiCond_Always);
 	ImGui::SetNextWindowSize(ImVec2(menu_width, height_histogram), ImGuiSetCond_FirstUseEver);
 	ImGui::Begin("Histogram", &show_histogram, main_window_flags);
 	const float hist_w = ImGui::GetWindowWidth() * 0.80f -2;
 	ImGui::PushItemWidth(hist_w+2);
-	// Image Scaling
-	const int n_bins = 50;
-	Eigen::Matrix<float, n_bins + 1, 1> hist;
-	hist.setZero();
-
-	for (long i = 0; i < state.img.size(); ++i)
-	{
-		hist(state.img(i)*n_bins)++;
-	}
-
-
+	
 	static float min_img = 0;
 	static float max_img = 1;
 
@@ -611,6 +614,13 @@ void UIState::draw_region_menu(int x, int y) {
 		show_selected_region = true;
 	}
 	if (region_was_selected) pop_selected();
+	if (state.regions.size() == 0) pop_disabled();
+
+	if (state.regions.size() == 0) push_disabled();
+	if (ImGui::Button("Export Region", ImVec2(-1, 0))) {
+		deselect_all_buttons();
+		export_region();
+	}
 	if (state.regions.size() == 0) pop_disabled();
 
 	int n_was_selected = selected_region;
