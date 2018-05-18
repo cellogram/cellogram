@@ -33,7 +33,7 @@ public:
 
 	bool load(const std::string &path);
 
-	void relax_with_lloyd(const int lloyd_iterations, const Eigen::MatrixXd &hull_vertices, const Eigen::MatrixXi &hull_faces);
+	void relax_with_lloyd(const int lloyd_iterations, const Eigen::MatrixXd &hull_vertices, const Eigen::MatrixXi &hull_faces, const bool fix_regular_regions);
 	void vertex_degree(Eigen::VectorXi &degree);
 
 	void detect_vertices(const Eigen::MatrixXd &V, const DetectionParams &params);

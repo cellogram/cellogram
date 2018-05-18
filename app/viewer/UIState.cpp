@@ -840,8 +840,8 @@ void UIState::viewer_control_2d()
 			region_edge2.row(j) = V.row(state.regions[selected_region].region_boundary((j + 1) % nEdgePts));
 		}
 
-		region_edge1.col(2).array() += 1e-3;
-		region_edge2.col(2).array() += 1e-3;
+		region_edge1.col(2).array() += 1e-2;
+		region_edge2.col(2).array() += 1e-2;
 
 		selected_data().add_edges(region_edge1, region_edge2, color);
 		selected_data().line_width = 3.0;

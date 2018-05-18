@@ -15,6 +15,10 @@
 #include <igl/slice.h>
 #include <igl/list_to_matrix.h>
 #include <igl/point_in_poly.h>
+
+#include <tbb/parallel_for.h>
+#include <tbb/task_scheduler_init.h>
+#include <tbb/enumerable_thread_specific.h>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
@@ -273,6 +277,18 @@ namespace cellogram {
 	}
 #endif
 
+
+	class LocalThreadStorage
+	{
+	public:
+		Eigen::MatrixXd V;
+		DetectionParams params;
+
+		LocalThreadStorage(int x)
+		{ }
+	};
+
+
 	void State::detect_vertices()
 	{
 		// clear previous
@@ -280,9 +296,92 @@ namespace cellogram {
 		hull_faces.resize(0, 0);
 		hull_polygon.resize(0, 0);
 		regions.clear();
-		
+
 		Eigen::MatrixXd V;
 		DetectionParams params;
+
+#ifdef asd_USE_TBB
+
+		typedef tbb::enumerable_thread_specific< LocalThreadStorage > LocalStorage;
+		LocalStorage storages(LocalThreadStorage(1));
+
+		const int n_threads = tbb::task_scheduler_init::default_num_threads();
+		const float sigma_step = 0.05;
+		const float minimum_fraction = 0.6; // higher than 50% removes duplicates
+		const float minimum_pixel_spacing = 3;
+
+		Eigen::VectorXf sigmas = Eigen::VectorXf::LinSpaced(n_threads, std::max(1.0, sigma - sigma_step*n_threads/2.), sigma + sigma_step * n_threads / 2);
+
+		tbb::parallel_for(tbb::blocked_range<int>(0, n_threads), [&](const tbb::blocked_range<int> &r) {
+			LocalStorage::reference loc_storage = storages.local();
+			for (int e = r.begin(); e != r.end(); ++e) {
+				point_source_detection(img, sigmas(e), loc_storage.V, loc_storage.params);
+			}
+		}
+		);
+
+		int index = 0;
+
+		std::map<int, std::vector<std::pair<int, int>>> pixels;
+		int offset = std::max(img.rows(),img.cols());
+		for (LocalStorage::iterator it = storages.begin(); it != storages.end(); ++it)
+		{
+			const LocalThreadStorage &storage = *it;
+
+			for (int row = 0; row < it->V.rows(); row++)
+			{
+				int i = storage.V(row, 0)/ minimum_pixel_spacing;
+				int j = storage.V(row, 1)/ minimum_pixel_spacing;
+
+				auto &pixel = pixels[i * offset + j];
+				pixel.push_back(std::pair<int, int>(index, row));
+			}
+			++index;
+		}
+
+		V.resize(pixels.size(), 2);
+		params.resize(pixels.size());
+
+		int index2 = 0;
+		for (auto tmp : pixels)
+		{
+			auto &pixel = tmp.second;
+
+			if (pixel.size() < minimum_fraction*n_threads)
+				continue;
+
+			Eigen::RowVectorXd val; val.setZero(2);
+			DetectionParams ptmp;
+			ptmp.push_back_const(0);
+
+			for (auto &pair : pixel)
+			{
+				int instance = 0;
+				for (LocalStorage::iterator it = storages.begin(); it != storages.end(); ++it)
+				{
+					if (instance == pair.first && it->V(pair.second,0) != NULL)
+					{
+						val += it->V.row(pair.second);
+
+						ptmp.sum(it->params.get_index(pair.second));
+
+						break;
+					}
+					instance++;
+				}
+			}
+			ptmp.divide(double(pixel.size()));
+			V.row(index2) = val / double(pixel.size());
+			params.set_from(ptmp, index2);
+			index2++;
+		}
+		
+		V.conservativeResize(index2, 2);
+		params.conservative_resize(index2);
+
+		//std::cout << "V:\n" << V << std::endl;
+		//params.print();
+#else
 
 		point_source_detection(img, sigma, V, params);
 
@@ -291,14 +390,13 @@ namespace cellogram {
 			V.conservativeResize(V.rows(), 3);
 			V.col(2).setConstant(0);
 		}
-
+#endif
 		mesh.detect_vertices(V, params);
 	}
 
 	void State::relax_with_lloyd()
 	{
-		//reset the state
-		mesh.relax_with_lloyd(lloyd_iterations, hull_vertices, hull_faces);
+		mesh.relax_with_lloyd(lloyd_iterations, hull_vertices, hull_faces, fix_regular_regions);
 	}
 
 	void State::detect_bad_regions()

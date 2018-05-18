@@ -78,6 +78,13 @@ void gurobiModel::model(const SparseMatrix<double> &Q, const SparseMatrix<int> &
 		else {
 			cout << "Optimization was stopped with status = "
 				<< optimstatus << endl;
+			
+			//// Time limit has been reached, but solution may be good
+			//if (optimstatus == GRB_TIME_LIMIT)
+			//{
+			//	objval = model.get(GRB_DoubleAttr_ObjVal);
+			//	solution_found = true;
+			//}
 		}
 	}
 	catch (GRBException e)

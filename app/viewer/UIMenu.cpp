@@ -348,13 +348,10 @@ void UIState::draw_mesh_menu(int x, int y)
 	float w = ImGui::GetContentRegionAvailWidth();
 	float p = ImGui::GetStyle().FramePadding.x;
 
-	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.40f);
-
-	// Lloyds relaxation panel
+	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.50f);
 
 	// disable if points are not detected
 	if (state.mesh.points.size() == 0) push_disabled();
-
 	ImGui::InputInt("Num Iter", &state.lloyd_iterations);
 
 	if (ImGui::SliderFloat("t", &t, 0, 1)) {
@@ -373,7 +370,8 @@ void UIState::draw_mesh_menu(int x, int y)
 
 	ImGui::Separator();
 #endif
-
+	
+	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.50f);
 	if (ImGui::Button("Lloyd", ImVec2((w - p), 0))) {
 		state.relax_with_lloyd();
 		if (!state.regions.empty())
@@ -386,7 +384,11 @@ void UIState::draw_mesh_menu(int x, int y)
 		mesh_color.resize(0, 0);
 		viewer_control();
 	}
+	//ImGui::PopItemWidth();
 
+	if (ImGui::Checkbox("Fix", &state.fix_regular_regions))
+
+	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.50f);
 	if (ImGui::SliderFloat("energy", &state.energy_variation_from_mean, 0, 5)) {
 		selected_region = -1;
 		state.detect_bad_regions();
@@ -395,11 +397,10 @@ void UIState::draw_mesh_menu(int x, int y)
 		create_region_label();
 
 		viewer_control();
-
 	}
+	ImGui::PopItemWidth();
 
 	if (ImGui::Button("build regions", ImVec2((w - p), 0))) {
-
 		selected_region = -1;
 
 		state.detect_bad_regions();

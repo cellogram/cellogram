@@ -5,7 +5,7 @@
 #include <cellogram/tri2hex.h>
 #include <cellogram/voronoi.h>
 #include <cellogram/vertex_degree.h>
-
+#include <cellogram/laplace_energy.h>
 #ifdef WITH_UNTANGLER
 #include <pointsUntangler/points_untangler.h>
 #endif
@@ -132,14 +132,57 @@ namespace cellogram {
 		return true;
 	}
 
-	void Mesh::relax_with_lloyd(const int lloyd_iterations, const Eigen::MatrixXd &hull_vertices,const Eigen::MatrixXi &hull_faces)
+	void Mesh::relax_with_lloyd(const int lloyd_iterations, const Eigen::MatrixXd &hull_vertices,const Eigen::MatrixXi &hull_faces, const bool fix_regular_regions)
 	{
 		//reset the state
 		//points = detected;
 		points = moved;
 		compute_triangulation();
 
-		lloyd_relaxation(points, boundary, lloyd_iterations, hull_vertices, hull_faces);
+		Eigen::VectorXi fixed_V;
+		if (fix_regular_regions)
+		{
+			Eigen::VectorXd energy;
+			laplace_energy(moved, triangles, energy);
+			// Determine whether each vertex passes the criterium for bad mesh
+			double avg = energy.mean();
+			
+			// Find the degree of each vertex
+			Eigen::VectorXi degree;
+			vertex_degree(degree);
+			
+			Eigen::Matrix<bool, 1, Eigen::Dynamic> low_energy(moved.rows());
+			low_energy.setConstant(false);
+			int count = 0;
+			for (int i = 0; i < moved.rows(); i++)
+			{
+				if (energy(i) < 0.5*avg && degree(i) == 6)
+				{
+					low_energy(i) = true;
+					count++;
+				}
+			}
+			for (int i = 0; i < boundary.size(); i++)
+			{
+				low_energy(boundary(i)) = true;
+				count++;
+			}
+			fixed_V.resize(count);
+			count = 0;
+			for (int i = 0; i < low_energy.size(); i++)
+			{
+				if (low_energy(i))
+				{
+					fixed_V(count) = i;
+					count++;
+				}
+			}
+			fixed_V.conservativeResize(count);
+		}
+		else
+			fixed_V = boundary;
+
+		lloyd_relaxation(points, fixed_V, lloyd_iterations, hull_vertices, hull_faces);
 		compute_triangulation();
 	}
 
@@ -255,7 +298,7 @@ namespace cellogram {
 		vertex_status_fixed = tmp_i;
 
 		// Add zero row to params
-		params.push_back(0);
+		params.push_back_const(0);
 
 		reset();
 	}

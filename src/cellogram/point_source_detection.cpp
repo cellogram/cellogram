@@ -522,6 +522,72 @@ namespace cellogram {
 			V = tmpV;
 	}
 
+	void DetectionParams::sum(const DetectionParams add_param)
+	{
+		assert(add_param.size() == 1);
+		// this will add the values in add_param to all the respective values in this 
+		A.array() += add_param.A(0);
+		sigma.array() += add_param.sigma(0);
+		C.array() += add_param.C(0);
+
+		std_x.array() += add_param.std_x(0);
+		std_y.array() += add_param.std_y(0);
+		std_A.array() += add_param.std_A(0);
+		std_sigma.array() += add_param.std_sigma(0);
+		std_C.array() += add_param.std_C(0);
+
+		mean.array() += add_param.mean(0);
+		std.array() += add_param.std(0);
+		RSS.array() += add_param.RSS(0);
+
+		pval_Ar.array() += add_param.pval_Ar(0);
+	}
+
+	void DetectionParams::divide(const double divisor)
+	{
+		A.array() /= divisor;
+		sigma.array() /= divisor;
+		C.array() /= divisor;
+		std_x.array() /= divisor;
+		std_y.array() /= divisor;
+		std_A.array() /= divisor;
+		std_sigma.array() /= divisor;
+		std_C.array() /= divisor;
+		mean.array() /= divisor;
+		std.array() /= divisor;
+		RSS.array() /= divisor;
+		pval_Ar.array() /= divisor;
+	}
+
+	DetectionParams DetectionParams::get_index(const int index)
+	{
+		DetectionParams single;
+		single.resize(1);
+
+		single.A(0) = A(index);
+		single.sigma(0) = sigma(index);
+		single.C(0) = C(index);
+
+		single.std_x(0) = std_x(index);
+		single.std_y(0) = std_y(index);
+		single.std_A(0) = std_A(index);
+		single.std_sigma(0) = std_sigma(index);
+		single.std_C(0) = std_C(index);
+
+		single.mean(0) = mean(index);
+		single.std(0) = std(index);
+		single.RSS(0) = RSS(index);
+
+		single.pval_Ar(0) = pval_Ar(index);
+
+		return single;
+	}
+
+	int DetectionParams::size() const
+	{
+		return A.size();
+	}
+
 	void DetectionParams::resize(const int size)
 	{
 		A.resize(size);
@@ -573,6 +639,23 @@ namespace cellogram {
 		mean(index) = params.mean;
 		std(index) = params.std;
 		RSS(index) = params.RSS;
+	}
+
+	void DetectionParams::set_from(DetectionParams & params, const int index)
+	{
+		assert(params.size() == 1);
+		A(index) = params.A(0);
+		sigma(index) = params.sigma(0);
+		C(index) = params.C(0);
+		std_x(index) = params.std_x(0);
+		std_y(index) = params.std_y(0);
+		std_A(index) = params.std_A(0);
+		std_sigma(index) = params.std_sigma(0);
+		std_C(index) = params.std_C(0);
+		mean(index) = params.mean(0);
+		std(index) = params.std(0);
+		RSS(index) = params.RSS(0);
+		pval_Ar(index) = params.pval_Ar(0);
 	}
 
 	void DetectionParams::remap(const Eigen::VectorXi & map)
@@ -636,7 +719,7 @@ namespace cellogram {
 		remap(Vi);
 	}
 
-	void DetectionParams::push_back(const double val)
+	void DetectionParams::push_back_const(const double val)
 	{
 		const int index = A.size();
 		conservative_resize(index + 1);
@@ -652,6 +735,26 @@ namespace cellogram {
 		mean(index) = val;
 		std(index) = val;
 		RSS(index) = val;
+		pval_Ar(index) = val;
+	}
+
+	void DetectionParams::push_back_params(const DetectionParams & new_params)
+	{
+		const int index = size();
+		conservative_resize(index + new_params.size());
+
+		A.block(index, 0, new_params.size(), 1) = new_params.A;
+		sigma.block(index, 0, new_params.size(), 1) = new_params.sigma;
+		C.block(index, 0, new_params.size(), 1) = new_params.C;
+		std_x.block(index, 0, new_params.size(), 1) = new_params.std_x;
+		std_y.block(index, 0, new_params.size(), 1) = new_params.std_y;
+		std_A.block(index, 0, new_params.size(), 1) = new_params.std_A;
+		std_sigma.block(index, 0, new_params.size(), 1) = new_params.std_sigma;
+		std_C.block(index, 0, new_params.size(), 1) = new_params.std_C;
+		mean.block(index, 0, new_params.size(), 1) = new_params.mean;
+		std.block(index, 0, new_params.size(), 1) = new_params.std;
+		RSS.block(index, 0, new_params.size(), 1) = new_params.RSS;
+		pval_Ar.block(index, 0, new_params.size(), 1) = new_params.pval_Ar;
 	}
 
 	void DetectionParams::save(const std::string & path)
@@ -713,6 +816,18 @@ namespace cellogram {
 		pval_Ar = Eigen::Map<Eigen::VectorXd>(&tmp[0], tmp.size());
 
 		json_in.close();
+	}
+
+	void DetectionParams::print()
+	{
+		std::cout << "\nA\tsigma\tC\tstd_x\tstd_y\tstd_A\tstd_s\tstd_C\tmean\tstd\tRSS\tpval_Ar" << std::endl;
+		std::cout.precision(4);
+		for (int i = 0; i < size(); i++)
+		{
+			std::cout << A(i) << "\t" << sigma(i) << "\t" << C(i) << "\t" << std_x(i) << "\t" << std_y(i) << "\t" << std_A(i)
+				<< "\t" << std_sigma(i) << "\t" << std_C(i) << "\t" << mean(i) << "\t" << std(i) << "\t" << RSS(i) << "\t" << pval_Ar(i) << std::endl;
+		}
+
 	}
 
 } // namespace cellogram
