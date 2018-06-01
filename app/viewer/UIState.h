@@ -53,6 +53,7 @@ public:
 	Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> texture;
 	Eigen::RowVector3f vertex_color;
 	Eigen::MatrixXd mesh_color;
+	bool show_mesh = true;
 	bool show_hull = false;
 	//bool image_loaded = false;
 	bool show_points = false;
@@ -133,7 +134,7 @@ private:
 	void draw_mesh();
 	void fix_color(igl::opengl::ViewerData &data);
 	void create_region_label();
-	void build_region_edges(const Eigen::MatrixXd &pts, Eigen::MatrixXd &bad_P1, Eigen::MatrixXd &bad_P2);
+	void build_region_edges(const Eigen::MatrixXd &pts, Eigen::MatrixXd &bad_P1, Eigen::MatrixXd &bad_P2, Eigen::MatrixXd &C);
 
 	void build_menu_bar();
 

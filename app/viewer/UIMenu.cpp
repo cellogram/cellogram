@@ -8,6 +8,7 @@
 #include <cellogram/vertex_degree.h>
 #include <cellogram/mesh_solver.h>
 #include <igl/opengl/glfw/imgui/ImGuiHelpers.h>
+#include <igl/opengl/glfw/imgui/ImGuiMenu.h>
 #include <igl/unproject_onto_mesh.h>
 #include <igl/opengl/glfw/Viewer.h>
 #include <imgui/imgui_internal.h>
@@ -213,24 +214,25 @@ void UIState::build_menu_bar()
 
 
 // -----------------------------------------------------------------------------
-static float padding_general = 5;
-static float padding_top = 38;
-static float padding_left = 5;
-static float padding_right = 5;
-static float menu_y = 190;
-static float height_file_menu = 150;
-static float height_points_menu = 230;
-static float height_mesh_menu = 300;
-static float height_analysis_menu = 300;
-static float height_histogram = 200;
-static float height_legend = 310;
-static float height_view_options = 380;
-static float height_region_menu = 270;
-static float height_region_text = 145;
+static const float SCALING_FACTOR = 0.6;
+static const float PADDING_GENERAL = 5;
+static const float PADDING_TOP = 38;
+static const float PADDING_LEFT = 5;
+static const float PADDING_RIGHT = 5;
+static const float MENU_Y = 190;
+static const float HEIGHT_FILE_MENU = 153;
+static const float HEIGHT_POINTS_MENU = 240;
+static const float HEIGHT_MESH_MENU = 350;
+static const float HEIGHT_ANALYSIS_MENU = 220;
+static const float HEIGHT_HISTOGRAM = 263;
+static const float HEIGHT_LEGEND = 315;
+static const float HEIGHT_VIEW_OPTIONS = 400;
+static const float HEIGHT_REGION_MENU = 328;
+static const float HEIGHT_REGION_TEXT = 125;
 
-static float clicking_menu_height = 450;
+static float CLICKING_MENU_HEIGHT = 450;
 
-static float menu_width = 300;
+static float MENU_WIDTH = 300;
 
 static const ImGuiWindowFlags main_window_flags = ImGuiWindowFlags_NoScrollbar |
 	ImGuiWindowFlags_NoResize |
@@ -238,6 +240,10 @@ static const ImGuiWindowFlags main_window_flags = ImGuiWindowFlags_NoScrollbar |
 	ImGuiWindowFlags_NoNav;
 
 void UIState::draw_file_menu(int x, int y, int &y_return) {
+	float ui_scaling_factor = SCALING_FACTOR * hidpi_scaling() / pixel_ratio();
+	const float height_file_menu = HEIGHT_FILE_MENU * ui_scaling_factor;
+	const float menu_width = MENU_WIDTH * ui_scaling_factor;
+
 	ImGui::SetNextWindowPos(ImVec2(x,y), ImGuiSetCond_FirstUseEver);
 	ImGui::SetNextWindowSize(ImVec2(menu_width, height_file_menu), ImGuiSetCond_FirstUseEver);
 
@@ -293,6 +299,10 @@ void UIState::draw_file_menu(int x, int y, int &y_return) {
 }
 
 void UIState::draw_points_menu(int x, int y) {
+	float ui_scaling_factor = SCALING_FACTOR * hidpi_scaling() / pixel_ratio();
+	const float height_points_menu = HEIGHT_POINTS_MENU * ui_scaling_factor;
+	const float menu_width = MENU_WIDTH * ui_scaling_factor;
+
 	ImGui::SetNextWindowPos(ImVec2(x, y), ImGuiCond_Always);
 	ImGui::SetNextWindowSize(ImVec2(menu_width, height_points_menu), ImGuiSetCond_FirstUseEver);
 
@@ -338,6 +348,10 @@ void UIState::draw_points_menu(int x, int y) {
 
 void UIState::draw_mesh_menu(int x, int y)
 {
+	float ui_scaling_factor = SCALING_FACTOR * hidpi_scaling() / pixel_ratio();
+	const float height_mesh_menu = HEIGHT_MESH_MENU * ui_scaling_factor;
+	const float menu_width = MENU_WIDTH * ui_scaling_factor;
+
 	ImGui::SetNextWindowPos(ImVec2(x, y), ImGuiCond_Always);
 	ImGui::SetNextWindowSize(ImVec2(menu_width, height_mesh_menu), ImGuiSetCond_FirstUseEver);
 
@@ -418,8 +432,8 @@ void UIState::draw_mesh_menu(int x, int y)
 	if (state.mesh.points.size() == 0) pop_disabled();
 
 	// disable if regions are not availabe
-	if (state.regions.size() == 0) push_disabled();
-
+	bool disable_region = state.regions.size() == 0;
+	if (disable_region) push_disabled();
 	if (ImGui::Button("solve regions", ImVec2((w - p), 0))) {
 		state.resolve_regions();
 		selected_region = -1;
@@ -428,6 +442,7 @@ void UIState::draw_mesh_menu(int x, int y)
 
 		viewer_control();
 	}
+	if (disable_region) pop_disabled();
 
 	if (ImGui::Button("Ultimate relaxation", ImVec2((w - p), 0))) {
 		state.final_relax();
@@ -436,13 +451,16 @@ void UIState::draw_mesh_menu(int x, int y)
 
 		viewer_control();
 	}
-	if (state.regions.size() == 0) pop_disabled();
 
 	ImGui::End();
 }
 
 void UIState::draw_analysis_menu(int x, int y)
 {
+	float ui_scaling_factor = SCALING_FACTOR * hidpi_scaling() / pixel_ratio();
+	const float height_analysis_menu = HEIGHT_ANALYSIS_MENU * ui_scaling_factor;
+	const float menu_width = MENU_WIDTH * ui_scaling_factor;
+
 	ImGui::SetNextWindowPos(ImVec2(x, y), ImGuiCond_Always);
 	ImGui::SetNextWindowSize(ImVec2(menu_width, height_analysis_menu), ImGuiSetCond_FirstUseEver);
 
@@ -467,10 +485,14 @@ void UIState::draw_histogram(int x, int y)
 	if (hist.size() == 0)
 		compute_histogram();
 
+	float ui_scaling_factor = SCALING_FACTOR * hidpi_scaling() / pixel_ratio();
+	const float height_histogram = HEIGHT_HISTOGRAM * ui_scaling_factor;
+	const float menu_width = MENU_WIDTH * ui_scaling_factor;
+
 	ImGui::SetNextWindowPos(ImVec2(x, y), ImGuiCond_Always);
 	ImGui::SetNextWindowSize(ImVec2(menu_width, height_histogram), ImGuiSetCond_FirstUseEver);
 	ImGui::Begin("Histogram", &show_histogram, main_window_flags);
-	const float hist_w = ImGui::GetWindowWidth() * 0.80f -2;
+	const float hist_w = ImGui::GetWindowWidth() * 0.75f -2;
 	ImGui::PushItemWidth(hist_w+2);
 	
 	static float min_img = 0;
@@ -478,7 +500,7 @@ void UIState::draw_histogram(int x, int y)
 
 	auto pos = ImGui::GetWindowPos();
 	int startX = pos.x + 10;
-	int startY = pos.y + 42;
+	int startY = pos.y + 47* ui_scaling_factor;
 
 	ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
 	ImGui::PlotHistogram("", hist.data(), hist.size(), 0, NULL, 0.0f, hist.maxCoeff(), ImVec2(0, 80));
@@ -525,6 +547,10 @@ void UIState::draw_histogram(int x, int y)
 }
 
 void UIState::draw_legend(int x, int y) {
+	float ui_scaling_factor = SCALING_FACTOR * hidpi_scaling() / pixel_ratio();
+	const float height_legend = HEIGHT_LEGEND * ui_scaling_factor;
+	const float menu_width = MENU_WIDTH * ui_scaling_factor;
+
 	ImGui::SetNextWindowPos(ImVec2(x, y), ImGuiCond_Always);
 	ImGui::SetNextWindowSize(ImVec2(menu_width, height_legend), ImGuiSetCond_FirstUseEver);
 	if (!ImGui::Begin("Legend", &show_legend, main_window_flags))
@@ -545,6 +571,10 @@ void UIState::draw_legend(int x, int y) {
 }
 
 void UIState::draw_view_options(int x, int y) {
+	float ui_scaling_factor = SCALING_FACTOR * hidpi_scaling() / pixel_ratio();
+	const float height_view_options = HEIGHT_VIEW_OPTIONS * ui_scaling_factor;
+	const float menu_width = MENU_WIDTH * ui_scaling_factor;
+
 	ImGui::SetNextWindowPos(ImVec2(x, y), ImGuiCond_Always);
 	ImGui::SetNextWindowSize(ImVec2(menu_width, height_view_options), ImGuiSetCond_FirstUseEver);
 	ImGui::Begin(
@@ -552,7 +582,11 @@ void UIState::draw_view_options(int x, int y) {
 	ImGuiWindowFlags_NoSavedSettings
 	);
 
-	if (ImGui::ColorEdit4("Mesh color", points_data().line_color.data(),
+	if (ImGui::Checkbox("", &show_mesh)) {
+		viewer_control();
+	}
+	ImGui::SameLine();
+	if (ImGui::ColorEdit4("Mesh", points_data().line_color.data(),
 	ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueWheel)) {
 	viewer_control();
 	}
@@ -560,9 +594,14 @@ void UIState::draw_view_options(int x, int y) {
 	if (ImGui::Checkbox("Show hull", &show_hull)) {
 	viewer_control();
 	}
-	if (ImGui::Checkbox("Show points", &show_points)) {
+	if (ImGui::Checkbox("Points", &show_points)) {
 	viewer_control();
 	}
+	ImGui::SameLine();
+	if (ImGui::Checkbox("Coded", &color_code)) {
+		viewer_control();
+	}
+
 	if (ImGui::Checkbox("Mesh Fill", &show_mesh_fill)) {
 	viewer_control();
 	}
@@ -595,6 +634,11 @@ void UIState::draw_view_options(int x, int y) {
 }
 
 void UIState::draw_region_menu(int x, int y) {
+	float ui_scaling_factor = SCALING_FACTOR * hidpi_scaling() / pixel_ratio();
+	const float height_region_menu = HEIGHT_REGION_MENU * ui_scaling_factor;
+	const float height_region_text = HEIGHT_REGION_TEXT * ui_scaling_factor;
+	const float menu_width = MENU_WIDTH * ui_scaling_factor;
+
 	double height;
 	if (selected_region >= 0)
 		height = height_region_menu + height_region_text;
@@ -699,6 +743,20 @@ void UIState::draw_region_menu(int x, int y) {
 void UIState::draw_custom_window() {
 	build_menu_bar();
 
+	float ui_scaling_factor = SCALING_FACTOR * hidpi_scaling() / pixel_ratio();
+	const float padding_general = PADDING_GENERAL * ui_scaling_factor;
+	const float padding_left = PADDING_LEFT * ui_scaling_factor;
+	const float padding_top = PADDING_TOP * ui_scaling_factor;
+	const float height_file_menu = HEIGHT_FILE_MENU * ui_scaling_factor;
+	const float height_points_menu = HEIGHT_POINTS_MENU * ui_scaling_factor;
+	const float height_mesh_menu = HEIGHT_MESH_MENU * ui_scaling_factor;
+	const float height_analysis_menu = HEIGHT_ANALYSIS_MENU * ui_scaling_factor;
+	const float height_histogram = HEIGHT_HISTOGRAM * ui_scaling_factor;
+	const float menu_width = MENU_WIDTH * ui_scaling_factor;
+	const float height_view_options = HEIGHT_VIEW_OPTIONS * ui_scaling_factor;
+	const float height_region_menu = HEIGHT_REGION_MENU * ui_scaling_factor;
+	const float height_region_text = HEIGHT_REGION_TEXT * ui_scaling_factor;
+	const float height_legend = HEIGHT_LEGEND * ui_scaling_factor;
 	int x = padding_left, y = padding_top;
 
 	// Menu on left

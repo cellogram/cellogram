@@ -35,6 +35,28 @@ namespace cellogram {
 #endif
 			return nError;
 		}
+
+		void get_region_color(const int & status, Eigen::RowVector3d &color)
+		{
+			switch (status)
+			{
+			case Region::OK:
+				color << 46, 204, 113; break;
+			case Region::TOO_MANY_VERTICES:
+				color << 155, 89, 182; break;
+			case Region::TOO_FEW_VERTICES:
+				color << 241, 196, 15; break;
+			case Region::REGION_TOO_LARGE:
+				color << 41, 128, 185; break;
+			case Region::NO_SOLUTION:
+				color << 192, 57, 43; break;
+			case Region::NOT_PROPERLY_CLOSED:
+				color << 149, 165, 166; break;
+			default:
+				color << 52, 73, 94;  break;
+			}
+			color /= 255;
+		}
 	}
 // -----------------------------------------------------------------------------
 
@@ -262,7 +284,7 @@ void UIState::initialize() {
 	state.resolve_regions();*/
 
 	// Setup viewer parameters
-	viewer.resize(1500, 1500);
+	viewer.resize(1400, 1000);
 	viewer.core.background_color.setOnes();
 	// viewer.core.set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_TRACKBALL);
 	viewer.core.set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_NO_ROTATION);
@@ -485,60 +507,107 @@ void UIState::compute_histogram()
 
 void UIState::export_region()
 {
-	Eigen::VectorXi boundary = state.regions[selected_region].region_boundary;
-	Eigen::VectorXi internal = state.regions[selected_region].region_interior;
-	
-	Eigen::MatrixXd V(boundary.size() + internal.size(), 3);
-	for (int i = 0; i < boundary.size(); i++)
-	{
-		V(i, 0) = state.mesh.detected(boundary(i), 0);
-		V(i, 1) = state.mesh.detected(boundary(i), 1);
-		double std_x = state.mesh.params.std_x(boundary(i));
-		double std_y = state.mesh.params.std_y(boundary(i));
-		V(i, 2) = std::sqrt(std_x*std_x + std_y * std_y);
-	}
-	for (int i = 0; i < internal.size(); i++)
-	{
-		V(i + boundary.size(), 0) = state.mesh.detected(internal(i), 0);
-		V(i + boundary.size(), 1) = state.mesh.detected(internal(i), 1);
-		double std_x = state.mesh.params.std_x(internal(i));
-		double std_y = state.mesh.params.std_y(internal(i));
-		V(i + boundary.size(), 2) = std::sqrt(std_x*std_x + std_y*std_y);
-	}
+	//Eigen::VectorXi boundary = state.regions[selected_region].region_boundary;
+	//Eigen::VectorXi internal = state.regions[selected_region].region_interior;
+	//
+	//Eigen::MatrixXd V(boundary.size() + internal.size(), 3);
+	//for (int i = 0; i < boundary.size(); i++)
+	//{
+	//	V(i, 0) = state.mesh.detected(boundary(i), 0);
+	//	V(i, 1) = state.mesh.detected(boundary(i), 1);
+	//	double std_x = state.mesh.params.std_x(boundary(i));
+	//	double std_y = state.mesh.params.std_y(boundary(i));
+	//	V(i, 2) = std::sqrt(std_x*std_x + std_y * std_y);
+	//}
+	//for (int i = 0; i < internal.size(); i++)
+	//{
+	//	V(i + boundary.size(), 0) = state.mesh.detected(internal(i), 0);
+	//	V(i + boundary.size(), 1) = state.mesh.detected(internal(i), 1);
+	//	double std_x = state.mesh.params.std_x(internal(i));
+	//	double std_y = state.mesh.params.std_y(internal(i));
+	//	V(i + boundary.size(), 2) = std::sqrt(std_x*std_x + std_y*std_y);
+	//}
 
-	// find vertices whose edges can be regarded as possibly wrong
-	Eigen::VectorXi wrong_boundary = state.increase_boundary(state.mesh.boundary);
-	wrong_boundary = state.increase_boundary(wrong_boundary);
+	//// find vertices whose edges can be regarded as possibly wrong
+	//Eigen::VectorXi wrong_boundary = state.increase_boundary(state.mesh.boundary);
+	//wrong_boundary = state.increase_boundary(wrong_boundary);
 
-	int index = 0;
-	Eigen::MatrixXi E(boundary.size(), 2);
-	for (int i = 0; i < boundary.size(); i++)
-	{
-		if ((wrong_boundary.array() - boundary(i)).abs().minCoeff() == 0 || (wrong_boundary.array() - boundary((i + 1) % boundary.size())).abs().minCoeff() == 0)
-			continue;
-		E(index, 0) = i;
-		E(index, 1) = (i + 1) % boundary.size();
-		index++;
-	}
-	E.conservativeResize(index, 2);
+	//int index = 0;
+	//Eigen::MatrixXi E(boundary.size(), 2);
+	//for (int i = 0; i < boundary.size(); i++)
+	//{
+	//	if ((wrong_boundary.array() - boundary(i)).abs().minCoeff() == 0 || (wrong_boundary.array() - boundary((i + 1) % boundary.size())).abs().minCoeff() == 0)
+	//		continue;
+	//	E(index, 0) = i;
+	//	E(index, 1) = (i + 1) % boundary.size();
+	//	index++;
+	//}
+	//E.conservativeResize(index, 2);
 
+	//cellogram_mkdir(save_dir);
+	//cellogram_mkdir(save_dir + "/cellogram");
+	//cellogram_mkdir(save_dir + "/cellogram" + "/regions");
+	//cellogram_mkdir(save_dir + "/cellogram" + "/regions/" + std::to_string(selected_region));
+
+	//std::string path = save_dir + "/cellogram" + "/regions/" + std::to_string(selected_region);
+	//
+	//{
+	//	std::ofstream V_path(path + "/V.vert");
+	//	V_path << V << std::endl;
+	//	V_path.close();
+	//}
+	//{
+	//	std::ofstream E_path(path + "/E.edge");
+	//	E_path << E << std::endl;
+	//	E_path.close();
+	//}
+
+	////---------- Save entire image and vector<bool> for faces that may not be changed
 	cellogram_mkdir(save_dir);
 	cellogram_mkdir(save_dir + "/cellogram");
-	cellogram_mkdir(save_dir + "/cellogram" + "/regions");
-	cellogram_mkdir(save_dir + "/cellogram" + "/regions/" + std::to_string(selected_region));
-
-	std::string path = save_dir + "/cellogram" + "/regions/" + std::to_string(selected_region);
+	cellogram_mkdir(save_dir + "/cellogram" + "/untangler");
+	std::string path = save_dir + "/cellogram/untangler";
 	
 	{
 		std::ofstream V_path(path + "/V.vert");
-		V_path << V << std::endl;
+		V_path << state.mesh.moved << std::endl;
 		V_path.close();
 	}
 	{
-		std::ofstream E_path(path + "/E.edge");
-		E_path << E << std::endl;
-		E_path.close();
+		std::ofstream F_path(path + "/F.tri");
+		F_path << state.mesh.triangles << std::endl;
+		F_path.close();
 	}
+
+	Eigen::VectorXi fixed_face(state.mesh.triangles.rows());
+	fixed_face.setOnes();
+
+	// Loop through regions and set them to 0
+	for (auto & r : state.regions)
+	{
+		for (int i = 0; i < r.region_triangles.size(); i++)
+		{
+			fixed_face(r.region_triangles(i)) = 0;
+		}
+	}
+
+	// Loop through boundary and also set them to zero
+	Eigen::VectorXi boundary = state.increase_boundary(state.mesh.boundary);
+	//boundary = state.increase_boundary(boundary);
+	for (int i = 0; i < boundary.size(); i++)
+	{
+		std::vector<int> fixed_ind = state.mesh.vertex_to_tri[boundary(i)];
+		for (int j = 0; j < fixed_ind.size(); j++)
+		{
+			fixed_face(fixed_ind[j]) = 0;
+		}
+	}
+	{
+		std::ofstream fixed_path(path + "/fixed.txt");
+		fixed_path << fixed_face << std::endl;
+		fixed_path.close();
+	}
+
 }
 
 void UIState::reset_viewer()
@@ -599,15 +668,15 @@ void UIState::load_image(std::string fname) {
 	compute_histogram();
 
 	double extent = (V.colwise().maxCoeff() -V.colwise().minCoeff()).maxCoeff();
-	//HIGH dpi
+	points_data().point_size =  std::ceil(float(700. / extent))+3;
 
+	//HIGH dpi
 	//int width, height;
 	//glfwGetFramebufferSize(viewer.window, &width, &height);
 	//int width_window, height_window;
 	//glfwGetWindowSize(viewer.window, &width_window, &height_window);
 	//const int highdpi = width / width_window;
 
-	points_data().point_size =  float(700. / extent)+5;
 
 	viewer_control();
 }
@@ -714,6 +783,12 @@ void UIState::viewer_control_2d()
 	}*/
 	if (show_points)
 	{
+		if (viewer.window != NULL)
+		{
+			float ui_scaling_factor = hidpi_scaling() / pixel_ratio();
+			points_data().point_size = std::ceil(ui_scaling_factor) + 3;
+		}
+
 		//if (state.regions.empty())
 		//{
 		//	Eigen::MatrixXd C(V.rows(), 3);
@@ -779,17 +854,26 @@ void UIState::viewer_control_2d()
 
 	// fill
 	points_data().show_faces = show_mesh_fill;
-	if (show_mesh_fill && !state.regions.empty())
+	//if (show_mesh_fill && !state.regions.empty())
+	if (show_mesh_fill)
 		create_region_label();
 	points_data().set_colors(mesh_color);
 
 	// bad regions
 	if (show_bad_regions)
 	{
-		Eigen::MatrixXd bad_P1, bad_P2;
-		build_region_edges(V, bad_P1, bad_P2);
-		bad_region_data().add_edges(bad_P1, bad_P2, Eigen::RowVector3d(0, 0, 0));
-		bad_region_data().line_width = 3.0;
+		Eigen::MatrixXd bad_P1, bad_P2, C;
+		build_region_edges(V, bad_P1, bad_P2, C);
+		if (show_mesh_fill)
+		{
+			bad_region_data().add_edges(bad_P1, bad_P2, Eigen::RowVector3d(0, 0, 0));
+			bad_region_data().line_width = 3.0;
+		}
+		else
+		{
+			bad_region_data().add_edges(bad_P1, bad_P2, C);
+			bad_region_data().line_width = 2.0;
+		}
 	}
 
 
@@ -895,9 +979,8 @@ void UIState::viewer_control_3d()
 		break;
 	}
 
-	std::cout << C << std::endl;
-
-	std::cout << "\n\ncol\n" << state.mesh3d.sol.col(0).eval() << std::endl;
+	//std::cout << C << std::endl;
+	//std::cout << "\n\ncol\n" << state.mesh3d.sol.col(0).eval() << std::endl;
 
 	MatrixXd normals;
 
@@ -939,25 +1022,8 @@ void UIState::create_region_label()
 	for (int i = 0; i < state.regions.size(); ++i)
 	{
 		Eigen::RowVector3d color;
+		get_region_color(state.regions[i].status, color);
 
-		switch (state.regions[i].status)
-		{
-		case Region::OK:
-			color << 46, 204, 113; break;
-		case Region::TOO_MANY_VERTICES:
-			color << 155, 89, 182; break;
-		case Region::TOO_FEW_VERTICES:
-			color << 241, 196, 15; break;
-		case Region::REGION_TOO_LARGE:
-			color << 41, 128, 185; break;
-		case Region::NO_SOLUTION:
-			color << 192, 57, 43; break;
-		case Region::NOT_PROPERLY_CLOSED:
-			color << 149, 165, 166; break;
-		default:
-			color << 52, 73, 94;  break;
-		}
-		color /= 255;
 		//for (int j = 0; j < state.regions[i].region_interior.size(); ++j)
 		//{
 		//	mesh_color.row(state.regions[i].region_interior(j)) = color;
@@ -970,21 +1036,31 @@ void UIState::create_region_label()
 
 }
 
-void UIState::build_region_edges(const Eigen::MatrixXd &pts, Eigen::MatrixXd &bad_P1, Eigen::MatrixXd &bad_P2)
+void UIState::build_region_edges(const Eigen::MatrixXd &pts, Eigen::MatrixXd &bad_P1, Eigen::MatrixXd &bad_P2, Eigen::MatrixXd &C)
 {
 	bad_P1.resize(pts.rows(), 3);
 	bad_P2.resize(pts.rows(), 3);
+	C.setZero(pts.rows(), 3);
 
 	int index = 0;
+	int c_index = 0;
 	Eigen::MatrixXd local_bad_P1, local_bad_P2;
 	for (auto &r : state.regions)
 	{
 		r.compute_edges(pts, local_bad_P1, local_bad_P2);
 		bad_P1.block(index, 0, local_bad_P1.rows(), local_bad_P1.cols()) = local_bad_P1;
 		bad_P2.block(index, 0, local_bad_P2.rows(), local_bad_P2.cols()) = local_bad_P2;
+		
+		Eigen::RowVector3d color;
+		get_region_color(r.status, color);
 
+		for (int j = 0; j < r.region_boundary.size(); j++)
+		{
+			C.row(c_index) = color;
+			c_index++;
+		}
+		
 		index += local_bad_P2.rows();
-
 	}
 	bad_P1.conservativeResize(index, 3);
 	bad_P2.conservativeResize(index, 3);

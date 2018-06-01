@@ -45,7 +45,7 @@ namespace cellogram {
 				removeRow(triangles, removeIdx[i]);
 			}
 
-			std::cout << tNew << "\n\n" << std::endl;
+			//std::cout << tNew << "\n\n" << std::endl;
 
 			// add new rows at the end of triangles
 			Eigen::MatrixXi tmp = triangles;
@@ -156,7 +156,7 @@ namespace cellogram {
 			int count = 0;
 			for (int i = 0; i < moved.rows(); i++)
 			{
-				if (energy(i) < 0.5*avg && degree(i) == 6)
+				if (energy(i) < 0.6*avg && degree(i) == 6)
 				{
 					low_energy(i) = true;
 					count++;
@@ -167,11 +167,17 @@ namespace cellogram {
 				low_energy(boundary(i)) = true;
 				count++;
 			}
-			fixed_V.resize(count);
+			fixed_V.resize(low_energy.size());
 			count = 0;
 			for (int i = 0; i < low_energy.size(); i++)
 			{
 				if (low_energy(i))
+				{
+					fixed_V(count) = i;
+					count++;
+				}
+				//check if the vertices were manually moved
+				else if((moved.row(i) - detected.row(i)).squaredNorm() > 1.)
 				{
 					fixed_V(count) = i;
 					count++;
