@@ -69,7 +69,7 @@ namespace cellogram {
 		find_region_by_boundary_vertex(split_end_points(0), regions1);
 		find_region_by_boundary_vertex(split_end_points(1), regions2);
 
-		if (size(regions1) == 0 || size(regions2) == 0)
+		if (regions1.empty() || regions2.empty())
 			return;
 
 		int index;
