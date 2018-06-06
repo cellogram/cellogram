@@ -6,6 +6,7 @@
 #include <cellogram/region_grow.h>
 #include <cellogram/Mesh.h>
 #include <cellogram/State.h>
+#include <cellogram/dijkstra.h>
 #include <gurobi_solver/state.h>
 #include <gurobi_solver/generateQ.h>
 #include <gurobi_solver/gurobiModel.h>
@@ -214,6 +215,15 @@ namespace cellogram {
 			}
 			return neigh;
 		}
+
+		//struct edge {
+		//	int x, y, w;
+		//	edge(void) : x(), y(), w() {}
+		//	edge(int a, int b, int c) : x(a), y(b), w(c) {}
+		//	bool operator< (const edge &e) const {
+		//		return w > e.w; // Extract min-cost edges first
+		//	}
+		//};
 	}
 
 
@@ -720,13 +730,35 @@ namespace cellogram {
 
 		std::set<int> target;
 		target.insert(split_end_points(1));
-		// todo: create flipped mesh
-		Eigen::VectorXd min_distance;
-		Eigen::VectorXi previous;
-		igl::dijkstra_compute_paths(split_end_points(0), target, adj, min_distance, previous);
+
+		//Eigen::VectorXd min_distance;
+		//Eigen::VectorXi previous;
+
+		//igl::dijkstra_compute_paths(split_end_points(0), target, adj, min_distance, previous);
+
+		//std::vector<int> path_tmp;
+		//igl::dijkstra_get_shortest_path_to(split_end_points(1), previous, path_tmp);
+
+		std::vector<std::vector<edge>> graph;
+		graph.resize(adj.size());
+		for (int i = 0; i < adj.size(); i++)
+		{
+			for (int j = 0; j < adj[i].size(); j++)
+			{
+				double dx = mesh.points(i, 0) - mesh.points(adj[i][j], 0);
+				double dy = mesh.points(i, 1) - mesh.points(adj[i][j], 1);
+				graph[i].push_back(edge(i, adj[i][j], std::sqrt(dx * dx + dy * dy)));
+			}
+		}
+
+		std::vector<int> prev, dist;
+		dijkstra(graph, prev, dist, split_end_points(0));
 
 		std::vector<int> path_tmp;
-		igl::dijkstra_get_shortest_path_to(split_end_points(1), previous, path_tmp);
+		path_tmp.push_back(split_end_points(1));
+		do {
+			path_tmp.push_back(prev[path_tmp.back()]);
+		} while (path_tmp.back() != prev[path_tmp.back()]);
 
 		path.resize(path_tmp.size());
 		for (int i = 0; i < path_tmp.size(); i++)

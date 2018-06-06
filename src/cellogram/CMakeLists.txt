@@ -9,6 +9,8 @@ set(source_list
 	convex_hull.h
 	delaunay.cpp
 	delaunay.h
+	dijkstra.cpp
+	dijkstra.h
 	image_reader.cpp
 	image_reader.h
 	region_grow.cpp
