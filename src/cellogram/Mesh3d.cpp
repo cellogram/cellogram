@@ -1,7 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "Mesh3d.h"
 #include "Mesh.h"
-#include <Eigen/Dense>
 
 
 #include <igl/opengl/glfw/Viewer.h>
@@ -18,7 +17,7 @@ namespace cellogram {
 
 	namespace
 	{
-		void compute_analysis(const Eigen::MatrixXd &vertices, const Eigen::MatrixXi &tets, const Mesh &mesh, float thickness, Eigen::MatrixXd &vals)
+		void compute_analysis(const Eigen::MatrixXd &vertices, const Eigen::MatrixXi &faces, const Eigen::MatrixXi &tets, const Mesh &mesh, float thickness, float lambda, float mu, const std::string &formulation, Eigen::MatrixXd &vals)
 		{
 			assert(tets.cols() == 4);
 			assert(vertices.cols() == 3);
@@ -44,13 +43,13 @@ namespace cellogram {
 				{"problem", "Custom"},
 				{"normalize_mesh", false},
 
-				{"tensor_formulation", "LinearElasticity"},
+				{"tensor_formulation", formulation},
 
 				{"discr_order", 1},
 
 				{"params", {
-					{"lambda", 0.75},
-					{"mu", 0.375},
+					{"lambda", lambda},
+					{"mu", mu},
 				}},
 			};
 
@@ -93,10 +92,12 @@ namespace cellogram {
 
 			state.solve_problem();
 
-			// state.interpolate_function(vertices.rows(), state.sol, vals);
+			state.interpolate_boundary_function(vertices, faces, state.sol, vals);
 			// vals = Eigen::Map<Eigen::MatrixXd>(state.sol.data(), 3, vertices.rows());
-			vals = Eigen::Map<Eigen::MatrixXd>(state.rhs.data(), 3, vertices.rows());
-			vals = vals.transpose().eval();
+			// vals = Eigen::Map<Eigen::MatrixXd>(state.rhs.data(), 3, vertices.rows());
+			// vals = vals.transpose().eval();
+			// std::cout<<vals<<std::endl;
+			// std::cout<<state.sol<<std::endl;
 
 
 			// auto &tmp_mesh = *dynamic_cast<poly_fem::Mesh3D *>(state.mesh.get());
@@ -127,7 +128,7 @@ namespace cellogram {
 		}
 	}
 
-	void Mesh3d::init(const Mesh &mesh, float padding_size, float thickness)
+	void Mesh3d::init(const Mesh &mesh, float padding_size, float thickness, float lambda, float mu, const std::string &formulation)
 	{
 		Eigen::Vector2d max_dim;
 		Eigen::Vector2d min_dim;
@@ -174,11 +175,15 @@ namespace cellogram {
 		Eigen::MatrixXd TV;
 		Eigen::MatrixXi TT;
 		Eigen::MatrixXi TF;
+#ifdef NDEBUG
 		igl::copyleft::tetgen::tetrahedralize(V, F, "Qpq1.414a100", TV, TT, TF);
+#else
+		igl::copyleft::tetgen::tetrahedralize(V, F, "Qpq1.414a10000", TV, TT, TF);
+#endif
 
 		std::cout<<"n tets: "<<TF.rows()<<std::endl;
 
-		compute_analysis(TV, TT, mesh, thickness, sol);
+		compute_analysis(TV, TF, TT, mesh, thickness, lambda, mu, formulation, sol);
 
 		F = TF;
 		V = TV;

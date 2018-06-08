@@ -475,6 +475,13 @@ void UIState::draw_analysis_menu(int x, int y)
 
 	if (ImGui::Button("Init 3D Mesh")) {
 		state.init_3d_mesh();
+		analysis_mode = true;
+		show_mesh = false;
+		show_image = false;
+		show_mesh_fill = false;
+		view_mode_3d = MAG_DISP_SELECTED;
+
+		viewer_control();
 	}
 
 	ImGui::End();
@@ -618,7 +625,7 @@ void UIState::draw_view_options(int x, int y) {
 		viewer_control();
 	}
 
-	if (ImGui::Checkbox("", &analysis_mode)) {
+	if (ImGui::Checkbox(" ", &analysis_mode)) {
 		if (!analysis_mode)
 			viewer.core.trackball_angle = Eigen::Quaternionf::Identity();
 		viewer_control();

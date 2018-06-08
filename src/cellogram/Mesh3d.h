@@ -1,6 +1,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 #include "Mesh.h"
+
+#include <Eigen/Dense>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
@@ -14,7 +16,7 @@ namespace cellogram {
 		Eigen::MatrixXi F;
 		Eigen::MatrixXd sol;
 
-		void init(const Mesh &mesh, float padding_size, float thickness);
+		void init(const Mesh &mesh, float padding_size, float thickness, float lambda, float mu, const std::string &formulation);
 		void clear();
 	};
 

@@ -375,7 +375,7 @@ namespace cellogram {
 			params.set_from(ptmp, index2);
 			index2++;
 		}
-		
+
 		V.conservativeResize(index2, 2);
 		params.conservative_resize(index2);
 
@@ -718,7 +718,7 @@ namespace cellogram {
 
 			// Map q.T back to global indices
 			assert(region.region_boundary.size() + region.region_interior.size() == new_points.rows());
-			
+
 
 			Eigen::VectorXi local_to_global;
 			region.local_to_global(local_to_global);
@@ -753,7 +753,7 @@ namespace cellogram {
 		}
 		else
 		{
-			//find the region 
+			//find the region
 			int region_ind = find_region_by_interior_vertex(index);
 			if (region_ind == -1)
 			{
@@ -776,13 +776,13 @@ namespace cellogram {
 
 	void State::add_vertex(Eigen::Vector3d new_point)
 	{
-		mesh.add_vertex(new_point);		
+		mesh.add_vertex(new_point);
 
 	}
 
 	void State::init_3d_mesh()
 	{
-		mesh3d.init(mesh, padding_size, thickness);
+		mesh3d.init(mesh, padding_size, thickness, lambda, mu, formulation);
 	}
 
 	void State::reset_state()

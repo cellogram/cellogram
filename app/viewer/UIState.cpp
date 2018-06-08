@@ -969,13 +969,13 @@ void UIState::viewer_control_3d()
 		igl::colormap(cm, state.mesh3d.sol.col(0).eval(), true, C);
 		break;
 	case Y_DISP_SELECTED:
-		//igl::colormap(cm, state.mesh3d.sol.col(1), true, C);
+		igl::colormap(cm, state.mesh3d.sol.col(1).eval(), true, C);
 		break;
 	case Z_DISP_SELECTED:
-		//igl::colormap(cm, state.mesh3d.sol.col(2), true, C);
+		igl::colormap(cm, state.mesh3d.sol.col(2).eval(), true, C);
 		break;
 	case MAG_DISP_SELECTED:
-		//igl::colormap(cm, state.mesh3d.sol.colwise.squaredNorm(), true, C);
+		igl::colormap(cm, state.mesh3d.sol.rowwise().norm().eval(), true, C);
 		break;
 	}
 
