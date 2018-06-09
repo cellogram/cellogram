@@ -1,15 +1,3 @@
-[submodule "3rdparty/libigl"]
-	path = 3rdparty/libigl
-	url = https://github.com/libigl/libigl.git
-[submodule "3rdparty/geogram"]
-	path = 3rdparty/geogram
-	url = git@github.com:alicevision/geogram.git
-[submodule "3rdparty/tinyformat"]
-	path = 3rdparty/tinyformat
-	url = git@github.com:c42f/tinyformat.git
-[submodule "3rdparty/json"]
-	path = 3rdparty/json
-	url = git@github.com:nlohmann/json.git
 [submodule "3rdparty/gsl"]
 	path = 3rdparty/gsl
 	url = https://github.com/ampl/gsl.git
@@ -19,6 +7,3 @@
 [submodule "3rdparty/polyfem"]
 	path = 3rdparty/polyfem
 	url = https://github.com/geometryprocessing/polyfem.git
-[submodule "3rdparty/google_or_tools"]
-	path = 3rdparty/google_or_tools
-	url = https://github.com/google/or-tools.git
