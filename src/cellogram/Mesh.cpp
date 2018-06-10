@@ -1,6 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "Mesh.h"
 #include <cellogram/load_points.h>
+#include <cellogram/convex_hull.h>
 #include <cellogram/delaunay.h>
 #include <cellogram/tri2hex.h>
 #include <cellogram/voronoi.h>
@@ -122,7 +123,7 @@ namespace cellogram {
 
 		solved_vertex.resize(points.rows(), 1);
 		solved_vertex.setConstant(false);
-		
+
 		adjacency_list(triangles, adj);
 		generate_vertex_to_tri();
 
@@ -146,11 +147,11 @@ namespace cellogram {
 			laplace_energy(moved, triangles, energy);
 			// Determine whether each vertex passes the criterium for bad mesh
 			double avg = energy.mean();
-			
+
 			// Find the degree of each vertex
 			Eigen::VectorXi degree;
 			vertex_degree(degree);
-			
+
 			Eigen::Matrix<bool, 1, Eigen::Dynamic> low_energy(moved.rows());
 			low_energy.setConstant(false);
 			int count = 0;
@@ -215,6 +216,8 @@ namespace cellogram {
 		vertex_status_fixed.setZero();
 		solved_vertex.resize(points.rows(), 1);
 		solved_vertex.setConstant(false);
+
+		loose_convex_hull(moved, boundary, 6);
 
 		compute_triangulation();
 
@@ -681,7 +684,9 @@ namespace cellogram {
 
 	void Mesh::compute_triangulation()
 	{
-		delaunay_triangulation(points, triangles);
+		// delaunay_triangulation(points, triangles);
+		std::cout << boundary << std::endl;
+		constrained_delaunay_triangulation(points, boundary, triangles);
 
 		// Calculate the graph adjancency
 		adjacency_list(triangles, adj);

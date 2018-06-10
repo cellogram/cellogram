@@ -98,7 +98,7 @@ add_subdirectory(${THIRD_PARTY_DIR}/polyfem/cpp)
 
 # GSL
 add_subdirectory(${THIRD_PARTY_DIR}/gsl)
-target_include_directories(gsl PUBLIC ${GSL_BINARY_DIR})
+target_include_directories(gsl SYSTEM PUBLIC ${GSL_BINARY_DIR})
 
 # Tiny file dialogs library
 # add_subdirectory(${THIRD_PARTY_DIR}/tinyfiledialogs tinyfiledialogs)

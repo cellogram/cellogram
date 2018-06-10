@@ -203,7 +203,6 @@ namespace cellogram {
 		loose_convex_hull(mesh.moved, mesh.boundary, 6);
 		int dims = (int)mesh.moved.cols();
 
-
 		// Compute polygon of the convex hull
 		Eigen::VectorXi I = mesh.boundary;
 		Eigen::VectorXi J = Eigen::VectorXi::LinSpaced(dims, 0, dims - 1);

@@ -12,7 +12,7 @@ namespace cellogram {
 // -----------------------------------------------------------------------------
 
 void laplace_energy(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, Eigen::VectorXd &E){
-	assert(V.cols() == 2 | V.cols() == 3);
+	assert(V.cols() == 2 || V.cols() == 3);
 	assert(F.cols() == 3);
 	int n = (int)V.rows();
 
@@ -46,7 +46,7 @@ void laplace_energy(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, Eigen::V
 		else
 			Enorm(i) = 1;
 	}
-	
+
 	E = Enorm;
 
 }
