@@ -7,7 +7,7 @@
 namespace cellogram {
 
 ///
-/// @brief      { Computes the boundary around a mesh with holes}
+/// @brief      { Computes the boundary around a mesh with holes }
 ///
 /// @param[in]  F     { #F x 3 input triangle indices }
 /// @param[out] L     { #1 x dims output list of longest boundary }

@@ -685,7 +685,6 @@ namespace cellogram {
 	void Mesh::compute_triangulation()
 	{
 		// delaunay_triangulation(points, triangles);
-		std::cout << boundary << std::endl;
 		constrained_delaunay_triangulation(points, boundary, triangles);
 
 		// Calculate the graph adjancency
