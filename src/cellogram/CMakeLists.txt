@@ -57,6 +57,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC ..)
 target_link_libraries(${PROJECT_NAME}
 	polyfem
 
+	mmg::mmg2d
+	mmg::mmg3d
 	igl::opengl_glfw_imgui #needs to be removed when all ok
 	igl::png
 	gurobi_solver

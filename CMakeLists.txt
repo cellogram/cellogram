@@ -100,6 +100,14 @@ add_subdirectory(${THIRD_PARTY_DIR}/polyfem/cpp)
 add_subdirectory(${THIRD_PARTY_DIR}/gsl)
 target_include_directories(gsl SYSTEM PUBLIC ${GSL_BINARY_DIR})
 
+# MMG
+option(BUILD_TESTING "Enable/Disable continuous integration" OFF)
+set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+add_subdirectory(${THIRD_PARTY_DIR}/mmg)
+add_library(mmg::mmgs ALIAS libmmgs_a)
+add_library(mmg::mmg2d ALIAS libmmg2d_a)
+add_library(mmg::mmg3d ALIAS libmmg3d_a)
+
 # Tiny file dialogs library
 # add_subdirectory(${THIRD_PARTY_DIR}/tinyfiledialogs tinyfiledialogs)
 
