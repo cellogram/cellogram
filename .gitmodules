@@ -9,4 +9,4 @@
 	url = https://github.com/geometryprocessing/polyfem.git
 [submodule "3rdparty/mmg"]
 	path = 3rdparty/mmg
-	url = https://github.com/jdumas/mmg.git
+	url = https://github.com/MmgTools/mmg.git

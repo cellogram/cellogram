@@ -32,12 +32,12 @@ int main(int argc, char** argv) {
 	Eigen::MatrixXi F1, F2;
 	Eigen::VectorXd S;
 
-	isotropic_quad(V1, F1, 0.05);
+	isotropic_quad(V1, F1, 0.01);
 
 	S.resize(V1.rows());
 	for (int v = 0; v < V1.rows(); ++v) {
 		Eigen::RowVector2d p = V1.row(v);
-		S(v) = 0.01 + 0.19 * p.norm();
+		S(v) = 0.001 + 0.1 * p.squaredNorm();
 	}
 
 	cellogram::remesh_adaptive_2d(V1, F1, S, V2, F2);
