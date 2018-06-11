@@ -147,7 +147,7 @@ void UIState::build_menu_bar()
 					viewer_control();
 				}
 			}
-			
+
 			if (ImGui::MenuItem("Save", "Ctrl+S")) {
 				save();
 			}
@@ -188,7 +188,7 @@ void UIState::build_menu_bar()
 			{
 				IM_ASSERT(0);
 			}
-			
+
 			if (ImGui::MenuItem("Quit", "Alt+F4")) { exit(0);  }
 			ImGui::EndMenu();
 		}
@@ -384,7 +384,7 @@ void UIState::draw_mesh_menu(int x, int y)
 
 	ImGui::Separator();
 #endif
-	
+
 	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.50f);
 	if (ImGui::Button("Lloyd", ImVec2((w - p), 0))) {
 		state.relax_with_lloyd();
@@ -468,9 +468,9 @@ void UIState::draw_analysis_menu(int x, int y)
 
 
 	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.40f);
-	ImGui::InputFloat("Scaling [um/px]", &state.mesh.scaling, 0.01, 0, 3);
-	ImGui::InputFloat("Padding [um]", &state.padding_size, 1, 0, 0);
-	ImGui::InputFloat("Thickness [um]", &state.thickness, 1, 0, 0);
+	ImGui::InputFloat("Scaling [µm/px]", &state.mesh.scaling, 0.01, 0, 3);
+	ImGui::InputFloat("Padding [µm]", &state.padding_size, 1, 0, 0);
+	ImGui::InputFloat("Thickness [µm]", &state.thickness, 1, 0, 0);
 	ImGui::PopItemWidth();
 
 	if (ImGui::Button("Init 3D Mesh")) {
@@ -501,7 +501,7 @@ void UIState::draw_histogram(int x, int y)
 	ImGui::Begin("Histogram", &show_histogram, main_window_flags);
 	const float hist_w = ImGui::GetWindowWidth() * 0.75f -2;
 	ImGui::PushItemWidth(hist_w+2);
-	
+
 	static float min_img = 0;
 	static float max_img = 1;
 
@@ -631,7 +631,7 @@ void UIState::draw_view_options(int x, int y) {
 		viewer_control();
 	}
 	ImGui::SameLine();
-	
+
 	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.30f);
 	if (ImGui::Combo("3D Mode", &view_mode_3d, " \0u\0v\0w\0mag")) {
 		viewer_control();
@@ -818,7 +818,7 @@ void UIState::draw_custom_window() {
 		if (selected_region >= 0)
 			y += height_region_text;
 	}
-	
+
 
 	if (delete_vertex || add_vertex)
 	{

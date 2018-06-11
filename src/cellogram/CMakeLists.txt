@@ -11,32 +11,36 @@ set(source_list
 	delaunay.h
 	dijkstra.cpp
 	dijkstra.h
+	fitGaussian2D.cpp
+	fitGaussian2D.h
 	image_reader.cpp
 	image_reader.h
-	region_grow.cpp
-	region_grow.h
 	laplace_energy.cpp
 	laplace_energy.h
 	load_points.cpp
 	load_points.h
 	Mesh.cpp
 	Mesh.h
-	MeshUtils.cpp
-	MeshUtils.h
 	Mesh3d.cpp
 	Mesh3d.h
+	MeshUtils.cpp
+	MeshUtils.h
 	navigation.cpp
 	navigation.h
+	point_source_detection.cpp
+	point_source_detection.h
 	PolygonUtils.cpp
 	PolygonUtils.h
+	Region.cpp
+	Region.h
+	region_grow.cpp
+	region_grow.h
+	remesh_adaptive.cpp
+	remesh_adaptive.h
 	State.cpp
 	State.h
 	StringUtils.cpp
 	StringUtils.h
-	point_source_detection.cpp
-	point_source_detection.h
-	Region.cpp
-	Region.h
 	tri2hex.cpp
 	tri2hex.h
 	vertex.cpp
@@ -45,8 +49,6 @@ set(source_list
 	vertex_degree.h
 	voronoi.cpp
 	voronoi.h
-	fitGaussian2D.cpp
-	fitGaussian2D.h
 )
 
 add_library(${PROJECT_NAME} ${source_list})
@@ -57,8 +59,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC ..)
 target_link_libraries(${PROJECT_NAME}
 	polyfem
 
-	mmg::mmg2d
-	mmg::mmg3d
+	mmg::mmg
 	igl::opengl_glfw_imgui #needs to be removed when all ok
 	igl::png
 	gurobi_solver

@@ -95,7 +95,7 @@ bool UIState::mouse_move(int button, int modifier)
 	}
 
 	state.mesh.moved.row(dragging_id) = RowVector3d(xNew, yNew, zNew);
-	
+
 	viewer_control();
 
 	return true;
@@ -223,7 +223,7 @@ bool UIState::mouse_down(int button, int modifier) {
 			reset_viewer();
 			viewer_control();
 			return true;
-		}	
+		}
 		else if (move_vertex)
 		{
 			dragging_id = vid;
@@ -450,7 +450,7 @@ bool UIState::key_pressed(unsigned int unicode_key, int modifiers)
 		return true;
 	}
 
-	
+
 
 	return super::key_pressed(unicode_key, modifiers);;
 }
@@ -567,7 +567,7 @@ void UIState::export_region()
 	cellogram_mkdir(save_dir + "/cellogram");
 	cellogram_mkdir(save_dir + "/cellogram" + "/untangler");
 	std::string path = save_dir + "/cellogram/untangler";
-	
+
 	{
 		std::ofstream V_path(path + "/V.vert");
 		V_path << state.mesh.moved << std::endl;
@@ -637,7 +637,7 @@ void UIState::deselect_all_buttons()
 
 //TODO refactor when more clear
 void UIState::load_image(std::string fname) {
-	
+
 	state.load_image(fname);
 
 	const int index = fname.find_last_of(".");
@@ -948,21 +948,21 @@ void UIState::viewer_control_3d()
 	//ROTATION_TYPE_TRACKBALL
 	//ROTATION_TYPE_TWO_AXIS_VALUATOR_FIXED_UP
 	viewer.core.set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_TWO_AXIS_VALUATOR_FIXED_UP);
-	
+
 	if (state.mesh3d.V.size() == 0)
 		return;
 
 	Eigen::MatrixXd Vtmp = state.mesh3d.V / state.mesh.scaling;
 	Vtmp.col(2).array() -= 0.1;
 	physical_data().set_mesh(Vtmp, state.mesh3d.F);
-	
+
 	Eigen::MatrixXd C, disp;
 	igl::ColorMapType cm;
 	cm = igl::ColorMapType::COLOR_MAP_TYPE_PARULA;
 
 
 	switch (view_mode_3d) {
-	case NO_VIEW_SELECTED: 
+	case NO_VIEW_SELECTED:
 		C = Eigen::RowVector3d(129. / 255, 236. / 255, 236. / 255);
 		break;
 	case X_DISP_SELECTED:
@@ -1050,7 +1050,7 @@ void UIState::build_region_edges(const Eigen::MatrixXd &pts, Eigen::MatrixXd &ba
 		r.compute_edges(pts, local_bad_P1, local_bad_P2);
 		bad_P1.block(index, 0, local_bad_P1.rows(), local_bad_P1.cols()) = local_bad_P1;
 		bad_P2.block(index, 0, local_bad_P2.rows(), local_bad_P2.cols()) = local_bad_P2;
-		
+
 		Eigen::RowVector3d color;
 		get_region_color(r.status, color);
 
@@ -1059,7 +1059,7 @@ void UIState::build_region_edges(const Eigen::MatrixXd &pts, Eigen::MatrixXd &ba
 			C.row(c_index) = color;
 			c_index++;
 		}
-		
+
 		index += local_bad_P2.rows();
 	}
 	bad_P1.conservativeResize(index, 3);
