@@ -10,11 +10,16 @@
 // https://github.com/mxncr/mmgig
 //
 
+#ifdef WIN32
+typedef unsigned int uint;
+#endif // WIN32
+
 namespace GEO {
+
 
 namespace {
 
-bool mmg_to_geo(const MMG5_pMesh mmg, Mesh& M) {
+bool mmg_to_geo(const MMG5_pMesh mmg, GEO::Mesh& M) {
     printf("converting MMG5_pMesh to GEO::Mesh .. \n");
     /* Notes:
      * - indexing seems to start at 1 in MMG */
@@ -52,7 +57,7 @@ bool mmg_to_geo(const MMG5_pMesh mmg, Mesh& M) {
     return true;
 }
 
-bool geo_to_mmg(const Mesh& M, MMG5_pMesh& mmg, MMG5_pSol& sol, bool volume_mesh = true) {
+bool geo_to_mmg(const GEO::Mesh& M, MMG5_pMesh& mmg, MMG5_pSol& sol, bool volume_mesh = true) {
     printf("converting GEO::M to MMG5_pMesh .. \n");
     geo_assert(M.vertices.dimension() == 3);
     if (M.facets.nb() > 0) geo_assert(M.facets.are_simplices());
