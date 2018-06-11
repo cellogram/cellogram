@@ -132,8 +132,21 @@ namespace cellogram {
 		}
 	}
 
-	void Mesh3d::init(const Mesh &mesh, float padding_size, float thickness, float lambda, float mu, const std::string &formulation)
+	void Mesh3d::init_pillars(const Mesh &mesh, float eps, float I, float L)
 	{
+		clear();
+
+		displacement = (mesh.detected - mesh.points) * mesh.scaling;
+		V = mesh.points * mesh.scaling;
+
+		const float scaling = 3*eps * I /(L*L*L);
+		traction_forces = scaling * displacement;
+	}
+
+	void Mesh3d::init_nano_dots(const Mesh &mesh, float padding_size, float thickness, float lambda, float mu, const std::string &formulation)
+	{
+		clear();
+
 		Eigen::Vector2d max_dim;
 		Eigen::Vector2d min_dim;
 		mesh.get_physical_bounding_box(min_dim, max_dim);
@@ -214,7 +227,7 @@ namespace cellogram {
 
 		// poly_fem::orient_closed_surface(V, F);
 
-		compute_analysis(TV, TF, TT, mesh, thickness, lambda, mu, formulation, sol, traction_forces);
+		compute_analysis(TV, TF, TT, mesh, thickness, lambda, mu, formulation, displacement, traction_forces);
 		// sol = V;
 
 		V = TV;

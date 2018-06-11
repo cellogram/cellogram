@@ -466,14 +466,14 @@ void UIState::draw_analysis_menu(int x, int y)
 
 	ImGui::Begin("Analysis", &show_analysis_menu, main_window_flags);
 
-	ImGui::Checkbox("Pillars", &image_from_pillars);
+	ImGui::Checkbox("Pillars", &state.image_from_pillars);
 
-	if(image_from_pillars)
+	if(state.image_from_pillars)
 	{
 		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.40f);
-		ImGui::InputFloat("eps", &state.mesh.scaling, 0.01, 0, 3);
-		ImGui::InputFloat("I", &state.padding_size, 1, 0, 0);
-		ImGui::InputFloat("L [µm]", &state.thickness, 1, 0, 0);
+		ImGui::InputFloat("eps", &state.eps,  0.1, 0.01, 3);
+		ImGui::InputFloat("I [µm]", &state.I, 0.1, 0.01, 3);
+		ImGui::InputFloat("L [µm]", &state.L, 0.1, 0.01, 3);
 
 		ImGui::PopItemWidth();
 

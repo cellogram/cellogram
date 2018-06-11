@@ -26,11 +26,17 @@ public:
 	int perm_possibilities = 12;
 	float sigma = 2.2;
 
+	bool image_from_pillars = false;
+
 	float padding_size = 25;
 	float thickness = 30;
 
 	float lambda = 0.32967032967032966;
 	float mu = 0.3846153846153846;
+
+	float eps = 0.32967032967032966;
+	float I = 0.5;
+	float L = 3;
 
 	std::string formulation = "LinearElasticity";
 

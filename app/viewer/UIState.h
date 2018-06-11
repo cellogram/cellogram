@@ -57,8 +57,6 @@ public:
 	Eigen::RowVector3f vertex_color;
 	Eigen::MatrixXd mesh_color;
 
-	bool image_from_pillars = false;
-
 	bool show_mesh = true;
 	bool show_hull = false;
 	//bool image_loaded = false;

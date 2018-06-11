@@ -40,19 +40,19 @@ namespace cellogram {
 		{
 			switch (status)
 			{
-			case Region::OK:
+				case Region::OK:
 				color << 46, 204, 113; break;
-			case Region::TOO_MANY_VERTICES:
+				case Region::TOO_MANY_VERTICES:
 				color << 155, 89, 182; break;
-			case Region::TOO_FEW_VERTICES:
+				case Region::TOO_FEW_VERTICES:
 				color << 241, 196, 15; break;
-			case Region::REGION_TOO_LARGE:
+				case Region::REGION_TOO_LARGE:
 				color << 41, 128, 185; break;
-			case Region::NO_SOLUTION:
+				case Region::NO_SOLUTION:
 				color << 192, 57, 43; break;
-			case Region::NOT_PROPERLY_CLOSED:
+				case Region::NOT_PROPERLY_CLOSED:
 				color << 149, 165, 166; break;
-			default:
+				default:
 				color << 52, 73, 94;  break;
 			}
 			color /= 255;
@@ -60,82 +60,82 @@ namespace cellogram {
 	}
 // -----------------------------------------------------------------------------
 
-UIState::UIState()
+	UIState::UIState()
 	: state(State::state())
-{
-	reset_viewer();
-}
+	{
+		reset_viewer();
+	}
 
-UIState &UIState::ui_state() {
-	static UIState instance;
-	return instance;
-}
+	UIState &UIState::ui_state() {
+		static UIState instance;
+		return instance;
+	}
 
-bool UIState::mouse_move(int button, int modifier)
-{
-	if (dragging_id == -1)
-		return false;
+	bool UIState::mouse_move(int button, int modifier)
+	{
+		if (dragging_id == -1)
+			return false;
 
-	double x = viewer.current_mouse_x;
-	double y = viewer.core.viewport(3) - viewer.current_mouse_y;
+		double x = viewer.current_mouse_x;
+		double y = viewer.core.viewport(3) - viewer.current_mouse_y;
 
 	//reset update position with x and y, store prevx and y to compute delatax, (use current zoom to move point accordingly???)
-	int fid;
-	Eigen::Vector3f bc;
-	igl::unproject_onto_mesh(Eigen::Vector2f(x, y), viewer.core.view * viewer.core.model,
-		viewer.core.proj, viewer.core.viewport, img_V, img_F, fid, bc);
+		int fid;
+		Eigen::Vector3f bc;
+		igl::unproject_onto_mesh(Eigen::Vector2f(x, y), viewer.core.view * viewer.core.model,
+			viewer.core.proj, viewer.core.viewport, img_V, img_F, fid, bc);
 
-	double xNew = 0, yNew = 0, zNew = 0;
-	for (int i = 0; i < 3; i++)
-	{
+		double xNew = 0, yNew = 0, zNew = 0;
+		for (int i = 0; i < 3; i++)
+		{
 		//xNew += bc(i) * V(state.mesh.triangles(fid, i), 0);
-		xNew += bc(i) * img_V(img_F(fid, i), 0);
-		yNew += bc(i) * img_V(img_F(fid, i), 1);
-		zNew += 0;
+			xNew += bc(i) * img_V(img_F(fid, i), 0);
+			yNew += bc(i) * img_V(img_F(fid, i), 1);
+			zNew += 0;
+		}
+
+		state.mesh.moved.row(dragging_id) = RowVector3d(xNew, yNew, zNew);
+
+		viewer_control();
+
+		return true;
 	}
 
-	state.mesh.moved.row(dragging_id) = RowVector3d(xNew, yNew, zNew);
-
-	viewer_control();
-
-	return true;
-}
-
-bool UIState::block_mouse_behavior(int button)
-{
-	if (analysis_mode)
-		return false;
-
-	if (button == 0)
+	bool UIState::block_mouse_behavior(int button)
 	{
-		this->viewer.mouse_mode = igl::opengl::glfw::Viewer::MouseMode::None;
-		return true;
+		if (analysis_mode)
+			return false;
+
+		if (button == 0)
+		{
+			this->viewer.mouse_mode = igl::opengl::glfw::Viewer::MouseMode::None;
+			return true;
+		}
+
+		return false;
 	}
 
-	return false;
-}
-
-bool UIState::mouse_up(int button, int modifier)
-{
-	if (button != 0 || dragging_id == -1)
-		return false;
+	bool UIState::mouse_up(int button, int modifier)
+	{
+		if (button != 0 || dragging_id == -1)
+			return false;
 	//move_vertex = false;
-	dragging_id = -1;
+		dragging_id = -1;
 
-	state.reset_state();
-	viewer_control();
+		state.reset_state();
+		viewer_control();
 
-	return true;
-}
-
-bool UIState::mouse_down(int button, int modifier) {
-	if (ImGuiMenu::mouse_down(button, modifier)) {
 		return true;
 	}
 
+	bool UIState::mouse_down(int button, int modifier) {
+		if (ImGuiMenu::mouse_down(button, modifier)) {
+			return true;
+		}
 
-	if (button != 0)
-		return false;
+
+		if (button != 0)
+			return false;
 
 	//if (!select_region && !add_vertex && !delete_vertex && !make_vertex_good && !make_vertex_bad) {
 
@@ -148,20 +148,20 @@ bool UIState::mouse_down(int button, int modifier) {
 	//	return false;
 	//}
 
-	int fid;
-	Eigen::Vector3f bc;
-	double x = viewer.current_mouse_x;
-	double y = viewer.core.viewport(3) - viewer.current_mouse_y;
-	Eigen::MatrixXd V = t * state.mesh.points + (1 - t) * state.mesh.moved;
+		int fid;
+		Eigen::Vector3f bc;
+		double x = viewer.current_mouse_x;
+		double y = viewer.core.viewport(3) - viewer.current_mouse_y;
+		Eigen::MatrixXd V = t * state.mesh.points + (1 - t) * state.mesh.moved;
 
-	if (V.size() <= 0)
-		return block_mouse_behavior(button);
-
-	if (select_region)
-	{
-		if (!igl::unproject_onto_mesh(Eigen::Vector2f(x, y), viewer.core.view * viewer.core.model,
-			viewer.core.proj, viewer.core.viewport, V, state.mesh.triangles, fid, bc)) {
+		if (V.size() <= 0)
 			return block_mouse_behavior(button);
+
+		if (select_region)
+		{
+			if (!igl::unproject_onto_mesh(Eigen::Vector2f(x, y), viewer.core.view * viewer.core.model,
+				viewer.core.proj, viewer.core.viewport, V, state.mesh.triangles, fid, bc)) {
+				return block_mouse_behavior(button);
 		}
 
 		select_region = false;
@@ -307,7 +307,7 @@ void UIState::initialize() {
 	viewer.data_list[5].id = selected_id = 5;
 	viewer.data_list[6].id = physical_id = 6;
 
-	 assert(viewer.data_list.size() == physical_id + 1);
+	assert(viewer.data_list.size() == physical_id + 1);
 }
 
 void UIState::launch() {
@@ -438,13 +438,13 @@ bool UIState::key_pressed(unsigned int unicode_key, int modifiers)
 
 	switch (unicode_key)
 	{
-	case 'a':
-	case 'A':
+		case 'a':
+		case 'A':
 		delete_vertex = false;
 		add_vertex = !add_vertex;
 		return true;
-	case 'd':
-	case 'D':
+		case 'd':
+		case 'D':
 		add_vertex = false;
 		delete_vertex = !delete_vertex;
 		return true;
@@ -659,10 +659,10 @@ void UIState::load_image(std::string fname) {
 	int yMax = state.img.rows();
 	Eigen::MatrixXd V(4, 3);
 	V <<
-		0, 0, 0,
-		yMax, 0, 0,
-		yMax, xMax, 0,
-		0, xMax, 0;
+	0, 0, 0,
+	yMax, 0, 0,
+	yMax, xMax, 0,
+	0, xMax, 0;
 
 	viewer.core.align_camera_center(V);
 	compute_histogram();
@@ -689,20 +689,20 @@ void UIState::display_image()
 	// Replace the mesh with a triangulated square
 	img_V.resize(4, 3);
 	img_V <<
-		0, 0, 0,
-		yMax, 0, 0,
-		yMax, xMax, 0,
-		0, xMax, 0;
+	0, 0, 0,
+	yMax, 0, 0,
+	yMax, xMax, 0,
+	0, xMax, 0;
 	img_F.resize(2, 3);
 	img_F <<
-		0, 1, 2,
-		2, 3, 0;
+	0, 1, 2,
+	2, 3, 0;
 	Eigen::MatrixXd UV(4, 2);
 	UV <<
-		0, 0,
-		1, 0,
-		1, 1,
-		0, 1;
+	0, 0,
+	1, 0,
+	1, 1,
+	0, 1;
 
 	image_data().set_mesh(img_V, img_F);
 	image_data().set_uv(UV);
@@ -812,42 +812,42 @@ void UIState::viewer_control_2d()
 		//}
 		//else
 		//{
-			Eigen::MatrixXd C(V.rows(), 3);
-			C.col(0).setConstant(vertex_color(0));
-			C.col(1).setConstant(vertex_color(1));
-			C.col(2).setConstant(vertex_color(2));
-			if (color_code)
+		Eigen::MatrixXd C(V.rows(), 3);
+		C.col(0).setConstant(vertex_color(0));
+		C.col(1).setConstant(vertex_color(1));
+		C.col(2).setConstant(vertex_color(2));
+		if (color_code)
+		{
+			Eigen::VectorXd param(V.rows());
+			for (int i = 0; i < V.rows(); i++)
 			{
-				Eigen::VectorXd param(V.rows());
-				for (int i = 0; i < V.rows(); i++)
-				{
 					//param(i) = state.mesh.params.pval_Ar(i);
-					param(i) = std::sqrt(state.mesh.params.std_x(i)*state.mesh.params.std_x(i)+ state.mesh.params.std_y(i)*state.mesh.params.std_y(i));
-				}
-
-				igl::ColorMapType cm = igl::ColorMapType::COLOR_MAP_TYPE_INFERNO;
-				igl::colormap(cm,param, true, C);
+				param(i) = std::sqrt(state.mesh.params.std_x(i)*state.mesh.params.std_x(i)+ state.mesh.params.std_y(i)*state.mesh.params.std_y(i));
 			}
-			else
+
+			igl::ColorMapType cm = igl::ColorMapType::COLOR_MAP_TYPE_INFERNO;
+			igl::colormap(cm,param, true, C);
+		}
+		else
+		{
+			for (auto &r : state.regions)
 			{
-				for (auto &r : state.regions)
+
+				for (int i = 0; i < r.region_boundary.size(); ++i)
 				{
-
-					for (int i = 0; i < r.region_boundary.size(); ++i)
-					{
-						C.row(r.region_boundary(i)) = Eigen::RowVector3d(0, 0, 1);
-					}
-
-					for (int i = 0; i < r.region_interior.size(); ++i)
-					{
-						C.row(r.region_interior(i)) = Eigen::RowVector3d(0, 1, 0);
-					}
-
+					C.row(r.region_boundary(i)) = Eigen::RowVector3d(0, 0, 1);
 				}
+
+				for (int i = 0; i < r.region_interior.size(); ++i)
+				{
+					C.row(r.region_interior(i)) = Eigen::RowVector3d(0, 1, 0);
+				}
+
 			}
+		}
 
 
-			points_data().set_points(V, C);
+		points_data().set_points(V, C);
 
 		//}
 	}
@@ -953,29 +953,27 @@ void UIState::viewer_control_3d()
 		return;
 
 	Eigen::MatrixXd Vtmp = state.mesh3d.V / state.mesh.scaling;
-	Vtmp.col(2).array() -= 0.1;
-	physical_data().set_mesh(Vtmp, state.mesh3d.F);
 
 	Eigen::MatrixXd C, disp;
 	igl::ColorMapType cm;
 	cm = igl::ColorMapType::COLOR_MAP_TYPE_PARULA;
 
 
-	const auto &fun = show_traction_forces ? state.mesh3d.traction_forces : state.mesh3d.sol;
+	const auto &fun = show_traction_forces ? state.mesh3d.traction_forces : state.mesh3d.displacement;
 	switch (view_mode_3d) {
-	case NO_VIEW_SELECTED:
+		case NO_VIEW_SELECTED:
 		C = Eigen::RowVector3d(129. / 255, 236. / 255, 236. / 255);
 		break;
-	case X_DISP_SELECTED:
+		case X_DISP_SELECTED:
 		igl::colormap(cm, fun.col(0).eval(), true, C);
 		break;
-	case Y_DISP_SELECTED:
+		case Y_DISP_SELECTED:
 		igl::colormap(cm, fun.col(1).eval(), true, C);
 		break;
-	case Z_DISP_SELECTED:
+		case Z_DISP_SELECTED:
 		igl::colormap(cm, fun.col(2).eval(), true, C);
 		break;
-	case MAG_DISP_SELECTED:
+		case MAG_DISP_SELECTED:
 		igl::colormap(cm, fun.rowwise().norm().eval(), true, C);
 		break;
 	}
@@ -985,11 +983,21 @@ void UIState::viewer_control_3d()
 
 	MatrixXd normals;
 
-	igl::per_face_normals(Vtmp, state.mesh3d.F, normals);
-	normals *= -1;
-	physical_data().set_normals(normals);
+	if(state.image_from_pillars)
+	{
+		physical_data().set_points(Vtmp, C);
+	}
+	else
+	{
+		Vtmp.col(2).array() -= 0.1;
+		physical_data().set_mesh(Vtmp, state.mesh3d.F);
 
-	physical_data().set_colors(C);
+		igl::per_face_normals(Vtmp, state.mesh3d.F, normals);
+		normals *= -1;
+		physical_data().set_normals(normals);
+
+		physical_data().set_colors(C);
+	}
 
 	//physical_data().show_lines = false;
 	//fix_color(physical_data());
