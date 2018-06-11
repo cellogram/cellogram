@@ -373,6 +373,9 @@ bool UIState::load() {
 void UIState::detect_vertices() {
 	state.detect_vertices();
 
+	if (state.mesh.points.size() == 0)
+		return;
+
 	mesh_color.resize(1, 3);
 	mesh_color.row(0) = Eigen::RowVector3d(255, 255, 120) / 255.0;
 	//reset_viewer();

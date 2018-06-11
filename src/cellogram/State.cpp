@@ -143,6 +143,8 @@ namespace cellogram {
 	{
 		bool ok = read_image(fname, img);
 
+		//std::cout << std::setprecision(std::numeric_limits<long double>::digits10 + 1) << img << std::endl;
+
 		hull_vertices.resize(0, 0); //needed for lloyd
 		hull_faces.resize(0, 0);
 		hull_polygon.resize(0, 0);

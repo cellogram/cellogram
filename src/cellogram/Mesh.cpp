@@ -681,8 +681,10 @@ namespace cellogram {
 
 	void Mesh::compute_triangulation()
 	{
-		delaunay_triangulation(points, triangles);
+		if (points.size() == 0)
+			return;
 
+		delaunay_triangulation(points, triangles);
 		// Calculate the graph adjancency
 		adjacency_list(triangles, adj);
 		generate_vertex_to_tri();

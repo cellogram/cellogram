@@ -335,7 +335,7 @@ namespace cellogram {
 		region_faces.erase(std::unique(region_faces.begin(), region_faces.end()), region_faces.end());
 
 		region_triangles.resize(region_faces.size());
-		assert(region_triangles.size() > 0);
+		assert(region_triangles.size() > 0 && "Region size is zero, check for redundant vertices");
 
 		for (int j = 0; j < region_faces.size(); j++)
 		{

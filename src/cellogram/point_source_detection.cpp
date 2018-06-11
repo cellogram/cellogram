@@ -47,6 +47,25 @@ namespace cellogram {
 
 		}
 
+		void padarray_replicate(const Eigen::MatrixXd &img, int padSize, Eigen::MatrixXd &imgXT)
+		{
+			int ydim = img.rows();
+			int xdim = img.cols();
+
+			imgXT.resize(ydim + 2 * padSize, xdim + 2 * padSize);
+			imgXT.block(padSize, padSize, ydim, xdim) = img;
+
+			for (int i = 1; i <= padSize; i++)
+			{
+				imgXT.row(padSize - i) = imgXT.row(padSize);
+				imgXT.row(ydim + padSize + i - 1) = imgXT.row(ydim + padSize - 1);
+
+				imgXT.col(padSize - i) = imgXT.col(padSize);
+				imgXT.col(xdim + padSize + i - 1) = imgXT.col(xdim + padSize - 1);
+			}
+
+		}
+
 		Eigen::MatrixXd conv2(const Eigen::VectorXd &k1, const Eigen::VectorXd &k2, const Eigen::MatrixXd &imgXT)
 		{
 			int padSizeY = (k1.size() - 1) / 2;
@@ -260,6 +279,10 @@ namespace cellogram {
 			T.setZero();
 			df2.setZero();
 
+			////////////////////////////////////////////////
+			std::cout << "\n\n img \n"<< img << std::endl; // same after flipud
+			std::cout << "\n\n g2 \n" << g2 << std::endl;
+
 			for (int p = 0; p < np; p++)
 			{
 				// ignore points in border
@@ -361,6 +384,10 @@ namespace cellogram {
 		assert(img.minCoeff() >= 0);
 		assert(img.maxCoeff() <= 1);
 
+		Eigen::MatrixXd img_padded;
+		int padDim = 3 * std::round(sigma);
+		padarray_replicate(img.rowwise().reverse().transpose(), padDim, img_padded);
+
 		// Gaussian kernel
 		const int w = std::ceil(4 * sigma);
 		const int kernel_size = 2 * w + 1;
@@ -375,7 +402,7 @@ namespace cellogram {
 
 		// Convolutions
 		Eigen::MatrixXd imgXT;
-		padarray_symmetric(img.transpose(), w, imgXT);
+		padarray_symmetric(img_padded, w, imgXT);
 
 		Eigen::MatrixXd fg = conv2(g, g, imgXT);
 		Eigen::MatrixXd fu = conv2(u, u, imgXT);
@@ -504,12 +531,15 @@ namespace cellogram {
 		c_est_idx.conservativeResize(k);
 		s_est_idx = Eigen::VectorXd::Constant(k, sigma);
 
-		//std::cout << "lm:\n" << lm << std::endl;
-		//std::cout << "A_est_idx:\n" << A_est_idx << std::endl;
-		//std::cout << "c_est_idx:\n" << c_est_idx << std::endl;
-		//std::cout << "mask:\n" << mask << std::endl;
+		//std::cout << "img:\n" << img_padded << std::endl; // equal
+		std::cout << "allMax:\n" << allMax << std::endl; // equal after flipud
+		std::cout << "imgLM:\n" << imgLM << std::endl; // equal after flipud
+		std::cout << "A_est_idx:\n" << A_est_idx << std::endl; // exact same values, different ordering
+		std::cout << "c_est_idx:\n" << c_est_idx << std::endl; // exact same values, different ordering like A_est_idx
+		std::cout << "lm:\n" << lm << std::endl;
+		std::cout << "mask:\n" << mask << std::endl; //equal after flipud
 
-		fitGaussians2D(img.transpose(), lm, A_est_idx, s_est_idx, c_est_idx, mask, V, params); //inputs checked
+		fitGaussians2D(img_padded, lm, A_est_idx, s_est_idx, c_est_idx, mask, V, params); //inputs checked
 
 		// remove duplicates
 		const Eigen::MatrixXd tmpV = V;
