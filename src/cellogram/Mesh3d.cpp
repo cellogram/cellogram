@@ -5,6 +5,7 @@
 
 #include <igl/opengl/glfw/Viewer.h>
 #include <Mesh3D.hpp>
+#include <MeshUtils.hpp>
 
 #include <igl/copyleft/tetgen/tetrahedralize.h>
 #include <geogram/mesh/mesh_io.h>
@@ -196,6 +197,9 @@ namespace cellogram {
 		TV = (TV.rowwise() - pMin).array().rowwise() / (pMax - pMin).cwiseMax(1e-5).array();
 		std::cout << TV.rows() << " x " << TV.cols() << std::endl;
 
+		MmgOptions opt;
+		opt.optim = true;
+		opt.hmax = 0.1;
 		remesh_adaptive_3d(TV, TT, S, V, F, TT);
 
 		std::cout << V.rows() << " x " << V.cols() << std::endl;
@@ -207,6 +211,8 @@ namespace cellogram {
 
 		// compute_analysis(TV, TF, TT, mesh, thickness, lambda, mu, formulation, sol);
 		sol = V;
+
+		poly_fem::orient_closed_surface(V, F);
 
 		// V = TV;
 		// F = TF;

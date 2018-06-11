@@ -14,33 +14,6 @@ namespace GEO {
 
 namespace {
 
-/* See MmgTools documentation for interpreation
- *  https://www.mmgtools.org/mmg-remesher-try-mmg/mmg-remesher-options
- */
-struct MmgOptions {
-    /* Remeshing */
-    bool angle_detection = true;
-    double angle_value = 45.;
-    double hausd = 0.01;
-    double hsiz = 0.0; /* using hmin and hmax if set to 0 */
-    double hmin = 0.01;
-    double hmax = 2.;
-    double hgrad = 1.105171;
-    bool enable_anisotropy = false;
-    bool optim = false;
-    bool optimLES = false;
-    bool opnbdy = false;
-    bool noinsert = false;
-    bool noswap = false;
-    bool nomove = false;
-    bool nosurf = false;
-    std::string metric_attribute = "no_metric";
-    /* Level set extraction */
-    bool level_set = false;
-    std::string ls_attribute = "no_ls";
-    double ls_value = 0.;
-};
-
 bool mmg_to_geo(const MMG5_pMesh mmg, Mesh& M) {
     printf("converting MMG5_pMesh to GEO::Mesh .. \n");
     /* Notes:
@@ -180,7 +153,7 @@ bool mmg_wrapper_test_geo2mmg2geo(const Mesh& M_in, Mesh& M_out) {
     return ok;
 }
 
-bool mmgs_tri_remesh(const Mesh& M, Mesh& M_out, const MmgOptions& opt) {
+bool mmgs_tri_remesh(const Mesh& M, Mesh& M_out, const cellogram::MmgOptions& opt) {
     MMG5_pMesh mesh = NULL;
     MMG5_pSol met = NULL;
     bool ok = geo_to_mmg(M, mesh, met, false);
@@ -232,7 +205,7 @@ bool mmgs_tri_remesh(const Mesh& M, Mesh& M_out, const MmgOptions& opt) {
     return ok;
 }
 
-bool mmg3d_tet_remesh(const Mesh& M, Mesh& M_out, const MmgOptions& opt) {
+bool mmg3d_tet_remesh(const Mesh& M, Mesh& M_out, const cellogram::MmgOptions& opt) {
     MMG5_pMesh mesh = NULL;
     MMG5_pSol met = NULL;
     bool ok = geo_to_mmg(M, mesh, met, true);
@@ -288,7 +261,7 @@ bool mmg3d_tet_remesh(const Mesh& M, Mesh& M_out, const MmgOptions& opt) {
     return ok;
 }
 
-bool mmg3d_extract_iso(const Mesh& M, Mesh& M_out, const MmgOptions& opt) {
+bool mmg3d_extract_iso(const Mesh& M, Mesh& M_out, const cellogram::MmgOptions& opt) {
     if (!opt.level_set || opt.ls_attribute == "no_ls" || !M.vertices.attributes().is_defined(opt.ls_attribute)) {
         Logger::err("mmg3D_iso") << opt.ls_attribute << " is not a vertex attribute, cancel" << std::endl;
         return false;
@@ -389,14 +362,13 @@ bool mmg3d_extract_iso(const Mesh& M, Mesh& M_out, const MmgOptions& opt) {
 namespace cellogram {
 
 void remesh_adaptive_3d(const Eigen::MatrixXd &V, const Eigen::MatrixXi &T, const Eigen::VectorXd &S,
-	Eigen::MatrixXd &OV, Eigen::MatrixXi &OF, Eigen::MatrixXi &OT)
+	Eigen::MatrixXd &OV, Eigen::MatrixXi &OF, Eigen::MatrixXi &OT, MmgOptions opt)
 {
 	assert(V.rows() == S.size());
 	GEO::Mesh M, M_out;
 	to_geogram_mesh(V, Eigen::MatrixXi(0, 3), T, M);
 
 	// Remeshing options
-	GEO::MmgOptions opt;
 	opt.metric_attribute = "scalar";
 
 	GEO::Attribute<double> scalar(M.vertices.attributes(), opt.metric_attribute);
@@ -406,11 +378,6 @@ void remesh_adaptive_3d(const Eigen::MatrixXd &V, const Eigen::MatrixXi &T, cons
 
 	// Remesh volume
 	GEO::mmg3d_tet_remesh(M, M_out, opt);
-
-	// Flip output faces?
-	for (int f = 0; f < M_out.facets.nb(); ++f) {
-		M_out.facets.flip(f);
-	}
 
 	// Convert output
 	from_geogram_mesh(M_out, OV, OF, OT);
