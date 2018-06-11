@@ -46,6 +46,7 @@ add_application(pts_detection.cpp cellogram)
 add_application(tcdf_test.cpp tcdf)
 add_application(tif_test.cpp cellogram)
 add_application(image_test.cpp cellogram)
+add_application(adaptive_test.cpp cellogram)
 
 set_target_properties (optimizer PROPERTIES FOLDER test)
 set_target_properties (pts_detection PROPERTIES FOLDER test)
