@@ -23,7 +23,7 @@ public:
 	Eigen::VectorXi boundary; // list of vertices on the boundary
 
 	Eigen::MatrixXi triangles; // triangular mesh
-	std::vector<std::vector<int>> adj; // adjaceny list of triangluar mesh
+	std::vector<std::vector<int>> adj; // adjacency list of triangular mesh
 	std::vector<std::vector<int>> vertex_to_tri;
 
 	Eigen::Matrix<bool, Eigen::Dynamic, 1> solved_vertex;

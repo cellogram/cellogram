@@ -1,6 +1,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 #include "Mesh.h"
+
+#include <Eigen/Dense>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
@@ -12,9 +14,11 @@ namespace cellogram {
 
 		Eigen::MatrixXd V;
 		Eigen::MatrixXi F;
-		Eigen::MatrixXd sol;
+		Eigen::MatrixXd displacement;
+		Eigen::MatrixXd traction_forces;
 
-		void init(const Mesh &mesh, float padding_size, float thickness);
+		void init_nano_dots(const Mesh &mesh, float padding_size, float thickness, float lambda, float mu, const std::string &formulation);
+		void init_pillars(const Mesh &mesh, float eps, float I, float L);
 		void clear();
 	};
 

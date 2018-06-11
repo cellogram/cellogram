@@ -60,7 +60,7 @@ namespace cellogram {
 
 // -----------------------------------------------------------------------------
 
-void UIState::draw_viewer_menu() {
+	void UIState::draw_viewer_menu() {
 	//// Viewing options
 	//if (ImGui::CollapsingHeader("Viewing Options", ImGuiTreeNodeFlags_DefaultOpen)) {
 	//	if (ImGui::Button("Center object", ImVec2(-1, 0))) {
@@ -127,68 +127,68 @@ void UIState::draw_viewer_menu() {
 	//	ImGui::Checkbox("Show vertex labels", &(viewer.data().show_vertid));
 	//	ImGui::Checkbox("Show faces labels", &(viewer.data().show_faceid));
 	//}
-}
+	}
 
 // Demonstrate creating a fullscreen menu bar and populating it.
-void UIState::build_menu_bar()
-{
-	if (ImGui::BeginMainMenuBar())
+	void UIState::build_menu_bar()
 	{
-		if (ImGui::BeginMenu("File"))
+		if (ImGui::BeginMainMenuBar())
 		{
-			if (ImGui::MenuItem("Open", "Ctrl+O")) {
-				std::string fname = FileDialog::openFileName(DATA_DIR, { "*.png", "*.tif", "*.tiff" });
-				if (!fname.empty()) {
-					load_image(fname);
+			if (ImGui::BeginMenu("File"))
+			{
+				if (ImGui::MenuItem("Open", "Ctrl+O")) {
+					std::string fname = FileDialog::openFileName(DATA_DIR, { "*.png", "*.tif", "*.tiff" });
+					if (!fname.empty()) {
+						load_image(fname);
 
-					show_image = true;
+						show_image = true;
 
 					// update UI
-					viewer_control();
+						viewer_control();
+					}
 				}
-			}
-			
-			if (ImGui::MenuItem("Save", "Ctrl+S")) {
-				save();
-			}
-			if (ImGui::MenuItem("!!Save As..")) {}
-			ImGui::Separator();
-			if (ImGui::BeginMenu("Options"))
-			{
-				static bool enabled = true;
-				ImGui::MenuItem("Enabled", "", &enabled);
-				ImGui::BeginChild("child", ImVec2(0, 60), true);
-				for (int i = 0; i < 10; i++)
-					ImGui::Text("Scrolling Text %d", i);
-				ImGui::EndChild();
-				static float f = 0.5f;
-				static int n = 0;
-				static bool b = true;
-				ImGui::SliderFloat("Value", &f, 0.0f, 1.0f);
-				ImGui::InputFloat("Input", &f, 0.1f);
-				ImGui::Combo("Combo", &n, "Yes\0No\0Maybe\0\0");
-				ImGui::Checkbox("Check", &b);
-				ImGui::EndMenu();
-			}
-			if (ImGui::BeginMenu("Colors"))
-			{
-				float sz = ImGui::GetTextLineHeight();
-				for (int i = 0; i < ImGuiCol_COUNT; i++)
+
+				if (ImGui::MenuItem("Save", "Ctrl+S")) {
+					save();
+				}
+				if (ImGui::MenuItem("!!Save As..")) {}
+					ImGui::Separator();
+				if (ImGui::BeginMenu("Options"))
 				{
-					const char* name = ImGui::GetStyleColorName((ImGuiCol)i);
-					ImVec2 p = ImGui::GetCursorScreenPos();
-					ImGui::GetWindowDrawList()->AddRectFilled(p, ImVec2(p.x + sz, p.y + sz), ImGui::GetColorU32((ImGuiCol)i));
-					ImGui::Dummy(ImVec2(sz, sz));
-					ImGui::SameLine();
-					ImGui::MenuItem(name);
+					static bool enabled = true;
+					ImGui::MenuItem("Enabled", "", &enabled);
+					ImGui::BeginChild("child", ImVec2(0, 60), true);
+					for (int i = 0; i < 10; i++)
+						ImGui::Text("Scrolling Text %d", i);
+					ImGui::EndChild();
+					static float f = 0.5f;
+					static int n = 0;
+					static bool b = true;
+					ImGui::SliderFloat("Value", &f, 0.0f, 1.0f);
+					ImGui::InputFloat("Input", &f, 0.1f);
+					ImGui::Combo("Combo", &n, "Yes\0No\0Maybe\0\0");
+					ImGui::Checkbox("Check", &b);
+					ImGui::EndMenu();
 				}
-				ImGui::EndMenu();
-			}
+				if (ImGui::BeginMenu("Colors"))
+				{
+					float sz = ImGui::GetTextLineHeight();
+					for (int i = 0; i < ImGuiCol_COUNT; i++)
+					{
+						const char* name = ImGui::GetStyleColorName((ImGuiCol)i);
+						ImVec2 p = ImGui::GetCursorScreenPos();
+						ImGui::GetWindowDrawList()->AddRectFilled(p, ImVec2(p.x + sz, p.y + sz), ImGui::GetColorU32((ImGuiCol)i));
+						ImGui::Dummy(ImVec2(sz, sz));
+						ImGui::SameLine();
+						ImGui::MenuItem(name);
+					}
+					ImGui::EndMenu();
+				}
 			if (ImGui::BeginMenu("Disabled", false)) // Disabled
 			{
 				IM_ASSERT(0);
 			}
-			
+
 			if (ImGui::MenuItem("Quit", "Alt+F4")) { exit(0);  }
 			ImGui::EndMenu();
 		}
@@ -223,10 +223,10 @@ static const float MENU_Y = 190;
 static const float HEIGHT_FILE_MENU = 153;
 static const float HEIGHT_POINTS_MENU = 240;
 static const float HEIGHT_MESH_MENU = 350;
-static const float HEIGHT_ANALYSIS_MENU = 220;
+static const float HEIGHT_ANALYSIS_MENU = 315;
 static const float HEIGHT_HISTOGRAM = 263;
 static const float HEIGHT_LEGEND = 315;
-static const float HEIGHT_VIEW_OPTIONS = 400;
+static const float HEIGHT_VIEW_OPTIONS = 435;
 static const float HEIGHT_REGION_MENU = 328;
 static const float HEIGHT_REGION_TEXT = 125;
 
@@ -235,9 +235,9 @@ static float CLICKING_MENU_HEIGHT = 450;
 static float MENU_WIDTH = 300;
 
 static const ImGuiWindowFlags main_window_flags = ImGuiWindowFlags_NoScrollbar |
-	ImGuiWindowFlags_NoResize |
-	ImGuiWindowFlags_NoCollapse |
-	ImGuiWindowFlags_NoNav;
+ImGuiWindowFlags_NoResize |
+ImGuiWindowFlags_NoCollapse |
+ImGuiWindowFlags_NoNav;
 
 void UIState::draw_file_menu(int x, int y, int &y_return) {
 	float ui_scaling_factor = SCALING_FACTOR * hidpi_scaling() / pixel_ratio();
@@ -384,7 +384,7 @@ void UIState::draw_mesh_menu(int x, int y)
 
 	ImGui::Separator();
 #endif
-	
+
 	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.50f);
 	if (ImGui::Button("Lloyd", ImVec2((w - p), 0))) {
 		state.relax_with_lloyd();
@@ -402,7 +402,7 @@ void UIState::draw_mesh_menu(int x, int y)
 
 	if (ImGui::Checkbox("Fix", &state.fix_regular_regions))
 
-	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.50f);
+		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.50f);
 	if (ImGui::SliderFloat("energy", &state.energy_variation_from_mean, 0, 5)) {
 		selected_region = -1;
 		state.detect_bad_regions();
@@ -466,15 +466,49 @@ void UIState::draw_analysis_menu(int x, int y)
 
 	ImGui::Begin("Analysis", &show_analysis_menu, main_window_flags);
 
+	ImGui::Checkbox("Pillars", &state.image_from_pillars);
 
-	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.40f);
-	ImGui::InputFloat("Scaling [um/px]", &state.mesh.scaling, 0.01, 0, 3);
-	ImGui::InputFloat("Padding [um]", &state.padding_size, 1, 0, 0);
-	ImGui::InputFloat("Thickness [um]", &state.thickness, 1, 0, 0);
-	ImGui::PopItemWidth();
+	if(state.image_from_pillars)
+	{
+		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.40f);
+		ImGui::InputFloat("eps", &state.eps,  0.1, 0.01, 3);
+		ImGui::InputFloat("I [µm]", &state.I, 0.1, 0.01, 3);
+		ImGui::InputFloat("L [µm]", &state.L, 0.1, 0.01, 3);
 
-	if (ImGui::Button("Init 3D Mesh")) {
-		state.init_3d_mesh();
+		ImGui::PopItemWidth();
+
+		if (ImGui::Button("Compute")) {
+			state.init_3d_mesh();
+			analysis_mode = true;
+			show_mesh = false;
+			show_image = false;
+			show_mesh_fill = false;
+			view_mode_3d = MAG_DISP_SELECTED;
+
+			viewer_control();
+		}
+	}
+	else
+	{
+		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.40f);
+		ImGui::InputFloat("Scaling [µm/px]", &state.mesh.scaling, 0.01, 0.001, 3);
+		ImGui::InputFloat("Padding [µm]", &state.padding_size, 1, 0, 0);
+		ImGui::InputFloat("Thickness [µm]", &state.thickness, 1, 0, 0);
+
+		ImGui::InputFloat("lambda", &state.lambda, 0.1, 0.01, 3);
+		ImGui::InputFloat("mu", &state.mu, 0.1, 0.01, 3);
+		ImGui::PopItemWidth();
+
+		if (ImGui::Button("Init 3D Mesh")) {
+			state.init_3d_mesh();
+			analysis_mode = true;
+			show_mesh = false;
+			show_image = false;
+			show_mesh_fill = false;
+			view_mode_3d = MAG_DISP_SELECTED;
+
+			viewer_control();
+		}
 	}
 
 	ImGui::End();
@@ -494,7 +528,7 @@ void UIState::draw_histogram(int x, int y)
 	ImGui::Begin("Histogram", &show_histogram, main_window_flags);
 	const float hist_w = ImGui::GetWindowWidth() * 0.75f -2;
 	ImGui::PushItemWidth(hist_w+2);
-	
+
 	static float min_img = 0;
 	static float max_img = 1;
 
@@ -578,59 +612,64 @@ void UIState::draw_view_options(int x, int y) {
 	ImGui::SetNextWindowPos(ImVec2(x, y), ImGuiCond_Always);
 	ImGui::SetNextWindowSize(ImVec2(menu_width, height_view_options), ImGuiSetCond_FirstUseEver);
 	ImGui::Begin(
-	"View settings", nullptr,
-	ImGuiWindowFlags_NoSavedSettings
-	);
+		"View settings", nullptr,
+		ImGuiWindowFlags_NoSavedSettings
+		);
 
 	if (ImGui::Checkbox("", &show_mesh)) {
 		viewer_control();
 	}
 	ImGui::SameLine();
 	if (ImGui::ColorEdit4("Mesh", points_data().line_color.data(),
-	ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueWheel)) {
-	viewer_control();
-	}
+		ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueWheel)) {
+		viewer_control();
+}
 
-	if (ImGui::Checkbox("Show hull", &show_hull)) {
+if (ImGui::Checkbox("Show hull", &show_hull)) {
 	viewer_control();
-	}
-	if (ImGui::Checkbox("Points", &show_points)) {
+}
+if (ImGui::Checkbox("Points", &show_points)) {
 	viewer_control();
-	}
-	ImGui::SameLine();
-	if (ImGui::Checkbox("Coded", &color_code)) {
-		viewer_control();
-	}
+}
+ImGui::SameLine();
+if (ImGui::Checkbox("Coded", &color_code)) {
+	viewer_control();
+}
 
-	if (ImGui::Checkbox("Mesh Fill", &show_mesh_fill)) {
+if (ImGui::Checkbox("Mesh Fill", &show_mesh_fill)) {
 	viewer_control();
-	}
-	if (ImGui::Checkbox("Show image", &show_image)) {
+}
+if (ImGui::Checkbox("Show image", &show_image)) {
 	viewer_control();
-	}
-	if (ImGui::Checkbox("Show matching", &show_matching)) {
+}
+if (ImGui::Checkbox("Show matching", &show_matching)) {
 	viewer_control();
-	}
-	if (ImGui::Checkbox("Bad regions", &show_bad_regions)) {
+}
+if (ImGui::Checkbox("Bad regions", &show_bad_regions)) {
 	viewer_control();
-	}
-	if (ImGui::Checkbox("Selected region", &show_selected_region)) {
-		viewer_control();
-	}
+}
+if (ImGui::Checkbox("Selected region", &show_selected_region)) {
+	viewer_control();
+}
 
-	if (ImGui::Checkbox("", &analysis_mode)) {
-		if (!analysis_mode)
-			viewer.core.trackball_angle = Eigen::Quaternionf::Identity();
-		viewer_control();
-	}
-	ImGui::SameLine();
-	
-	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.30f);
-	if (ImGui::Combo("3D Mode", &view_mode_3d, " \0u\0v\0w\0mag")) {
-		viewer_control();
-	}
-	ImGui::PopItemWidth();
-	ImGui::End();
+if (ImGui::Checkbox(" ", &analysis_mode)) {
+	if (!analysis_mode)
+		viewer.core.trackball_angle = Eigen::Quaternionf::Identity();
+	viewer_control();
+}
+ImGui::SameLine();
+
+ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.30f);
+if (ImGui::Combo("3D Mode", &view_mode_3d, " \0u\0v\0w\0mag")) {
+	viewer_control();
+}
+
+if (ImGui::Checkbox("Traction forces", &show_traction_forces)) {
+	viewer_control();
+}
+
+ImGui::PopItemWidth();
+ImGui::End();
 }
 
 void UIState::draw_region_menu(int x, int y) {
@@ -811,7 +850,7 @@ void UIState::draw_custom_window() {
 		if (selected_region >= 0)
 			y += height_region_text;
 	}
-	
+
 
 	if (delete_vertex || add_vertex)
 	{

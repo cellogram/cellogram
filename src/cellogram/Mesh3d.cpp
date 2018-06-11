@@ -1,11 +1,11 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "Mesh3d.h"
 #include "Mesh.h"
-#include <Eigen/Dense>
-
+#include "remesh_adaptive.h"
 
 #include <igl/opengl/glfw/Viewer.h>
 #include <Mesh3D.hpp>
+#include <MeshUtils.hpp>
 
 #include <igl/copyleft/tetgen/tetrahedralize.h>
 #include <geogram/mesh/mesh_io.h>
@@ -18,7 +18,9 @@ namespace cellogram {
 
 	namespace
 	{
-		void compute_analysis(const Eigen::MatrixXd &vertices, const Eigen::MatrixXi &tets, const Mesh &mesh, float thickness, Eigen::MatrixXd &vals)
+		void compute_analysis(const Eigen::MatrixXd &vertices, const Eigen::MatrixXi &faces, const Eigen::MatrixXi &tets, const Mesh &mesh,
+			float thickness, float lambda, float mu, const std::string &formulation,
+			Eigen::MatrixXd &vals, Eigen::MatrixXd &traction_forces)
 		{
 			assert(tets.cols() == 4);
 			assert(vertices.cols() == 3);
@@ -44,13 +46,13 @@ namespace cellogram {
 				{"problem", "Custom"},
 				{"normalize_mesh", false},
 
-				{"tensor_formulation", "LinearElasticity"},
+				{"tensor_formulation", formulation},
 
 				{"discr_order", 1},
 
 				{"params", {
-					{"lambda", 0.75},
-					{"mu", 0.375},
+					{"lambda", lambda},
+					{"mu", mu},
 				}},
 			};
 
@@ -93,10 +95,13 @@ namespace cellogram {
 
 			state.solve_problem();
 
-			// state.interpolate_function(vertices.rows(), state.sol, vals);
+			state.interpolate_boundary_function(vertices, faces, state.sol, vals);
+			state.interpolate_boundary_tensor_function(vertices, faces, state.sol, traction_forces);
 			// vals = Eigen::Map<Eigen::MatrixXd>(state.sol.data(), 3, vertices.rows());
-			vals = Eigen::Map<Eigen::MatrixXd>(state.rhs.data(), 3, vertices.rows());
-			vals = vals.transpose().eval();
+			// vals = Eigen::Map<Eigen::MatrixXd>(state.rhs.data(), 3, vertices.rows());
+			// vals = vals.transpose().eval();
+			// std::cout<<vals<<std::endl;
+			// std::cout<<state.sol<<std::endl;
 
 
 			// auto &tmp_mesh = *dynamic_cast<poly_fem::Mesh3D *>(state.mesh.get());
@@ -127,8 +132,21 @@ namespace cellogram {
 		}
 	}
 
-	void Mesh3d::init(const Mesh &mesh, float padding_size, float thickness)
+	void Mesh3d::init_pillars(const Mesh &mesh, float eps, float I, float L)
 	{
+		clear();
+
+		displacement = (mesh.detected - mesh.points) * mesh.scaling;
+		V = mesh.points * mesh.scaling;
+
+		const float scaling = 3*eps * I /(L*L*L);
+		traction_forces = scaling * displacement;
+	}
+
+	void Mesh3d::init_nano_dots(const Mesh &mesh, float padding_size, float thickness, float lambda, float mu, const std::string &formulation)
+	{
+		clear();
+
 		Eigen::Vector2d max_dim;
 		Eigen::Vector2d min_dim;
 		mesh.get_physical_bounding_box(min_dim, max_dim);
@@ -174,15 +192,46 @@ namespace cellogram {
 		Eigen::MatrixXd TV;
 		Eigen::MatrixXi TT;
 		Eigen::MatrixXi TF;
+#ifdef NDEBUG
 		igl::copyleft::tetgen::tetrahedralize(V, F, "Qpq1.414a100", TV, TT, TF);
+#else
+		igl::copyleft::tetgen::tetrahedralize(V, F, "Qpq1.414a1000", TV, TT, TF);
+#endif
 
-		std::cout<<"n tets: "<<TF.rows()<<std::endl;
+		// std::cout<<"n tets: "<<TF.rows()<<std::endl;
 
-		compute_analysis(TV, TT, mesh, thickness, sol);
+		// // std::cout << V << std::endl;
+		// Eigen::VectorXd S(TV.rows());
+		// for (int v = 0; v < TV.rows(); ++v) {
+		// 	Eigen::RowVector3d p = TV.row(v);
+		// 	S(v) = 0.05 - 0.045 * std::abs(std::sin((p(0) - xMin) / (xMax - xMin) * 2.0 * M_PI)) * (p(2) - zMin) / (zMax - zMin);
+		// }
+		// Eigen::RowVector3d pMin = V.row(0);
+		// Eigen::RowVector3d pMax = V.row(6);
 
-		F = TF;
+		// std::cout << TV.rows() << " x " << TV.cols() << std::endl;
+		// TV = (TV.rowwise() - pMin).array().rowwise() / (pMax - pMin).cwiseMax(1e-5).array();
+		// std::cout << TV.rows() << " x " << TV.cols() << std::endl;
+
+		// MmgOptions opt;
+		// opt.optim = true;
+		// opt.hmax = 0.1;
+		// remesh_adaptive_3d(TV, TT, S, V, F, TT);
+
+		// std::cout << V.rows() << " x " << V.cols() << std::endl;
+		// V = ((V.array().rowwise() * (pMax - pMin).array()).rowwise() + pMin.array()).eval();
+		// std::cout << V.rows() << " x " << V.cols() << std::endl;
+
+		// std::cout << "nf: " << F.rows() << std::endl;
+		// std::cout << "nt: " << TT.rows() << std::endl;
+
+		// poly_fem::orient_closed_surface(V, F);
+
+		compute_analysis(TV, TF, TT, mesh, thickness, lambda, mu, formulation, displacement, traction_forces);
+		// sol = V;
+
 		V = TV;
-
+		F = TF;
 	}
 
 	void Mesh3d::clear()

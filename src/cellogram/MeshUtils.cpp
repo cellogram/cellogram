@@ -16,7 +16,7 @@ void to_geogram_mesh(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, GEO::Me
 		GEO::vec3 &p = M.vertices.point(i);
 		p[0] = V(i, 0);
 		p[1] = V(i, 1);
-		p[2] = V(i, 2);
+		p[2] = (V.cols() == 2 ? 0 : V(i, 2));
 	}
 	// Setup faces
 	if (F.cols() == 3) {
@@ -24,13 +24,31 @@ void to_geogram_mesh(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, GEO::Me
 	} else if (F.cols() == 4) {
 		M.facets.create_quads((int) F.rows());
 	} else {
-		throw std::runtime_error("Mesh format not supported");
+		throw std::runtime_error("Mesh faces not supported");
 	}
 	for (int c = 0; c < (int) M.facets.nb(); ++c) {
 		for (int lv = 0; lv < F.cols(); ++lv) {
 			M.facets.set_vertex(c, lv, F(c, lv));
 		}
 	}
+    M.facets.connect();
+}
+
+// -----------------------------------------------------------------------------
+
+void to_geogram_mesh(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, const Eigen::MatrixXi &T, GEO::Mesh &M) {
+	to_geogram_mesh(V, F, M);
+	if (T.cols() == 4) {
+		M.cells.create_tets((int) T.rows());
+	} else {
+		throw std::runtime_error("Mesh cells not supported");
+	}
+	for (int c = 0; c < (int) M.cells.nb(); ++c) {
+		for (int lv = 0; lv < T.cols(); ++lv) {
+			M.cells.set_vertex(c, lv, T(c, lv));
+		}
+	}
+	M.cells.connect();
 }
 
 // -----------------------------------------------------------------------------

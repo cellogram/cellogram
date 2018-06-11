@@ -11,13 +11,23 @@
 namespace cellogram {
 
 ///
-/// @brief      { Converts a triangle mesh to a Geogram mesh }
+/// @brief      { Converts a surface mesh to a Geogram mesh }
 ///
 /// @param[in]  V     { #V x 3 input mesh vertices }
-/// @param[in]  F     { #F x 3 input mesh surface }
+/// @param[in]  F     { #F x (3|4) input mesh surface (triangles or quads) }
 /// @param[out] M     { Output Geogram mesh }
 ///
 void to_geogram_mesh(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, GEO::Mesh &M);
+
+///
+/// @brief      { Converts a tet-mesh to a Geogram mesh }
+///
+/// @param[in]  V     { #V x 3 input mesh vertices }
+/// @param[in]  F     { #F x (3|4) input mesh surface (triangles or quads) }
+/// @param[in]  T     { #F x 4 input mesh tetrahedra }
+/// @param[out] M     { Output Geogram mesh }
+///
+void to_geogram_mesh(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, const Eigen::MatrixXi &T, GEO::Mesh &M);
 
 ///
 /// @brief      { Extract simplices from a Geogram mesh }

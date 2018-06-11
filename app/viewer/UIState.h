@@ -2,6 +2,9 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 #include "cellogram/State.h"
+
+#include <Eigen/Dense>
+
 #include <igl/colormap.h>
 #include <igl/opengl/glfw/Viewer.h>
 #include <igl/opengl/glfw/imgui/ImGuiMenu.h>
@@ -53,6 +56,7 @@ public:
 	Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> texture;
 	Eigen::RowVector3f vertex_color;
 	Eigen::MatrixXd mesh_color;
+
 	bool show_mesh = true;
 	bool show_hull = false;
 	//bool image_loaded = false;
@@ -64,6 +68,7 @@ public:
 	bool color_code = false;
 	bool show_selected_region = true;
 	bool analysis_mode = false;
+	bool show_traction_forces = true;
 	
 	// 3d visualizer
 	int view_mode_3d = 0;

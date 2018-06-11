@@ -5,14 +5,12 @@
 #include <igl/edges.h>
 #include <igl/boundary_loop.h>
 #include <igl/triangle/cdt.h>
+#include <igl/triangle/triangulate.h>
+#include <geogram/basic/geometry.h>
 #include <algorithm>
 #include <numeric>
 #include <stack>
-#include <geogram/basic/geometry.h>
-
-#include <igl/triangle/triangulate.h>
 #undef IGL_STATIC_LIBRARY
-
 #include <igl/edge_lengths.h>
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -193,7 +191,7 @@ void triangulate_polygon(const Eigen::MatrixXd &P, Eigen::MatrixXd &V, Eigen::Ma
 		E.row(i) << i, (i+1)%n;
 	}
 	//igl::triangle::cdt(PV, E, "Q", V, F, WE, J);
-	igl::triangle::triangulate(PV, E, Eigen::MatrixXd(0, 2),"Q", V, F);
+	igl::triangle::triangulate(PV, E, Eigen::MatrixXd(0, 2), "Q", V, F);
 
 	if (P.cols() == 3) {
 		V.conservativeResize(V.rows(), 3);

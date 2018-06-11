@@ -1,5 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "delaunay.h"
+#include <igl/triangle/triangulate.h>
+#include <igl/write_triangle_mesh.h>
 #include <geogram/mesh/mesh.h>
 #include <geogram/delaunay/delaunay.h>
 ////////////////////////////////////////////////////////////////////////////////
@@ -8,41 +10,9 @@ namespace cellogram {
 
 // -----------------------------------------------------------------------------
 
-namespace {
-
-std::vector<std::pair<int, int>> delaunay_edges(const GEO::Delaunay_var &delaunay) {
-	const int dim = delaunay->dimension();
-
-	std::vector<std::pair<int, int>> edges;
-	for (int c = 0; c < (int) delaunay->nb_cells(); ++c) {
-		for (int lx = 0; lx < dim+1; ++lx) {
-			GEO::signed_index_t v1 = delaunay->cell_vertex(c, lx);
-			// Triangles in 2D, Tets in 3D -> Each vertex is connected to every
-			// other vertex in the cell
-			for (int ly = lx+1; ly < dim+1; ++ly) {
-				GEO::signed_index_t v2 = delaunay->cell_vertex(c, ly);
-				edges.emplace_back(v1, v2);
-				edges.emplace_back(v2, v1);
-			}
-			// tfm::printf("delaunay | e: %s - %s\n", v1, v2);
-		}
-	}
-
-	// Remove duplicates
-	std::sort(edges.begin(), edges.end());
-	auto it = std::unique(edges.begin(), edges.end());
-	edges.resize(std::distance(edges.begin(), it));
-
-	return edges;
-}
-
-} // anonymous namespace
-
-// -----------------------------------------------------------------------------
-
 void delaunay_triangulation(const Eigen::MatrixXd &V, Eigen::MatrixXi &F) {
 	F.resize(0, 0);
-	assert(V.cols() == 2 | V.cols() == 3);
+	assert(V.cols() == 2 || V.cols() == 3);
 	int n = (int) V.rows();
 	const Eigen::MatrixXd P = V.leftCols<2>().transpose();
 
@@ -63,7 +33,20 @@ void delaunay_triangulation(const Eigen::MatrixXd &V, Eigen::MatrixXi &F) {
 // -----------------------------------------------------------------------------
 
 void constrained_delaunay_triangulation(const Eigen::MatrixXd &V, const Eigen::VectorXi &L, Eigen::MatrixXi &F) {
-	// TODO
+	if (L.rows() == 0) {
+		assert(false);
+		delaunay_triangulation(V, F);
+		return;
+	}
+	Eigen::MatrixXd OV, IV = V.leftCols<2>();
+	Eigen::MatrixXi E;
+	E.resize(L.rows(), 2);
+	int m = (int) L.rows();
+	E.col(0) = L;
+	E.col(1).head(m-1) = L.tail(m-1);
+	E.col(1).tail<1>() = L.head<1>();
+	igl::triangle::triangulate(IV, E, Eigen::MatrixXd(0, 2), "QpYY", OV, F);
+	assert(OV.rows() == V.rows());
 }
 
 // -----------------------------------------------------------------------------
