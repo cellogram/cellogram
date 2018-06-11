@@ -961,26 +961,27 @@ void UIState::viewer_control_3d()
 	cm = igl::ColorMapType::COLOR_MAP_TYPE_PARULA;
 
 
+	const auto &fun = show_traction_forces ? state.mesh3d.traction_forces : state.mesh3d.sol;
 	switch (view_mode_3d) {
 	case NO_VIEW_SELECTED:
 		C = Eigen::RowVector3d(129. / 255, 236. / 255, 236. / 255);
 		break;
 	case X_DISP_SELECTED:
-		igl::colormap(cm, state.mesh3d.sol.col(0).eval(), true, C);
+		igl::colormap(cm, fun.col(0).eval(), true, C);
 		break;
 	case Y_DISP_SELECTED:
-		igl::colormap(cm, state.mesh3d.sol.col(1).eval(), true, C);
+		igl::colormap(cm, fun.col(1).eval(), true, C);
 		break;
 	case Z_DISP_SELECTED:
-		igl::colormap(cm, state.mesh3d.sol.col(2).eval(), true, C);
+		igl::colormap(cm, fun.col(2).eval(), true, C);
 		break;
 	case MAG_DISP_SELECTED:
-		igl::colormap(cm, state.mesh3d.sol.rowwise().norm().eval(), true, C);
+		igl::colormap(cm, fun.rowwise().norm().eval(), true, C);
 		break;
 	}
 
 	//std::cout << C << std::endl;
-	//std::cout << "\n\ncol\n" << state.mesh3d.sol.col(0).eval() << std::endl;
+	//std::cout << "\n\ncol\n" << fun.col(0).eval() << std::endl;
 
 	MatrixXd normals;
 

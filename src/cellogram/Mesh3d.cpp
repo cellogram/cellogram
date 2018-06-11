@@ -18,7 +18,9 @@ namespace cellogram {
 
 	namespace
 	{
-		void compute_analysis(const Eigen::MatrixXd &vertices, const Eigen::MatrixXi &faces, const Eigen::MatrixXi &tets, const Mesh &mesh, float thickness, float lambda, float mu, const std::string &formulation, Eigen::MatrixXd &vals)
+		void compute_analysis(const Eigen::MatrixXd &vertices, const Eigen::MatrixXi &faces, const Eigen::MatrixXi &tets, const Mesh &mesh,
+			float thickness, float lambda, float mu, const std::string &formulation,
+			Eigen::MatrixXd &vals, Eigen::MatrixXd &traction_forces)
 		{
 			assert(tets.cols() == 4);
 			assert(vertices.cols() == 3);
@@ -94,6 +96,7 @@ namespace cellogram {
 			state.solve_problem();
 
 			state.interpolate_boundary_function(vertices, faces, state.sol, vals);
+			state.interpolate_boundary_tensor_function(vertices, faces, state.sol, traction_forces);
 			// vals = Eigen::Map<Eigen::MatrixXd>(state.sol.data(), 3, vertices.rows());
 			// vals = Eigen::Map<Eigen::MatrixXd>(state.rhs.data(), 3, vertices.rows());
 			// vals = vals.transpose().eval();
@@ -182,40 +185,40 @@ namespace cellogram {
 		igl::copyleft::tetgen::tetrahedralize(V, F, "Qpq1.414a1000", TV, TT, TF);
 #endif
 
-		std::cout<<"n tets: "<<TF.rows()<<std::endl;
+		// std::cout<<"n tets: "<<TF.rows()<<std::endl;
 
-		std::cout << V << std::endl;
-		Eigen::VectorXd S(TV.rows());
-		for (int v = 0; v < TV.rows(); ++v) {
-			Eigen::RowVector3d p = TV.row(v);
-			S(v) = 0.05 - 0.045 * std::abs(std::sin((p(0) - xMin) / (xMax - xMin) * 2.0 * M_PI)) * (p(2) - zMin) / (zMax - zMin);
-		}
-		Eigen::RowVector3d pMin = V.row(0);
-		Eigen::RowVector3d pMax = V.row(6);
+		// // std::cout << V << std::endl;
+		// Eigen::VectorXd S(TV.rows());
+		// for (int v = 0; v < TV.rows(); ++v) {
+		// 	Eigen::RowVector3d p = TV.row(v);
+		// 	S(v) = 0.05 - 0.045 * std::abs(std::sin((p(0) - xMin) / (xMax - xMin) * 2.0 * M_PI)) * (p(2) - zMin) / (zMax - zMin);
+		// }
+		// Eigen::RowVector3d pMin = V.row(0);
+		// Eigen::RowVector3d pMax = V.row(6);
 
-		std::cout << TV.rows() << " x " << TV.cols() << std::endl;
-		TV = (TV.rowwise() - pMin).array().rowwise() / (pMax - pMin).cwiseMax(1e-5).array();
-		std::cout << TV.rows() << " x " << TV.cols() << std::endl;
+		// std::cout << TV.rows() << " x " << TV.cols() << std::endl;
+		// TV = (TV.rowwise() - pMin).array().rowwise() / (pMax - pMin).cwiseMax(1e-5).array();
+		// std::cout << TV.rows() << " x " << TV.cols() << std::endl;
 
-		MmgOptions opt;
-		opt.optim = true;
-		opt.hmax = 0.1;
-		remesh_adaptive_3d(TV, TT, S, V, F, TT);
+		// MmgOptions opt;
+		// opt.optim = true;
+		// opt.hmax = 0.1;
+		// remesh_adaptive_3d(TV, TT, S, V, F, TT);
 
-		std::cout << V.rows() << " x " << V.cols() << std::endl;
-		V = ((V.array().rowwise() * (pMax - pMin).array()).rowwise() + pMin.array()).eval();
-		std::cout << V.rows() << " x " << V.cols() << std::endl;
+		// std::cout << V.rows() << " x " << V.cols() << std::endl;
+		// V = ((V.array().rowwise() * (pMax - pMin).array()).rowwise() + pMin.array()).eval();
+		// std::cout << V.rows() << " x " << V.cols() << std::endl;
 
-		std::cout << "nf: " << F.rows() << std::endl;
-		std::cout << "nt: " << TT.rows() << std::endl;
+		// std::cout << "nf: " << F.rows() << std::endl;
+		// std::cout << "nt: " << TT.rows() << std::endl;
 
-		// compute_analysis(TV, TF, TT, mesh, thickness, lambda, mu, formulation, sol);
-		sol = V;
+		// poly_fem::orient_closed_surface(V, F);
 
-		poly_fem::orient_closed_surface(V, F);
+		compute_analysis(TV, TF, TT, mesh, thickness, lambda, mu, formulation, sol, traction_forces);
+		// sol = V;
 
-		// V = TV;
-		// F = TF;
+		V = TV;
+		F = TF;
 	}
 
 	void Mesh3d::clear()
