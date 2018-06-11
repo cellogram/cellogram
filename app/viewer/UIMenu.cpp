@@ -479,11 +479,11 @@ void UIState::draw_analysis_menu(int x, int y)
 
 		if (ImGui::Button("Compute")) {
 			state.init_3d_mesh();
-			// analysis_mode = true;
+			analysis_mode = true;
 			show_mesh = false;
 			show_image = false;
 			show_mesh_fill = false;
-			// view_mode_3d = MAG_DISP_SELECTED;
+			view_mode_3d = MAG_DISP_SELECTED;
 
 			viewer_control();
 		}
