@@ -133,6 +133,11 @@ bool geo_to_mmg(const Mesh& M, MMG5_pMesh& mmg, MMG5_pSol& sol, bool volume_mesh
     return true;
 }
 
+void mmg2d_free(MMG5_pMesh mmg, MMG5_pSol sol){
+    MMG2D_Free_all(MMG5_ARG_start,
+            MMG5_ARG_ppMesh,&mmg,MMG5_ARG_ppMet,&sol, MMG5_ARG_end);
+}
+
 void mmg3d_free(MMG5_pMesh mmg, MMG5_pSol sol){
     MMG3D_Free_all(MMG5_ARG_start,
             MMG5_ARG_ppMesh,&mmg,MMG5_ARG_ppMet,&sol, MMG5_ARG_end);
@@ -150,6 +155,60 @@ bool mmg_wrapper_test_geo2mmg2geo(const Mesh& M_in, Mesh& M_out) {
     if (!ok) return false;
     ok = mmg_to_geo(mmg, M_out);
     mmg3d_free(mmg, sol);
+    return ok;
+}
+
+bool mmg2d_tri_remesh(const Mesh& M, Mesh& M_out, const cellogram::MmgOptions& opt) {
+    MMG5_pMesh mesh = NULL;
+    MMG5_pSol met = NULL;
+    bool ok = geo_to_mmg(M, mesh, met, false);
+    if (!ok) {
+        Logger::err("mmg2d_remesh") << "failed to convert mesh to MMG5_pMesh" << std::endl;
+        mmg2d_free(mesh, met);
+        return false;
+    }
+
+    /* Set remeshing options */
+    MMG2D_Set_dparameter(mesh, met, MMG2D_DPARAM_angleDetection, opt.angle_value);
+    if (opt.enable_anisotropy) {
+        MMG2D_Set_solSize(mesh,met,MMG5_Vertex,0,MMG5_Tensor);
+    }
+    if (opt.hsiz == 0. || opt.metric_attribute != "no_metric") {
+        MMG2D_Set_dparameter(mesh, met, MMG2D_DPARAM_hmin, opt.hmin);
+        MMG2D_Set_dparameter(mesh, met, MMG2D_DPARAM_hmax, opt.hmax);
+    } else {
+        met->np = 0;
+        MMG2D_Set_dparameter(mesh, met, MMG2D_DPARAM_hsiz, opt.hsiz);
+    }
+    MMG2D_Set_dparameter(mesh, met, MMG2D_DPARAM_hausd, opt.hausd);
+    MMG2D_Set_dparameter(mesh, met, MMG2D_DPARAM_hgrad, opt.hgrad);
+    MMG2D_Set_iparameter(mesh, met, MMG2D_IPARAM_angle, int(opt.angle_detection));
+    MMG2D_Set_iparameter(mesh, met, MMG2D_IPARAM_noswap, int(opt.noswap));
+    MMG2D_Set_iparameter(mesh, met, MMG2D_IPARAM_noinsert, int(opt.noinsert));
+    MMG2D_Set_iparameter(mesh, met, MMG2D_IPARAM_nomove, int(opt.nomove));
+    MMG2D_Set_iparameter(mesh, met, MMG2D_IPARAM_nosurf, int(opt.nosurf));
+    MMG2D_Set_iparameter(mesh, met, MMG2D_IPARAM_optim, int(opt.optim));
+    if (opt.metric_attribute != "no_metric") {
+        if (!M.vertices.attributes().is_defined(opt.metric_attribute)) {
+            Logger::err("mmg2D_remesh") << opt.metric_attribute << " is not a vertex attribute, cancel" << std::endl;
+            return false;
+        }
+        GEO::Attribute<double> h_local(M.vertices.attributes(), opt.metric_attribute);
+        for(uint v = 0; v < M.vertices.nb(); ++v) {
+            met->m[v+1] = h_local[v];
+        }
+    }
+
+    int ier = MMG2D_mmg2dlib(mesh,met);
+    if (ier != MMG5_SUCCESS) {
+        Logger::err("mmg2d_remesh") << "failed to remesh" << std::endl;
+        mmg2d_free(mesh, met);
+        return false;
+    }
+
+    ok = mmg_to_geo(mesh, M_out);
+
+    mmg2d_free(mesh, met);
     return ok;
 }
 
@@ -361,9 +420,34 @@ bool mmg3d_extract_iso(const Mesh& M, Mesh& M_out, const cellogram::MmgOptions& 
 
 namespace cellogram {
 
+void remesh_adaptive_2d(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, const Eigen::VectorXd &S,
+	Eigen::MatrixXd &OV, Eigen::MatrixXi &OF, MmgOptions opt)
+{
+	assert(V.cols() == 2 || V.cols() == 3);
+	assert(V.rows() == S.size());
+	GEO::Mesh M, M_out;
+	to_geogram_mesh(V, F, M);
+
+	// Remeshing options
+	opt.metric_attribute = "scalar";
+
+	GEO::Attribute<double> scalar(M.vertices.attributes(), opt.metric_attribute);
+	for (int v = 0; v < M.vertices.nb(); ++v) {
+		scalar[v] = S(v);
+	}
+
+	// Remesh surface
+	GEO::mmg2d_tri_remesh(M, M_out, opt);
+
+	// Convert output
+	Eigen::MatrixXi OT;
+	from_geogram_mesh(M_out, OV, OF, OT);
+}
+
 void remesh_adaptive_3d(const Eigen::MatrixXd &V, const Eigen::MatrixXi &T, const Eigen::VectorXd &S,
 	Eigen::MatrixXd &OV, Eigen::MatrixXi &OF, Eigen::MatrixXi &OT, MmgOptions opt)
 {
+	assert(V.cols() == 3);
 	assert(V.rows() == S.size());
 	GEO::Mesh M, M_out;
 	to_geogram_mesh(V, Eigen::MatrixXi(0, 3), T, M);

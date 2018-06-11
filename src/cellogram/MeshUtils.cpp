@@ -16,7 +16,7 @@ void to_geogram_mesh(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, GEO::Me
 		GEO::vec3 &p = M.vertices.point(i);
 		p[0] = V(i, 0);
 		p[1] = V(i, 1);
-		p[2] = V(i, 2);
+		p[2] = (V.cols() == 2 ? 0 : V(i, 2));
 	}
 	// Setup faces
 	if (F.cols() == 3) {

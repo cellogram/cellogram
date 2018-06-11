@@ -33,12 +33,24 @@ struct MmgOptions {
 };
 
 ///
-/// Remesh a 3d tet-mesh adaptively following to the given scalar field.
+/// Remesh a 2d triangle mesh adaptively following to the given scalar field.
 ///
 /// @param[in]  V     { #V x (2|3) input mesh vertices }
-/// @param[in]  T     { #T x 4 input mesh tetrahedra }
+/// @param[in]  F     { #T x 4 input mesh tetrahedra }
 /// @param[in]  S     { #V x 1 per-vertex scalar field to follow }
 /// @param[out] OV    { #OV x (2|3) output mesh vertices }
+/// @param[out] OF    { #OF x F output mesh triangles }
+///
+void remesh_adaptive_2d(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, const Eigen::VectorXd &S,
+	Eigen::MatrixXd &OV, Eigen::MatrixXi &OF, MmgOptions opt = MmgOptions());
+
+///
+/// Remesh a 3d tet-mesh adaptively following to the given scalar field.
+///
+/// @param[in]  V     { #V x 3 input mesh vertices }
+/// @param[in]  T     { #T x 4 input mesh tetrahedra }
+/// @param[in]  S     { #V x 1 per-vertex scalar field to follow }
+/// @param[out] OV    { #OV x 3 output mesh vertices }
 /// @param[out] OF    { #OF x F output mesh triangles }
 /// @param[out] OT    { #OT x 4 output mesh tetrahedra }
 ///
