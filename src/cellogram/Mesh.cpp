@@ -207,6 +207,9 @@ namespace cellogram {
 		vertex_to_tri.clear();
 		boundary.resize(0); // list of vertices on the boundary
 
+		if (V.size() == 0)
+			return;
+
 		this->params = params;
 		detected = V;
 

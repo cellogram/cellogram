@@ -212,14 +212,14 @@ namespace cellogram {
 			Eigen::MatrixXi visited(mask.rows(), mask.cols());
 			int label = 1;
 			// loop through entire mask
-			for (int i = 0; i < mask.rows(); i++)
+			for (int i = 0; i < mask.cols(); i++)
 			{
-				for (int j = 0; j < mask.cols(); j++)
+				for (int j = 0; j < mask.rows(); j++)
 				{
-					if (tmp(i, j))
+					if (tmp(j, i))
 					{
 						std::queue<vec2> q;
-						q.emplace(i, j);
+						q.emplace(j, i);
 						while (!q.empty())
 						{
 							auto index = q.front();
@@ -250,7 +250,9 @@ namespace cellogram {
 		{
 			int np = xy.rows();
 			Eigen::MatrixXi labels; bwlabel(mask, labels);
-			//std::cout << "labels" << labels << std::endl;
+
+			//std::cout << "\n\nlabels\n" << labels << std::endl; // equal
+
 			int ny = img.rows();
 			int nx = img.cols();
 			double kLevel = 1.959963984540054;
@@ -280,8 +282,8 @@ namespace cellogram {
 			df2.setZero();
 
 			////////////////////////////////////////////////
-			std::cout << "\n\n img \n"<< img << std::endl; // same after flipud
-			std::cout << "\n\n g2 \n" << g2 << std::endl;
+			//std::cout << "\n\n img \n"<< img << std::endl; // equal
+			//std::cout << "\n\n g2 \n" << g2 << std::endl;
 
 			for (int p = 0; p < np; p++)
 			{
@@ -294,7 +296,8 @@ namespace cellogram {
 				Eigen::MatrixXd window;
 				maskWindow = labels.block(xy(p, 1) - w4, xy(p, 0) - w4, 2 * w4 + 1, 2 * w4 + 1);
 
-				maskWindow = (maskWindow.array() == maskWindow(w4 + 1, w4 + 1)).select(0, maskWindow);
+				maskWindow = (maskWindow.array() == maskWindow(w4, w4)).select(0, maskWindow);
+
 				//maskWindow(maskWindow == maskWindow(w4 + 1, w4 + 1)) = 0;
 				window = img.block(xy(p, 1) - w4, xy(p, 0) - w4, 2 * w4 + 1, 2 * w4 + 1);
 
@@ -321,13 +324,22 @@ namespace cellogram {
 				double A_init = A(p);
 				Eigen::Vector2d xy_detected;
 				internal::Params params;
+
+				////////
+				//std::cout << "\n\nmaskWindow\n" << maskWindow << std::endl;
+				//std::cout << "\n\nwindow\n" << window << std::endl;
+				//std::cout << "\n\nsigma(p)\n" << sigma(p) << std::endl;
+				//std::cout << "\n\nc_init\n" << c_init << std::endl;
+
+
 				const bool ok = fitGaussian2D(window, 0, 0, A_init, sigma(p), c_init, xy_detected, params);
 
-	/*			if (!ok)
-					continue;*/
+				// exclude points where localization failed
+				if (xy_detected(0) < -w2 || xy_detected(0) > w2 || xy_detected(1) < -w2 || xy_detected(1) > w2 || params.A > 2 * std::abs(iRange(1)-iRange(0)) )
+					continue;
 
-				// check status and validity of x and y here!!
-				Eigen::RowVector2d Vrow = xy.row(p).cast<double>().array() + xy_detected.transpose().array() + 0.5; //+0.5 middle of the pixel
+				Eigen::RowVector2d Vrow = xy.row(p).cast<double>().array() + xy_detected.transpose().array() + 1; //+0.5 middle of the pixel // +1 because c++
+				std::cout << Vrow << " - Status" << ok << std::endl;
 				if (Vrow(0) < 0 || Vrow(1) < 0 || Vrow(0) > img.cols() || Vrow(1) > img.rows())
 				{
 					//std::cout << Vrow << " - Status" << ok << std::endl;
@@ -351,6 +363,7 @@ namespace cellogram {
 			}
 
 			V.conservativeResize(index, V.cols());
+
 			params_out.conservative_resize(index);
 
 			params_out.pval_Ar.setZero();
@@ -387,6 +400,7 @@ namespace cellogram {
 		Eigen::MatrixXd img_padded;
 		int padDim = 3 * std::round(sigma);
 		padarray_replicate(img.rowwise().reverse().transpose(), padDim, img_padded);
+		//padarray_replicate(img, padDim, img_padded);
 
 		// Gaussian kernel
 		const int w = std::ceil(4 * sigma);
@@ -532,17 +546,21 @@ namespace cellogram {
 		s_est_idx = Eigen::VectorXd::Constant(k, sigma);
 
 		//std::cout << "img:\n" << img_padded << std::endl; // equal
-		std::cout << "allMax:\n" << allMax << std::endl; // equal after flipud
-		std::cout << "imgLM:\n" << imgLM << std::endl; // equal after flipud
-		std::cout << "A_est_idx:\n" << A_est_idx << std::endl; // exact same values, different ordering
-		std::cout << "c_est_idx:\n" << c_est_idx << std::endl; // exact same values, different ordering like A_est_idx
-		std::cout << "lm:\n" << lm << std::endl;
-		std::cout << "mask:\n" << mask << std::endl; //equal after flipud
+		//std::cout << "allMax:\n" << allMax << std::endl; // equal
+		//std::cout << "imgLM:\n" << imgLM << std::endl; // equal
+		//std::cout << "A_est_idx:\n" << A_est_idx << std::endl; // exact same values
+		//std::cout << "c_est_idx:\n" << c_est_idx << std::endl; // exact same values
+		//std::cout << "lm:\n" << lm << std::endl; // equal
+		//std::cout << "mask:\n" << mask << std::endl; //equal
 
 		fitGaussians2D(img_padded, lm, A_est_idx, s_est_idx, c_est_idx, mask, V, params); //inputs checked
+		
+		// transpose and flip to undo image flipping at beginning
+		//V.col(0) = V.col(0).maxCoeff() - V.col(0).array();
+		const Eigen::MatrixXd tmpV = V.array() - padDim;//.rowwise().reverse();
 
+		std::cout << "tmpV:\n" << tmpV << std::endl; //equal
 		// remove duplicates
-		const Eigen::MatrixXd tmpV = V;
 		Eigen::MatrixXi Vi, Vj;
 		igl::remove_duplicate_vertices(tmpV, 0.25, V, Vi, Vj);
 

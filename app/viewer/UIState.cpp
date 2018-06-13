@@ -688,24 +688,26 @@ void UIState::display_image()
 {
 	int xMax = state.img.cols();
 	int yMax = state.img.rows();
-
+	const float offset = 0.5;
 	// Replace the mesh with a triangulated square
 	img_V.resize(4, 3);
 	img_V <<
-	0, 0, 0,
-	yMax, 0, 0,
-	yMax, xMax, 0,
-	0, xMax, 0;
+		offset, offset, 0,
+		yMax + offset, offset, 0,
+		yMax + offset, xMax + offset, 0,
+		offset, xMax + offset, 0;
+
 	img_F.resize(2, 3);
 	img_F <<
-	0, 1, 2,
-	2, 3, 0;
+		0, 1, 2,
+		2, 3, 0;
+
 	Eigen::MatrixXd UV(4, 2);
 	UV <<
-	0, 0,
-	1, 0,
-	1, 1,
-	0, 1;
+		0, 1,
+		1, 1,
+		1, 0,
+		0, 0;
 
 	image_data().set_mesh(img_V, img_F);
 	image_data().set_uv(UV);
