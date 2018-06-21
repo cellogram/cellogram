@@ -11,6 +11,8 @@
 #include <igl/opengl/glfw/imgui/ImGuiMenu.h>
 #include <igl/unproject_onto_mesh.h>
 #include <igl/opengl/glfw/Viewer.h>
+#include <igl/colormap.h>
+#include <igl/opengl/gl.h>
 #include <imgui/imgui_internal.h>
 #include <imgui/imgui.h>
 #include <algorithm>
@@ -52,7 +54,7 @@ namespace cellogram {
 			ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(r / 255, g / 255, b / 255));
 			ImGui::Button("    ");
 			ImGui::SameLine();
-			ImGui::Text(label.c_str());
+			ImGui::Text("%s",label.c_str());
 			ImGui::PopStyleColor(1);
 			ImGui::PopItemFlag();
 		}
@@ -225,10 +227,11 @@ static const float HEIGHT_POINTS_MENU = 240;
 static const float HEIGHT_MESH_MENU = 350;
 static const float HEIGHT_ANALYSIS_MENU = 315;
 static const float HEIGHT_HISTOGRAM = 263;
-static const float HEIGHT_LEGEND = 315;
+static const float HEIGHT_LEGEND = 395;
 static const float HEIGHT_VIEW_OPTIONS = 435;
 static const float HEIGHT_REGION_MENU = 328;
 static const float HEIGHT_REGION_TEXT = 125;
+static const int HEIGHT_COLORBAR = 20;
 
 static float CLICKING_MENU_HEIGHT = 450;
 
@@ -600,6 +603,61 @@ void UIState::draw_legend(int x, int y) {
 	draw_legend_item(192, 57, 43, "No Solution");
 	draw_legend_item(149, 165, 166, "Not Properly Closed");
 	draw_legend_item(52, 73, 94, "Other");
+
+	ImGui::Separator();
+
+
+	static GLuint color_bar_texture = -1;
+	static const int width  = ImGui::GetWindowWidth();
+	if(color_bar_texture)
+	{
+		Eigen::Matrix<unsigned char, Eigen::Dynamic, 4, Eigen::RowMajor> cmap(width*HEIGHT_COLORBAR, 4);
+
+		Eigen::MatrixXd t = Eigen::VectorXd::LinSpaced(width, 0, width);
+		Eigen::MatrixXd col;
+		igl::colormap(cm, t, true, col);
+		assert(col.rows() == width);
+		for(int i = 0; i < width; ++i)
+		{
+			for(int j = 0; j < HEIGHT_COLORBAR; ++j)
+			{
+				for(int c = 0; c < 3; ++c)
+					cmap(j*width+i, c) = col(i, c)*255;
+			}
+		}
+		cmap.col(3).setConstant(255);
+
+		glGenTextures(1, &color_bar_texture);
+		glBindTexture(GL_TEXTURE_2D, color_bar_texture);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, HEIGHT_COLORBAR, 0, GL_RGBA, GL_UNSIGNED_BYTE, cmap.data());
+		glGenerateMipmap(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, 0);
+	}
+	ImGui::Image(reinterpret_cast<ImTextureID>(color_bar_texture), ImVec2(width, HEIGHT_COLORBAR));
+
+	if(min_val <= 1e-20)
+		ImGui::Text("0");
+	else
+	{
+		const int min_power = floor(log10(min_val));
+		ImGui::Text("%ge%d", round(min_val * pow(10, -min_power)*100)/100., min_power);
+	}
+
+	if(max_val <= 1e-20)
+	{
+		ImGui::SameLine(width-10);
+		ImGui::Text("0");
+	}
+	else
+	{
+		ImGui::SameLine(width-40);
+		const int max_power = floor(log10(max_val));
+		ImGui::Text("%ge%d", round(max_val * pow(10, -max_power)*100)/100., max_power);
+	}
 
 	ImGui::End();
 }
