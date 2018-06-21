@@ -559,7 +559,7 @@ namespace cellogram {
 		//V.col(0) = V.col(0).maxCoeff() - V.col(0).array();
 		const Eigen::MatrixXd tmpV = V.array() - padDim;//.rowwise().reverse();
 
-		std::cout << "tmpV:\n" << tmpV << std::endl; //equal
+		//std::cout << "tmpV:\n" << tmpV << std::endl; //equal
 		// remove duplicates
 		Eigen::MatrixXi Vi, Vj;
 		igl::remove_duplicate_vertices(tmpV, 0.25, V, Vi, Vj);
