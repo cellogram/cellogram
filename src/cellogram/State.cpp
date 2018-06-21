@@ -786,7 +786,7 @@ namespace cellogram {
 		if(image_from_pillars)
 			mesh3d.init_pillars(mesh, eps, I, L);
 		else
-			mesh3d.init_nano_dots(mesh, padding_size, thickness, lambda, mu, formulation);
+			mesh3d.init_nano_dots(mesh, padding_size, thickness, E, nu, formulation);
 	}
 
 	void State::reset_state()

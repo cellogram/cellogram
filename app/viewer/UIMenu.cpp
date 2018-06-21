@@ -495,8 +495,8 @@ void UIState::draw_analysis_menu(int x, int y)
 		ImGui::InputFloat("Padding [µm]", &state.padding_size, 1, 0, 0);
 		ImGui::InputFloat("Thickness [µm]", &state.thickness, 1, 0, 0);
 
-		ImGui::InputFloat("lambda", &state.lambda, 0.1, 0.01, 3);
-		ImGui::InputFloat("mu", &state.mu, 0.1, 0.01, 3);
+		ImGui::InputFloat("E", &state.E, 0.1, 0.01, 3);
+		ImGui::InputFloat("nu", &state.nu, 0.1, 0.01, 3);
 		ImGui::PopItemWidth();
 
 		if (ImGui::Button("Init 3D Mesh")) {
