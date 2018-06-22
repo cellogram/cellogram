@@ -971,15 +971,19 @@ void UIState::viewer_control_3d()
 		break;
 		case X_DISP_SELECTED:
 		igl::colormap(cm, fun.col(0).eval(), true, C);
+		std::cout << fun.col(0).maxCoeff() << std::endl;
 		break;
 		case Y_DISP_SELECTED:
 		igl::colormap(cm, fun.col(1).eval(), true, C);
+		std::cout << fun.col(1).maxCoeff() << std::endl;
 		break;
 		case Z_DISP_SELECTED:
 		igl::colormap(cm, fun.col(2).eval(), true, C);
+		std::cout << fun.col(2).maxCoeff() << std::endl;
 		break;
 		case MAG_DISP_SELECTED:
 		igl::colormap(cm, fun.rowwise().norm().eval(), true, C);
+		std::cout << fun.rowwise().norm().maxCoeff() << std::endl;
 		break;
 	}
 

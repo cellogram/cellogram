@@ -38,6 +38,7 @@ namespace cellogram {
 		int size() const;
 
 		void resize(const int size);
+		void setZero(const int size);
 
 		void conservative_resize(const int size);
 
