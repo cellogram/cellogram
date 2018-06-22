@@ -31,8 +31,8 @@ public:
 	float padding_size = 25;
 	float thickness = 30;
 
-	float lambda = 205.5;
-	float mu = 4.2;
+	float E = 0.32967032967032966;
+	float nu = 0.3846153846153846;
 
 	float eps = 0.32967032967032966;
 	float I = 0.5;

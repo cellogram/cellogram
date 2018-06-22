@@ -132,6 +132,9 @@ public:
 	igl::opengl::ViewerData & physical_data() { return mesh_by_id(physical_id); }
 
 private:
+	igl::ColorMapType cm = igl::ColorMapType::COLOR_MAP_TYPE_PARULA;
+	double min_val = 0, max_val = 0;
+	
 	bool block_mouse_behavior(int button);
 	void viewer_control();
 	void viewer_control_2d();

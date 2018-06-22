@@ -960,31 +960,46 @@ void UIState::viewer_control_3d()
 	Eigen::MatrixXd Vtmp = state.mesh3d.V / state.mesh.scaling;
 
 	Eigen::MatrixXd C, disp;
-	igl::ColorMapType cm;
-	cm = igl::ColorMapType::COLOR_MAP_TYPE_PARULA;
 
 
 	const auto &fun = show_traction_forces ? state.mesh3d.traction_forces : state.mesh3d.displacement;
 	switch (view_mode_3d) {
 		case NO_VIEW_SELECTED:
 		C = Eigen::RowVector3d(129. / 255, 236. / 255, 236. / 255);
+		min_val = max_val = 0;
 		break;
 		case X_DISP_SELECTED:
-		igl::colormap(cm, fun.col(0).eval(), true, C);
-		std::cout << fun.col(0).maxCoeff() << std::endl;
-		break;
+		{
+			const auto v_fun = fun.col(0).eval();
+			min_val = v_fun.minCoeff();
+			max_val = v_fun.maxCoeff();
+			igl::colormap(cm, v_fun, true, C);
+			break;
+		}
 		case Y_DISP_SELECTED:
-		igl::colormap(cm, fun.col(1).eval(), true, C);
-		std::cout << fun.col(1).maxCoeff() << std::endl;
-		break;
+		{
+			const auto v_fun = fun.col(1).eval();
+			min_val = v_fun.minCoeff();
+			max_val = v_fun.maxCoeff();
+			igl::colormap(cm, v_fun, true, C);
+			break;
+		}
 		case Z_DISP_SELECTED:
-		igl::colormap(cm, fun.col(2).eval(), true, C);
-		std::cout << fun.col(2).maxCoeff() << std::endl;
-		break;
+		{
+			const auto v_fun = fun.col(2).eval();
+			min_val = v_fun.minCoeff();
+			max_val = v_fun.maxCoeff();
+			igl::colormap(cm, v_fun, true, C);
+			break;
+		}
 		case MAG_DISP_SELECTED:
-		igl::colormap(cm, fun.rowwise().norm().eval(), true, C);
-		std::cout << fun.rowwise().norm().maxCoeff() << std::endl;
-		break;
+		{
+			const auto v_fun = fun.rowwise().norm().eval();
+			min_val = v_fun.minCoeff();
+			max_val = v_fun.maxCoeff();
+			igl::colormap(cm, v_fun, true, C);
+			break;
+		}
 	}
 
 	//std::cout << C << std::endl;

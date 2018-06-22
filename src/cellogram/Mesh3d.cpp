@@ -11,7 +11,7 @@
 #include <geogram/mesh/mesh_io.h>
 #include <State.hpp>
 
-#include <CustomProblem.hpp>
+#include <PointBasedProblem.hpp>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
@@ -19,7 +19,7 @@ namespace cellogram {
 	namespace
 	{
 		void compute_analysis(const Eigen::MatrixXd &vertices, const Eigen::MatrixXi &faces, const Eigen::MatrixXi &tets, const Mesh &mesh,
-			float thickness, float lambda, float mu, const std::string &formulation,
+			float thickness, float E, float nu, const std::string &formulation,
 			Eigen::MatrixXd &vals, Eigen::MatrixXd &traction_forces)
 		{
 			assert(tets.cols() == 4);
@@ -42,13 +42,18 @@ namespace cellogram {
 				}
 			}
 
+			const double lambda = (E * nu) / ((1 + nu) * (1 - 2 * nu));
+			const double mu = E / (2 * (1 + nu));
+
 			json j_args = {
-				{"problem", "Custom"},
+				{"problem", "PointBasedTensor"},
 				{"normalize_mesh", false},
 
 				{"tensor_formulation", formulation},
 
 				{"discr_order", 1},
+
+				{"nl_solver_rhs_steps", 5},
 
 				{"params", {
 					{"lambda", lambda},
@@ -76,7 +81,7 @@ namespace cellogram {
 
 			// state.compute_mesh_stats();
 
-			poly_fem::CustomProblem &problem = *dynamic_cast<poly_fem::CustomProblem *>(state.problem.get());
+			poly_fem::PointBasedTensorProblem &problem = *dynamic_cast<poly_fem::PointBasedTensorProblem *>(state.problem.get());
 			problem.init({1, 3});
 
 
@@ -143,7 +148,7 @@ namespace cellogram {
 		traction_forces = scaling * displacement;
 	}
 
-	void Mesh3d::init_nano_dots(const Mesh &mesh, float padding_size, float thickness, float lambda, float mu, const std::string &formulation)
+	void Mesh3d::init_nano_dots(const Mesh &mesh, float padding_size, float thickness, float E, float nu, const std::string &formulation)
 	{
 		clear();
 
@@ -227,7 +232,7 @@ namespace cellogram {
 
 		// poly_fem::orient_closed_surface(V, F);
 
-		compute_analysis(TV, TF, TT, mesh, thickness, lambda, mu, formulation, displacement, traction_forces);
+		compute_analysis(TV, TF, TT, mesh, thickness, E, nu, formulation, displacement, traction_forces);
 		// sol = V;
 
 		V = TV;
