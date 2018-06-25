@@ -670,7 +670,7 @@ void UIState::draw_legend(int x, int y) {
 		ImGui::Text("%ge%d", round(min_val * pow(10, -min_power)*100)/100., min_power);
 	}
 
-	if(max_val <= 1e-20)
+	if(std::abs(max_val) <= 1e-20)
 	{
 		ImGui::SameLine(width-10);
 		ImGui::Text("0");
@@ -678,7 +678,7 @@ void UIState::draw_legend(int x, int y) {
 	else
 	{
 		ImGui::SameLine(width-40);
-		const int max_power = floor(log10(max_val));
+		const int max_power = floor(log10(std::abs(max_val)));
 		ImGui::Text("%ge%d", round(max_val * pow(10, -max_power)*100)/100., max_power);
 	}
 

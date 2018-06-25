@@ -65,12 +65,12 @@ namespace cellogram {
 			state.init(j_args);
 
 			state.load_mesh(M, [thickness](const poly_fem::RowVectorNd &bary){
-				// std::cout<<bary(2) <<" t "<<thickness<< " 1 "<< (bary(2) < 1e-8) <<std::endl;
+				// top, Id = 1
 				if(std::abs(bary(2)) < 1e-8){
 					return 1;
 				}
 
-				//Bottom
+				//Bottom, Id = 3
 				if(std::abs(bary(2)- -thickness) < 1e-8){
 					return 3;
 				}
@@ -82,14 +82,15 @@ namespace cellogram {
 			// state.compute_mesh_stats();
 
 			poly_fem::PointBasedTensorProblem &problem = *dynamic_cast<poly_fem::PointBasedTensorProblem *>(state.problem.get());
-			problem.init({1, 3});
-
 
 			Eigen::MatrixXd disp = (mesh.detected - mesh.points) * mesh.scaling;
 			Eigen::MatrixXd pts = mesh.points * mesh.scaling;
 
-			problem.set_function(0, disp, pts, mesh.triangles); //0 is id 1
-			problem.set_constant(1, Eigen::Vector3d(0,0,0)); //1 is id 3
+			//Id = 1, func, mesh, coord =2, means skip z for the interpolation
+			problem.add_function(1, disp, pts, mesh.triangles, 2);
+			
+			//Id = 3, zero Dirichelt
+			problem.add_constant(3, Eigen::Vector3d(0,0,0));
 
 			state.build_basis();
 			state.build_polygonal_basis();
