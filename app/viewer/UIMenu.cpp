@@ -639,11 +639,11 @@ void UIState::draw_legend(int x, int y) {
 	}
 	ImGui::Image(reinterpret_cast<ImTextureID>(color_bar_texture), ImVec2(width, HEIGHT_COLORBAR));
 
-	if(min_val <= 1e-20)
+	if(std::abs(min_val) <= 1e-20)
 		ImGui::Text("0");
 	else
 	{
-		const int min_power = floor(log10(min_val));
+		const int min_power = floor(log10(std::abs(min_val)));
 		ImGui::Text("%ge%d", round(min_val * pow(10, -min_power)*100)/100., min_power);
 	}
 

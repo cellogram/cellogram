@@ -31,14 +31,14 @@ public:
 	float padding_size = 25;
 	float thickness = 30;
 
-	float E = 0.32967032967032966;
-	float nu = 0.3846153846153846;
+	float E = 12.5;
+	float nu = 0.49;
 
 	float eps = 0.32967032967032966;
 	float I = 0.5;
 	float L = 3;
 
-	std::string formulation = "NeoHookean"; //"LinearElasticity"; // NeoHookean
+	std::string formulation = "LinearElasticity"; //"LinearElasticity"; // NeoHookean
 
 	static const int max_region_vertices = 50;
 	static const int gurobi_time_limit_short = 60;
