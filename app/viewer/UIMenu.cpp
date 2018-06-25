@@ -58,7 +58,35 @@ namespace cellogram {
 			ImGui::PopStyleColor(1);
 			ImGui::PopItemFlag();
 		}
-	}
+
+		void ShowTooltip(const std::string &desc) {
+			if (ImGui::IsItemActive() || ImGui::IsItemHovered()) {
+				ImGui::SetTooltip("%s", desc.c_str());
+			}
+		}
+
+		bool ComboWithTooltips(const char* label, int* idx, std::vector<const char *> items, const std::vector<const char *>& tips) {
+			bool value_changed = false;
+			if (ImGui::BeginCombo(label, items[*idx])) {
+			 	for (int i = 0; i < (int) items.size(); ++i) {
+					bool is_selected = (*idx == i);
+					if (ImGui::Selectable(items[i], is_selected)) {
+						value_changed = true;
+						*idx = i;
+					}
+					if (std::strlen(tips[i]) && (ImGui::IsItemActive() || ImGui::IsItemHovered())) {
+						ImGui::SetTooltip("%s", tips[i]);
+					}
+					if (is_selected) {
+						ImGui::SetItemDefaultFocus();
+					}
+				}
+				ImGui::EndCombo();
+			}
+			return value_changed;
+		}
+
+	} // anonymous namespace
 
 // -----------------------------------------------------------------------------
 
@@ -477,19 +505,7 @@ void UIState::draw_analysis_menu(int x, int y)
 		ImGui::InputFloat("eps", &state.eps,  0.1, 0.01, 3);
 		ImGui::InputFloat("I [µm]", &state.I, 0.1, 0.01, 3);
 		ImGui::InputFloat("L [µm]", &state.L, 0.1, 0.01, 3);
-
 		ImGui::PopItemWidth();
-
-		if (ImGui::Button("Compute")) {
-			state.init_3d_mesh();
-			analysis_mode = true;
-			show_mesh = false;
-			show_image = false;
-			show_mesh_fill = false;
-			view_mode_3d = MAG_DISP_SELECTED;
-
-			viewer_control();
-		}
 	}
 	else
 	{
@@ -497,21 +513,28 @@ void UIState::draw_analysis_menu(int x, int y)
 		ImGui::InputFloat("Scaling [µm/px]", &state.mesh.scaling, 0.01, 0.001, 3);
 		ImGui::InputFloat("Padding [µm]", &state.padding_size, 1, 0, 0);
 		ImGui::InputFloat("Thickness [µm]", &state.thickness, 1, 0, 0);
+		ImGui::InputFloat2("Triangle area (%)", state.mesh_area_rel);
 
 		ImGui::InputFloat("E", &state.E, 0.1, 0.01, 3);
 		ImGui::InputFloat("nu", &state.nu, 0.1, 0.01, 3);
+
 		ImGui::PopItemWidth();
-
-		if (ImGui::Button("Init 3D Mesh")) {
-			state.init_3d_mesh();
-			analysis_mode = true;
-			show_mesh = false;
-			show_image = false;
-			show_mesh_fill = false;
-			view_mode_3d = MAG_DISP_SELECTED;
-
-			viewer_control();
-		}
+	}
+	if (ImGui::Button("Mesh 3D volume", ImVec2(-1, 0))) {
+		state.init_3d_mesh();
+		analysis_mode = true;
+		show_mesh = false;
+		show_image = false;
+		show_mesh_fill = false;
+		viewer_control();
+	}
+	if (ImGui::Button("Analyze 3D mesh", ImVec2(-1, 0))) {
+		state.analyze_3d_mesh();
+		analysis_mode = true;
+		show_mesh = false;
+		show_image = false;
+		show_mesh_fill = false;
+		viewer_control();
 	}
 
 	ImGui::End();
@@ -681,53 +704,58 @@ void UIState::draw_view_options(int x, int y) {
 	if (ImGui::ColorEdit4("Mesh", points_data().line_color.data(),
 		ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueWheel)) {
 		viewer_control();
-}
+	}
 
-if (ImGui::Checkbox("Show hull", &show_hull)) {
-	viewer_control();
-}
-if (ImGui::Checkbox("Points", &show_points)) {
-	viewer_control();
-}
-ImGui::SameLine();
-if (ImGui::Checkbox("Coded", &color_code)) {
-	viewer_control();
-}
+	if (ImGui::Checkbox("Show hull", &show_hull)) {
+		viewer_control();
+	}
+	if (ImGui::Checkbox("Points", &show_points)) {
+		viewer_control();
+	}
+	ImGui::SameLine();
+	if (ImGui::Checkbox("Coded", &color_code)) {
+		viewer_control();
+	}
 
-if (ImGui::Checkbox("Mesh Fill", &show_mesh_fill)) {
-	viewer_control();
-}
-if (ImGui::Checkbox("Show image", &show_image)) {
-	viewer_control();
-}
-if (ImGui::Checkbox("Show matching", &show_matching)) {
-	viewer_control();
-}
-if (ImGui::Checkbox("Bad regions", &show_bad_regions)) {
-	viewer_control();
-}
-if (ImGui::Checkbox("Selected region", &show_selected_region)) {
-	viewer_control();
-}
+	if (ImGui::Checkbox("Mesh Fill", &show_mesh_fill)) {
+		viewer_control();
+	}
+	if (ImGui::Checkbox("Show image", &show_image)) {
+		viewer_control();
+	}
+	if (ImGui::Checkbox("Show matching", &show_matching)) {
+		viewer_control();
+	}
+	if (ImGui::Checkbox("Bad regions", &show_bad_regions)) {
+		viewer_control();
+	}
+	if (ImGui::Checkbox("Selected region", &show_selected_region)) {
+		viewer_control();
+	}
 
-if (ImGui::Checkbox(" ", &analysis_mode)) {
-	if (!analysis_mode)
-		viewer.core.trackball_angle = Eigen::Quaternionf::Identity();
-	viewer_control();
-}
-ImGui::SameLine();
+	if (ImGui::Checkbox("Enable 3D view", &analysis_mode)) {
+		if (!analysis_mode) {
+			viewer.core.trackball_angle = Eigen::Quaternionf::Identity();
+		}
+		viewer_control();
+	}
 
-ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.30f);
-if (ImGui::Combo("3D Mode", &view_mode_3d, " \0u\0v\0w\0mag")) {
-	viewer_control();
-}
+	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.30f);
 
-if (ImGui::Checkbox("Traction forces", &show_traction_forces)) {
-	viewer_control();
-}
+	{
+		auto labels = {"--", "X", "Y", "Z", "Norm"};
+		auto tips = {"", "Displacement along X", "Displacement along Y", "Displacement along Z", "Norm of the displacement"};
+		if (ComboWithTooltips("Show attribute", (int *) (&selected_3d_attribute),labels, tips)) {
+			viewer_control();
+		}
+	}
 
-ImGui::PopItemWidth();
-ImGui::End();
+	if (ImGui::Checkbox("Traction forces", &show_traction_forces)) {
+		viewer_control();
+	}
+
+	ImGui::PopItemWidth();
+	ImGui::End();
 }
 
 void UIState::draw_region_menu(int x, int y) {

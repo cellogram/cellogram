@@ -49,6 +49,10 @@ public:
 
 	void get_physical_bounding_box(Eigen::Vector2d &min, Eigen::Vector2d &max) const;
 
+	// Return a triangle mesh embedded in the physical bounding box of the input mesh,
+	// where each point is associated a scalar field = norm of the points displacements
+	void get_background_mesh(Eigen::MatrixXd &V, Eigen::MatrixXi &F, Eigen::VectorXd &S) const;
+
 	void final_relax();
 	void generate_vertex_to_tri();
 	void reset();

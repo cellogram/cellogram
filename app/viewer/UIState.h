@@ -46,7 +46,7 @@ public:
 	int dragging_id = -1;
 	// UI options
 	// double foo;
-	
+
 	Eigen::MatrixXi img_F;
 	Eigen::MatrixXd img_V;
 	Eigen::MatrixXf hist;
@@ -69,8 +69,16 @@ public:
 	bool show_selected_region = true;
 	bool analysis_mode = false;
 	bool show_traction_forces = true;
-	
+
 	// 3d visualizer
+	enum class Mesh3DAttribute : int {
+		NONE,
+		X_DISP,
+		Y_DISP,
+		Z_DISP,
+		NORM_DISP,
+	} selected_3d_attribute;
+
 	int view_mode_3d = 0;
 	static const int NO_VIEW_SELECTED = 0;
 	static const int X_DISP_SELECTED = 1;
@@ -134,7 +142,7 @@ public:
 private:
 	igl::ColorMapType cm = igl::ColorMapType::COLOR_MAP_TYPE_PARULA;
 	double min_val = 0, max_val = 0;
-	
+
 	bool block_mouse_behavior(int button);
 	void viewer_control();
 	void viewer_control_2d();

@@ -770,7 +770,7 @@ void UIState::viewer_control_2d()
 	// points
 	Eigen::MatrixXd V = t * state.mesh.points + (1 - t) * state.mesh.moved;
 
-	if (V.size() > 0)
+	if (V.size() > 0 && show_mesh)
 		points_data().set_mesh(V, state.mesh.triangles);
 
 	points_data().show_lines = dragging_id < 0;
@@ -952,15 +952,18 @@ void UIState::viewer_control_3d()
 
 	//ROTATION_TYPE_TRACKBALL
 	//ROTATION_TYPE_TWO_AXIS_VALUATOR_FIXED_UP
-	viewer.core.set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_TWO_AXIS_VALUATOR_FIXED_UP);
+	viewer.core.set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_TRACKBALL);
 
 	if (state.mesh3d.V.size() == 0)
 		return;
 
 	Eigen::MatrixXd Vtmp = state.mesh3d.V / state.mesh.scaling;
 
-	Eigen::MatrixXd C, disp;
+	Vtmp.col(2).array() -= 0.1;
+	physical_data().set_mesh(Vtmp, state.mesh3d.F);
+	return;
 
+	Eigen::MatrixXd C, disp;
 
 	const auto &fun = show_traction_forces ? state.mesh3d.traction_forces : state.mesh3d.displacement;
 	switch (view_mode_3d) {

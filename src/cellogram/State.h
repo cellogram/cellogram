@@ -28,6 +28,7 @@ public:
 
 	bool image_from_pillars = false;
 
+	float mesh_area_rel[2] = {0.001, 0.1};
 	float padding_size = 25;
 	float thickness = 30;
 
@@ -95,8 +96,10 @@ public:
 	void delete_vertex(const int index);
 	void add_vertex(Eigen::Vector3d new_point);
 
+	// FEM part
 	void init_3d_mesh();
-	
+	void analyze_3d_mesh();
+
 	void reset_state();
 
 public:
