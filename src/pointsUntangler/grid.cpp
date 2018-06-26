@@ -4,13 +4,34 @@
 #include <algorithm>
 
 #include "grid.h"
-
 #include "my_assert.h"
+
+/* Grid::gird is a "brick-wall" structured array!
+ *
+ *           +-----+-----+-----+--
+ *           | 0-0 | 1-0 | 2-0 |
+ *        +--+--+==+--+==+--+--+--
+ *        | 0-1 | 1-1 | 2-1 |
+ *     +--+--+==+--+==+--+--+--
+ *     | 0-2 | 1-2 | 2-2 |
+ *  +--+--+--+--+--+--+--+--
+ *  |     |     |     |
+ *
+ *         +-----+-----+-----+
+ *         |x- y-| y-  |     |
+ *      +--+--+==+--+==+--+--+
+ *      | x-  | x,y |  x+ |      <== 6 nieghbors
+ *   +--+--+==+--+==+--+--+
+ *   |     | y+  |x+ y+|
+ *   +-----+-----+-----+
+ *
+ */
 
 namespace cellogram
 {
 namespace PointsUntangler
 {
+
 
 void Grid::clear(){
     grid.clear();
@@ -24,6 +45,7 @@ void Grid::createVertices(int nv){
     vdesired.resize(nv,-1);
     madeUpVert.resize(nv);
     madeUpVert.assign(nv,false);
+    mat.resize(nv);
 
 }
 
@@ -52,6 +74,8 @@ bool Grid::importXYZ(const std::string& filename ){
 }
 
 bool Grid::exportOBJ(const std::string& filename ) const{
+    std::cout<<"--> Exporting GRID: "<<filename<<"\n";
+
     std::ofstream f;
     f.open(filename.data(),std::fstream::out);
     if (!f.is_open()) return false;
@@ -176,7 +200,7 @@ bool Grid::exportPLYtartan(const std::string &filename) const{
 bool Grid::exportPLY(const std::string& filename ) const{
     int nUnassigned = 0;
     for (uint vi=0; vi<posInGrid.size(); vi++)
-        if ((posInGrid[vi]==-1)&&(vdesired[vi]!=-1)) nUnassigned++;
+        if (posInGrid[vi]==-1) nUnassigned++;
 
     int nv = vert.size();
     int nf = 0;
@@ -193,7 +217,7 @@ bool Grid::exportPLY(const std::string& filename ) const{
     nv += nUnassigned*4;
 
     std::ofstream f;
-    f.open(filename.data(),std::fstream::out);
+    f.open((filename+".ply").data(),std::fstream::out);
     if (!f.is_open()) return false;
     f
     <<"ply\n"
@@ -211,21 +235,33 @@ bool Grid::exportPLY(const std::string& filename ) const{
     <<"end_header\n";
 
     for (uint vi=0; vi<vert.size(); vi++) {
-        int r=255,g=255,b=255;
-        if (posInGrid[vi]==-1) {g/=2; b/=2;}
+        int r=205,g=255,b=205;
+        scalar x = vert[vi].x;
+        scalar y = vert[vi].y;
+        if (posInGrid[vi]==-1) {
+            g/=2; b/=2;
+            int vd = vdesired[vi];
+            if (vd!=-1) {
+                int vj = grid[vd];
+                if (vd!=-1) {
+                    x = vert[vj].x;
+                    y = vert[vj].y;
+                }
+            }
+        }
         else if (madeUpVert[vi]) {r/=4; b/=4; g=200;}
-        f<<vert[vi].x<<" "<<vert[vi].y<<" 0 "<<r<<" "<<g<<" "<<b<<" "<<" 255\n";
+        f<<x<<" "<<y<<" 0 "<<r<<" "<<g<<" "<<b<<" "<<" 255\n";
     }
     for (uint vi=0; vi<vert.size(); vi++) {
-        int r=255,g=255,b=255;
-        if ((posInGrid[vi]==-1)&&(vdesired[vi]!=-1)) {
+        int r=255,g=235,b=235;
+        if ((posInGrid[vi]==-1)) {
             g/=2; b/=2;
             for  (int w=0; w<4; w++) {
                 vec2 p = vert[vi];
-                if (w==0) p.y -= edgeLen/3;
-                if (w==1) p.x += edgeLen/3;
-                if (w==2) p.y += edgeLen/3;
-                if (w==3) p.x -= edgeLen/3;
+                if (w==0) p.y -= edgeLen/5;
+                if (w==1) p.x += edgeLen/5;
+                if (w==2) p.y += edgeLen/5;
+                if (w==3) p.x -= edgeLen/5;
                 f<<p.x<<" "<<p.y<<" 0.2 "<<r<<" "<<g<<" "<<b<<" "<<" 255\n";
             }
         }
@@ -242,7 +278,7 @@ bool Grid::exportPLY(const std::string& filename ) const{
 
     int c = vert.size();
     for (uint vi=0; vi<vert.size(); vi++) {
-        if ((posInGrid[vi]==-1)&&(vdesired[vi]!=-1)) {
+        if ((posInGrid[vi]==-1)) {
             int aa,bb,cc,dd;
             aa=c++; bb=c++; cc=c++; dd=c++;
             f<<"3 "<<aa<<" "<<bb<<" "<<vi<<"\n";
@@ -343,15 +379,6 @@ bool Grid::isBoundary( int gi) const{
     j = grid[ gi+sx   ]; if (j==-1) return true;
     j = grid[ gi+sx+1 ]; if (j==-1) return true;
     return false;
-}
-
-void Grid::swapTwo(int gi, int gj){
-    std::swap( grid[gi], grid[gj] );
-    int vi = grid[gi];
-    int vj = grid[gj];
-    if (vi!=-1) posInGrid[vi] = gi;
-    if (vj!=-1) posInGrid[vj] = gj;
-    //std::swap( posInGrid[grid[gi]], posInGrid[grid[gj]]);
 }
 
 vec2 Grid::baryAroundOfExisting(int gi) const{
@@ -524,6 +551,191 @@ void Grid::initIndicesOnGrid(int nx,int ny){
     }
 }
 
+scalar distanceV(vec2 a , vec2 b) {
+    a.normalize();
+    b.normalize();
+    return squaredDistance(a,b);
+}
+
+scalar Grid::misalignmentOptimist(int va, int vb) const{
+    if (va<vb) std::swap(va,vb);
+    int ga = posInGrid[va];
+    int gb = posInGrid[vb];
+
+    mat2 m;
+    if (ga==-1 && gb==-1) return 0.5;
+    m = (mat[va] + mat[vb])/2;
+
+    const scalar S = 0.86602540378; // sin(60°)
+    const scalar C = 0.5;           // cos(60°)
+
+    const vec2 ideal[6] = {
+        vec2(-C,+S),
+        vec2(+C,+S),
+        vec2(+1,+0),
+        vec2(+C,-S),
+        vec2(-C,-S),
+        vec2(-1,+0)
+    };
+    scalar min = 1000.0;
+
+    //for (int n=0; n<6; n++) min = std::min( min, distance( vert[vb]-vert[va] , mat*ideal[n]));
+    for (int n=0; n<6; n++) min = std::min( min, distance( vert[vb]-vert[va] , m*ideal[n]));
+    return min;
+
+}
+
+bool Grid::areAdjacient(int va, int vb) const{
+    int ga = posInGrid[va];
+    int gb = posInGrid[vb];
+    if (ga==-1) ga = vdesired[va];
+    if (gb==-1) gb = vdesired[vb];
+    return ( gb-ga == neigh[0])||
+           ( gb-ga == neigh[1])||
+           ( gb-ga == neigh[2])||
+           ( gb-ga == neigh[3])||
+           ( gb-ga == neigh[4])||
+           ( gb-ga == neigh[5]);
+}
+
+scalar Grid::misalignment(int va, int vb) const{
+    int ga = posInGrid[va];
+    int gb = posInGrid[vb];
+
+    const scalar S = 0.86602540378; // sin(60°)
+    const scalar C = 0.5;           // cos(60°)
+
+    /*     0 1 .    *
+     *    5 x 2     *
+     *   . 4 3      */
+
+    const vec2 ideal[6] = {
+        vec2(-C,+S),
+        vec2(+C,+S),
+        vec2(+1,+0),
+        vec2(+C,-S),
+        vec2(-C,-S),
+        vec2(-1,+0)
+    };
+
+    vec2 e;
+    if ( gb-ga == neigh[0]) e = ideal[0]; else
+    if ( gb-ga == neigh[1]) e = ideal[1]; else
+    if ( gb-ga == neigh[2]) e = ideal[2]; else
+    if ( gb-ga == neigh[3]) e = ideal[3]; else
+    if ( gb-ga == neigh[4]) e = ideal[4]; else
+    if ( gb-ga == neigh[5]) e = ideal[5]; else return -1.0; // EDGE NOT IN GRID
+
+    return distance( vert[vb]-vert[va], (mat[va]+mat[vb])*e / 2.0 );
+
+}
+
+void Grid::smoothMatrices(int n){
+    for (int i=0; i<n; i++) smoothMatrices();
+}
+
+void Grid::smoothMatrices(){
+    std::vector<mat2> copy(mat);
+
+    for (uint vi=0; vi<vert.size(); vi++) {
+        mat[vi] = mat2(0.0);
+    }
+
+    std::vector<scalar> div(vert.size(),0);
+    for (uint vi=0; vi<vert.size(); vi++) {
+        int gi = posInGrid[vi];
+        if (gi<0) continue;
+
+        scalar det = copy[vi].det();
+
+        mat[vi]+=copy[vi]*det;
+        div[vi]+=det;
+
+        for (int n=0; n<6; n++) {
+            int gj = gi+neigh[n];
+            int vj = grid[gj];
+            if (vj<0) continue;
+            mat[vj]+=copy[vi]*det;
+            div[vj]+=det;
+        }
+    }
+    for (uint vi=0; vi<vert.size(); vi++) {
+        if (div[vi]) mat[vi] /= (div[vi]);
+    }
+
+}
+
+void Grid::computeIsExternal(){
+    isExternal.resize(sx*sy,false);
+    isExternal.assign(sx*sy,false);
+    isExternal[safeGiMin] = true;
+
+    while (1) {
+        bool goOn = false;
+        for (int gi = safeGiMin; gi <safeGiMax; gi++) {
+            if (grid[gi]==-1) if (isExternal[gi]) {
+                for (int n=0; n<6; n++) {
+                    int gj = gi+neigh[n];
+                    if (!isExternal[gj]) goOn = true;
+                    isExternal[gj] = true;
+                }
+
+            }
+        }
+        if (!goOn) break;
+    }
+}
+
+
+void Grid::computeMatrices(){
+
+
+    std::vector<scalar> div(vert.size(),0);
+
+    auto setTri = [this,&div]( int ga, int gb, int gc , mat2 destTriInv ){
+        if ((ga<0)||(gb<0)||(gc<0)) return;
+        int va = grid[ga];
+        int vb = grid[gb];
+        int vc = grid[gc];
+        if ((va<0)||(vb<0)||(vc<0)) return;
+        mat2 srcTri ( vec2(vert[vb]-vert[va]) ,
+                      vec2(vert[vc]-vert[va]) ) ;
+
+        mat2 src2dst = srcTri * destTriInv;
+        mat[va]+=src2dst; div[va]++;
+        mat[vb]+=src2dst; div[vb]++;
+        mat[vc]+=src2dst; div[vc]++;
+    };
+
+    for (uint vi=0; vi<vert.size(); vi++) {
+        mat[vi] = mat2(0.0);
+    }
+    for (int y=0; y<sy-1; y++)
+    for (int x=0; x<sx-1; x++)  {
+        const scalar S = 0.86602540378; // sin(60°)
+        const scalar C = 0.5;           // cos(60°)
+        const mat2 upTri  = mat2( vec2(1,0) , vec2(C,+S) ).inverse();
+        const mat2 downTri= mat2( vec2(C,-S) , vec2(1,0) ).inverse();
+
+        int gi = indexOf(x-1,y-1);
+        int gj = indexOf(x  ,y-1);
+        int gh = indexOf(x-1,y);
+        int gk = indexOf(x  ,y  );
+
+        /*     i---j
+         *    /^\v/
+         *   h---k   */
+        setTri(gi,gk,gj,downTri);
+        setTri(gh,gk,gi,  upTri);
+    }
+    for (uint vi=0; vi<vert.size(); vi++) {
+        if (div[vi]) mat[vi] /= div[vi];
+    }
+
+    std::cout<<"Done computing metrices\n";
+
+}
+
 void Grid::sanityCheck(){
     for (int gi=0; gi<(int)grid.size(); gi++) if (grid[gi]!=-1)
         myAssert( posInGrid[ grid[gi] ] == gi, "Wrong at gi:"<<gi<<" vi:"<<grid[gi]);
@@ -542,12 +754,15 @@ void Grid::create(int _sx, int _sy){
     grid.resize(n);
     grid.assign(n,-1);
 
-    neigh[0]=sx+1;
-    neigh[1]=sx;
-    neigh[2]=1;
-    neigh[3]=-1;
-    neigh[4]=-sx;
-    neigh[5]=-sx-1;
+    /*     0 1 .    *
+     *    5 x 2     *
+     *   . 4 3      */
+    neigh[0]=-sx-1;
+    neigh[1]=-sx;
+    neigh[2]=+1;
+    neigh[3]=sx+1;
+    neigh[4]=sx;
+    neigh[5]=-1;
 
     safeGiMin = (sx+1);
     safeGiMax = (sx*sy)-(sx+1);
@@ -581,7 +796,7 @@ scalar Grid::energyBetween(int vi, int vj) const{
 }
 
 scalar Grid::energyBetween2(int vi, int vj) const{
-    if (vi==-1 || vj==-1) return 0;
+    if (vi==-1 || vj==-1) return -1;
     return squaredDistance(vert[vi],vert[vj]);
 }
 
@@ -600,23 +815,10 @@ void Grid::printf() const{
 
 bool Grid::testAndDoSwapBordersIncluded(int gi, int gj){
     if(grid[gi]==-1 && grid[gj]==-1) return false;
-    scalar before = energyAround(gi,gj);
+    scalar before = energyAround2(gi,gj);
     swapTwo( gi, gj );
-    scalar after = energyAround(gi,gj);
+    scalar after = energyAround2(gi,gj);
     if (after+0.00001<before) {
-        return true;
-    }
-    swapTwo( gi, gj );
-    return false;
-}
-//scalar lastGain;
-bool Grid::testAndDoSwap(int gi, int gj){
-    if((grid[gi]==-1) || (grid[gj]==-1)) return false;
-    scalar before = energyAround(gi,gj);
-    swapTwo( gi, gj );
-    scalar after = energyAround(gi,gj);
-    if (after+0.00001<before) {
-        //lastGain =
         return true;
     }
     swapTwo( gi, gj );
@@ -690,8 +892,11 @@ int Grid::tryAllSwapsAround(int gi){
     return res;
 }
 
-int Grid::tryAllSwaps(){
-	return tryAllBiSwaps() + tryAllTriSwaps() +tryAllQuadriSwaps();
+int Grid::greedySwaps(){
+    int done = tryAllBiSwaps()+tryAllTriSwaps()+tryAllQuadriSwaps();
+    done += tryAllBiSwaps()+tryAllTriSwaps();
+    done += tryAllBiSwaps();
+    return done;
 }
 
 int Grid::tryAllBiSwaps(){
@@ -709,7 +914,7 @@ int Grid::tryAllBiSwaps(){
         if (pass==0) break;
         count+=pass;
     }
-    std::cout<<"Done "<<count<<" greedy swaps;\n";
+    if (count) std::cout<<"Done "<<count<<" greedy swaps;\n";
     return count;
 }
 
@@ -726,13 +931,23 @@ int Grid::tryAllTriSwaps(){
         if (pass==0) break;
         count+=pass;
     }
-    std::cout<<"Done "<<count<<" greedy three-swaps;\n";
+    if (count) std::cout<<"Done "<<count<<" greedy three-swaps;\n";
     return count;
 }
 
+/*
+*         +-----+-----+-----+
+*         |x- y-| y-  |     |
+*      +--+--+==+--+==+--+--+
+*      | x-  | x,y |  x+ |      <== 6 nieghbors
+*   +--+--+==+--+==+--+--+
+*   |     | y+  |x+ y+|
+*   +-----+-----+-----+
+*
+*/
 int Grid::tryAllQuadriSwaps(){
     int count = 0;
-    for (int safety=0; safety<5; safety++) {
+    while (1) {
         int pass = 0;
         for (int i=safeGiMinS3; i<safeGiMaxS3; i++) {
             int a,b,c,d;
@@ -743,6 +958,7 @@ int Grid::tryAllQuadriSwaps(){
             if (testAndDoQuadriSwap(a,c,d,b)) pass++;
             if (testAndDoQuadriSwap(a,d,b,c)) pass++;
             if (testAndDoQuadriSwap(a,d,c,b)) pass++;
+            if (testAndDoSwap(b,c)) pass++;
             a = i; b = i+1; c=i+sx+1; d=i+sx+2;
             if (testAndDoQuadriSwap(a,b,c,d)) pass++;
             if (testAndDoQuadriSwap(a,b,d,c)) pass++;
@@ -750,6 +966,7 @@ int Grid::tryAllQuadriSwaps(){
             if (testAndDoQuadriSwap(a,c,d,b)) pass++;
             if (testAndDoQuadriSwap(a,d,b,c)) pass++;
             if (testAndDoQuadriSwap(a,d,c,b)) pass++;
+            if (testAndDoSwap(a,d)) pass++;
             a = i; b = i+1; c=i-sx; d=i+sx+1;
             if (testAndDoQuadriSwap(a,b,c,d)) pass++;
             if (testAndDoQuadriSwap(a,b,d,c)) pass++;
@@ -757,11 +974,12 @@ int Grid::tryAllQuadriSwaps(){
             if (testAndDoQuadriSwap(a,c,d,b)) pass++;
             if (testAndDoQuadriSwap(a,d,b,c)) pass++;
             if (testAndDoQuadriSwap(a,d,c,b)) pass++;
+            if (testAndDoSwap(c,d)) pass++;
         }
         if (pass==0) break;
         count+=pass;
     }
-    std::cout<<"Done "<<count<<" greedy quadri-swaps;\n";
+    if (count) std::cout<<"Done "<<count<<" greedy quadri-swaps;\n";
     return count;
 }
 
@@ -780,10 +998,8 @@ int Grid::tryAllSwapsBordersIncluded(){
         }
         if (pass==0) break;
         count+=pass;
-
-		if (count > 500) break;
     }
-    std::cout<<"Done "<<count<<" greedy swaps;\n";
+    if (count) std::cout<<"Done "<<count<<" greedy swaps;\n";
     return count;
 }
 
@@ -870,6 +1086,16 @@ void Grid::enlargeGrid(int dxMin, int dxMax, int dyMin, int dyMax){
 scalar squaredOf(scalar x){return x*x;}
 
 
+int Grid::hopDistanceV(int vi, int vj) const{
+    int gi = posInGrid[vi];
+    int gj = posInGrid[vj];
+    if (gi==-1) gi = vdesired[vi];
+    if (gj==-1) gj = vdesired[vj];
+    if (gi==-1) return -1;
+    if (gj==-1) return -1;
+    return hopDistance(gi,gj);
+}
+
 int Grid::hopDistance(int gi, int gj) const{
     int xi = gi%sx;
     int yi = gi/sx;
@@ -879,18 +1105,19 @@ int Grid::hopDistance(int gi, int gj) const{
     return std::min(
                 std::abs(xi-xj)+std::abs(yi-yj),
                 std::abs(xi-xjb)+std::abs(yi-yj)
-                ); // TODO! -std::max(0,std::)
+           ); // TODO! -std::max(0,std::)
 }
 
+/*
 static bool contains(const std::vector<int> &except, int i){
     for (int j:except) if(i==j) return true;
     return false;
 }
-
+*/
 
 bool Grid::fixUnassignedVertexNiceWay(int vi){
 
-    for (int safety=0; safety<1000; safety++) {
+    while (1){
         int gi = vdesired[vi];
         if (gi==-1) return false;
         int vj = grid[gi];
@@ -899,10 +1126,10 @@ bool Grid::fixUnassignedVertexNiceWay(int vi){
             assign(gi,vi);
             return true;
         } else {
-            scalar before = energyAround(gi);
+            scalar before = energyAroundExcept1(gi);
             assign(gi,vi);
-            scalar after =  energyAround(gi);
-            if (before+0.0001<after) {
+            scalar after =  energyAroundExcept1(gi);
+            if (before<after) {
                 // before was better: undo swap
                 assign(gi,vj);
                 posInGrid[vi] = -1;
@@ -913,25 +1140,25 @@ bool Grid::fixUnassignedVertexNiceWay(int vi){
             }
         }
     }
-
-    return false;
 }
 
 bool Grid::fixUnassignedVertexDijkstra(int vi){
 
-    scalar maxCost = (edgeLen*edgeLen*6)*5;
+    //std::cout<<"Assign "<<vi<<":...\n";
+    scalar maxCost = edgeLen*edgeLen*6*5;
     std::vector<scalar> cost(grid.size(),maxCost);
     std::vector<int> prevStep(grid.size(),-2);
-    std::set<int> boundary;
+    std::set<int> boundary; // TODO: priority queue here
     std::set<int> visited;
-    int dest;
+    int orig, dest;
 
     int gi = vdesired[vi]; //bestPositionFor(vi);
+    orig = gi;
     if (gi==-1) {
         std::cout<<"Assign "<<vi<<": I can't even.\n";
         return false;
     }
-    prevStep[gi] = -1;
+    //prevStep[gi] = -1;
     boundary.insert(gi);
     cost[gi] = 0;
     bool pathFound = false;
@@ -946,19 +1173,23 @@ bool Grid::fixUnassignedVertexDijkstra(int vi){
         for (int gj:boundary) {
             if (cost[gj]<best)  { best = cost[gj]; gi = gj;}
         }
+        assert(gi!=-1);
         boundary.erase(gi);
         visited.insert(gi);
+
+        if (grid[gi]==-1) {
+            pathFound = true;
+            dest = gi;
+            break;
+        }
 
         for (int n=0; n<6; n++) {
             int gj = gi+neigh[n];
             if (visited.find(gj)!=visited.end()) continue;
-            if (grid[gj]==-1) {
-                prevStep[gj] = gi;
-                pathFound = true;
-                dest = gj;
-                break;
-            }
+
             scalar newCost = cost[gi] + energyAroundIf(gj, grid[gi] ) - energyAround(gj);
+            if (isExternal[gj]) newCost+=4000.0;
+
             if (cost[gj] > newCost) {
                 cost[gj] = newCost;
                 boundary.insert(gj);
@@ -967,8 +1198,32 @@ bool Grid::fixUnassignedVertexDijkstra(int vi){
         }
     }
     std::cout<<"Assign "<<vi<<": path found. Applyting it: ";
-    {
+    gi = dest;
+
+    assign(dest,vi);
+
+    std::vector<int> touched;
+    while (1) {
+        touched.push_back(gi);
+        int gj = prevStep[gi];
+
+        //std::cout<<gi<<"<--"<<gj<<"  ";
+        if (gj<0) {
+            if (isExternal[dest]) std::cout<<"*\n";
+            else std::cout<<"+\n";
+            break;
+        }
+
+        std::cout<<"-";
+
+        swapTwo( gj, gi );
+        gi = gj;
+    }
+    for (int gi:touched) tryAllSwapsAround(gi);
+
     //posInGrid[vi]=vdesired[vi];
+
+    /*
     int gi = dest;
     while (1) {
         myAssert( grid[gi]==-1 ,"not carry the -1");
@@ -989,9 +1244,10 @@ bool Grid::fixUnassignedVertexDijkstra(int vi){
         tryAllSwapsAround(gi);
         gi = gj;
     }
+    */
     //std::cout<<"done "<<vi<<" (grid Pos:"<<posInGrid[vi]<<")\n";
     return true;
-    }
+
 }
 
 
@@ -1012,7 +1268,9 @@ int Grid::assignUnassignedNiceWay(){
 }
 
 
-int Grid::assignUnassignedHardWay(){
+int Grid::greedyAssignUnassigned(){
+
+    Grid::computeIsExternal();
 
     int countYes = 0;
     std::vector<int> toFix;

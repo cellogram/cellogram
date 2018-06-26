@@ -1,9 +1,12 @@
-#include<fstream>
+#include "mesh.h"
+
+#include "grid.h"
+
 #include<set>
 #include<map>
 
 #include "my_assert.h"
-#include "mesh.h"
+
 
 namespace cellogram
 {
@@ -15,7 +18,6 @@ void Mesh::setFaceRegularity(){
         f.regularity =  goodTriangle( f[0],f[1],f[2] )*0.5;
         for (int w=0; w<3; w++)
             f.regularity += V[ f[w] ].distToIrr;
-        //std::cout<<"REG = "<<f.regularity<<" = "<<V[ f[0] ].distToIrr<<","<<V[ f[1] ].distToIrr<<","<<V[ f[2] ].distToIrr<<"\n";
     }
 }
 
@@ -55,6 +57,78 @@ int Mesh::mostRegularFace()const{
     return res;
 }
 
+vec2 Mesh::parellelogramRule(int fi, int ei) const{
+    const Face& f( F[fi] );
+    int w = f.cornerOfEdge(ei);
+    vec2 p0 = V[F[fi].vi[(w+0)%3]].p;
+    vec2 p1 = V[F[fi].vi[(w+1)%3]].p;
+    vec2 p2 = V[F[fi].vi[(w+2)%3]].p;
+    return p1 + p0 - p2;
+}
+
+scalar Mesh::parallelogramError( int ei ) const{
+    const Edge& e( E[ei] );
+    if (e.fi[1]==-1) return 0;
+    if (e.fi[0]==-1) return 0;
+    const Face& fi= F[e.fi[0]] ;
+    const Face& fj= F[e.fi[1]] ;
+    int wi = (fi.cornerOfEdge(ei) + 2)%3;
+    int wj = (fj.cornerOfEdge(ei) + 2)%3;
+    vec2 pi = V[fi.vi[wi]].p;
+    vec2 pa = V[e.vi[0]].p;
+    vec2 pb = V[e.vi[1]].p;
+    vec2 pj = V[fj.vi[wj]].p;
+
+    return squaredDistance(pi,pa+pb-pj);
+}
+
+int Mesh::viOnOtherSide(int fa, int ei) const{
+    int wa = F[fa].cornerOfEdge(ei);
+    int e = F[fa].ei[wa];
+    int fb = E[e].fi[0];
+    if (fb == fa) fb = E[e].fi[1];
+    if (fb==-1) return -1;
+    return F[fb].oppositeVertOfEdge( ei );
+;
+
+}
+
+void maybeSwap(int &i, int x, int y){
+    if (i==x) i=y;
+    else
+    if (i==y) i=x;
+}
+
+void Mesh::swapVert(int vi, int vj){
+
+    //std::swap( V[vi].p , V[vj].p);
+
+    /*
+    for (Face& f : F) {
+        maybeSwap(f.vi[0],vi,vj);
+        maybeSwap(f.vi[1],vi,vj);
+        maybeSwap(f.vi[2],vi,vj);
+    }
+    for (Edge& e : E) {
+        maybeSwap(e.vi[0],vi,vj);
+        maybeSwap(e.vi[1],vi,vj);
+    }
+    std::swap( V[vi].val , V[vj].val);*/
+
+}
+
+scalar Mesh::parallelogramError( int vi, int va, int vb, int vj ) const{
+
+    if (vj==-1) return 9e9;
+    vec2 pi = V[vi].p;
+    vec2 pa = V[va].p;
+    vec2 pb = V[vb].p;
+    vec2 pj = V[vj].p;
+
+    return squaredDistance(pi,pa+pb-pj);
+}
+
+
 void Mesh::setDistanceToIrr(){
     for (Vert &v:V) v.distToIrr = ((v.val!=6) || v.dontcare)? 0 : 1000;
 
@@ -90,26 +164,6 @@ void Edge::substitute(int fa, int fb){
 }
 
 
-bool Mesh::importXYZv2(const std::string& filename ){
-    std::fstream f;
-    f.open(filename.data(),std::fstream::in);
-    if (!f.is_open()) {
-        std::cout<<"Cannot open \""<<filename<<"\"\n";
-        return false;
-    }
-    V.clear();
-    while (1){
-        scalar x,y;
-        f>>x>>y;
-        if (f.eof()) break;
-        Vert v; v.p = vec2(x,y);
-        V.push_back(v);
-    }
-    f.close();
-
-    return true;
-}
-
 void Mesh::fromEigen(const Eigen::MatrixXd &mat){
     for(int i = 0; i < mat.rows(); ++i){
         Vert v; v.p = vec2(mat(i,0),mat(i,1));
@@ -117,32 +171,6 @@ void Mesh::fromEigen(const Eigen::MatrixXd &mat){
     }
 }
 
-bool Mesh::importXYZ(const std::string& filename ){
-
-    std::fstream f;
-    f.open(filename.data(),std::fstream::in);
-    if (!f.is_open()) {
-        std::cout<<"Cannot open \""<<filename<<"\"\n";
-        return false;
-    }
-    int n;
-    f>>n;
-    V.resize(n);
-    //vert.resize(n);
-
-    for (int i=0; i<n; i++) {
-
-        double dummy;
-        f>> V[i].p.x >> V[i].p.y >> dummy;
-        myAssert(dummy==0,"Error reading???");
-    }
-    f.close();
-
-    std::cout<<"Done reading "<<n<<" verts\n";
-
-    return true;
-
-}
 
 void Mesh::fuckUp(){
     //Vert v; v.p = vec2(200,600); V.push_back(v);
@@ -151,86 +179,24 @@ void Mesh::fuckUp(){
     std::cout<<"Fucked up mesh :D ! ";
 }
 
-bool Mesh::exportOBJ(const std::string& filename ){
-    std::ofstream f;
-    f.open(filename.data(),std::fstream::out);
-    if (!f.is_open()) return false;
-
-    for (const Vert& v:V) f<<"v "<<v.p.x<<" "<<v.p.y<<" 0\n";
-    for (const Face& ff:F) if (!ff.dontcare) f<<"f "<<ff[0]+1<<" "<<ff[1]+1<<" "<<ff[2]+1<<"\n";
-
-    f.close();
-    std::cout<<"Done writing OBJ ("<<V.size()<<" verts, "<<F.size()<<" faces)\n";
-    return true;
-}
-
-
-bool Mesh::exportOFF(const std::string& filename ){
-    std::ofstream f;
-    f.open(filename.data(),std::fstream::out);
-    if (!f.is_open()) return false;
-
-    for (const Vert& v:V) f<<"v "<<v.p.x<<" "<<v.p.y<<" 0\n";
-    for (const Face& ff:F) if (!ff.dontcare) f<<"f "<<ff[0]+1<<" "<<ff[1]+1<<" "<<ff[2]+1<<"\n";
-
-    f.close();
-    std::cout<<"Done writing OBJ ("<<V.size()<<" verts, "<<F.size()<<" faces)\n";
-    return true;
-}
-
-static void setColorByValency(int&r, int &g, int &b, int val){
-    r = g = b = 255;
-    if (val>6) {r/=2; g/=2;}
-    if (val>7) {r/=2; g/=2;}
-    if (val<6) {b/=2; g/=2;}
-    if (val<5) {b/=2; g/=2;}
-}
-
-static void setColorByFloodfill(int&r, int &g, int &b, float timeReached, int disputed){
-    r = g = b = 255;
-    if (disputed>0) g=b=std::max(0,255-disputed*75);
-    else {
-        r = g = timeReached*255;
+void Mesh::sanityCheckValencies(){
+    //std::cout<<"testingValencies...";
+    std::vector<int> val(V.size(),0);
+    for (Edge& e:E) {
+        val[e[0]]++;
+        val[e[1]]++;
     }
 
-}
-
-
-bool Mesh::exportPLY(const std::string& filename, bool colorByFloodfill){
-    std::ofstream f;
-    f.open(filename.data(),std::fstream::out);
-    if (!f.is_open()) return false;
-
-    int nf =0;
-    for (const Face& ff:F) if (!ff.dontcare) nf++;
-    f
-    <<"ply\n"
-    <<"format ascii 1.0\n"
-    <<"element vertex "<< V.size()<<"\n"
-    <<"property float x\n"
-    <<"property float y\n"
-    <<"property float z\n"
-    <<"property uchar red\n"
-    <<"property uchar green\n"
-    <<"property uchar blue\n"
-    <<"property uchar alpha\n"
-    <<"element face "<< nf<<"\n"
-    <<"property list uchar int vertex_indices\n"
-    <<"end_header\n";
-
-    for (const Vert& v:V) {
-        int r,g,b;
-        if (colorByFloodfill) setColorByFloodfill(r,g,b,v.timeReached,v.disputed);
-        else setColorByValency(r,g,b,v.val);
-        f<<v.p.x<<" "<<v.p.y<<" 0 "<<r<<" "<<g<<" "<<b<<" "<<" 255\n";
+    int nerr = 0;
+    for (uint i=0; i<V.size(); i++){
+        if (val[i] != V[i].val) {
+            nerr++;
+            std::cout<<"\nVALENCY ERROR: "<<val[i] <<"!="<< V[i].val<<" \n";
+        }
     }
-    for (const Face& ff:F) if (!ff.dontcare) f<<"3 "<<ff[0]<<" "<<ff[1]<<" "<<ff[2]<<"\n";
+    //if (nerr==0) std::cout<<"OK\n";
 
-    f.close();
-    std::cout<<"Done writing PLY ("<<V.size()<<" verts, "<<F.size()<<" faces)\n";
-    return true;
 }
-
 
 void Mesh::updateValencies(){
     for (Vert& v:V) {v.val=0;}
@@ -265,7 +231,7 @@ int Face::oppositeVertOfEdge(const Edge &e) const{
     return res;
 }
 
-void Mesh::updateIndices(){
+void Mesh::buildEdgesFromFaces(){
 
     std::map< Edge , int > map;
 
@@ -309,7 +275,7 @@ void Mesh::dontCareAboutBoundaries(){
     }
 }
 
-void Mesh::propagateDontcareToFaces(){
+void Mesh::propagateDontcareV2F(){
 
     for (Face& f:F) {
         f.dontcare = false;
@@ -318,7 +284,17 @@ void Mesh::propagateDontcareToFaces(){
     }
 }
 
-void Mesh::propagateDontcareToVerts(){
+void Mesh::propagateFixedF2E(){
+    for (Edge& e:E) e.fixed = false;
+    for (Face& f:F)  {
+        if (f.fixed) for (int w=0; w<3; w++) {
+            E[f.ei[w]].fixed = true;
+        }
+    }
+
+}
+
+void Mesh::propagateDontcareF2V(){
 
     for (Vert& v:V) v.dontcare = false;
     for (Face& f:F)  {
@@ -330,7 +306,8 @@ void Mesh::propagateDontcareToVerts(){
 }
 
 bool Mesh::canFlip(int ei){
-    if (ei==14122) return false; // small hack for now
+
+    //if (E[ei].fixed) return false;
     if (E[ei].fi[1]==-1) return false; // boundary
     if (E[ei].fi[0]==-1) return false; // boundary
 
@@ -347,7 +324,7 @@ bool Mesh::canFlip(int ei){
     for (int w=0; w<3; w++) if ((F[fb][w]!=v0) && (F[fb][w]!=v1)) vb = F[fb][w];
     if (va==vb) return false;
 
-    if (V[v0].dontcare || V[v1].dontcare || V[va].dontcare || V[vb].dontcare) return false;
+    //if (V[v0].dontcare || V[v1].dontcare || V[va].dontcare || V[vb].dontcare) return false;
 
     return true;
 }
@@ -398,11 +375,14 @@ scalar myPow(scalar b, scalar exp){
 }
 
 scalar Vert::price()const{
-    return myPow(0.9,disputed);
-    //return (disputed>0)?0.5:1.0;
+    //return myPow(0.9,disputed);
+    return (disputed>0)?0.5:1.0;
+    //return 2.0-disputed;
+    //return 1;
+    //return std::max((scalar)0,0.4f-disputed);
 }
 
-FlipScore Mesh::evaluateFlip(int ei, bool desperate){
+FlipScore Mesh::evaluateFlip(int ei, Grid &g){
     int v0 = E[ei][0];
     int v1 = E[ei][1];
     int fa = E[ei].fi[0];
@@ -426,23 +406,31 @@ FlipScore Mesh::evaluateFlip(int ei, bool desperate){
     */
 
     scalar valReduction = 0;
-    if (!V[v0].dontcare) { if (V[v0].val>6) valReduction+=V[v0].price(); else valReduction-=V[v0].price(); }
-    if (!V[v1].dontcare) { if (V[v1].val>6) valReduction+=V[v1].price(); else valReduction-=V[v1].price(); }
-    if (!V[va].dontcare) { if (V[va].val<6) valReduction+=V[va].price(); else valReduction-=V[va].price(); }
-    if (!V[vb].dontcare) { if (V[vb].val<6) valReduction+=V[vb].price(); else valReduction-=V[vb].price(); }
+    { if (V[v0].val>6) valReduction+=V[v0].price(); else valReduction-=V[v0].price(); }
+    { if (V[v1].val>6) valReduction+=V[v1].price(); else valReduction-=V[v1].price(); }
+    { if (V[va].val<6) valReduction+=V[va].price(); else valReduction-=V[va].price(); }
+    { if (V[vb].val<6) valReduction+=V[vb].price(); else valReduction-=V[vb].price(); }
+    /*if (V[v0].val==7) valReduction++; if (V[v0].val==6) valReduction--;
+    if (V[v1].val==7) valReduction++; if (V[v1].val==6) valReduction--;
+    if (V[va].val==5) valReduction++; if (V[va].val==6) valReduction--;
+    if (V[vb].val==5) valReduction++; if (V[vb].val==6) valReduction--;*/
 
     /*scalar mult01 = ((V[v0].disputed>0)||(V[v1].disputed>0))? 1.2 : 1;
     scalar multAB = ((V[va].disputed>0)||(V[vb].disputed>0))? 1.2 : 1;*/
 
-    scalar lenReduction=0;
-    lenReduction += (distance(V[v1].p,V[v0].p) - distance(V[va].p,V[vb].p))/10.0;
+    scalar misReduction = 0.0;
 
-    if (desperate) {
+    if (g.vert.size()) misReduction = g.misalignmentOptimist(v0,v1) - g.misalignmentOptimist(va,vb);
+
+    //lenReduction += (distance(V[v1].p,V[v0].p) - distance(V[va].p,V[vb].p))/10.0;
+    //lenReduction += happynessTri( fa ) + happynessTri( fb )
+
+    /*if (desperate) {
         lenReduction += 10.0*(rand()%1000*0.001);
-    }
+    }*/
     myAssert(va!=vb,"Dont!");
 
-    return FlipScore(valReduction,lenReduction);
+    return FlipScore(valReduction,misReduction);
 }
 
 
@@ -453,28 +441,25 @@ static bool contains(const std::vector<int>& v, int i){
     for (int j:v) if (j==i) return true; return false;
 }
 
-int Mesh::bestFlip(bool force ){
+int Mesh::bestFlip(FlipScore &bestScore, Grid &g){
     int winner = -1;
 
-    FlipScore bestScore(0,0);
-    if (!force) bestScore = FlipScore(0,0);
-    else bestScore = FlipScore(0,-99999);
+    bestScore = FlipScore(-999,0);
 
     //else bestScore.second = -20.0;
     for (int i=0; i<(int)E.size(); i++) {
         if (!canFlip(i)) continue;
 
-        auto score = evaluateFlip(i,force);
-        if (force) {
-            //if (FlipScore(0,0)<score) continue;
-            if (contains(forbiden,i)) continue;
-        }
+        auto score = evaluateFlip(i, g);
+
+        if (contains(forbiden,i)) continue;
+
         if (bestScore<score) {
             bestScore = score;
             winner = i;
         }
     }
-    forbiden.push_back(winner);
+    //forbiden.push_back(winner);
     lastMove = bestScore;
     //std::cout<<"BestScore ("<<bestScore.first<<","<<bestScore.second<<")\n";
     return winner;
@@ -533,12 +518,12 @@ void Mesh::updateValence(int vi, int delta){
 }
 
 void Mesh::applyFlip(int ei){
-    //std::cout<<"FLIPPP\n";
     int v0 = E[ei][0];
     int v1 = E[ei][1];
+    //std::cout<<"FLIPPP "<<v0<<","<<v1<<"\n";
     int fa = E[ei].fi[0];
     int fb = E[ei].fi[1];
-    int wa,wb;
+    int wa = -1,wb =-1;
 
     for (int w=0; w<3; w++) if ((F[fa][w]!=v0) && (F[fa][w]!=v1)) wa = w;
     for (int w=0; w<3; w++) if ((F[fb][w]!=v0) && (F[fb][w]!=v1)) wb = w;
@@ -546,8 +531,16 @@ void Mesh::applyFlip(int ei){
     //std::cout<<"ERA: "<<fa<<" ->"<<F[fa].ei[(wa+2)%3]             <<
     //              "  F = "<<E[ F[fa].ei[(wa+2)%3]].fi[0]<<","<<E[ F[fa].ei[(wa+2)%3]].fi[1]<<"\n";
 
-    myAssert(F[fa].ei[(wa+1)%3]==ei,"SENNO!OOOOOOOOOOOOOOOOAAA");
-    myAssert(F[fb].ei[(wb+1)%3]==ei,"SENNO!OOOOOOOOOOOOOOOOBBB");
+    myAssert(wa!=-1,"NO WA\n");
+    myAssert(wb!=-1,"NO WA\n");
+
+    myAssert((F[fa][(wa+1)%3]==v0) || (F[fa][(wa+1)%3]==v1),"NO WA 1\n");
+    myAssert((F[fa][(wa+2)%3]==v0) || (F[fa][(wa+2)%3]==v1),"NO WA 2\n");
+    myAssert((F[fb][(wb+1)%3]==v0) || (F[fb][(wb+1)%3]==v1),"NO WB 1\n");
+    myAssert((F[fb][(wb+2)%3]==v0) || (F[fb][(wb+2)%3]==v1),"NO WB 2\n");
+
+    myAssert(F[fa].ei[(wa+1)%3]==ei,"NO WA3");
+    myAssert(F[fb].ei[(wb+1)%3]==ei,"NO WB3");
     int va = F[fa][wa];
     int vb = F[fb][wb];
 
@@ -578,8 +571,6 @@ void Mesh::applyFlip(int ei){
     updateValence(v0,-1);
     updateValence(v1,-1);
 
-    //std::cout<<"E': "<<fa<<" ->"<<F[fa].ei[(wa+2)%3]
-    //         <<"   F = "<<E[ F[fa].ei[(wa+2)%3]].fi[0]<<","<<E[ F[fa].ei[(wa+2)%3]].fi[1]<<"\n";
     for (int w=0; w<3; w++) myAssert( E[ F[fa].ei[w] ].has(fa), "FAIL CHECK FA "<<w<<" wa="<<wa<<"\n");
     for (int w=0; w<3; w++) myAssert( E[ F[fb].ei[w] ].has(fb), "FAIL CHECK FB "<<w<<" wb="<<wb<<"\n");
 
@@ -587,6 +578,7 @@ void Mesh::applyFlip(int ei){
 
 }
 
+/*
 void Mesh::removeDontcare(){
     auto oldV = V;
     std::vector<int> oldToNew(V.size(),-1);
@@ -604,89 +596,132 @@ void Mesh::removeDontcare(){
         for (int w=0; w<3; w++) f[w] = oldToNew[f[w]];
         if ((f[0]!=-1)&&(f[1]!=-1)&&(f[2]!=-1)) F.push_back(f);
     }
-    updateIndices();
+    buildEdgesFromFaces();
     updateValencies();
+}*/
+
+void Mesh::flipAs(const Grid& g){
+    std::cout<<"Flipping to match grid...\n";
+    int tot = 0;
+    while(1){
+        int done = 0;
+        for (uint ei=0; ei<E.size(); ei++){
+            if (!canFlip(ei)) continue;
+            int fa = E[ei].fi[0];
+            int fb = E[ei].fi[1];
+            int va=-1,vb=-1;
+            int v0 = E[ei][0];
+            int v1 = E[ei][1];
+
+            for (int w=0; w<3; w++) if ((F[fa][w]!=v0) && (F[fa][w]!=v1)) va = F[fa][w];
+            for (int w=0; w<3; w++) if ((F[fb][w]!=v0) && (F[fb][w]!=v1)) vb = F[fb][w];
+
+            //int d01 = g.hopDistanceV(v0,v1);
+            //int dab = g.hopDistanceV(va,vb);
+            //bool improveSimil = (( d01 > dab ) && ( d01 != -1 ) && ( dab != -1 ) );
+            //bool equalSimil = (( d01 == dab ) || ( d01 == -1 ) || ( dab == -1 )  );
+
+            /*int valReduction = 0;
+            { if (V[v0].val>6) valReduction++; else valReduction--; }
+            { if (V[v1].val>6) valReduction++; else valReduction--; }
+            { if (V[va].val<6) valReduction++; else valReduction--; }
+            { if (V[vb].val<6) valReduction++; else valReduction--; }
+*/
+            if ( (!g.areAdjacient(v0,v1)) && (g.areAdjacient(va,vb)) )
+
+            //if  ( dab == 1 && d01!= 1 ) {
+            //if  ( dab != -1 && d01!= -1 )
+            //if  ( (V[v0].val>=4) || (V[v1].val>=4) )
+            /*if ( ( g.posInGrid[va]!=-1 && g.posInGrid[vb]!=-1 &&
+                   g.posInGrid[v0]!=-1 && g.posInGrid[v1]!=-1)
+                //((V[va].val<4) || (V[vb].val<4))
+                 //||
+                 && ( //( d01 > dab )
+                      //improveSimil
+                      g.areAdjacient(va,vb)
+                      &&
+                      !g.areAdjacient(v0,v1)
+                 )
+                  )*/
+                {
+            //if (improveSimil ) { //|| (equalSimil  && (valReduction>0) )) {
+                applyFlip(ei);
+                done++;
+            }
+        }
+        if (!done) break;
+        tot+=done;
+    }
+    std::cout<<tot<<" flips done!\n";
 }
 
-bool Mesh::checkIfBest(){
-    if (nVal<bestVal) {
-        std::cout<<"Progress: "<<bestVal<<"-->"<<nVal; //<<" (with "<<forcedTurnsStart<<")\n";
-        bestVal = nVal;
+void Mesh::greedyFlips(int howDeep, Grid &g){
+
+    std::cout<<"Regularizing by FLIPS...\n";
+    //buildEdgesFromFaces();
+
+    //dontCareAboutBoundaries();
+    //for (int i=0; i<2; i++){
+    //        propagateDontcareV2F();
+    //    propagateDontcareF2V();
+    //}
 
 
-        // save best conf
-        bestConf = F;
-        //if (bestVal==0) break;
-        return true;
-    }
-    else {
-        std::cout<<"No progress\n";
-        return false;
-    }
-}
-
-void Mesh::regularizeByFlips(int howDeep, int howWide){
-
-    updateIndices();
-
-    dontCareAboutBoundaries();
-    for (int i=0; i<2; i++){
-        propagateDontcareToFaces();
-        propagateDontcareToVerts();
-    }
-
-    //updateAverageVecDir();
-
-    updateIndices();
+    //buildEdgesFromFaces();
     updateValencies();
-    bestVal = nVal;
     //sanityCheck();
 
-    int forcedTurnsStart = 0;
-    int forcedTurns = 0;
+    FlipScore totScore;
+
+    bestEver.score=totScore;
+    bestEver.F=F;
+    bestEver.E=E;
 
     int patience = 0;
-    for (int i=0; i<10000000; i++) {
-        int ei = bestFlip( forcedTurns > 0);
+    for (int i=0; i<1000; i++) {
+        FlipScore score;
+        int ei = bestFlip( score, g  );
 
-        forcedTurns--;
-        if (ei==-1) {
-            // no more profitable moves...
-            if (checkIfBest()) {
-                std::cout<<" (with "<<forcedTurnsStart<<")\n";
-                forcedTurnsStart = 0;
-                if (nVal==0) break;
-            } else {
-                // recover last best conf
-                //myAssert(forcedTurns<0,"WHY?");
-                F = bestConf; updateIndices(); updateValencies();
+        assert(ei>=0);
+
+        if (score.isPos()) {
+            applyFlip(ei);
+            totScore += score;
+        } else if (howDeep>0) {
+            // do a neg move?
+
+            if(bestEver.score < totScore ) {
+                bestEver.score=totScore;
+                bestEver.F=F;
+                bestEver.E=E;
+                patience = 0;
                 forbiden.clear();
             }
-            if (patience == 0) {forcedTurnsStart++; patience=howWide;} else patience--;
-            //forcedTurnsStart++;
 
-            forcedTurns = forcedTurnsStart;
-            if (forcedTurnsStart>howDeep) break;
-            continue;
+            patience++;
+
+            if (patience>howDeep) {
+                // rollback and bail out
+                totScore = bestEver.score;
+                F = bestEver.F;
+                E = bestEver.E;
+                updateValencies();
+                break;
+            }
+
+            applyFlip(ei);
+            forbiden.push_back(ei);
+            totScore += score;
         }
+        //forcedTurns--;
+        if (ei==-1) { break; }
 
-        applyFlip(ei);
 
-        {        // check
-
-            //sanityCheck();
-            //updateValencies();
-            //updateIndices();
-            //int test = updateValencies();
-            //myAssert(test==nVal,"Val mismatch "<<test<<"!="<<nVal<<"\n");
-            //nVal = test;
-        }
+        //sanityCheckValencies();
     }
 
-    F = bestConf; updateIndices(); updateValencies();
-    updateIndices();
-    propagateDontcareToFaces();
 
 }
-}
-}
+
+
+}} // namespaces

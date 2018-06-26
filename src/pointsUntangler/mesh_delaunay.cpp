@@ -1,7 +1,8 @@
 #include<igl/delaunay_triangulation.h>
-
+// #include<igl/incircle.h>
+// #include<igl/orient2D.h>
+#include<iostream>
 #include"mesh.h"
-#include <iostream>
 
 
 namespace cellogram
@@ -9,42 +10,34 @@ namespace cellogram
 namespace PointsUntangler
 {
 
-short sign(double d){
+short sign(scalar d){
     if (d<0) return -1; else if (d>0) return +1; else return 0;
 }
 
-short orient2D(
-    const scalar pa[2],
-    const scalar pb[2],
-    const scalar pc[2]){
-
-    return sign( cross( vec2(pa)-vec2(pc) , vec2(pb)-vec2(pc) ) );
-}
-
-inline vec2 circleCenter(vec2 A, vec2 B, vec2 C) {
-    vec2 ab = A + B;
-    vec2 bc = B + C;
-
-    vec2 ba = B - A;
-    vec2 cb = C - B;
-    vec2 ac = A - C;
-
-    vec2 center;
-
-    center.x = (ba.x*cb.y*ab.x - ba.y*bc.x*cb.x + ba.y*cb.y*ac.y)/(2*cross(ba,cb));
-    center.y = ab.y/2 - (center.x - ab.x/2)*ba.x/ba.y;
-
-    return center;
-}
-
-IGL_INLINE short incircle(
-    const scalar pa[2],
-    const scalar pb[2],
-    const scalar pc[2],
-    const scalar pd[2])
+inline short orient2D( const scalar A[2], const scalar B[2], const scalar C[2])
 {
-    vec2 c = circleCenter(pa,pb,pc);
-    return sign( squaredDistance(pa,c) - squaredDistance(pd,c));
+    scalar ACx = A[0]-C[0], ACy = A[1]-C[1];
+    scalar CBx = C[0]-B[0], CBy = C[1]-B[1];
+    return sign( CBx*ACy - CBy*ACx );
+}
+
+inline short incircle( const scalar A[2], const scalar B[2], const scalar C[2], const scalar D[2])
+{
+
+    scalar BAx = B[0]-A[0], BAy = B[1]-A[1];
+    scalar ACx = A[0]-C[0], ACy = A[1]-C[1];
+    scalar CBx = C[0]-B[0], CBy = C[1]-B[1];
+    scalar BDx = B[0]-D[0], BDy = B[1]-D[1];
+    scalar ADx = A[0]-D[0], ADy = A[1]-D[1];
+
+    scalar Txx = BAx*CBx;
+    scalar Tyy = BAy*CBy;
+    scalar Txy = BAx*CBy;
+    scalar Tyx = BAy*CBx;
+
+    return sign( (Tyy*ACy + Tyx*ACx - (Tyx-Txy)*BDx )*(Tyx-Txy)*ADx -
+                 (Txx*ACx + Txy*ACy + (Tyx-Txy)*BDy )*(Tyx-Txy)*ADy );
+
 }
 
 void Mesh::delaunay(){
@@ -58,7 +51,7 @@ void Mesh::delaunay(){
     F.resize(FF.rows());
     for (int i=0; i<FF.rows(); i++) for (int w=0; w<3; w++) { F[i].vi[w] = FF(i,w); }
 
-    updateIndices();
+    buildEdgesFromFaces();
     updateValencies();
     std::cout<<"Delaunay done (" << nVal <<" irregulars)\n";
 }

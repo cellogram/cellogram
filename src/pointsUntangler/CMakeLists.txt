@@ -1,15 +1,17 @@
 project(points_untangler)
 
 set(source_list
-	points_untangler.cpp
-	points_untangler.h
 	grid.cpp
 	grid.h
 	mesh.cpp
 	mesh.h
 	mesh_delaunay.cpp
+	mesh_io.cpp
 	mesh_to_grid.cpp
 	my_assert.h
+	# orient2D.cpp
+	points_untangler.cpp
+	points_untangler.h
 	vec2.h
 )
 
