@@ -79,13 +79,6 @@ public:
 		NORM_DISP,
 	} selected_3d_attribute;
 
-	int view_mode_3d = 0;
-	static const int NO_VIEW_SELECTED = 0;
-	static const int X_DISP_SELECTED = 1;
-	static const int Y_DISP_SELECTED = 2;
-	static const int Z_DISP_SELECTED = 3;
-	static const int MAG_DISP_SELECTED = 4;
-
 	// Clicking flags
 	bool select_region = false;
 	bool add_vertex = false;

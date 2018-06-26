@@ -1,6 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "UIState.h"
 #include "FileDialog.h"
+#include <cellogram/convex_hull.h>
 #include <cellogram/laplace_energy.h>
 #include <cellogram/mesh_solver.h>
 #include <cellogram/region_grow.h>
@@ -8,19 +9,19 @@
 #include <cellogram/tri2hex.h>
 #include <cellogram/vertex.h>
 #include <cellogram/vertex_degree.h>
+#include <igl/colormap.h>
+#include <igl/jet.h>
+#include <igl/opengl/gl.h>
 #include <igl/opengl/glfw/imgui/ImGuiHelpers.h>
 #include <igl/opengl/glfw/imgui/ImGuiMenu.h>
-#include <igl/unproject_onto_mesh.h>
 #include <igl/opengl/glfw/Viewer.h>
-#include <igl/colormap.h>
-#include <igl/opengl/gl.h>
-#include <imgui/imgui_internal.h>
+#include <igl/parula.h>
+#include <igl/unproject_onto_mesh.h>
 #include <imgui/imgui.h>
+#include <imgui/imgui_internal.h>
+#include <GLFW/glfw3.h>
 #include <algorithm>
 #include <vector>
-#include <igl/parula.h>
-#include <igl/jet.h>
-#include <cellogram/convex_hull.h>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
@@ -191,7 +192,7 @@ namespace cellogram {
 	//}
 	}
 
-// Demonstrate creating a fullscreen menu bar and populating it.
+	// Demonstrate creating a fullscreen menu bar and populating it.
 	void UIState::build_menu_bar()
 	{
 		if (ImGui::BeginMainMenuBar())
@@ -213,45 +214,18 @@ namespace cellogram {
 				if (ImGui::MenuItem("Save", "Ctrl+S")) {
 					save();
 				}
-				if (ImGui::MenuItem("!!Save As..")) {}
-					ImGui::Separator();
-				if (ImGui::BeginMenu("Options"))
-				{
-					static bool enabled = true;
-					ImGui::MenuItem("Enabled", "", &enabled);
-					ImGui::BeginChild("child", ImVec2(0, 60), true);
-					for (int i = 0; i < 10; i++)
-						ImGui::Text("Scrolling Text %d", i);
-					ImGui::EndChild();
-					static float f = 0.5f;
-					static int n = 0;
-					static bool b = true;
-					ImGui::SliderFloat("Value", &f, 0.0f, 1.0f);
-					ImGui::InputFloat("Input", &f, 0.1f);
-					ImGui::Combo("Combo", &n, "Yes\0No\0Maybe\0\0");
-					ImGui::Checkbox("Check", &b);
-					ImGui::EndMenu();
+				if (ImGui::MenuItem("Save As..")) {
+
 				}
-				if (ImGui::BeginMenu("Colors"))
-				{
-					float sz = ImGui::GetTextLineHeight();
-					for (int i = 0; i < ImGuiCol_COUNT; i++)
-					{
-						const char* name = ImGui::GetStyleColorName((ImGuiCol)i);
-						ImVec2 p = ImGui::GetCursorScreenPos();
-						ImGui::GetWindowDrawList()->AddRectFilled(p, ImVec2(p.x + sz, p.y + sz), ImGui::GetColorU32((ImGuiCol)i));
-						ImGui::Dummy(ImVec2(sz, sz));
-						ImGui::SameLine();
-						ImGui::MenuItem(name);
-					}
-					ImGui::EndMenu();
-				}
+
 			if (ImGui::BeginMenu("Disabled", false)) // Disabled
 			{
 				IM_ASSERT(0);
 			}
 
-			if (ImGui::MenuItem("Quit", "Alt+F4")) { exit(0);  }
+			if (ImGui::MenuItem("Quit", "Alt+F4")) {
+				glfwSetWindowShouldClose(viewer.window, GLFW_TRUE);
+			}
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("View"))
