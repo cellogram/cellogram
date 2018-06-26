@@ -128,9 +128,10 @@ namespace {
 namespace {
 
 	namespace AppLayout {
-		constexpr float left_panel_width = 300;
-		constexpr float right_panel_width = 300;
+		constexpr float left_panel_width = 180;
+		constexpr float right_panel_width = 180;
 		constexpr float vertical_padding = 0;
+		constexpr int height_colorbar = 20;
 
 		constexpr ImGuiWindowFlags window_flags =
 			ImGuiWindowFlags_NoSavedSettings
@@ -139,28 +140,6 @@ namespace {
 
 } // anonymous namespace
 
-static const float SCALING_FACTOR = 0.6;
-static const float PADDING_GENERAL = 5;
-static const float PADDING_TOP = 38;
-static const float PADDING_LEFT = 5;
-static const float PADDING_RIGHT = 5;
-static const float HEIGHT_FILE_MENU = 153;
-static const float HEIGHT_POINTS_MENU = 240;
-#ifdef WITH_UNTANGLER
-static const float HEIGHT_MESH_MENU = 390;
-#else
-static const float HEIGHT_MESH_MENU = 350;
-#endif
-static const float HEIGHT_ANALYSIS_MENU = 405;
-static const float HEIGHT_HISTOGRAM = 263;
-static const float HEIGHT_LEGEND = 395;
-static const float HEIGHT_VIEW_OPTIONS = 435;
-static const float HEIGHT_REGION_MENU = 328;
-static const float HEIGHT_REGION_TEXT = 125;
-static const int HEIGHT_COLORBAR = 20;
-static float CLICKING_MENU_HEIGHT = 450;
-static float MENU_WIDTH = 300;
-
 ////////////////////////////////////////////////////////////////////////////////
 
 void UIState::draw_viewer_window() {
@@ -168,10 +147,10 @@ void UIState::draw_viewer_window() {
 	float h = draw_menu_bar();
 
 	// Menu on left
-	draw_left_panel(h, SCALING_FACTOR * menu_scaling() * AppLayout::left_panel_width);
+	draw_left_panel(h, menu_scaling() * AppLayout::left_panel_width);
 
 	// Menu on the right
-	draw_right_panel(h, SCALING_FACTOR * menu_scaling() * AppLayout::right_panel_width);
+	draw_right_panel(h, menu_scaling() * AppLayout::right_panel_width);
 
 	// Mess up with the mouse cursor
 	if (delete_vertex || add_vertex) {
@@ -251,11 +230,6 @@ float UIState::draw_menu_bar() {
 // -----------------------------------------------------------------------------
 
 void UIState::draw_left_panel(float ypos, float width) {
-	const float height_file_menu = HEIGHT_FILE_MENU * menu_scaling();
-	const float height_points_menu = HEIGHT_POINTS_MENU * menu_scaling();
-	const float height_mesh_menu = HEIGHT_MESH_MENU * menu_scaling();
-	const float height_analysis_menu = HEIGHT_ANALYSIS_MENU * menu_scaling();
-
 	float vpad = AppLayout::vertical_padding * menu_scaling();
 	ypos += vpad;
 
@@ -315,12 +289,6 @@ void UIState::draw_left_panel(float ypos, float width) {
 // -----------------------------------------------------------------------------
 
 void UIState::draw_right_panel(float ypos, float width) {
-	const float height_histogram = HEIGHT_HISTOGRAM * SCALING_FACTOR * menu_scaling();
-	const float height_view_options = HEIGHT_VIEW_OPTIONS * SCALING_FACTOR * menu_scaling();
-	const float height_region_menu = HEIGHT_REGION_MENU * SCALING_FACTOR * menu_scaling();
-	const float height_region_text = HEIGHT_REGION_TEXT * SCALING_FACTOR * menu_scaling();
-	const float height_legend = HEIGHT_LEGEND * SCALING_FACTOR * menu_scaling();
-
 	auto canvas = ImGui::GetIO().DisplaySize;
 	float xpos = canvas.x - width;
 	float vpad = AppLayout::vertical_padding * menu_scaling();
@@ -717,14 +685,14 @@ void UIState::draw_legend_menu() {
 	static GLuint color_bar_texture = -1;
 	static const int width = ImGui::GetWindowWidth();
 	if (color_bar_texture) {
-		Eigen::Matrix<unsigned char, Eigen::Dynamic, 4, Eigen::RowMajor> cmap(width * HEIGHT_COLORBAR, 4);
+		Eigen::Matrix<unsigned char, Eigen::Dynamic, 4, Eigen::RowMajor> cmap(width * AppLayout::height_colorbar, 4);
 
 		Eigen::MatrixXd t = Eigen::VectorXd::LinSpaced(width, 0, width);
 		Eigen::MatrixXd col;
 		igl::colormap(cm, t, true, col);
 		assert(col.rows() == width);
 		for (int i = 0; i < width; ++i) {
-			for (int j = 0; j < HEIGHT_COLORBAR; ++j) {
+			for (int j = 0; j < AppLayout::height_colorbar; ++j) {
 				for (int c = 0; c < 3; ++c)
 					cmap(j * width + i, c) = col(i, c) * 255;
 			}
@@ -737,11 +705,11 @@ void UIState::draw_legend_menu() {
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, HEIGHT_COLORBAR, 0, GL_RGBA, GL_UNSIGNED_BYTE, cmap.data());
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, AppLayout::height_colorbar, 0, GL_RGBA, GL_UNSIGNED_BYTE, cmap.data());
 		glGenerateMipmap(GL_TEXTURE_2D);
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
-	ImGui::Image(reinterpret_cast<ImTextureID>(color_bar_texture), ImVec2(width, HEIGHT_COLORBAR));
+	ImGui::Image(reinterpret_cast<ImTextureID>(color_bar_texture), ImVec2(width, AppLayout::height_colorbar));
 
 	if (std::abs(min_val) <= 1e-20)
 		ImGui::Text("0");
