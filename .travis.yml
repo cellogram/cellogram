@@ -37,5 +37,5 @@ script:
 - mkdir build
 - cd build
 - cmake -DCMAKE_BUILD_TYPE=$CONFIG ..
-- make -j2
-- make test
+# - make -j2
+# - make test
