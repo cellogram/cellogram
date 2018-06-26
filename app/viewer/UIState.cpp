@@ -961,6 +961,12 @@ void UIState::viewer_control_3d()
 
 	Vtmp.col(2).array() -= 0.1;
 	physical_data().set_mesh(Vtmp, state.mesh3d.F);
+
+	{
+		MatrixXd normals;
+		igl::per_face_normals(Vtmp, state.mesh3d.F, normals);
+		physical_data().set_normals(normals);
+	}
 	return;
 
 	Eigen::MatrixXd C, disp;

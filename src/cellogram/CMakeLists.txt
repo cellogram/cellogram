@@ -11,6 +11,8 @@ set(source_list
 	delaunay.h
 	dijkstra.cpp
 	dijkstra.h
+	extrude_mesh.cpp
+	extrude_mesh.h
 	fitGaussian2D.cpp
 	fitGaussian2D.h
 	image_reader.cpp

@@ -2,6 +2,7 @@
 #include "State.h"
 
 #include <cellogram/convex_hull.h>
+#include <cellogram/extrude_mesh.h>
 #include <cellogram/image_reader.h>
 #include <cellogram/laplace_energy.h>
 #include <cellogram/point_source_detection.h>
@@ -801,7 +802,7 @@ namespace cellogram {
 	// 		mesh3d.init_nano_dots(mesh, padding_size, thickness, E, nu, formulation);
 	// }
 
-	void State::init_3d_mesh() {
+	void State::mesh_2d_adaptive() {
 		// Create background mesh with a scalar field = norm of the displacements of the dots
 		Eigen::MatrixXd V;
 		Eigen::MatrixXi F;
@@ -812,21 +813,31 @@ namespace cellogram {
 		S = (S.array() - S.minCoeff()) / std::max(1e-9, (S.maxCoeff() - S.minCoeff()));
 		S = (1.0 - S.array()) * (mesh_area_rel[1] - mesh_area_rel[0]) + mesh_area_rel[0];
 
-		MmgOptions opt;
-		opt.hgrad = 10;
-
 		double vmin = V.minCoeff();
 		double vmax = V.maxCoeff();
 		V = V.array() / std::max(1e-9, vmax - vmin);
-		remesh_adaptive_2d(V, F, S, V, F);
+		remesh_adaptive_2d(V, F, S, V, F, mmg_options);
 		V = V.array() * std::max(1e-9, vmax - vmin);
 
 		// Mesh volume adaptively based on background mesh
 		mesh3d.V.resize(V.rows(), 3);
-		mesh3d.V.leftCols<2>() = V;
+		mesh3d.V.leftCols<2>() = V.leftCols<2>();
 		mesh3d.V.col(2).setZero();
 
 		mesh3d.F = F;
+	}
+
+	void State::extrude_2d_mesh() {
+		double zmin = mesh3d.V.col(2).minCoeff();
+		double zmax = mesh3d.V.col(2).maxCoeff();
+
+		// Remesh 2d surface in repeated calls
+		if (std::abs(zmin - zmax) > 1e-6) {
+			mesh_2d_adaptive();
+		}
+
+		// Extrude into a 3d mesh
+		extrude_mesh(mesh3d.V, mesh3d.F, -thickness, mesh3d.V, mesh3d.F, mesh3d.T);
 	}
 
 	void State::analyze_3d_mesh() {

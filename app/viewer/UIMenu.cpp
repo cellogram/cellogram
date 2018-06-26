@@ -2,11 +2,12 @@
 #include "UIState.h"
 #include "FileDialog.h"
 #include <cellogram/laplace_energy.h>
+#include <cellogram/mesh_solver.h>
+#include <cellogram/region_grow.h>
+#include <cellogram/remesh_adaptive.h>
 #include <cellogram/tri2hex.h>
 #include <cellogram/vertex.h>
-#include <cellogram/region_grow.h>
 #include <cellogram/vertex_degree.h>
-#include <cellogram/mesh_solver.h>
 #include <igl/opengl/glfw/imgui/ImGuiHelpers.h>
 #include <igl/opengl/glfw/imgui/ImGuiMenu.h>
 #include <igl/unproject_onto_mesh.h>
@@ -84,6 +85,37 @@ namespace cellogram {
 				ImGui::EndCombo();
 			}
 			return value_changed;
+		}
+
+		void SetMmgOptions(MmgOptions &opt) {
+			// -ar  x 	all codes 	Value for angle detection.
+			// -hausd  x 	all codes 	Maximal Hausdorff distance for the boundaries approximation.
+			// -hgrad  x 	all codes 	Gradation value.
+			// -hmax  x 	all codes 	Maximal edge size.
+			// -hmin  x 	all codes 	Minimal edge size.
+			// -hsiz x 	all codes 	Build a constant size map of size x.
+			// -noinsert 	all codes 	No point insertion/deletion.
+			// -nomove 	all codes 	No point relocation.
+			// -nosurf 	all codes 	No surface modifications.
+			// -noswap 	all codes 	No edge flipping.
+			// -nr 	all codes 	No angle detection.
+			// -nsd  n 	mmg2d 	In mesh generation mode (no given triangle), save the subdomain of index n. Save all subdomains if n=0 (default).
+
+			float hausd = opt.hausd;
+			float hgrad = opt.hgrad;
+			float hmax = opt.hmax;
+			float hmin = opt.hmin;
+			float hsiz = opt.hsiz;
+			ImGui::InputFloat("hausd", &hausd); ShowTooltip("Maximal Hausdorff distance for the boundaries approximation.");
+			ImGui::InputFloat("hgrad", &hgrad); ShowTooltip("Gradation value.");
+			ImGui::InputFloat("hmax", &hmax); ShowTooltip("Maximal edge size.");
+			ImGui::InputFloat("hmin", &hmin); ShowTooltip("Minimal edge size.");
+			ImGui::InputFloat("hsiz", &hsiz); ShowTooltip("Build a constant size map of size x.");
+			opt.hausd = hausd;
+			opt.hgrad = hgrad;
+			opt.hmax = hmax;
+			opt.hmin = hmin;
+			opt.hsiz = hsiz;
 		}
 
 	} // anonymous namespace
@@ -253,7 +285,7 @@ static const float MENU_Y = 190;
 static const float HEIGHT_FILE_MENU = 153;
 static const float HEIGHT_POINTS_MENU = 240;
 static const float HEIGHT_MESH_MENU = 350;
-static const float HEIGHT_ANALYSIS_MENU = 315;
+static const float HEIGHT_ANALYSIS_MENU = 365;
 static const float HEIGHT_HISTOGRAM = 263;
 static const float HEIGHT_LEGEND = 395;
 static const float HEIGHT_VIEW_OPTIONS = 435;
@@ -514,27 +546,37 @@ void UIState::draw_analysis_menu(int x, int y)
 		ImGui::InputFloat("Padding [µm]", &state.padding_size, 1, 0, 0);
 		ImGui::InputFloat("Thickness [µm]", &state.thickness, 1, 0, 0);
 		ImGui::InputFloat2("Triangle area (%)", state.mesh_area_rel);
+		if (ImGui::TreeNode("Advanced meshing options")) {
+			SetMmgOptions(state.mmg_options);
+			ImGui::TreePop();
+		}
 
 		ImGui::InputFloat("E", &state.E, 0.1, 0.01, 3);
 		ImGui::InputFloat("nu", &state.nu, 0.1, 0.01, 3);
 
 		ImGui::PopItemWidth();
 	}
-	if (ImGui::Button("Mesh 3D volume", ImVec2(-1, 0))) {
-		state.init_3d_mesh();
+
+	auto reset_view_3d = [&]() {
 		analysis_mode = true;
 		show_mesh = false;
 		show_image = false;
 		show_mesh_fill = false;
 		viewer_control();
+
+	};
+
+	if (ImGui::Button("Mesh 2D adaptive", ImVec2(-1, 0))) {
+		state.mesh_2d_adaptive();
+		reset_view_3d();
+	}
+	if (ImGui::Button("Extrude 2D mesh", ImVec2(-1, 0))) {
+		state.extrude_2d_mesh();
+		reset_view_3d();
 	}
 	if (ImGui::Button("Analyze 3D mesh", ImVec2(-1, 0))) {
 		state.analyze_3d_mesh();
-		analysis_mode = true;
-		show_mesh = false;
-		show_image = false;
-		show_mesh_fill = false;
-		viewer_control();
+		reset_view_3d();
 	}
 
 	ImGui::End();
