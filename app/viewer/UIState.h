@@ -2,9 +2,7 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 #include "cellogram/State.h"
-
 #include <Eigen/Dense>
-
 #include <igl/colormap.h>
 #include <igl/opengl/glfw/Viewer.h>
 #include <igl/opengl/glfw/imgui/ImGuiMenu.h>
@@ -39,7 +37,6 @@ public:
 	int matching_id;
 	int selected_id;
 	int physical_id;
-
 
 	int selected_region = -1;
 	int selected_param = 0;
@@ -145,36 +142,38 @@ private:
 	void create_region_label();
 	void build_region_edges(const Eigen::MatrixXd &pts, Eigen::MatrixXd &bad_P1, Eigen::MatrixXd &bad_P2, Eigen::MatrixXd &C);
 
-	void build_menu_bar();
+	///////////////
+	// UI Panels //
+	///////////////
 
-	bool show_file_menu = true;
+	// Menu bar
+	void draw_menu_bar();
+
+	// Left panel
 	void draw_file_menu(int x, int y, int &y_return);
-
-	bool show_points_menu = true;
 	void draw_points_menu(int x, int y);
-
-	bool show_mesh_menu = true;
 	void draw_mesh_menu(int x, int y);
-
-	bool show_analysis_menu = true;
 	void draw_analysis_menu(int x, int y);
 
-	bool show_histogram = true;
+	// Right panel
 	void draw_histogram(int x, int y);
-
-	bool show_legend = true;
 	void draw_legend(int x, int y);
-
-	bool show_view_options = true;
 	void draw_view_options(int x, int y);
-
-	bool show_region_options = true;
 	void draw_region_menu(int x, int y);
+
+	// Toggle windows
+	bool show_file_menu = true;
+	bool show_points_menu = true;
+	bool show_mesh_menu = true;
+	bool show_analysis_menu = true;
+	bool show_histogram = true;
+	bool show_legend = true;
+	bool show_view_options = true;
+	bool show_region_options = true;
+
 public:
 	// Menu stuff
-	void draw_viewer_window() override { }
-	void draw_viewer_menu() override;
-	void draw_custom_window() override;
+	void draw_viewer_window() override;
 
 	bool key_pressed(unsigned int unicode_key, int modifiers) override;
 	bool key_up(int key, int modifiers) override;

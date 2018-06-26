@@ -1,7 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "UIState.h"
 #include "FileDialog.h"
-#include <GLFW/glfw3.h>
 #include <cellogram/PolygonUtils.h>
 #include <cellogram/StringUtils.h>
 #include <igl/colon.h>
@@ -9,6 +8,7 @@
 #include <igl/per_face_normals.h>
 #include <igl/unproject_onto_mesh.h>
 #include <imgui/imgui.h>
+#include <GLFW/glfw3.h>
 #include <sys/stat.h>  // no clue why required -- man pages say so
 #include <sys/types.h> // required for stat.h
 ////////////////////////////////////////////////////////////////////////////////
@@ -17,43 +17,43 @@ namespace cellogram {
 
 namespace {
 
-int cellogram_mkdir(const std::string &path) {
-	int nError;
-#if defined(_WIN32)
-	std::wstring widestr = std::wstring(path.begin(), path.end());
-	nError = _wmkdir(widestr.c_str()); // can be used on Windows
-#else
-	nError = mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH); // can be used on non-Windows
-#endif
-	return nError;
-}
-
-void get_region_color(const int &status, Eigen::RowVector3d &color) {
-	switch (status) {
-	case Region::OK:
-		color << 46, 204, 113;
-		break;
-	case Region::TOO_MANY_VERTICES:
-		color << 155, 89, 182;
-		break;
-	case Region::TOO_FEW_VERTICES:
-		color << 241, 196, 15;
-		break;
-	case Region::REGION_TOO_LARGE:
-		color << 41, 128, 185;
-		break;
-	case Region::NO_SOLUTION:
-		color << 192, 57, 43;
-		break;
-	case Region::NOT_PROPERLY_CLOSED:
-		color << 149, 165, 166;
-		break;
-	default:
-		color << 52, 73, 94;
-		break;
+	int cellogram_mkdir(const std::string &path) {
+		int nError;
+	#if defined(_WIN32)
+		std::wstring widestr = std::wstring(path.begin(), path.end());
+		nError = _wmkdir(widestr.c_str()); // can be used on Windows
+	#else
+		nError = mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH); // can be used on non-Windows
+	#endif
+		return nError;
 	}
-	color /= 255;
-}
+
+	void get_region_color(const int &status, Eigen::RowVector3d &color) {
+		switch (status) {
+		case Region::OK:
+			color << 46, 204, 113;
+			break;
+		case Region::TOO_MANY_VERTICES:
+			color << 155, 89, 182;
+			break;
+		case Region::TOO_FEW_VERTICES:
+			color << 241, 196, 15;
+			break;
+		case Region::REGION_TOO_LARGE:
+			color << 41, 128, 185;
+			break;
+		case Region::NO_SOLUTION:
+			color << 192, 57, 43;
+			break;
+		case Region::NOT_PROPERLY_CLOSED:
+			color << 149, 165, 166;
+			break;
+		default:
+			color << 52, 73, 94;
+			break;
+		}
+		color /= 255;
+	}
 
 } // anonymous namespace
 
