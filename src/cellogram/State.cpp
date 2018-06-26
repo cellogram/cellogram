@@ -1,21 +1,21 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "State.h"
 
-#include <cellogram/point_source_detection.h>
-#include <cellogram/image_reader.h>
 #include <cellogram/convex_hull.h>
-
+#include <cellogram/extrude_mesh.h>
+#include <cellogram/image_reader.h>
+#include <cellogram/laplace_energy.h>
+#include <cellogram/point_source_detection.h>
+#include <cellogram/PolygonUtils.h>
+#include <cellogram/region_grow.h>
+#include <cellogram/remesh_adaptive.h>
+#include <cellogram/tri2hex.h>
 #include <cellogram/voronoi.h>
 
-#include <cellogram/laplace_energy.h>
-#include <cellogram/tri2hex.h>
-#include <cellogram/region_grow.h>
-#include <cellogram/PolygonUtils.h>
-
-#include <igl/slice.h>
 #include <igl/list_to_matrix.h>
 #include <igl/point_in_poly.h>
 #include <igl/remove_duplicate_vertices.h>
+#include <igl/slice.h>
 
 #include <tbb/parallel_for.h>
 #include <tbb/task_scheduler_init.h>
@@ -339,7 +339,7 @@ namespace cellogram {
 				ptmp.push_back_params(it->params.get_index(row));
 			}
 		}
-		
+
 		Eigen::MatrixXd tmpV(V_all.size(), 2);
 		for (int i = 0; i < V_all.size(); i++)
 		{
@@ -364,7 +364,7 @@ namespace cellogram {
 		{
 			V(Vj(i), 0) += tmpV(i, 0);
 			V(Vj(i), 1) += tmpV(i, 1);
-			
+
 			P_tmp = P_final.get_index(Vj(i));
 
 			P_tmp.sum(ptmp.get_index(i));
@@ -794,12 +794,54 @@ namespace cellogram {
 
 	}
 
-	void State::init_3d_mesh()
-	{
-		if(image_from_pillars)
-			mesh3d.init_pillars(mesh, eps, I, L);
-		else
-			mesh3d.init_nano_dots(mesh, padding_size, thickness, E, nu, formulation);
+	// void State::init_3d_mesh()
+	// {
+	// 	if(image_from_pillars)
+	// 		mesh3d.init_pillars(mesh, eps, I, L);
+	// 	else
+	// 		mesh3d.init_nano_dots(mesh, padding_size, thickness, E, nu, formulation);
+	// }
+
+	void State::mesh_2d_adaptive() {
+		// Create background mesh with a scalar field = norm of the displacements of the dots
+		Eigen::MatrixXd V;
+		Eigen::MatrixXi F;
+		Eigen::VectorXd S;
+		mesh.get_background_mesh(V, F, S);
+
+		// Rescale displacement field
+		S = (S.array() - S.minCoeff()) / std::max(1e-9, (S.maxCoeff() - S.minCoeff()));
+		S = (1.0 - S.array()) * (mesh_area_rel[1] - mesh_area_rel[0]) + mesh_area_rel[0];
+
+		double vmin = V.minCoeff();
+		double vmax = V.maxCoeff();
+		V = V.array() / std::max(1e-9, vmax - vmin);
+		remesh_adaptive_2d(V, F, S, V, F, mmg_options);
+		V = V.array() * std::max(1e-9, vmax - vmin);
+
+		// Mesh volume adaptively based on background mesh
+		mesh3d.V.resize(V.rows(), 3);
+		mesh3d.V.leftCols<2>() = V.leftCols<2>();
+		mesh3d.V.col(2).setZero();
+
+		mesh3d.F = F;
+	}
+
+	void State::extrude_2d_mesh() {
+		double zmin = mesh3d.V.col(2).minCoeff();
+		double zmax = mesh3d.V.col(2).maxCoeff();
+
+		// Remesh 2d surface in repeated calls
+		if (std::abs(zmin - zmax) > 1e-6) {
+			mesh_2d_adaptive();
+		}
+
+		// Extrude into a 3d mesh
+		extrude_mesh(mesh3d.V, mesh3d.F, -thickness, mesh3d.V, mesh3d.F, mesh3d.T);
+	}
+
+	void State::analyze_3d_mesh() {
+		// TODO
 	}
 
 	void State::reset_state()

@@ -1,10 +1,11 @@
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
+#include "common.h"
 #include "Mesh.h"
 #include "Mesh3d.h"
-#include "common.h"
 #include "Region.h"
+#include "remesh_adaptive.h"
 #include <vector>
 #include <Eigen/Dense>
 #include <string>
@@ -28,6 +29,9 @@ public:
 
 	bool image_from_pillars = false;
 
+	MmgOptions mmg_options;
+
+	float mesh_area_rel[2] = {0.001, 0.1};
 	float padding_size = 25;
 	float thickness = 30;
 
@@ -95,8 +99,11 @@ public:
 	void delete_vertex(const int index);
 	void add_vertex(Eigen::Vector3d new_point);
 
-	void init_3d_mesh();
-	
+	// FEM part
+	void mesh_2d_adaptive();
+	void extrude_2d_mesh();
+	void analyze_3d_mesh();
+
 	void reset_state();
 
 public:

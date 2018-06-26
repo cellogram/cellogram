@@ -1,3 +1,5 @@
+#pragma once
+
 ////////////////////////////////////////////////////////////////////////////////
 #include "common.h"
 #include <Eigen/Dense>
@@ -5,9 +7,9 @@
 
 namespace cellogram {
 
-/* See MmgTools documentation for interpreation
- *  https://www.mmgtools.org/mmg-remesher-try-mmg/mmg-remesher-options
- */
+// See MmgTools documentation for interpreation
+// https://www.mmgtools.org/mmg-remesher-try-mmg/mmg-remesher-options
+//
 struct MmgOptions {
     /* Remeshing */
     bool angle_detection = true;

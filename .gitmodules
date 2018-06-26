@@ -9,4 +9,4 @@
 	url = https://github.com/MmgTools/mmg.git
 [submodule "3rdparty/polyfem"]
 	path = 3rdparty/polyfem
-	url = https://github.com/geometryprocessing/polyfem.git
+	url = git@github.com:geometryprocessing/polyfem.git

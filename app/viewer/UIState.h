@@ -2,9 +2,7 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 #include "cellogram/State.h"
-
 #include <Eigen/Dense>
-
 #include <igl/colormap.h>
 #include <igl/opengl/glfw/Viewer.h>
 #include <igl/opengl/glfw/imgui/ImGuiMenu.h>
@@ -40,13 +38,12 @@ public:
 	int selected_id;
 	int physical_id;
 
-
 	int selected_region = -1;
 	int selected_param = 0;
 	int dragging_id = -1;
 	// UI options
 	// double foo;
-	
+
 	Eigen::MatrixXi img_F;
 	Eigen::MatrixXd img_V;
 	Eigen::MatrixXf hist;
@@ -69,14 +66,15 @@ public:
 	bool show_selected_region = true;
 	bool analysis_mode = false;
 	bool show_traction_forces = true;
-	
+
 	// 3d visualizer
-	int view_mode_3d = 0;
-	static const int NO_VIEW_SELECTED = 0;
-	static const int X_DISP_SELECTED = 1;
-	static const int Y_DISP_SELECTED = 2;
-	static const int Z_DISP_SELECTED = 3;
-	static const int MAG_DISP_SELECTED = 4;
+	enum class Mesh3DAttribute : int {
+		NONE,
+		X_DISP,
+		Y_DISP,
+		Z_DISP,
+		NORM_DISP,
+	} selected_3d_attribute;
 
 	// Clicking flags
 	bool select_region = false;
@@ -134,7 +132,7 @@ public:
 private:
 	igl::ColorMapType cm = igl::ColorMapType::COLOR_MAP_TYPE_PARULA;
 	double min_val = 0, max_val = 0;
-	
+
 	bool block_mouse_behavior(int button);
 	void viewer_control();
 	void viewer_control_2d();
@@ -144,36 +142,38 @@ private:
 	void create_region_label();
 	void build_region_edges(const Eigen::MatrixXd &pts, Eigen::MatrixXd &bad_P1, Eigen::MatrixXd &bad_P2, Eigen::MatrixXd &C);
 
-	void build_menu_bar();
+	///////////////
+	// UI Panels //
+	///////////////
 
-	bool show_file_menu = true;
+	// Menu bar
+	void draw_menu_bar();
+
+	// Left panel
 	void draw_file_menu(int x, int y, int &y_return);
-
-	bool show_points_menu = true;
 	void draw_points_menu(int x, int y);
-
-	bool show_mesh_menu = true;
 	void draw_mesh_menu(int x, int y);
-
-	bool show_analysis_menu = true;
 	void draw_analysis_menu(int x, int y);
 
-	bool show_histogram = true;
+	// Right panel
 	void draw_histogram(int x, int y);
-
-	bool show_legend = true;
 	void draw_legend(int x, int y);
-
-	bool show_view_options = true;
 	void draw_view_options(int x, int y);
-
-	bool show_region_options = true;
 	void draw_region_menu(int x, int y);
+
+	// Toggle windows
+	bool show_file_menu = true;
+	bool show_points_menu = true;
+	bool show_mesh_menu = true;
+	bool show_analysis_menu = true;
+	bool show_histogram = true;
+	bool show_legend = true;
+	bool show_view_options = true;
+	bool show_region_options = true;
+
 public:
 	// Menu stuff
-	void draw_viewer_window() override { }
-	void draw_viewer_menu() override;
-	void draw_custom_window() override;
+	void draw_viewer_window() override;
 
 	bool key_pressed(unsigned int unicode_key, int modifiers) override;
 	bool key_up(int key, int modifiers) override;

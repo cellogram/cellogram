@@ -1,5 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "Mesh.h"
+#include "delaunay.h"
 #include <cellogram/load_points.h>
 #include <cellogram/convex_hull.h>
 #include <cellogram/delaunay.h>
@@ -12,11 +13,10 @@
 #endif
 
 #include <igl/list_to_matrix.h>
-
-#include <fstream>
-#include <Eigen/Sparse>
-
+#include <igl/bounding_box.h>
 #include <igl/opengl/glfw/Viewer.h>
+#include <Eigen/Sparse>
+#include <fstream>
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -386,7 +386,26 @@ namespace cellogram {
 		max = maxVal.block<1,2>(0, 0)*scaling;
 		min = minVal.block<1,2>(0, 0)*scaling;
 
-		std::cout << "max:\n" << max << "\n\nmin:\n" << min << std::endl;
+		// std::cout << "max:\n" << max << "\n\nmin:\n" << min << std::endl;
+	}
+
+	void Mesh::get_background_mesh(Eigen::MatrixXd &V, Eigen::MatrixXi &F, Eigen::VectorXd &S) const {
+		Eigen::MatrixXd BV;
+		Eigen::MatrixXi BF;
+		V = points.leftCols<2>();
+		igl::bounding_box(V, BV, BF);
+		assert(BV.rows() == 4);
+
+		V.resize(points.rows() + BV.rows(), 2);
+		V.topRows(points.rows()) = points.leftCols<2>();
+		V.bottomRows(BV.rows()) = BV;
+
+		delaunay_triangulation(V, F);
+		V *= scaling;
+
+		S.resize(V.rows());
+		S.head(points.rows()) = (detected - points).rowwise().norm();
+		S.tail(BV.rows()).setConstant(S.head(points.rows()).minCoeff());
 	}
 
 	void Mesh::local_update(Eigen::VectorXi & local2global, Eigen::MatrixXd & new_points, Eigen::MatrixXi & new_triangles, Eigen::VectorXi & old_triangles)
