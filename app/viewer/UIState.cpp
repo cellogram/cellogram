@@ -285,6 +285,8 @@ void UIState::init(igl::opengl::glfw::Viewer *_viewer) {
 
     ImGuiIO& io = ImGui::GetIO();
     io.IniFilename = nullptr;
+
+    glfwSetWindowTitle(viewer.window, "Cellogram viewer");
 }
 
 void UIState::launch() {
