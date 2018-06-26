@@ -159,20 +159,21 @@ private:
 
 	// Right panel
 	void draw_right_panel(float ypos, float width);
-	void draw_histogram(int x, int y);
-	void draw_legend(int x, int y);
-	void draw_view_options(int x, int y);
-	void draw_region_menu(int x, int y);
+	void draw_histogram_menu();
+	void draw_legend_menu();
+	void draw_layer_menu();
+	void draw_region_menu();
 
 	// Toggle windows
 	bool show_file_menu = true;
 	bool show_points_menu = true;
 	bool show_mesh_menu = true;
 	bool show_analysis_menu = true;
-	bool show_histogram = true;
-	bool show_legend = true;
-	bool show_view_options = true;
-	bool show_region_options = true;
+
+	bool show_histogram_menu = true;
+	bool show_legend_menu = true;
+	bool show_layer_menu = true;
+	bool show_region_menu = true;
 
 public:
 	// Menu stuff
