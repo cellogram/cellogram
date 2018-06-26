@@ -280,6 +280,13 @@ void UIState::initialize() {
 	assert(viewer.data_list.size() == physical_id + 1);
 }
 
+void UIState::init(igl::opengl::glfw::Viewer *_viewer) {
+	super::init(_viewer);
+
+    ImGuiIO& io = ImGui::GetIO();
+    io.IniFilename = nullptr;
+}
+
 void UIState::launch() {
 	// Launch viewer
 	viewer.launch();

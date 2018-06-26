@@ -93,6 +93,7 @@ public:
 	std::string save_dir = "";
 	bool data_available = false;
 public:
+	virtual void init(igl::opengl::glfw::Viewer *_viewer) override;
 	void initialize();
 
 	void launch();
@@ -147,15 +148,17 @@ private:
 	///////////////
 
 	// Menu bar
-	void draw_menu_bar();
+	float draw_menu_bar(); // returns menu bar height
 
 	// Left panel
-	void draw_file_menu(int x, int y, int &y_return);
-	void draw_points_menu(int x, int y);
-	void draw_mesh_menu(int x, int y);
-	void draw_analysis_menu(int x, int y);
+	void draw_left_panel(float ypos, float width);
+	void draw_file_menu();
+	void draw_points_menu();
+	void draw_mesh_menu();
+	void draw_analysis_menu();
 
 	// Right panel
+	void draw_right_panel(float ypos, float width);
 	void draw_histogram(int x, int y);
 	void draw_legend(int x, int y);
 	void draw_view_options(int x, int y);
