@@ -11,32 +11,37 @@
 
 namespace cellogram
 {
-namespace PointsUntangler
-{
+    namespace PointsUntangler
+    {
 
-class Grid;
-class Mesh;
-void meshToGrid(Mesh &m, Grid &g);
+        class Grid;
+        class Mesh;
+        void meshToGrid(Mesh &m, Grid &g);
 
-class Grid{
-public:
-    Grid();
-    std::vector<vec2> vert;
-    std::vector<int> posInGrid;
+        class Grid{
+        public:
+    /* data per grid cell (size: sx*sy) */
+            std::vector<int> grid;
+            std::vector<bool> isExternal;
 
-    std::vector<int> grid;
-    std::vector<bool> madeUpVert;
 
+    /* data per vert (size: vert.size()) */
+            std::vector<int> posInGrid;
+            std::vector<bool> madeUpVert;
+            std::vector<vec2> vert;
     std::vector<int> vdesired; // this vert desires this grid position
+    std::vector<mat2> mat;
 
     int sx,sy;
     void create(int sx, int sy);
+    void createVertices(int nv);
 
+    Grid();
     void initIndicesOnGrid(int nx,int ny);
     void initVertOnGrid(int nx,int ny);
 
     int assignUnassignedNiceWay();
-    int assignUnassignedHardWay();
+    int greedyAssignUnassigned();
 
     void printf() const;
 
@@ -52,16 +57,25 @@ public:
     bool exportPLY(const std::string& filename ) const;
     bool exportPLYtartan(const std::string& filename ) const;
 
-    void createVertices(int nv);
 
-    int tryAllSwaps();
+    int greedySwaps();
     int tryAllSwapsBordersIncluded();
 
     int fillGapsMakingPtsUp();
 
-friend void meshToGrid(Mesh &m, Grid &g);
+    scalar misalignment(int va, int vb) const;
+    scalar misalignmentOptimist(int va, int vb) const;
+    bool areAdjacient(int va, int vb) const;
 
+    friend void floodFill(Mesh &m, Grid &g, int floodfillMode);
+    friend void test01();
+    friend void test02();
+
+    void computeMatrices();
+    void smoothMatrices();
+    void smoothMatrices(int n);
 private:
+    void computeIsExternal();
 
     void sanityCheck( int x, int y );
     void sanityCheck();
@@ -120,6 +134,7 @@ private:
     void enlargeToInclude(int gi, int buffer);
     void enlargeGrid(int dxMin, int dxMax, int dyMin, int dyMax);
     int hopDistance(int gi, int gj) const;
+    int hopDistanceV(int vi, int vj) const;
 
     //int bestPositionFor(int vj, std::vector<int> except = {});
 
@@ -130,6 +145,7 @@ private:
 
     scalar triangleQuality(int vi, int vj, int vk ) const;
 
+    friend class Mesh;
 };
 
 }

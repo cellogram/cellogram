@@ -224,7 +224,11 @@ static const float PADDING_RIGHT = 5;
 static const float MENU_Y = 190;
 static const float HEIGHT_FILE_MENU = 153;
 static const float HEIGHT_POINTS_MENU = 240;
+#ifdef WITH_UNTANGLER
+static const float HEIGHT_MESH_MENU = 380;
+#else
 static const float HEIGHT_MESH_MENU = 350;
+#endif
 static const float HEIGHT_ANALYSIS_MENU = 315;
 static const float HEIGHT_HISTOGRAM = 263;
 static const float HEIGHT_LEGEND = 395;
@@ -384,8 +388,6 @@ void UIState::draw_mesh_menu(int x, int y)
 		mesh_color.resize(0, 0);
 		viewer_control();
 	}
-
-	ImGui::Separator();
 #endif
 
 	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.50f);

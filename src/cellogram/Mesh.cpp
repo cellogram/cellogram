@@ -609,15 +609,16 @@ namespace cellogram {
 		Eigen::MatrixXd newPts;
 		cellogram::PointsUntangler::pointsUntangler(detected, triangles, newPts);
 
-		Eigen::MatrixXd total(detected.rows()+newPts.rows(), detected.cols());
+		// Eigen::MatrixXd total = newPts;
+		// Eigen::MatrixXd total(detected.rows()+newPts.rows(), detected.cols());
 		// total.setZero();
 
-		total.block(0, 0, detected.rows(), detected.cols()) = detected;
-		total.block(detected.rows(), 0, newPts.rows(), newPts.cols()) = newPts;
+		// total.block(0, 0, detected.rows(), detected.cols()) = detected;
+		// total.block(detected.rows(), 0, newPts.rows(), newPts.cols()) = newPts;
 
 
-		detected = total;
-		points = detected;
+		// detected = total;
+		// points = total;
 
 		adjacency_list(triangles, adj);
 		generate_vertex_to_tri();

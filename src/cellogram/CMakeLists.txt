@@ -73,7 +73,7 @@ if(CELLOGRAM_WTIH_UNTANGLER)
 		points_untangler
 	)
 
-	target_compile_definitions(${PROJECT_NAME} PRIVATE -DWITH_UNTANGLER)
+	target_compile_definitions(${PROJECT_NAME} PUBLIC -DWITH_UNTANGLER)
 endif()
 
 # Extra warnings
