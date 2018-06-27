@@ -36,6 +36,6 @@ install:
 script:
 - mkdir build
 - cd build
-- cmake -DCMAKE_BUILD_TYPE=$CONFIG ..
-# - make -j2
-# - make test
+- cmake -DCMAKE_BUILD_TYPE=$CONFIG -DCELLOGRAM_WTIH_UNTANGLER=ON ..
+- make -j2
+- make test

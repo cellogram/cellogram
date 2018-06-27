@@ -1,7 +1,7 @@
 #pragma once
 
 ////////////////////////////////////////////////////////////////////////////////
-#include "common.h"
+#include <cellogram/common.h>
 #include <geogram/mesh/mesh.h>
 #include <Eigen/Dense>
 #include <vector>
@@ -9,6 +9,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
+
 	struct edge {
 		int x, y;
 		double w;

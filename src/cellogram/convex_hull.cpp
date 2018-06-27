@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "convex_hull.h"
-#include "delaunay.h"
-#include "navigation.h"
+#include <cellogram/delaunay.h>
+#include <cellogram/navigation.h>
 #include <igl/edges.h>
 #include <igl/boundary_loop.h>
 #include <igl/triangle/cdt.h>

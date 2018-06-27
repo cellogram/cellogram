@@ -1,13 +1,12 @@
 #pragma once
 
 ////////////////////////////////////////////////////////////////////////////////
-#include "common.h"
-#include <vector>
+#include <cellogram/common.h>
+#include <cellogram/fitGaussian2D.h>
 #include <geogram/basic/geometry.h>
 #include <geogram/mesh/mesh.h>
 #include <Eigen/Dense>
-
-#include "fitGaussian2D.h"
+#include <vector>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {

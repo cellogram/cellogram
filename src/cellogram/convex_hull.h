@@ -1,11 +1,11 @@
 #pragma once
 
 ////////////////////////////////////////////////////////////////////////////////
-#include "common.h"
-#include <vector>
+#include <cellogram/common.h>
 #include <geogram/basic/geometry.h>
 #include <geogram/mesh/mesh.h>
 #include <Eigen/Dense>
+#include <vector>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {

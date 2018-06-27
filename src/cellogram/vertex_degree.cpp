@@ -1,12 +1,13 @@
 ////////////////////////////////////////////////////////////////////////////////
-#include <Eigen/Dense>
+#include "vertex_degree.h"
 #include <igl/edges.h>
+#include <Eigen/Dense>
 #include <iostream>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
 
-	// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 void vertex_degree(const Eigen::MatrixXi &F, Eigen::VectorXi &degree)
 {
@@ -32,11 +33,10 @@ void vertex_degree(const Eigen::MatrixXi &F, Eigen::VectorXi &degree)
 			degree(E(i, j))++;
 			degree(E(i, (j + 1) % 2))++;
 		}
-		
+
 	}
 	degree /= 2;
 }
-
 
 // -----------------------------------------------------------------------------
 

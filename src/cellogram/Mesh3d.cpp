@@ -1,17 +1,14 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "Mesh3d.h"
-#include "Mesh.h"
-#include "remesh_adaptive.h"
-
-#include <igl/opengl/glfw/Viewer.h>
+#include <cellogram/Mesh.h>
+#include <cellogram/remesh_adaptive.h>
+#include <State.hpp>
 #include <Mesh3D.hpp>
 #include <MeshUtils.hpp>
-
+#include <PointBasedProblem.hpp>
+#include <igl/opengl/glfw/Viewer.h>
 #include <igl/copyleft/tetgen/tetrahedralize.h>
 #include <geogram/mesh/mesh_io.h>
-#include <State.hpp>
-
-#include <PointBasedProblem.hpp>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
@@ -88,7 +85,7 @@ namespace cellogram {
 
 			//Id = 1, func, mesh, coord =2, means skip z for the interpolation
 			problem.add_function(1, disp, pts, mesh.triangles, 2);
-			
+
 			//Id = 3, zero Dirichelt
 			problem.add_constant(3, Eigen::Vector3d(0,0,0));
 

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "Mesh.h"
-#include "delaunay.h"
+#include <cellogram/delaunay.h>
 #include <cellogram/load_points.h>
 #include <cellogram/convex_hull.h>
 #include <cellogram/delaunay.h>
@@ -8,16 +8,14 @@
 #include <cellogram/voronoi.h>
 #include <cellogram/vertex_degree.h>
 #include <cellogram/laplace_energy.h>
-#ifdef WITH_UNTANGLER
-#include <pointsUntangler/points_untangler.h>
+#ifdef CELLOGRAM_WITH_UNTANGLER
+#include <points_untangler/points_untangler.h>
 #endif
-
 #include <igl/list_to_matrix.h>
 #include <igl/bounding_box.h>
 #include <igl/opengl/glfw/Viewer.h>
 #include <Eigen/Sparse>
 #include <fstream>
-
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
@@ -622,7 +620,7 @@ namespace cellogram {
 		}
 	}
 
-#ifdef WITH_UNTANGLER
+#ifdef CELLOGRAM_WITH_UNTANGLER
 	void Mesh::untangle()
 	{
 		Eigen::MatrixXd newPts;

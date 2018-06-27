@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "voronoi.h"
-#include "MeshUtils.h"
+#include <cellogram/MeshUtils.h>
 #include <geogram/mesh/mesh.h>
 #include <geogram/mesh/mesh_io.h>
 #include <geogram/delaunay/delaunay.h>

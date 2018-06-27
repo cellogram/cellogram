@@ -2,17 +2,15 @@
 #include <Eigen/Sparse>
 #include <gurobi_c++.h>
 
-using namespace Eigen;
-
 class gurobiModel
 {
 public:
 
     // Output
-	VectorXi resultX;
+	Eigen::VectorXi resultX;
 
 	// Generate and solve Model
-	void model(const SparseMatrix<double> &Q, const SparseMatrix<int> &Aeq, double time_limit);
+	void model(const Eigen::SparseMatrix<double> &Q, const Eigen::SparseMatrix<int> &Aeq, double time_limit);
 
 };
 

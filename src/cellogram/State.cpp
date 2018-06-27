@@ -1,6 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "State.h"
-
 #include <cellogram/convex_hull.h>
 #include <cellogram/extrude_mesh.h>
 #include <cellogram/image_reader.h>
@@ -11,12 +10,10 @@
 #include <cellogram/remesh_adaptive.h>
 #include <cellogram/tri2hex.h>
 #include <cellogram/voronoi.h>
-
 #include <igl/list_to_matrix.h>
 #include <igl/point_in_poly.h>
 #include <igl/remove_duplicate_vertices.h>
 #include <igl/slice.h>
-
 #include <tbb/parallel_for.h>
 #include <tbb/task_scheduler_init.h>
 #include <tbb/enumerable_thread_specific.h>
@@ -272,7 +269,7 @@ namespace cellogram {
 		return bboundary;
 	}
 
-#ifdef WITH_UNTANGLER
+#ifdef CELLOGRAM_WITH_UNTANGLER
 	void State::untangle()
 	{
 		mesh.untangle();

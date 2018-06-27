@@ -1,19 +1,19 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "region_grow.h"
-
-#include <queue>
-#include <Eigen/Dense>
-#include <iostream>
-#include <algorithm>
-#include "navigation.h"
-#include <igl/slice.h>
+#include <cellogram/navigation.h>
 #include <cellogram/boundary_loop.h>
+#include <igl/slice.h>
 #include <igl/opengl/glfw/Viewer.h>
+#include <Eigen/Dense>
+#include <algorithm>
+#include <queue>
+#include <iostream>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
 
 // -----------------------------------------------------------------------------
+
 	void region_grow(std::vector<std::vector<int>> &Graph, const Eigen::Matrix<bool, 1, Eigen::Dynamic> &crit_pass, Eigen::VectorXi &region)
 	{
 		int n = crit_pass.size();
@@ -29,7 +29,7 @@ namespace cellogram {
 			{
 				int u = Q.front();
 				Q.pop();
-				
+
 				if (crit_pass(u) && visited(u) == 0)
 				{
 					//add connections to queue if not already visited
@@ -49,7 +49,7 @@ namespace cellogram {
 			// While loop left which means that the next vertex found is from a new group
 			cId++;
 		}
-		
+
 		// Loop through region to clean up IDs
 		std::vector<int> map = id;
 		std::sort(map.begin(), map.end());

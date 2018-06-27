@@ -1,7 +1,7 @@
 #pragma once
 
 ////////////////////////////////////////////////////////////////////////////////
-#include "common.h"
+#include <cellogram/common.h>
 #include <Eigen/Dense>
 #include <vector>
 #include <array>

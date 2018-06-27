@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "remesh_adaptive.h"
-#include "MeshUtils.h"
+#include <cellogram/MeshUtils.h>
 #include <geogram/basic/attributes.h>
 #include <geogram/mesh/mesh.h>
 #include <mmg/libmmg.h>

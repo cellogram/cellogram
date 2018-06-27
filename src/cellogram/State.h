@@ -1,13 +1,12 @@
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
-
-#include "common.h"
-#include "Mesh.h"
-#include "Mesh3d.h"
-#include "Region.h"
-#include "remesh_adaptive.h"
-#include <vector>
+#include <cellogram/common.h>
+#include <cellogram/Mesh.h>
+#include <cellogram/Mesh3d.h>
+#include <cellogram/Region.h>
+#include <cellogram/remesh_adaptive.h>
 #include <Eigen/Dense>
+#include <vector>
 #include <string>
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -75,7 +74,7 @@ public:
 
 	Eigen::VectorXi increase_boundary(const Eigen::VectorXi &boundary);
 
-#ifdef WITH_UNTANGLER
+#ifdef CELLOGRAM_WITH_UNTANGLER
 	void untangle();
 #endif
 	void detect_vertices();
