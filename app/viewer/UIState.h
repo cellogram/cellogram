@@ -86,6 +86,7 @@ public:
 	bool move_vertex = false;
 	int split_region = -1;
 	Eigen::Vector2i split_end_points;
+
 	// Image
 	//Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> img;
 

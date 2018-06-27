@@ -26,65 +26,65 @@
 
 namespace cellogram {
 
-	namespace {
+namespace {
 
-		void push_disabled() {
-			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+	void push_disabled() {
+		ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+		ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+	}
+
+	void pop_disabled() {
+		ImGui::PopItemFlag();
+		ImGui::PopStyleVar();
+	}
+
+	void push_selected() {
+		ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyle().Colors[ImGuiCol_ButtonHovered]);
+	}
+
+	void pop_selected() {
+		ImGui::PopStyleColor();
+	}
+
+	void draw_legend_item(float r, float g, float b, std::string label) {
+		ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+		ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(r / 255, g / 255, b / 255));
+		ImGui::Button("    ");
+		ImGui::SameLine();
+		ImGui::Text("%s", label.c_str());
+		ImGui::PopStyleColor(1);
+		ImGui::PopItemFlag();
+	}
+
+	void ShowTooltip(const std::string &desc) {
+		if (ImGui::IsItemActive() || ImGui::IsItemHovered()) {
+			ImGui::SetTooltip("%s", desc.c_str());
 		}
+	}
 
-		void pop_disabled() {
-			ImGui::PopItemFlag();
-			ImGui::PopStyleVar();
-		}
-
-		void push_selected() {
-			ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyle().Colors[ImGuiCol_ButtonHovered]);
-		}
-
-		void pop_selected() {
-			ImGui::PopStyleColor();
-		}
-
-		void draw_legend_item(float r, float g, float b, std::string label) {
-			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-			ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(r / 255, g / 255, b / 255));
-			ImGui::Button("    ");
-			ImGui::SameLine();
-			ImGui::Text("%s", label.c_str());
-			ImGui::PopStyleColor(1);
-			ImGui::PopItemFlag();
-		}
-
-		void ShowTooltip(const std::string &desc) {
-			if (ImGui::IsItemActive() || ImGui::IsItemHovered()) {
-				ImGui::SetTooltip("%s", desc.c_str());
-			}
-		}
-
-		bool ComboWithTooltips(const char *label, int *idx, std::vector<const char *> items,
-			const std::vector<const char *> &tips) {
-			bool value_changed = false;
-			if (ImGui::BeginCombo(label, items[*idx])) {
-				for (int i = 0; i < (int)items.size(); ++i) {
-					bool is_selected = (*idx == i);
-					if (ImGui::Selectable(items[i], is_selected)) {
-						value_changed = true;
-						*idx = i;
-					}
-					if (std::strlen(tips[i]) && (ImGui::IsItemActive() || ImGui::IsItemHovered())) {
-						ImGui::SetTooltip("%s", tips[i]);
-					}
-					if (is_selected) {
-						ImGui::SetItemDefaultFocus();
-					}
+	bool ComboWithTooltips(const char *label, int *idx, std::vector<const char *> items,
+		const std::vector<const char *> &tips) {
+		bool value_changed = false;
+		if (ImGui::BeginCombo(label, items[*idx])) {
+			for (int i = 0; i < (int)items.size(); ++i) {
+				bool is_selected = (*idx == i);
+				if (ImGui::Selectable(items[i], is_selected)) {
+					value_changed = true;
+					*idx = i;
 				}
-				ImGui::EndCombo();
+				if (std::strlen(tips[i]) && (ImGui::IsItemActive() || ImGui::IsItemHovered())) {
+					ImGui::SetTooltip("%s", tips[i]);
+				}
+				if (is_selected) {
+					ImGui::SetItemDefaultFocus();
+				}
 			}
-			return value_changed;
+			ImGui::EndCombo();
 		}
+		return value_changed;
+	}
 
-		void SetMmgOptions(MmgOptions &opt) {
+	void SetMmgOptions(MmgOptions &opt) {
 		// -ar  x 	all codes 	Value for angle detection.
 		// -hausd  x 	all codes 	Maximal Hausdorff distance for the boundaries approximation.
 		// -hgrad  x 	all codes 	Gradation value.
@@ -99,27 +99,27 @@ namespace cellogram {
 		// -nsd  n 	mmg2d 	In mesh generation mode (no given triangle), save the subdomain of index n. Save all subdomains
 		// if n=0 (default).
 
-			float hausd = opt.hausd;
-			float hgrad = opt.hgrad;
-			float hmax = opt.hmax;
-			float hmin = opt.hmin;
-			float hsiz = opt.hsiz;
-			ImGui::InputFloat("hausd", &hausd);
-			ShowTooltip("Maximal Hausdorff distance for the boundaries approximation.");
-			ImGui::InputFloat("hgrad", &hgrad);
-			ShowTooltip("Gradation value.");
-			ImGui::InputFloat("hmax", &hmax);
-			ShowTooltip("Maximal edge size.");
-			ImGui::InputFloat("hmin", &hmin);
-			ShowTooltip("Minimal edge size.");
-			ImGui::InputFloat("hsiz", &hsiz);
-			ShowTooltip("Build a constant size map of size x.");
-			opt.hausd = hausd;
-			opt.hgrad = hgrad;
-			opt.hmax = hmax;
-			opt.hmin = hmin;
-			opt.hsiz = hsiz;
-		}
+		float hausd = opt.hausd;
+		float hgrad = opt.hgrad;
+		float hmax = opt.hmax;
+		float hmin = opt.hmin;
+		float hsiz = opt.hsiz;
+		ImGui::InputFloat("hausd", &hausd);
+		ShowTooltip("Maximal Hausdorff distance for the boundaries approximation.");
+		ImGui::InputFloat("hgrad", &hgrad);
+		ShowTooltip("Gradation value.");
+		ImGui::InputFloat("hmax", &hmax);
+		ShowTooltip("Maximal edge size.");
+		ImGui::InputFloat("hmin", &hmin);
+		ShowTooltip("Minimal edge size.");
+		ImGui::InputFloat("hsiz", &hsiz);
+		ShowTooltip("Build a constant size map of size x.");
+		opt.hausd = hausd;
+		opt.hgrad = hgrad;
+		opt.hmax = hmax;
+		opt.hmin = hmin;
+		opt.hsiz = hsiz;
+	}
 
 } // anonymous namespace
 
@@ -616,10 +616,6 @@ void UIState::draw_analysis_menu() {
 			viewer_control();
 		}
 	}
-
-
-
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -753,57 +749,57 @@ void UIState::draw_layer_menu() {
 	if (ImGui::ColorEdit4("Mesh", points_data().line_color.data(),
 		ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueWheel)) {
 		viewer_control();
-}
-
-if (ImGui::Checkbox("Show hull", &show_hull)) {
-	viewer_control();
-}
-if (ImGui::Checkbox("Points", &show_points)) {
-	viewer_control();
-}
-ImGui::SameLine();
-if (ImGui::Checkbox("Coded", &color_code)) {
-	viewer_control();
-}
-
-if (ImGui::Checkbox("Mesh Fill", &show_mesh_fill)) {
-	viewer_control();
-}
-if (ImGui::Checkbox("Show image", &show_image)) {
-	viewer_control();
-}
-if (ImGui::Checkbox("Show matching", &show_matching)) {
-	viewer_control();
-}
-if (ImGui::Checkbox("Bad regions", &show_bad_regions)) {
-	viewer_control();
-}
-if (ImGui::Checkbox("Selected region", &show_selected_region)) {
-	viewer_control();
-}
-
-if (ImGui::Checkbox("Enable 3D view", &analysis_mode)) {
-	if (!analysis_mode) {
-		viewer.core.trackball_angle = Eigen::Quaternionf::Identity();
 	}
-	viewer_control();
-}
 
-ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.30f);
-
-{
-	auto labels = {"--", "X", "Y", "Z", "Norm"};
-	auto tips = {"", "Displacement along X", "Displacement along Y", "Displacement along Z", "Norm of the displacement"};
-	if (ComboWithTooltips("Show attribute", (int *)(&view_mode_3d), labels, tips)) {
+	if (ImGui::Checkbox("Show hull", &show_hull)) {
 		viewer_control();
 	}
-}
+	if (ImGui::Checkbox("Points", &show_points)) {
+		viewer_control();
+	}
+	ImGui::SameLine();
+	if (ImGui::Checkbox("Coded", &color_code)) {
+		viewer_control();
+	}
 
-if (ImGui::Checkbox("Traction forces", &show_traction_forces)) {
-	viewer_control();
-}
+	if (ImGui::Checkbox("Mesh Fill", &show_mesh_fill)) {
+		viewer_control();
+	}
+	if (ImGui::Checkbox("Show image", &show_image)) {
+		viewer_control();
+	}
+	if (ImGui::Checkbox("Show matching", &show_matching)) {
+		viewer_control();
+	}
+	if (ImGui::Checkbox("Bad regions", &show_bad_regions)) {
+		viewer_control();
+	}
+	if (ImGui::Checkbox("Selected region", &show_selected_region)) {
+		viewer_control();
+	}
 
-ImGui::PopItemWidth();
+	if (ImGui::Checkbox("Enable 3D view", &analysis_mode)) {
+		if (!analysis_mode) {
+			viewer.core.trackball_angle = Eigen::Quaternionf::Identity();
+		}
+		viewer_control();
+	}
+
+	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.30f);
+
+	{
+		auto labels = {"--", "X", "Y", "Z", "Norm"};
+		auto tips = {"", "Displacement along X", "Displacement along Y", "Displacement along Z", "Norm of the displacement"};
+		if (ComboWithTooltips("Show attribute", (int *)(&view_mode_3d), labels, tips)) {
+			viewer_control();
+		}
+	}
+
+	if (ImGui::Checkbox("Traction forces", &show_traction_forces)) {
+		viewer_control();
+	}
+
+	ImGui::PopItemWidth();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

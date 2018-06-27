@@ -17,14 +17,14 @@ namespace cellogram {
 
 	namespace {
 
-		int cellogram_mkdir(const std::string &path) {
-			int nError;
-	#if defined(_WIN32)
-			std::wstring widestr = std::wstring(path.begin(), path.end());
+	int cellogram_mkdir(const std::string &path) {
+		int nError;
+#if defined(_WIN32)
+		std::wstring widestr = std::wstring(path.begin(), path.end());
 		nError = _wmkdir(widestr.c_str()); // can be used on Windows
-	#else
+#else
 		nError = mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH); // can be used on non-Windows
-	#endif
+#endif
 		return nError;
 	}
 
@@ -394,8 +394,7 @@ bool UIState::mouse_scroll(float delta_y) {
 	if (delta_y != 0) {
 		float mult = (1.0 + ((delta_y > 0) ? 1. : -1.) * 0.1);
 		const float min_zoom = 0.1f;
-		viewer.core.camera_zoom =
-		(viewer.core.camera_zoom * mult > min_zoom ? viewer.core.camera_zoom * mult : min_zoom);
+		viewer.core.camera_zoom = (viewer.core.camera_zoom * mult > min_zoom ? viewer.core.camera_zoom * mult : min_zoom);
 	}
 
 	return super::mouse_scroll(delta_y);
@@ -424,14 +423,14 @@ bool UIState::key_pressed(unsigned int unicode_key, int modifiers) {
 	switch (unicode_key) {
 		case 'a':
 		case 'A':
-		delete_vertex = false;
-		add_vertex = !add_vertex;
-		return true;
+			delete_vertex = false;
+			add_vertex = !add_vertex;
+			return true;
 		case 'd':
 		case 'D':
-		add_vertex = false;
-		delete_vertex = !delete_vertex;
-		return true;
+			add_vertex = false;
+			delete_vertex = !delete_vertex;
+			return true;
 	}
 
 	return super::key_pressed(unicode_key, modifiers);
