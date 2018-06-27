@@ -74,7 +74,8 @@ public:
 		Y_DISP,
 		Z_DISP,
 		NORM_DISP,
-	} selected_3d_attribute;
+	};
+	Mesh3DAttribute view_mode_3d = Mesh3DAttribute::NONE;
 
 	// Clicking flags
 	bool select_region = false;

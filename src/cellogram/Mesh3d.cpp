@@ -149,7 +149,7 @@ namespace cellogram {
 		traction_forces = scaling * displacement;
 	}
 
-	void Mesh3d::init_nano_dots(const Mesh &mesh, float padding_size, float thickness, float E, float nu, const std::string &formulation)
+	void Mesh3d::init_nano_dots(const Mesh &mesh, float padding_size, const float thickness, float E, float nu, const std::string &formulation)
 	{
 		clear();
 
@@ -201,43 +201,13 @@ namespace cellogram {
 #ifdef NDEBUG
 		igl::copyleft::tetgen::tetrahedralize(V, F, "Qpq1.414a100", TV, TT, TF);
 #else
-		igl::copyleft::tetgen::tetrahedralize(V, F, "Qpq1.414a1000", TV, TT, TF);
+		igl::copyleft::tetgen::tetrahedralize(V, F, "Qpq1.414a10", TV, TT, TF);
 #endif
-
-		// std::cout<<"n tets: "<<TF.rows()<<std::endl;
-
-		// // std::cout << V << std::endl;
-		// Eigen::VectorXd S(TV.rows());
-		// for (int v = 0; v < TV.rows(); ++v) {
-		// 	Eigen::RowVector3d p = TV.row(v);
-		// 	S(v) = 0.05 - 0.045 * std::abs(std::sin((p(0) - xMin) / (xMax - xMin) * 2.0 * M_PI)) * (p(2) - zMin) / (zMax - zMin);
-		// }
-		// Eigen::RowVector3d pMin = V.row(0);
-		// Eigen::RowVector3d pMax = V.row(6);
-
-		// std::cout << TV.rows() << " x " << TV.cols() << std::endl;
-		// TV = (TV.rowwise() - pMin).array().rowwise() / (pMax - pMin).cwiseMax(1e-5).array();
-		// std::cout << TV.rows() << " x " << TV.cols() << std::endl;
-
-		// MmgOptions opt;
-		// opt.optim = true;
-		// opt.hmax = 0.1;
-		// remesh_adaptive_3d(TV, TT, S, V, F, TT);
-
-		// std::cout << V.rows() << " x " << V.cols() << std::endl;
-		// V = ((V.array().rowwise() * (pMax - pMin).array()).rowwise() + pMin.array()).eval();
-		// std::cout << V.rows() << " x " << V.cols() << std::endl;
-
-		// std::cout << "nf: " << F.rows() << std::endl;
-		// std::cout << "nt: " << TT.rows() << std::endl;
-
-		// poly_fem::orient_closed_surface(V, F);
-
-		compute_analysis(TV, TF, TT, mesh, thickness, E, nu, formulation, displacement, traction_forces);
-		// sol = V;
-
 		V = TV;
 		F = TF;
+		T = TT;
+
+		compute_analysis(V, F, T, mesh, thickness, E, nu, formulation, displacement, traction_forces);
 	}
 
 	void Mesh3d::clear()

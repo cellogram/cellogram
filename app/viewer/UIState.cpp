@@ -15,12 +15,12 @@
 
 namespace cellogram {
 
-namespace {
+	namespace {
 
-	int cellogram_mkdir(const std::string &path) {
-		int nError;
+		int cellogram_mkdir(const std::string &path) {
+			int nError;
 	#if defined(_WIN32)
-		std::wstring widestr = std::wstring(path.begin(), path.end());
+			std::wstring widestr = std::wstring(path.begin(), path.end());
 		nError = _wmkdir(widestr.c_str()); // can be used on Windows
 	#else
 		nError = mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH); // can be used on non-Windows
@@ -30,25 +30,25 @@ namespace {
 
 	void get_region_color(const int &status, Eigen::RowVector3d &color) {
 		switch (status) {
-		case Region::OK:
+			case Region::OK:
 			color << 46, 204, 113;
 			break;
-		case Region::TOO_MANY_VERTICES:
+			case Region::TOO_MANY_VERTICES:
 			color << 155, 89, 182;
 			break;
-		case Region::TOO_FEW_VERTICES:
+			case Region::TOO_FEW_VERTICES:
 			color << 241, 196, 15;
 			break;
-		case Region::REGION_TOO_LARGE:
+			case Region::REGION_TOO_LARGE:
 			color << 41, 128, 185;
 			break;
-		case Region::NO_SOLUTION:
+			case Region::NO_SOLUTION:
 			color << 192, 57, 43;
 			break;
-		case Region::NOT_PROPERLY_CLOSED:
+			case Region::NOT_PROPERLY_CLOSED:
 			color << 149, 165, 166;
 			break;
-		default:
+			default:
 			color << 52, 73, 94;
 			break;
 		}
@@ -78,7 +78,7 @@ bool UIState::mouse_move(int button, int modifier) {
 	int fid;
 	Eigen::Vector3f bc;
 	igl::unproject_onto_mesh(Eigen::Vector2f(x, y), viewer.core.view * viewer.core.model, viewer.core.proj,
-	                         viewer.core.viewport, img_V, img_F, fid, bc);
+		viewer.core.viewport, img_V, img_F, fid, bc);
 
 	double xNew = 0, yNew = 0, zNew = 0;
 	for (int i = 0; i < 3; i++) {
@@ -150,7 +150,7 @@ bool UIState::mouse_down(int button, int modifier) {
 
 	if (select_region) {
 		if (!igl::unproject_onto_mesh(Eigen::Vector2f(x, y), viewer.core.view * viewer.core.model, viewer.core.proj,
-		                              viewer.core.viewport, V, state.mesh.triangles, fid, bc))
+			viewer.core.viewport, V, state.mesh.triangles, fid, bc))
 		{
 			return block_mouse_behavior(button);
 		}
@@ -170,7 +170,7 @@ bool UIState::mouse_down(int button, int modifier) {
 		}
 	} else {
 		if (!igl::unproject_onto_mesh(Eigen::Vector2f(x, y), viewer.core.view * viewer.core.model, viewer.core.proj,
-		                              viewer.core.viewport, img_V, img_F, fid, bc))
+			viewer.core.viewport, img_V, img_F, fid, bc))
 		{
 			return block_mouse_behavior(button);
 		}
@@ -283,10 +283,10 @@ void UIState::initialize() {
 void UIState::init(igl::opengl::glfw::Viewer *_viewer) {
 	super::init(_viewer);
 
-    ImGuiIO& io = ImGui::GetIO();
-    io.IniFilename = nullptr;
+	ImGuiIO& io = ImGui::GetIO();
+	io.IniFilename = nullptr;
 
-    glfwSetWindowTitle(viewer.window, "Cellogram viewer");
+	glfwSetWindowTitle(viewer.window, "Cellogram viewer");
 }
 
 void UIState::launch() {
@@ -395,7 +395,7 @@ bool UIState::mouse_scroll(float delta_y) {
 		float mult = (1.0 + ((delta_y > 0) ? 1. : -1.) * 0.1);
 		const float min_zoom = 0.1f;
 		viewer.core.camera_zoom =
-		    (viewer.core.camera_zoom * mult > min_zoom ? viewer.core.camera_zoom * mult : min_zoom);
+		(viewer.core.camera_zoom * mult > min_zoom ? viewer.core.camera_zoom * mult : min_zoom);
 	}
 
 	return super::mouse_scroll(delta_y);
@@ -422,13 +422,13 @@ bool UIState::key_pressed(unsigned int unicode_key, int modifiers) {
 	}
 
 	switch (unicode_key) {
-	case 'a':
-	case 'A':
+		case 'a':
+		case 'A':
 		delete_vertex = false;
 		add_vertex = !add_vertex;
 		return true;
-	case 'd':
-	case 'D':
+		case 'd':
+		case 'D':
 		add_vertex = false;
 		delete_vertex = !delete_vertex;
 		return true;
@@ -771,7 +771,7 @@ void UIState::viewer_control_2d() {
 			for (int i = 0; i < V.rows(); i++) {
 				// param(i) = state.mesh.params.pval_Ar(i);
 				param(i) = std::sqrt(state.mesh.params.std_x(i) * state.mesh.params.std_x(i) +
-				                     state.mesh.params.std_y(i) * state.mesh.params.std_y(i));
+					state.mesh.params.std_y(i) * state.mesh.params.std_y(i));
 			}
 
 			igl::ColorMapType cm = igl::ColorMapType::COLOR_MAP_TYPE_INFERNO;
@@ -884,54 +884,60 @@ void UIState::viewer_control_3d() {
 
 	Eigen::MatrixXd Vtmp = state.mesh3d.V / state.mesh.scaling;
 
-	Vtmp.col(2).array() -= 0.1;
-	physical_data().set_mesh(Vtmp, state.mesh3d.F);
+	// Vtmp.col(2).array() -= 0.1;
+	// physical_data().set_mesh(Vtmp, state.mesh3d.F);
 
-	{
-		MatrixXd normals;
-		igl::per_face_normals(Vtmp, state.mesh3d.F, normals);
-		physical_data().set_normals(normals);
-	}
-	return;
-
-	// Eigen::MatrixXd C, disp;
-
-	// const auto &fun = show_traction_forces ? state.mesh3d.traction_forces :
-	// state.mesh3d.displacement; switch (view_mode_3d) { 	case
-	// NO_VIEW_SELECTED: 	C = Eigen::RowVector3d(129. / 255, 236. / 255, 236. /
-	// 255); 	min_val = max_val = 0; 	break; 	case X_DISP_SELECTED:
-	// 	{
-	// 		const auto v_fun = fun.col(0).eval();
-	// 		min_val = v_fun.minCoeff();
-	// 		max_val = v_fun.maxCoeff();
-	// 		igl::colormap(cm, v_fun, true, C);
-	// 		break;
-	// 	}
-	// 	case Y_DISP_SELECTED:
-	// 	{
-	// 		const auto v_fun = fun.col(1).eval();
-	// 		min_val = v_fun.minCoeff();
-	// 		max_val = v_fun.maxCoeff();
-	// 		igl::colormap(cm, v_fun, true, C);
-	// 		break;
-	// 	}
-	// 	case Z_DISP_SELECTED:
-	// 	{
-	// 		const auto v_fun = fun.col(2).eval();
-	// 		min_val = v_fun.minCoeff();
-	// 		max_val = v_fun.maxCoeff();
-	// 		igl::colormap(cm, v_fun, true, C);
-	// 		break;
-	// 	}
-	// 	case MAG_DISP_SELECTED:
-	// 	{
-	// 		const auto v_fun = fun.rowwise().norm().eval();
-	// 		min_val = v_fun.minCoeff();
-	// 		max_val = v_fun.maxCoeff();
-	// 		igl::colormap(cm, v_fun, true, C);
-	// 		break;
-	// 	}
+	// {
+	// 	MatrixXd normals;
+	// 	igl::per_face_normals(Vtmp, state.mesh3d.F, normals);
+	// 	physical_data().set_normals(normals);
 	// }
+	// return;
+
+	Eigen::MatrixXd C, disp;
+
+	const auto &fun = show_traction_forces ? state.mesh3d.traction_forces : state.mesh3d.displacement;
+
+	switch (view_mode_3d) {
+		case Mesh3DAttribute::NONE:
+		{
+			C = Eigen::RowVector3d(129. / 255, 236. / 255, 236. / 255);
+			min_val = max_val = 0;
+			break;
+		}
+	 	case Mesh3DAttribute::X_DISP:
+		{
+			const auto v_fun = fun.col(0).eval();
+			min_val = v_fun.minCoeff();
+			max_val = v_fun.maxCoeff();
+			igl::colormap(cm, v_fun, true, C);
+			break;
+		}
+		case Mesh3DAttribute::Y_DISP:
+		{
+			const auto v_fun = fun.col(1).eval();
+			min_val = v_fun.minCoeff();
+			max_val = v_fun.maxCoeff();
+			igl::colormap(cm, v_fun, true, C);
+			break;
+		}
+		case Mesh3DAttribute::Z_DISP:
+		{
+			const auto v_fun = fun.col(2).eval();
+			min_val = v_fun.minCoeff();
+			max_val = v_fun.maxCoeff();
+			igl::colormap(cm, v_fun, true, C);
+			break;
+		}
+		case Mesh3DAttribute::NORM_DISP:
+		{
+			const auto v_fun = fun.rowwise().norm().eval();
+			min_val = v_fun.minCoeff();
+			max_val = v_fun.maxCoeff();
+			igl::colormap(cm, v_fun, true, C);
+			break;
+		}
+	}
 
 	// std::cout << C << std::endl;
 	// std::cout << "\n\ncol\n" << fun.col(0).eval() << std::endl;
@@ -939,19 +945,18 @@ void UIState::viewer_control_3d() {
 	MatrixXd normals;
 
 	if (state.image_from_pillars) {
-		// physical_data().set_points(Vtmp, C);
+		physical_data().set_points(Vtmp, C);
 	} else {
 		Vtmp.col(2).array() -= 0.1;
 		physical_data().set_mesh(Vtmp, state.mesh3d.F);
 
 		igl::per_face_normals(Vtmp, state.mesh3d.F, normals);
-		normals *= -1;
+		// normals *= -1;
 		physical_data().set_normals(normals);
-
-		// physical_data().set_colors(C);
+		physical_data().set_colors(C);
 	}
 
-	// physical_data().show_lines = false;
+	physical_data().show_lines = view_mode_3d == Mesh3DAttribute::NONE;
 	// fix_color(physical_data());
 }
 
@@ -992,7 +997,7 @@ void UIState::create_region_label() {
 }
 
 void UIState::build_region_edges(const Eigen::MatrixXd &pts, Eigen::MatrixXd &bad_P1, Eigen::MatrixXd &bad_P2,
-                                 Eigen::MatrixXd &C)
+	Eigen::MatrixXd &C)
 {
 	bad_P1.resize(pts.rows(), 3);
 	bad_P2.resize(pts.rows(), 3);

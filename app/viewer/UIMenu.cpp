@@ -26,65 +26,65 @@
 
 namespace cellogram {
 
-namespace {
+	namespace {
 
-	void push_disabled() {
-		ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-		ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
-	}
-
-	void pop_disabled() {
-		ImGui::PopItemFlag();
-		ImGui::PopStyleVar();
-	}
-
-	void push_selected() {
-		ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyle().Colors[ImGuiCol_ButtonHovered]);
-	}
-
-	void pop_selected() {
-		ImGui::PopStyleColor();
-	}
-
-	void draw_legend_item(float r, float g, float b, std::string label) {
-		ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-		ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(r / 255, g / 255, b / 255));
-		ImGui::Button("    ");
-		ImGui::SameLine();
-		ImGui::Text("%s", label.c_str());
-		ImGui::PopStyleColor(1);
-		ImGui::PopItemFlag();
-	}
-
-	void ShowTooltip(const std::string &desc) {
-		if (ImGui::IsItemActive() || ImGui::IsItemHovered()) {
-			ImGui::SetTooltip("%s", desc.c_str());
+		void push_disabled() {
+			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
 		}
-	}
 
-	bool ComboWithTooltips(const char *label, int *idx, std::vector<const char *> items,
-	                       const std::vector<const char *> &tips) {
-		bool value_changed = false;
-		if (ImGui::BeginCombo(label, items[*idx])) {
-			for (int i = 0; i < (int)items.size(); ++i) {
-				bool is_selected = (*idx == i);
-				if (ImGui::Selectable(items[i], is_selected)) {
-					value_changed = true;
-					*idx = i;
-				}
-				if (std::strlen(tips[i]) && (ImGui::IsItemActive() || ImGui::IsItemHovered())) {
-					ImGui::SetTooltip("%s", tips[i]);
-				}
-				if (is_selected) {
-					ImGui::SetItemDefaultFocus();
-				}
+		void pop_disabled() {
+			ImGui::PopItemFlag();
+			ImGui::PopStyleVar();
+		}
+
+		void push_selected() {
+			ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyle().Colors[ImGuiCol_ButtonHovered]);
+		}
+
+		void pop_selected() {
+			ImGui::PopStyleColor();
+		}
+
+		void draw_legend_item(float r, float g, float b, std::string label) {
+			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+			ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(r / 255, g / 255, b / 255));
+			ImGui::Button("    ");
+			ImGui::SameLine();
+			ImGui::Text("%s", label.c_str());
+			ImGui::PopStyleColor(1);
+			ImGui::PopItemFlag();
+		}
+
+		void ShowTooltip(const std::string &desc) {
+			if (ImGui::IsItemActive() || ImGui::IsItemHovered()) {
+				ImGui::SetTooltip("%s", desc.c_str());
 			}
-			ImGui::EndCombo();
 		}
-		return value_changed;
-	}
 
-	void SetMmgOptions(MmgOptions &opt) {
+		bool ComboWithTooltips(const char *label, int *idx, std::vector<const char *> items,
+			const std::vector<const char *> &tips) {
+			bool value_changed = false;
+			if (ImGui::BeginCombo(label, items[*idx])) {
+				for (int i = 0; i < (int)items.size(); ++i) {
+					bool is_selected = (*idx == i);
+					if (ImGui::Selectable(items[i], is_selected)) {
+						value_changed = true;
+						*idx = i;
+					}
+					if (std::strlen(tips[i]) && (ImGui::IsItemActive() || ImGui::IsItemHovered())) {
+						ImGui::SetTooltip("%s", tips[i]);
+					}
+					if (is_selected) {
+						ImGui::SetItemDefaultFocus();
+					}
+				}
+				ImGui::EndCombo();
+			}
+			return value_changed;
+		}
+
+		void SetMmgOptions(MmgOptions &opt) {
 		// -ar  x 	all codes 	Value for angle detection.
 		// -hausd  x 	all codes 	Maximal Hausdorff distance for the boundaries approximation.
 		// -hgrad  x 	all codes 	Gradation value.
@@ -99,27 +99,27 @@ namespace {
 		// -nsd  n 	mmg2d 	In mesh generation mode (no given triangle), save the subdomain of index n. Save all subdomains
 		// if n=0 (default).
 
-		float hausd = opt.hausd;
-		float hgrad = opt.hgrad;
-		float hmax = opt.hmax;
-		float hmin = opt.hmin;
-		float hsiz = opt.hsiz;
-		ImGui::InputFloat("hausd", &hausd);
-		ShowTooltip("Maximal Hausdorff distance for the boundaries approximation.");
-		ImGui::InputFloat("hgrad", &hgrad);
-		ShowTooltip("Gradation value.");
-		ImGui::InputFloat("hmax", &hmax);
-		ShowTooltip("Maximal edge size.");
-		ImGui::InputFloat("hmin", &hmin);
-		ShowTooltip("Minimal edge size.");
-		ImGui::InputFloat("hsiz", &hsiz);
-		ShowTooltip("Build a constant size map of size x.");
-		opt.hausd = hausd;
-		opt.hgrad = hgrad;
-		opt.hmax = hmax;
-		opt.hmin = hmin;
-		opt.hsiz = hsiz;
-	}
+			float hausd = opt.hausd;
+			float hgrad = opt.hgrad;
+			float hmax = opt.hmax;
+			float hmin = opt.hmin;
+			float hsiz = opt.hsiz;
+			ImGui::InputFloat("hausd", &hausd);
+			ShowTooltip("Maximal Hausdorff distance for the boundaries approximation.");
+			ImGui::InputFloat("hgrad", &hgrad);
+			ShowTooltip("Gradation value.");
+			ImGui::InputFloat("hmax", &hmax);
+			ShowTooltip("Maximal edge size.");
+			ImGui::InputFloat("hmin", &hmin);
+			ShowTooltip("Minimal edge size.");
+			ImGui::InputFloat("hsiz", &hsiz);
+			ShowTooltip("Build a constant size map of size x.");
+			opt.hausd = hausd;
+			opt.hgrad = hgrad;
+			opt.hmax = hmax;
+			opt.hmin = hmin;
+			opt.hsiz = hsiz;
+		}
 
 } // anonymous namespace
 
@@ -134,8 +134,8 @@ namespace {
 		constexpr int height_colorbar = 20;
 
 		constexpr ImGuiWindowFlags window_flags =
-			ImGuiWindowFlags_NoSavedSettings
-			| ImGuiWindowFlags_AlwaysAutoResize;
+		ImGuiWindowFlags_NoSavedSettings
+		| ImGuiWindowFlags_AlwaysAutoResize;
 	};
 
 } // anonymous namespace
@@ -161,9 +161,9 @@ void UIState::draw_viewer_window() {
 		ImDrawList *draw_list = ImGui::GetWindowDrawList();
 		draw_list->PushClipRectFullScreen();
 		draw_list->AddLine(ImVec2(p.x - 50, p.y), ImVec2(p.x + 50, p.y),
-		                   IM_COL32(delete_vertex ? 255 : 0, add_vertex ? 255 : 0, 0, 255), 2.0f);
+			IM_COL32(delete_vertex ? 255 : 0, add_vertex ? 255 : 0, 0, 255), 2.0f);
 		draw_list->AddLine(ImVec2(p.x, p.y - 50), ImVec2(p.x, p.y + 50),
-		                   IM_COL32(delete_vertex ? 255 : 0, add_vertex ? 255 : 0, 0, 255), 2.0f);
+			IM_COL32(delete_vertex ? 255 : 0, add_vertex ? 255 : 0, 0, 255), 2.0f);
 		draw_list->PopClipRect();
 
 		ImGui::GetIO().MouseDrawCursor = true;
@@ -562,12 +562,27 @@ void UIState::draw_mesh_menu() {
 void UIState::draw_analysis_menu() {
 	ImGui::Checkbox("Pillars", &state.image_from_pillars);
 
+	auto reset_view_3d = [&]() {
+		analysis_mode = true;
+		show_mesh = false;
+		show_image = false;
+		show_mesh_fill = false;
+		view_mode_3d = Mesh3DAttribute::NONE;
+	};
+
 	if (state.image_from_pillars) {
 		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.40f);
 		ImGui::InputFloat("eps", &state.eps, 0.1, 0.01, 3);
 		ImGui::InputFloat("I [µm]", &state.I, 0.1, 0.01, 3);
 		ImGui::InputFloat("L [µm]", &state.L, 0.1, 0.01, 3);
 		ImGui::PopItemWidth();
+
+		if (ImGui::Button("Analyze 3D mesh", ImVec2(-1, 0))) {
+			state.analyze_3d_mesh();
+			reset_view_3d();
+			view_mode_3d = Mesh3DAttribute::NORM_DISP;
+			viewer_control();
+		}
 	} else {
 		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.40f);
 		ImGui::InputFloat("Scaling [µm/px]", &state.mesh.scaling, 0.01, 0.001, 3);
@@ -583,28 +598,28 @@ void UIState::draw_analysis_menu() {
 		ImGui::InputFloat("nu", &state.nu, 0.1, 0.01, 3);
 
 		ImGui::PopItemWidth();
+
+		if (ImGui::Button("Mesh 2D adaptive", ImVec2(-1, 0))) {
+			state.mesh_2d_adaptive();
+			reset_view_3d();
+			viewer_control();
+		}
+		if (ImGui::Button("Extrude 2D mesh", ImVec2(-1, 0))) {
+			state.extrude_2d_mesh();
+			reset_view_3d();
+			viewer_control();
+		}
+		if (ImGui::Button("Analyze 3D mesh", ImVec2(-1, 0))) {
+			state.analyze_3d_mesh();
+			reset_view_3d();
+			view_mode_3d = Mesh3DAttribute::NORM_DISP;
+			viewer_control();
+		}
 	}
 
-	auto reset_view_3d = [&]() {
-		analysis_mode = true;
-		show_mesh = false;
-		show_image = false;
-		show_mesh_fill = false;
-		viewer_control();
-	};
 
-	if (ImGui::Button("Mesh 2D adaptive", ImVec2(-1, 0))) {
-		state.mesh_2d_adaptive();
-		reset_view_3d();
-	}
-	if (ImGui::Button("Extrude 2D mesh", ImVec2(-1, 0))) {
-		state.extrude_2d_mesh();
-		reset_view_3d();
-	}
-	if (ImGui::Button("Analyze 3D mesh", ImVec2(-1, 0))) {
-		state.analyze_3d_mesh();
-		reset_view_3d();
-	}
+
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -632,9 +647,9 @@ void UIState::draw_histogram_menu() {
 	ImDrawList *draw_list = ImGui::GetWindowDrawList();
 	draw_list->PushClipRectFullScreen();
 	draw_list->AddLine(ImVec2(startX + hist_w * min_img, startY), ImVec2(startX + hist_w * min_img, startY + 75),
-	                   IM_COL32(0, 255, 0, 255), 2.0f);
+		IM_COL32(0, 255, 0, 255), 2.0f);
 	draw_list->AddLine(ImVec2(startX + hist_w * max_img, startY), ImVec2(startX + hist_w * max_img, startY + 75),
-	                   IM_COL32(0, 255, 0, 255), 2.0f);
+		IM_COL32(0, 255, 0, 255), 2.0f);
 	draw_list->PopClipRect();
 
 	ImGui::PopItemFlag();
@@ -736,59 +751,59 @@ void UIState::draw_layer_menu() {
 	}
 	ImGui::SameLine();
 	if (ImGui::ColorEdit4("Mesh", points_data().line_color.data(),
-	                      ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueWheel)) {
+		ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueWheel)) {
 		viewer_control();
-	}
+}
 
-	if (ImGui::Checkbox("Show hull", &show_hull)) {
-		viewer_control();
-	}
-	if (ImGui::Checkbox("Points", &show_points)) {
-		viewer_control();
-	}
-	ImGui::SameLine();
-	if (ImGui::Checkbox("Coded", &color_code)) {
-		viewer_control();
-	}
+if (ImGui::Checkbox("Show hull", &show_hull)) {
+	viewer_control();
+}
+if (ImGui::Checkbox("Points", &show_points)) {
+	viewer_control();
+}
+ImGui::SameLine();
+if (ImGui::Checkbox("Coded", &color_code)) {
+	viewer_control();
+}
 
-	if (ImGui::Checkbox("Mesh Fill", &show_mesh_fill)) {
-		viewer_control();
-	}
-	if (ImGui::Checkbox("Show image", &show_image)) {
-		viewer_control();
-	}
-	if (ImGui::Checkbox("Show matching", &show_matching)) {
-		viewer_control();
-	}
-	if (ImGui::Checkbox("Bad regions", &show_bad_regions)) {
-		viewer_control();
-	}
-	if (ImGui::Checkbox("Selected region", &show_selected_region)) {
-		viewer_control();
-	}
+if (ImGui::Checkbox("Mesh Fill", &show_mesh_fill)) {
+	viewer_control();
+}
+if (ImGui::Checkbox("Show image", &show_image)) {
+	viewer_control();
+}
+if (ImGui::Checkbox("Show matching", &show_matching)) {
+	viewer_control();
+}
+if (ImGui::Checkbox("Bad regions", &show_bad_regions)) {
+	viewer_control();
+}
+if (ImGui::Checkbox("Selected region", &show_selected_region)) {
+	viewer_control();
+}
 
-	if (ImGui::Checkbox("Enable 3D view", &analysis_mode)) {
-		if (!analysis_mode) {
-			viewer.core.trackball_angle = Eigen::Quaternionf::Identity();
-		}
+if (ImGui::Checkbox("Enable 3D view", &analysis_mode)) {
+	if (!analysis_mode) {
+		viewer.core.trackball_angle = Eigen::Quaternionf::Identity();
+	}
+	viewer_control();
+}
+
+ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.30f);
+
+{
+	auto labels = {"--", "X", "Y", "Z", "Norm"};
+	auto tips = {"", "Displacement along X", "Displacement along Y", "Displacement along Z", "Norm of the displacement"};
+	if (ComboWithTooltips("Show attribute", (int *)(&view_mode_3d), labels, tips)) {
 		viewer_control();
 	}
+}
 
-	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.30f);
+if (ImGui::Checkbox("Traction forces", &show_traction_forces)) {
+	viewer_control();
+}
 
-	{
-		auto labels = {"--", "X", "Y", "Z", "Norm"};
-		auto tips = {"", "Displacement along X", "Displacement along Y", "Displacement along Z", "Norm of the displacement"};
-		if (ComboWithTooltips("Show attribute", (int *)(&selected_3d_attribute), labels, tips)) {
-			viewer_control();
-		}
-	}
-
-	if (ImGui::Checkbox("Traction forces", &show_traction_forces)) {
-		viewer_control();
-	}
-
-	ImGui::PopItemWidth();
+ImGui::PopItemWidth();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -908,7 +923,7 @@ void UIState::draw_region_menu() {
 		ImGui::LabelText("", "Region %d ", selected_region);
 		if (state.regions[selected_region].points_delta != 0)
 			ImGui::LabelText("", "%s (%i) ", current_region_status.c_str(),
-			                 state.regions[selected_region].points_delta);
+				state.regions[selected_region].points_delta);
 		else
 			ImGui::LabelText("", "%s ", current_region_status.c_str());
 		ImGui::LabelText("", "#V: %i (%i) ", nVtotal, nVi);
