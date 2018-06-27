@@ -804,7 +804,7 @@ namespace cellogram {
 		Eigen::MatrixXd V;
 		Eigen::MatrixXi F;
 		Eigen::VectorXd S;
-		mesh.get_background_mesh(V, F, S);
+		mesh.get_background_mesh(V, F, S, padding_size);
 
 		// Rescale displacement field
 		S = (S.array() - S.minCoeff()) / std::max(1e-9, (S.maxCoeff() - S.minCoeff()));

@@ -387,11 +387,11 @@ namespace cellogram {
 		// std::cout << "max:\n" << max << "\n\nmin:\n" << min << std::endl;
 	}
 
-	void Mesh::get_background_mesh(Eigen::MatrixXd &V, Eigen::MatrixXi &F, Eigen::VectorXd &S) const {
+	void Mesh::get_background_mesh(Eigen::MatrixXd &V, Eigen::MatrixXi &F, Eigen::VectorXd &S, double padding) const {
 		Eigen::MatrixXd BV;
 		Eigen::MatrixXi BF;
 		V = points.leftCols<2>();
-		igl::bounding_box(V, BV, BF);
+		igl::bounding_box(V, padding, BV, BF);
 		assert(BV.rows() == 4);
 
 		V.resize(points.rows() + BV.rows(), 2);
