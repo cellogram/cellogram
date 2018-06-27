@@ -20,11 +20,11 @@ matrix:
         - libglu1-mesa-dev
         - libsuitesparse-dev
     env:
-    - MATRIX_EVAL="export CC=gcc-7 && CXX=g++-7 && CONFIG=Debug"
+    - MATRIX_EVAL="export CC=gcc-7 && CXX=g++-7 && CONFIG=Debug && NPROC=1"
   - os: osx
     compiler: clang
     env:
-    - MATRIX_EVAL="export CONFIG=Debug"
+    - MATRIX_EVAL="export CONFIG=Debug && NPROC=2"
 
 install:
 - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install suite-sparse ccache; fi
@@ -37,4 +37,4 @@ script:
 - mkdir build
 - cd build
 - cmake -DCMAKE_BUILD_TYPE=$CONFIG -DCELLOGRAM_WTIH_UNTANGLER=ON ..
-- make -j2
+- make -j ${NPROC}

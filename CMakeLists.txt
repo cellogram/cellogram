@@ -132,7 +132,7 @@ add_library(TinyTiff
 	${THIRD_PARTY_DIR}/TinyTIFF/tinytiffwriter.h
 	# ${THIRD_PARTY_DIR}/TinyTIFF/libtiff_tools/libtiff_tools.cpp
 	# ${THIRD_PARTY_DIR}/TinyTIFF/libtiff_tools/libtiff_tools.h
-	)
+)
 target_include_directories(TinyTiff SYSTEM INTERFACE ${THIRD_PARTY_DIR}/TinyTIFF)
 
 ################################################################################
