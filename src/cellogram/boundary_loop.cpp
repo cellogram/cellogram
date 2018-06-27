@@ -1,4 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////////
+#include "boundary_loop.h"
 #include <cellogram/tri2hex.h>
 #include <cellogram/navigation.h>
 #include <igl/is_border_vertex.h>

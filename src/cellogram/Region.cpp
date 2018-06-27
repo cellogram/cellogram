@@ -1,34 +1,31 @@
 ////////////////////////////////////////////////////////////////////////////////
-#include "cellogram/mesh_solver.h"
+#include "Region.h"
+#include <cellogram/mesh_solver.h>
+#include <cellogram/boundary_loop.h>
+#include <cellogram/convex_hull.h>
+#include <cellogram/delaunay.h>
+#include <cellogram/dijkstra.h>
 #include <cellogram/laplace_energy.h>
+#include <cellogram/Mesh.h>
+#include <cellogram/navigation.h>
+#include <cellogram/region_grow.h>
+#include <cellogram/State.h>
 #include <cellogram/tri2hex.h>
 #include <cellogram/vertex_degree.h>
-#include <cellogram/region_grow.h>
-#include <cellogram/Mesh.h>
-#include <cellogram/State.h>
-#include <cellogram/dijkstra.h>
-#include <gurobi_solver/state.h>
+#ifdef CELLOGRAM_WITH_GUROBI
 #include <gurobi_solver/generateQ.h>
 #include <gurobi_solver/gurobiModel.h>
-
-#include <cellogram/navigation.h>
-#include <cellogram/boundary_loop.h>
-#include <cellogram/delaunay.h>
-#include <cellogram/convex_hull.h>
-#include <igl/opengl/glfw/Viewer.h>
-
-#include <igl/triangle/triangulate.h>
-
-#include <igl/opengl/glfw/imgui/ImGuiMenu.h>
-
-#include <igl/opengl/glfw/imgui/ImGuiHelpers.h>
-#include <igl/Timer.h>
-#include <igl/sort.h>
-#include <imgui/imgui.h>
-
-
+#include <gurobi_solver/state.h>
+#endif
 #include <igl/dijkstra.h>
+#include <igl/opengl/glfw/imgui/ImGuiHelpers.h>
+#include <igl/opengl/glfw/imgui/ImGuiMenu.h>
 #include <igl/opengl/glfw/Viewer.h>
+#include <igl/opengl/glfw/Viewer.h>
+#include <igl/sort.h>
+#include <igl/Timer.h>
+#include <igl/triangle/triangulate.h>
+#include <imgui/imgui.h>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
@@ -70,7 +67,7 @@ namespace cellogram {
 			int lv = 0;
 
 			NavigationData data(tri_original);
-			
+
 			for (int f = 0; f < tri_original.rows(); f++)
 			{
 				NavigationIndex index = index_from_face(tri_original, data, f, lv);
@@ -93,7 +90,7 @@ namespace cellogram {
 				}
 			}
 		}
-		
+
 		void removeRow(Eigen::MatrixXi& matrix, unsigned int rowToRemove)
 		{
 			unsigned int numRows = matrix.rows() - 1;
@@ -127,7 +124,7 @@ namespace cellogram {
 			return (s > 0);
 		}
 
-		bool is_neigh_valid(const VectorXi &neigh)
+		bool is_neigh_valid(const Eigen::VectorXi &neigh)
 		{
 			// check if number of neigh is smaller than 7
 			if (neigh.maxCoeff() > 6)
@@ -187,7 +184,7 @@ namespace cellogram {
 		}
 
 		Eigen::VectorXi find_n_neighbor(const Eigen::MatrixXi &F2, const Eigen::VectorXi &current_edge_vertices, const std::vector<std::vector<int>> &adj) {
-			// This function needs to find the number of correct neighbors to the outside. 
+			// This function needs to find the number of correct neighbors to the outside.
 			// This can not be done using the inside of the region, because that region may be faulty
 			std::vector<int> internalTri(current_edge_vertices.rows(), 0);
 			Eigen::VectorXi neigh(current_edge_vertices.rows());
@@ -330,7 +327,7 @@ namespace cellogram {
 				}
 			}
 		}
-		
+
 		std::sort(region_faces.begin(), region_faces.end());
 		region_faces.erase(std::unique(region_faces.begin(), region_faces.end()), region_faces.end());
 
@@ -419,13 +416,14 @@ namespace cellogram {
 
 	void Region::check_region_from_local_tris(const Eigen::MatrixXd &V_detected, const Eigen::MatrixXd &V_current, const Eigen::MatrixXi &F2, const std::vector<std::vector<int>> &adj)
 	{
+#ifdef CELLOGRAM_WITH_GUROBI
 		int nPolygon = region_boundary.size(); // length of current edge
 
 
 		// Determine number of connections into the cluster to determine "neigh"
 		Eigen::VectorXi neigh = find_n_neighbor(F2, region_boundary, adj);
 
-		////PLEASE USE ME 
+		////PLEASE USE ME
 		//igl::opengl::glfw::Viewer viewer;
 		////igl::opengl::glfw::imgui::ImGuiMenu menu;
 		////viewer.plugins.push_back(&menu);
@@ -517,6 +515,7 @@ namespace cellogram {
 		//	}
 		//}
 		status = 0;
+#endif
 	}
 
 	void Region::resolve(const Eigen::MatrixXd &V_detected, const Eigen::MatrixXd &V_current, const int perm_possibilities, const double gurobi_time_limit, Eigen::MatrixXd  &new_points, Eigen::MatrixXi &new_triangles, bool force_solve)
@@ -526,6 +525,8 @@ namespace cellogram {
 			if(!force_solve || status != REGION_TOO_LARGE)
 				return;
 		}
+
+#ifdef CELLOGRAM_WITH_GUROBI
 
 		int nPolygon = region_boundary.size(); // length of current edge
 
@@ -588,7 +589,7 @@ namespace cellogram {
 		permutation.setFromTriplets(permutation_triplets.begin(), permutation_triplets.end());
 
 		//std::cout << Eigen::MatrixXd(permutation) << std::endl;
-		
+
 		//std::cout << "\nDef: \n" << s.Vdeformed;
 		//std::cout << "\nPerf: \n" << s.Vperfect;
 		//std::cout << "\Vi: \n" << vI;
@@ -606,6 +607,7 @@ namespace cellogram {
 		new_points.block(0, 0, nPolygon, 3) = v_output;
 
 		new_triangles = q.T;
+#endif
 	}
 
 	bool Region::split_region(Mesh &mesh, const Eigen::Vector2i & split_end_points, Region &r1, Region  &r2)
@@ -658,10 +660,10 @@ namespace cellogram {
 		//if (something)
 		//	return false;
 
-		
+
 		//r1.find_triangles(mesh.triangles);
 		//std::cout << r1.region_triangles << std::endl;
-		
+
 		//r2.find_triangles(mesh.triangles);
 
 		//
@@ -793,7 +795,7 @@ namespace cellogram {
 		int l2 = region_boundary.size() - (split_ind(1) - split_ind(0) + 1);
 		boundary1.resize(l1 + path.size());
 		boundary2.resize(l2 + path.size());
-		
+
 		for (int i = 0; i < l1; i++)
 		{
 			boundary1(i) = region_boundary(split_ind(0) + i + 1);
@@ -815,7 +817,7 @@ namespace cellogram {
 				boundary2(l2 + i) = path(i);
 			}
 		}
-		
+
 	}
 
 	void Region::find_interior_V(const Mesh & mesh, const Eigen::VectorXi & boundary, Eigen::VectorXi & interior_V)
@@ -846,7 +848,7 @@ namespace cellogram {
 				tmp.push_back(region_interior(i));
 			}
 		}
-		
+
 		interior_V.resize(tmp.size());
 		for (int i = 0; i < tmp.size(); i++)
 		{
@@ -952,7 +954,7 @@ namespace cellogram {
 		Eigen::MatrixXi new_triangles;
 
 		//triangulate_polygon(boundary_V, dummy, new_triangles);
-		// TODO fill boundary_V 
+		// TODO fill boundary_V
 
 		Eigen::MatrixXi E, WE;
 		Eigen::VectorXi J;
@@ -966,7 +968,7 @@ namespace cellogram {
 
 
 		//VpqYYS0
-		igl::triangle::triangulate(PV, E, MatrixXd(0, 2), "QpqYYS0", dummy, new_triangles);
+		igl::triangle::triangulate(PV, E, Eigen::MatrixXd(0, 2), "QpqYYS0", dummy, new_triangles);
 		//asd.conservativeResize(asd.rows(), 3);
 		//asd.col(2).setZero();
 
@@ -1005,7 +1007,7 @@ namespace cellogram {
 			pts(i, 0) = mesh.points(global_index, 0);
 			pts(i, 1) = mesh.points(global_index, 1);
 		}
-		
+
 		Eigen::MatrixXi E;
 		E.resize(nn, 2);
 		for (int i = 0; i < nn; ++i) {
@@ -1022,7 +1024,7 @@ namespace cellogram {
 		Eigen::MatrixXd dummy;
 		Eigen::VectorXi dummy1, dummy2;
 		Eigen::MatrixXi tmp;
-		igl::triangle::triangulate(pts, E, MatrixXd(0, 2), VM, EM, "QpqYYS0", dummy, tmp, dummy1, dummy2);
+		igl::triangle::triangulate(pts, E, Eigen::MatrixXd(0, 2), VM, EM, "QpqYYS0", dummy, tmp, dummy1, dummy2);
 
 		new_triangles.resizeLike(tmp);
 
@@ -1043,10 +1045,10 @@ namespace cellogram {
 		{
 			tri_tmp.row(i) = tri.row(tri_list(i));
 		}
-		
+
 		// sorting necessary
 		igl::sort(tri_tmp, 2, 1, region_tri_sorted, dummy);
-		
+
 
 		const int n = region_boundary.size();
 		for (int split_ind = 0; split_ind < n; split_ind++)
@@ -1174,7 +1176,7 @@ namespace cellogram {
 		return true;
 	}
 
-	
+
 } // namespace cellogram
 
 // -----------------------------------------------------------------------------

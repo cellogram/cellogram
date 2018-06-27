@@ -2,43 +2,41 @@
 #include <Eigen/Sparse>
 #include <set>
 
-using namespace Eigen;
-
 class generateQ
 {
 public:
 
     // Input
-	MatrixXd V; // The first vertices are the boundary (sorted as in V_boundary), then the internals (unsorted)
-	MatrixXi F;
-	
+	Eigen::MatrixXd V; // The first vertices are the boundary (sorted as in V_boundary), then the internals (unsorted)
+	Eigen::MatrixXi F;
+
 	// Calculations
 	int iNrT;
 	int iNrV;
 
-	MatrixXi A; // Adjacency matrix
-	MatrixXi L; // Laplacian matrix
+	Eigen::MatrixXi A; // Adjacency matrix
+	Eigen::MatrixXi L; // Laplacian matrix
 
 	int K;
-	MatrixXi IDX; //Matrix containing indices of closest neighbors
+	Eigen::MatrixXi IDX; //Matrix containing indices of closest neighbors
 
-	SparseMatrix<double> Q;
-	SparseMatrix<int> Aeq;
+	Eigen::SparseMatrix<double> Q;
+	Eigen::SparseMatrix<int> Aeq;
 
-	VectorXi vMapping; // Vector containing mapping from F (perfect triangles) to input indices (V)
-	MatrixXi T; // triangular connectivity of V
+	Eigen::VectorXi vMapping; // Vector containing mapping from F (perfect triangles) to input indices (V)
+	Eigen::MatrixXi T; // triangular connectivity of V
 
 	// Generate Laplacian
-	void adjacencyMatrix(const MatrixXi &triangles);
+	void adjacencyMatrix(const Eigen::MatrixXi &triangles);
 	void laplacianMatrix();
 
 	// Generate Q
-	void QforOptimization(const MatrixXd &Vperfect, const MatrixXd &Vdeformed, int K);
+	void QforOptimization(const Eigen::MatrixXd &Vperfect, const Eigen::MatrixXd &Vdeformed, int K);
 
 	// Compile constraints for opimization
 	void optimizationConstraints(int nrBoundaryV);
 
 	// Map the results from gurobi back to the indices of the coordinates
-	void mapBack(const VectorXi &x);
+	void mapBack(const Eigen::VectorXi &x);
 };
 

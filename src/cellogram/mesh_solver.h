@@ -1,7 +1,7 @@
 #pragma once
 
 ////////////////////////////////////////////////////////////////////////////////
-#include "common.h"
+#include <cellogram/common.h>
 #include <vector>
 #include <Eigen/Dense>
 ////////////////////////////////////////////////////////////////////////////////
@@ -23,7 +23,7 @@ namespace cellogram {
 		/// @param[out] regions   { bad regions found by indices in V}
 		//void find_bad_regions(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F);
 		///
-		/// @brief      { Calls the gurobi solver for each region}
+		/// @brief      { Calls the gurobi solver for each region }
 		///
 		/// @param[in]  V		  { #V x dims input point positions }
 		/// @param[in]  F		  { #F x 3 input triangle indices }

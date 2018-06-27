@@ -1,23 +1,22 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "point_source_detection.h"
-
-#include "convex_hull.h"
-#include "delaunay.h"
-#include "navigation.h"
-#include "fitGaussian2D.h"
-#include <igl/edges.h>
+#include <cellogram/convex_hull.h>
+#include <cellogram/delaunay.h>
+#include <cellogram/fitGaussian2D.h>
+#include <cellogram/navigation.h>
+#include <tcdf/tcdf.h>
+#include <geogram/basic/geometry.h>
 #include <igl/boundary_loop.h>
+#include <igl/colon.h>
+#include <igl/edge_lengths.h>
+#include <igl/edges.h>
+#include <igl/remove_duplicate_vertices.h>
+#include <igl/Timer.h>
 #include <igl/triangle/cdt.h>
 #include <algorithm>
 #include <numeric>
-#include <stack>
-#include <geogram/basic/geometry.h>
-#include <igl/edge_lengths.h>
-#include <igl/colon.h>
-#include "tcdf/tcdf.h"
 #include <queue>
-#include <igl/Timer.h>
-#include <igl/remove_duplicate_vertices.h>
+#include <stack>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
@@ -554,7 +553,7 @@ namespace cellogram {
 		//std::cout << "mask:\n" << mask << std::endl; //equal
 
 		fitGaussians2D(img_padded, lm, A_est_idx, s_est_idx, c_est_idx, mask, V, params); //inputs checked
-		
+
 		// transpose and flip to undo image flipping at beginning
 		//V.col(0) = V.col(0).maxCoeff() - V.col(0).array();
 		const Eigen::MatrixXd tmpV = V.array() - padDim;//.rowwise().reverse();
@@ -573,7 +572,7 @@ namespace cellogram {
 	void DetectionParams::sum(const DetectionParams add_param)
 	{
 		assert(add_param.size() == 1);
-		// this will add the values in add_param to all the respective values in this 
+		// this will add the values in add_param to all the respective values in this
 		A.array() += add_param.A(0);
 		sigma.array() += add_param.sigma(0);
 		C.array() += add_param.C(0);
@@ -863,7 +862,7 @@ namespace cellogram {
 		tmp.clear();  tmp.insert(tmp.end(), json_data["sigma"].begin(), json_data["sigma"].end());
 		sigma = Eigen::Map<Eigen::VectorXd>(&tmp[0], tmp.size());
 		tmp.clear();  tmp.insert(tmp.end(), json_data["C"].begin(), json_data["C"].end());
-		C = Eigen::Map<Eigen::VectorXd>(&tmp[0], tmp.size()); 
+		C = Eigen::Map<Eigen::VectorXd>(&tmp[0], tmp.size());
 		tmp.clear();  tmp.insert(tmp.end(), json_data["std_x"].begin(), json_data["std_x"].end());
 		std_x = Eigen::Map<Eigen::VectorXd>(&tmp[0], tmp.size());
 		tmp.clear();  tmp.insert(tmp.end(), json_data["std_y"].begin(), json_data["std_y"].end());

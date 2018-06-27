@@ -9,19 +9,18 @@
 
 #include "fitGaussian2D.h"
 
-#include <vector>
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
-#include <string.h>
-#include <ctype.h>
-
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_multifit_nlin.h>
 
+#include <vector>
+#include <stdlib.h>
+#include <stdio.h>
+#include <math.h>
+#include <string.h>
+#include <ctype.h>
 #include <iostream>
 
 // #include "matrix.h"

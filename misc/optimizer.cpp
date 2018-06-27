@@ -1,8 +1,7 @@
-#include "cellogram/point_source_detection.h"
+#include <cellogram/point_source_detection.h>
 #include <gurobi_solver/state.h>
 #include <gurobi_solver/generateQ.h>
 #include <gurobi_solver/gurobiModel.h>
-
 
 #include <string>
 #include <iostream>
@@ -54,7 +53,7 @@ int main(int argc, char** argv) {
 	Eigen::MatrixXd vB;
 	Eigen::MatrixXd vI;
 	Eigen::MatrixXd tmp;
-	
+
 	const std::string root = "C:/Users/Tobias/Dropbox/NY/test_regions/";
 	const std::string file = "1";
 	load_data(root + file + "/vB.vert", vB);

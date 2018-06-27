@@ -1,12 +1,14 @@
 ////////////////////////////////////////////////////////////////////////////////
-#include "cellogram/mesh_solver.h"
+#include "mesh_solver.h"
 #include <cellogram/laplace_energy.h>
 #include <cellogram/tri2hex.h>
 #include <cellogram/vertex_degree.h>
 #include <cellogram/region_grow.h>
+#ifdef CELLOGRAM_WITH_GUROBI
 #include <gurobi_solver/state.h>
 #include <gurobi_solver/generateQ.h>
 #include <gurobi_solver/gurobiModel.h>
+#endif
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
@@ -15,7 +17,7 @@ namespace cellogram {
 	typedef std::vector<int> Path;
 	generateQ q;
 	gurobiModel g;
-	
+
 	void removeRow(Eigen::MatrixXi& matrix, unsigned int rowToRemove)
 	{
 		unsigned int numRows = matrix.rows() - 1;
@@ -154,7 +156,7 @@ namespace cellogram {
 	}*/
 
 	Eigen::VectorXi find_n_neighbor(const Eigen::MatrixXi &F2,const Eigen::VectorXi &current_edge_vertices, std::vector<Path> &adj) {
-		// This function needs to find the number of correct neighbors to the outside. 
+		// This function needs to find the number of correct neighbors to the outside.
 		// This can not be done using the inside of the region, because that region may be faulty
 		std::vector<int> internalTri(current_edge_vertices.rows(), 0);
 		Eigen::VectorXi neigh(current_edge_vertices.rows());
@@ -265,7 +267,7 @@ namespace cellogram {
 		{
 			return true;
 		}
-		else 
+		else
 		{
 			return false;
 		}
@@ -285,15 +287,15 @@ namespace cellogram {
 		// 1.
 		// create a 2d vector containing all the vertices belonging to each region
 		// as well as one containing the triangles in that region
-		
+
 		//std::vector<Path> region_points(nRegions);
-		
+
 		//region_edges.resize(nRegions);
 
 		// 1.1 find the points and triangles inside
 		std::vector<Path> region_points = find_points_in_region(region);
 		std::vector<Path> region_F = find_triangles_in_region(F, region);
-		
+
 
 		// 2.
 		// loop through all the boundaries and solve individually. Possibly skip first one, as it's the boundary of the image
@@ -306,7 +308,7 @@ namespace cellogram {
 				counter_small_region++;
 				continue;
 			}
-			
+
 			// 2.1
 			// Save current edge points into single vector
 			Eigen::VectorXi current_edge_vertices = Eigen::VectorXi::Zero(nPolygon);
@@ -317,7 +319,7 @@ namespace cellogram {
 			}
 
 			//std::cout << "\nCurrent_edge \n" << current_edges.transpose() << std::endl;
-			
+
 			// 2.2
 			// Determine number of connections into the cluster to determine "neigh"
 			Eigen::VectorXi neigh(nPolygon);
@@ -331,9 +333,9 @@ namespace cellogram {
 			{
 				F2.row(j) = F.row(region_F[i][j]);
 			}
-			
+
 			// 2.3 find number of neighbors
-			
+
 			neigh = find_n_neighbor(F2, current_edge_vertices, adj);
 			if (!is_neigh_valid(neigh)) {
 				// this mesh is not properly close
@@ -342,7 +344,7 @@ namespace cellogram {
 				continue;
 			}
 
-			
+
 
 			// 3 Pepare for Gurobi
 			// vB contains the boundary vertices, vI the internal vertices
@@ -361,7 +363,7 @@ namespace cellogram {
 			}
 			// Generate perfect mesh in ROI
 			s.init(vB, vI, neigh);
-			
+
 			s.fill_hole();
 
 			// Check whether vertices inside region is equal to the ones expected
@@ -374,13 +376,13 @@ namespace cellogram {
 			q.adjacencyMatrix(s.F);
 			q.laplacianMatrix();
 
-			
+
 			// Deriving Q and constraints for optimization
 			const int perm_possibilities = 8;
 			q.QforOptimization(s.Vperfect, s.Vdeformed, perm_possibilities);
 			q.optimizationConstraints(s.V_boundary.rows());
 
-			
+
 			// Generate and solve model for gurobi
 			g.model(q.Q, q.Aeq);
 			if (g.resultX(1) == -1) {
@@ -388,7 +390,7 @@ namespace cellogram {
 				counter_infeasible_region++;
 				break;
 			}
-			
+
 			// Map back to indices of coordinates
 			q.mapBack(g.resultX);
 			//std::cout << g.resultX << std::endl;
@@ -430,7 +432,7 @@ namespace cellogram {
 				pts.row(global_index) = new_points.row(i + current_edge_vertices.size());
 			}
 
-			
+
 			// Map q.T back to global indices
 			Eigen::VectorXi vGlobalInd = Eigen::VectorXi::Zero(current_edge_vertices.size() + current_internal.size());
 			for (int i = 0; i < current_edge_vertices.size(); i++)
@@ -451,7 +453,7 @@ namespace cellogram {
 				}
 
 			}
-						
+
 			replaceTriangles(tGlobal, F, current_internal);
 
 			nRegions_solved++;

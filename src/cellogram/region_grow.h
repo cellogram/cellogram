@@ -1,8 +1,8 @@
 #pragma once
 
 ////////////////////////////////////////////////////////////////////////////////
-#include "common.h"
-#include "Region.h"
+#include <cellogram/common.h>
+#include <cellogram/Region.h>
 #include <Eigen/Dense>
 #include <vector>
 ////////////////////////////////////////////////////////////////////////////////
@@ -31,4 +31,5 @@ void region_grow(std::vector<std::vector<int>> &Graph, const Eigen::Matrix<bool,
 
 // this function may not be called from external
 //void check_crit(const Eigen::MatrixXi &Graph, const Eigen::VectorXi &Vertex_Value, Eigen::VectorXi &region, Eigen::VectorXi &visited, const double criterium, int group, int ind);
+
 } // namespace cellogram

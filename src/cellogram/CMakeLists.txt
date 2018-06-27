@@ -60,30 +60,21 @@ target_include_directories(${PROJECT_NAME} PUBLIC ..)
 # Dependencies
 target_link_libraries(${PROJECT_NAME}
 	polyfem
-
 	mmg::mmg
-	igl::opengl_glfw_imgui #needs to be removed when all ok
+	igl::opengl_glfw_imgui # needs to be removed when all ok
 	igl::png
-	gurobi_solver
+	cellogram::gurobi
+	cellogram::untangler
 	tcdf
 	gsl
 	TinyTiff
 )
-
-if(CELLOGRAM_WTIH_UNTANGLER)
-	target_link_libraries(${PROJECT_NAME}
-		points_untangler
-	)
-
-	target_compile_definitions(${PROJECT_NAME} PUBLIC -DWITH_UNTANGLER)
-endif()
 
 # Extra warnings
 target_compile_options(${PROJECT_NAME} PRIVATE ${ALL_WARNINGS})
 
 # Use C++14
 target_compile_features(${PROJECT_NAME} PUBLIC ${CXX14_FEATURES})
-
 
 foreach(source IN ITEMS ${source_list})
     get_filename_component(source_path "${source}" PATH)

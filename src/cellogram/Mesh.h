@@ -1,12 +1,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
-
+#include <cellogram/common.h>
 #include <cellogram/point_source_detection.h>
-
-#include "common.h"
-#include <vector>
 #include <Eigen/Dense>
-
+#include <vector>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
@@ -57,7 +54,7 @@ public:
 	void generate_vertex_to_tri();
 	void reset();
 
-#ifdef WITH_UNTANGLER
+#ifdef CELLOGRAM_WITH_UNTANGLER
 	void untangle();
 #endif
 

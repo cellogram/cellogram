@@ -1,10 +1,12 @@
 #pragma once
 
 ////////////////////////////////////////////////////////////////////////////////
-#include "common.h"
-#include "cellogram/Mesh.h"
+#include <cellogram/common.h>
+#include <cellogram/Mesh.h>
 #include <Eigen/Dense>
+#ifdef CELLOGRAM_WITH_GUROBI
 #include <gurobi_solver/state.h>
+#endif
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
@@ -49,7 +51,7 @@ namespace cellogram {
 		void resolve(const Eigen::MatrixXd &V_detected, const Eigen::MatrixXd &V_current, const int perm_possibilities, const double gurobi_time_limit, Eigen::MatrixXd  &new_points, Eigen::MatrixXi &new_triangles, bool force_solve = false);
 
 		bool fix_missing_points(const Eigen::MatrixXi & F);
-		
+
 		void delete_vertex(cellogram::Mesh &mesh, const int index);
 
 
@@ -67,6 +69,9 @@ namespace cellogram {
 		void triangluate_region(const Mesh mesh, Eigen::MatrixXi &new_triangles);
 		bool clean_up_boundary(const Eigen::MatrixXi &tri, const Eigen::MatrixXi & tri_list);
 		Eigen::MatrixXi get_triangulation(const Eigen::MatrixXi &F);
+
+#ifdef CELLOGRAM_WITH_GUROBI
 		State s;
+#endif
 	};
 } // namespace cellogram

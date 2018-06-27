@@ -25,32 +25,23 @@ function(add_application APP_SOURCE)
 
 	# Data folder
 	target_compile_definitions(${APP_NAME} PRIVATE -DDATA_DIR=\"${DATA_DIR}\")
+
+	set_target_properties(${APP_NAME} PROPERTIES FOLDER test)
 endfunction()
 
 ################################################################################
 
-
-if(TARGET gurobi)
-	add_application(delaunay.cpp tinyfiledialogs geogram geogram_gfx gurobi_solver)
-	set_target_properties (delaunay PROPERTIES FOLDER test)
-endif()
-
-if(CELLOGRAM_WTIH_UNTANGLER)
-	add_application(pts_untangler.cpp cellogram points_untangler)
-	set_target_properties (pts_untangler PROPERTIES FOLDER test)
-endif()
-
-
-add_application(optimizer.cpp cellogram)
 add_application(pts_detection.cpp cellogram)
 add_application(tcdf_test.cpp tcdf)
 add_application(tif_test.cpp cellogram)
 add_application(image_test.cpp cellogram)
 add_application(adaptive_test.cpp cellogram)
 
-set_target_properties (optimizer PROPERTIES FOLDER test)
-set_target_properties (pts_detection PROPERTIES FOLDER test)
-set_target_properties (tcdf_test PROPERTIES FOLDER test)
-set_target_properties (tif_test PROPERTIES FOLDER test)
+if(TARGET gurobi::gurobi)
+	add_application(delaunay.cpp tinyfiledialogs geogram geogram_gfx gurobi_solver)
+	add_application(optimizer.cpp cellogram)
+endif()
 
-
+if(CELLOGRAM_WTIH_UNTANGLER)
+	add_application(pts_untangler.cpp cellogram)
+endif()

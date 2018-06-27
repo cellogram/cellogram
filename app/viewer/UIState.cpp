@@ -88,7 +88,7 @@ bool UIState::mouse_move(int button, int modifier) {
 		zNew += 0;
 	}
 
-	state.mesh.moved.row(dragging_id) = RowVector3d(xNew, yNew, zNew);
+	state.mesh.moved.row(dragging_id) = Eigen::RowVector3d(xNew, yNew, zNew);
 
 	viewer_control();
 
@@ -887,12 +887,6 @@ void UIState::viewer_control_3d() {
 	// Vtmp.col(2).array() -= 0.1;
 	// physical_data().set_mesh(Vtmp, state.mesh3d.F);
 
-	// {
-	// 	MatrixXd normals;
-	// 	igl::per_face_normals(Vtmp, state.mesh3d.F, normals);
-	// 	physical_data().set_normals(normals);
-	// }
-	// return;
 
 	Eigen::MatrixXd C, disp;
 
@@ -942,7 +936,7 @@ void UIState::viewer_control_3d() {
 	// std::cout << C << std::endl;
 	// std::cout << "\n\ncol\n" << fun.col(0).eval() << std::endl;
 
-	MatrixXd normals;
+	Eigen::MatrixXd normals;
 
 	if (state.image_from_pillars) {
 		physical_data().set_points(Vtmp, C);

@@ -1,17 +1,14 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "Mesh3d.h"
-#include "Mesh.h"
-#include "remesh_adaptive.h"
-
-#include <igl/opengl/glfw/Viewer.h>
+#include <cellogram/Mesh.h>
+#include <cellogram/remesh_adaptive.h>
+#include <State.hpp>
 #include <Mesh3D.hpp>
 #include <MeshUtils.hpp>
-
+#include <PointBasedProblem.hpp>
+#include <igl/opengl/glfw/Viewer.h>
 #include <igl/copyleft/tetgen/tetrahedralize.h>
 #include <geogram/mesh/mesh_io.h>
-#include <State.hpp>
-
-#include <PointBasedProblem.hpp>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
@@ -88,7 +85,7 @@ namespace cellogram {
 
 			//Id = 1, func, mesh, coord =2, means skip z for the interpolation
 			problem.add_function(1, disp, pts, mesh.triangles, 2);
-			
+
 			//Id = 3, zero Dirichelt
 			problem.add_constant(3, Eigen::Vector3d(0,0,0));
 
@@ -151,61 +148,62 @@ namespace cellogram {
 
 	void Mesh3d::init_nano_dots(const Mesh &mesh, float padding_size, const float thickness, float E, float nu, const std::string &formulation)
 	{
-		clear();
+		//Uncomment to used not adaptive tetgen mesher
+// 		clear();
 
-		Eigen::Vector2d max_dim;
-		Eigen::Vector2d min_dim;
-		mesh.get_physical_bounding_box(min_dim, max_dim);
+// 		Eigen::Vector2d max_dim;
+// 		Eigen::Vector2d min_dim;
+// 		mesh.get_physical_bounding_box(min_dim, max_dim);
 
-		double xMin = min_dim(0) - padding_size;
-		double xMax = max_dim(0) + padding_size;
-		double yMin = min_dim(1) - padding_size;
-		double yMax = max_dim(1) + padding_size;
-		double zMin = -thickness;
-		double zMax = 0;
+// 		double xMin = min_dim(0) - padding_size;
+// 		double xMax = max_dim(0) + padding_size;
+// 		double yMin = min_dim(1) - padding_size;
+// 		double yMax = max_dim(1) + padding_size;
+// 		double zMin = -thickness;
+// 		double zMax = 0;
 
-		V.resize(8, 3);
-		V << xMin, yMin, zMin,
-		xMin, yMax, zMin,
-		xMax, yMax, zMin,
-		xMax, yMin, zMin,
+// 		V.resize(8, 3);
+// 		V << xMin, yMin, zMin,
+// 		xMin, yMax, zMin,
+// 		xMax, yMax, zMin,
+// 		xMax, yMin, zMin,
 
-			//4
-		xMin, yMin, zMax,
-		xMin, yMax, zMax,
-		xMax, yMax, zMax,
-		xMax, yMin, zMax;
+// 			//4
+// 		xMin, yMin, zMax,
+// 		xMin, yMax, zMax,
+// 		xMax, yMax, zMax,
+// 		xMax, yMin, zMax;
 
-		F.resize(12, 3);
-		F << 1, 2, 0,
-		0, 2, 3,
+// 		F.resize(12, 3);
+// 		F << 1, 2, 0,
+// 		0, 2, 3,
 
-		5, 4, 6,
-		4, 7, 6,
+// 		5, 4, 6,
+// 		4, 7, 6,
 
-		1, 0, 4,
-		1, 4, 5,
+// 		1, 0, 4,
+// 		1, 4, 5,
 
-		2, 1, 5,
-		2, 5, 6,
+// 		2, 1, 5,
+// 		2, 5, 6,
 
-		3, 2, 6,
-		3, 6, 7,
+// 		3, 2, 6,
+// 		3, 6, 7,
 
-		0, 3, 7,
-		0, 7, 4;
+// 		0, 3, 7,
+// 		0, 7, 4;
 
-		Eigen::MatrixXd TV;
-		Eigen::MatrixXi TT;
-		Eigen::MatrixXi TF;
-#ifdef NDEBUG
-		igl::copyleft::tetgen::tetrahedralize(V, F, "Qpq1.414a100", TV, TT, TF);
-#else
-		igl::copyleft::tetgen::tetrahedralize(V, F, "Qpq1.414a10", TV, TT, TF);
-#endif
-		V = TV;
-		F = TF;
-		T = TT;
+// 		Eigen::MatrixXd TV;
+// 		Eigen::MatrixXi TT;
+// 		Eigen::MatrixXi TF;
+// #ifdef NDEBUG
+// 		igl::copyleft::tetgen::tetrahedralize(V, F, "Qpq1.414a100", TV, TT, TF);
+// #else
+// 		igl::copyleft::tetgen::tetrahedralize(V, F, "Qpq1.414a1000", TV, TT, TF);
+// #endif
+// 		V = TV;
+// 		F = TF;
+// 		T = TT;
 
 		compute_analysis(V, F, T, mesh, thickness, E, nu, formulation, displacement, traction_forces);
 	}
