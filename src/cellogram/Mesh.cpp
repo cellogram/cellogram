@@ -391,7 +391,7 @@ namespace cellogram {
 		Eigen::MatrixXd BV;
 		Eigen::MatrixXi BF;
 		V = points.leftCols<2>();
-		igl::bounding_box(V, padding, BV, BF);
+		igl::bounding_box(V, padding / scaling, BV, BF);
 		assert(BV.rows() == 4);
 
 		V.resize(points.rows() + BV.rows(), 2);
