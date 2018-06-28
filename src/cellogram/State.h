@@ -31,6 +31,7 @@ public:
 	MmgOptions mmg_options;
 
 	float mesh_area_rel[2] = {0.001, 0.1};
+	float power = 0.5;
 	float padding_size = 25;
 	float thickness = 30;
 

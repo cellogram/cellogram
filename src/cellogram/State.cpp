@@ -808,7 +808,7 @@ namespace cellogram {
 
 		// Rescale displacement field
 		S = (S.array() - S.minCoeff()) / std::max(1e-9, (S.maxCoeff() - S.minCoeff()));
-		S = (1.0 - S.array()) * (mesh_area_rel[1] - mesh_area_rel[0]) + mesh_area_rel[0];
+		S = (1.0 - S.array()).pow(power) * (mesh_area_rel[1] - mesh_area_rel[0]) + mesh_area_rel[0];
 
 		double vmin = V.minCoeff();
 		double vmax = V.maxCoeff();

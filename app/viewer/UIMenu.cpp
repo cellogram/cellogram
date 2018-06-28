@@ -589,6 +589,7 @@ void UIState::draw_analysis_menu() {
 		ImGui::InputFloat("Padding [µm]", &state.padding_size, 1, 0, 0);
 		ImGui::InputFloat("Thickness [µm]", &state.thickness, 1, 0, 0);
 		ImGui::InputFloat2("Triangle area (%)", state.mesh_area_rel);
+		ImGui::InputFloat("Power", &state.power, 0.01, 100, 3);
 		if (ImGui::TreeNode("Advanced meshing options")) {
 			SetMmgOptions(state.mmg_options);
 			ImGui::TreePop();
