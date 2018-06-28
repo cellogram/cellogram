@@ -11,6 +11,7 @@
 #include <cellogram/tri2hex.h>
 #include <cellogram/voronoi.h>
 #include <MeshUtils.hpp>
+#include <InterpolatedFunction.hpp>
 #include <igl/bounding_box.h>
 #include <igl/bounding_box_diagonal.h>
 #include <igl/copyleft/tetgen/tetrahedralize.h>
@@ -814,6 +815,7 @@ namespace cellogram {
 		S = (S.array() - S.minCoeff()) / std::max(1e-9, (S.maxCoeff() - S.minCoeff()));
 		S = (1.0 - S.array()).pow(power) * (target_mesh_size[1] - target_mesh_size[0]) + target_mesh_size[0];
 
+		// Remesh triangle mesh
 		double vmin = V.minCoeff();
 		double vmax = V.maxCoeff();
 		V = V.array() / std::max(1e-9, vmax - vmin);
@@ -861,7 +863,33 @@ namespace cellogram {
 	}
 
 	void State::remesh_3d_adaptive() {
+		// Generate background mesh if needed
+		if (mesh3d.V.size() == 0) { mesh_3d_uniform(); }
+		double zmin = mesh3d.V.col(2).minCoeff();
+		double zmax = mesh3d.V.col(2).maxCoeff();
+		if (std::abs(zmin - zmax) > 1e-6) { mesh_3d_uniform(); }
 
+		// Scalar field to interpolate
+		Eigen::MatrixXd V;
+		Eigen::MatrixXi F;
+		Eigen::VectorXd S;
+		mesh.get_background_mesh(V, F, S, padding_size);
+
+		// Interpolate
+		Eigen::MatrixXd VP = mesh3d.V.leftCols<2>();
+		poly_fem::InterpolatedFunction2d aux(S, V, F);
+		S = aux.interpolate(VP);
+
+		// Rescale displacement field
+		S = (S.array() - S.minCoeff()) / std::max(1e-9, (S.maxCoeff() - S.minCoeff()));
+		S = (1.0 - S.array()).pow(power) * (target_mesh_size[1] - target_mesh_size[0]) + target_mesh_size[0];
+
+		// Remesh volume mesh
+		double vmin = mesh3d.V.minCoeff();
+		double vmax = mesh3d.V.maxCoeff();
+		mesh3d.V = mesh3d.V.array() / std::max(1e-9, vmax - vmin);
+ 		remesh_adaptive_3d(mesh3d.V, mesh3d.T, S, mesh3d.V, mesh3d.F, mesh3d.T, mmg_options);
+		mesh3d.V = mesh3d.V.array() * std::max(1e-9, vmax - vmin);
 	}
 
 	void State::analyze_3d_mesh() {

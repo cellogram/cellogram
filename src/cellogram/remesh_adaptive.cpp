@@ -192,7 +192,6 @@ bool mmg2d_tri_remesh(const Mesh& M, Mesh& M_out, const cellogram::MmgOptions& o
     MMG2D_Set_iparameter(mesh, met, MMG2D_IPARAM_noinsert, int(opt.noinsert));
     MMG2D_Set_iparameter(mesh, met, MMG2D_IPARAM_nomove, int(opt.nomove));
     MMG2D_Set_iparameter(mesh, met, MMG2D_IPARAM_nosurf, int(opt.nosurf));
-    MMG2D_Set_iparameter(mesh, met, MMG2D_IPARAM_optim, int(opt.optim));
     if (opt.metric_attribute != "no_metric") {
         if (!M.vertices.attributes().is_defined(opt.metric_attribute)) {
             Logger::err("mmg2D_remesh") << opt.metric_attribute << " is not a vertex attribute, cancel" << std::endl;
