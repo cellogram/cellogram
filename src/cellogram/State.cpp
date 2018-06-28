@@ -813,9 +813,12 @@ namespace cellogram {
 		// Rescale displacement field
 		S = (S.array() - S.minCoeff()) / std::max(1e-9, (S.maxCoeff() - S.minCoeff()));
 		S = (1.0 - S.array()).pow(power) * (target_mesh_size[1] - target_mesh_size[0]) + target_mesh_size[0];
-		S = S.array() * igl::bounding_box_diagonal(V);
 
-		remesh_adaptive_2d(V, F, S, V, F, mmg_options);
+		double vmin = V.minCoeff();
+		double vmax = V.maxCoeff();
+		V = V.array() / std::max(1e-9, vmax - vmin);
+ 		remesh_adaptive_2d(V, F, S, V, F, mmg_options);
+		V = V.array() * std::max(1e-9, vmax - vmin);
 
 		// Mesh volume adaptively based on background mesh
 		mesh3d.V.resize(V.rows(), 3);
