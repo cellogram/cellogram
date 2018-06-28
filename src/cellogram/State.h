@@ -31,14 +31,14 @@ public:
 	MmgOptions mmg_options;
 
 	float target_mesh_size[2] = {0.001, 0.1};
-	float power = 1.0;
+	float power = 2.0;
 	float padding_size = 25;
 	float thickness = 30;
 
 #ifdef NDEBUG
-	float target_volume = 0.5;
+	float target_volume = 0.25;
 #else
-	float target_volume = 0.05;
+	float target_volume = 0.5;
 #endif
 
 	float E = 12.5;
