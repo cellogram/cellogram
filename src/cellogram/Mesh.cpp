@@ -404,8 +404,6 @@ namespace cellogram {
 		S.resize(V.rows());
 		S.head(points.rows()) = (detected - points).rowwise().norm();
 		S.tail(BV.rows()).setZero();
-
-		std::cout << S << std::endl;
 	}
 
 	void Mesh::local_update(Eigen::VectorXi & local2global, Eigen::MatrixXd & new_points, Eigen::MatrixXi & new_triangles, Eigen::VectorXi & old_triangles)

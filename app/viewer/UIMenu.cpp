@@ -372,7 +372,7 @@ void UIState::draw_file_menu() {
 		ImGui::EndTooltip();
 	}
 
-	if (ImGui::Button("Load Image", ImVec2((w - p), 0))) {
+	if (ImGui::Button("Load Image", ImVec2(-1, 0))) {
 		std::string fname = FileDialog::openFileName(DATA_DIR, {"*.png", "*.tif", "*.tiff"});
 		if (!fname.empty()) {
 			load_image(fname);
@@ -393,7 +393,7 @@ void UIState::draw_file_menu() {
 	if (state.mesh.points.size() == 0) {
 		pop_disabled();
 	}
-	ImGui::SameLine();
+    ImGui::SameLine(0, p);
 
 	if (!data_available) {
 		push_disabled();
@@ -588,8 +588,17 @@ void UIState::draw_analysis_menu() {
 		ImGui::InputFloat("Scaling [µm/px]", &state.mesh.scaling, 0.01, 0.001, 3);
 		ImGui::InputFloat("Padding [µm]", &state.padding_size, 1, 0, 0);
 		ImGui::InputFloat("Thickness [µm]", &state.thickness, 1, 0, 0);
-		ImGui::InputFloat2("Triangle area (%)", state.mesh_area_rel);
+		ImGui::InputFloat("Target volume (%)", &state.target_volume, 0, 1, 3);
+		ShowTooltip("Target volume (for uniform 3D meshing only), in % of the bbox diagonal");
 		ImGui::InputFloat("Power", &state.power, 0.01, 100, 3);
+		ShowTooltip(
+			"After the norm of the displacement field has been remapped to [0, 1]\n"
+			"(0 being the largest displacement, 1 being no displacement), applies the\n"
+			"power law x^p to the to the scalar field to produce the size map driving\nthe adaptive mesh.");
+		ImGui::InputFloat2("Edge length (%)", state.target_mesh_size);
+		ShowTooltip(
+			"Lower and upper bound of the size map driving the adaptive mesh\n"
+			"(% of the bbox diagonal of the mesh).");
 		if (ImGui::TreeNode("Advanced meshing options")) {
 			SetMmgOptions(state.mmg_options);
 			ImGui::TreePop();
@@ -600,16 +609,39 @@ void UIState::draw_analysis_menu() {
 
 		ImGui::PopItemWidth();
 
-		if (ImGui::Button("Mesh 2D adaptive", ImVec2(-1, 0))) {
+		float w = ImGui::GetContentRegionAvailWidth();
+		float p = ImGui::GetStyle().FramePadding.x;
+
+		if (ImGui::Button("Mesh 2D adaptive", ImVec2(2.5f*(w-p)/4.f, 0))) {
 			state.mesh_2d_adaptive();
 			reset_view_3d();
 			viewer_control();
 		}
-		if (ImGui::Button("Extrude 2D mesh", ImVec2(-1, 0))) {
+		ImGui::SameLine(0, p);
+		if (ImGui::Button("Extrude", ImVec2(1.5f*(w-p)/4.f, 0))) {
 			state.extrude_2d_mesh();
 			reset_view_3d();
 			viewer_control();
 		}
+		ShowTooltip("Extrude the 2D mesh into a 3D volume mesh.");
+
+		if (ImGui::Button("Mesh 3D uniform", ImVec2(2.5f*(w-p)/4.f, 0))) {
+			state.mesh_3d_uniform();
+			reset_view_3d();
+			viewer_control();
+		}
+		ImGui::SameLine(0, p);
+		if (ImGui::Button("Remesh", ImVec2(1.5f*(w-p)/4.f, 0))) {
+			state.remesh_3d_adaptive();
+			reset_view_3d();
+			viewer_control();
+		}
+		ShowTooltip("Remesh the current 3D volume mesh adaptively using mmg3d.");
+
+		ImGui::Spacing();
+		ImGui::Separator();
+		ImGui::Spacing();
+
 		if (ImGui::Button("Analyze 3D mesh", ImVec2(-1, 0))) {
 			state.analyze_3d_mesh();
 			reset_view_3d();

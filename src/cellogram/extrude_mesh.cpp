@@ -1,10 +1,10 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "extrude_mesh.h"
+#include <MeshUtils.hpp>
 #include <igl/boundary_loop.h>
 #include <igl/bfs_orient.h>
 #include <igl/triangle/triangulate.h>
 #include <igl/copyleft/tetgen/tetrahedralize.h>
-#include <MeshUtils.hpp>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {

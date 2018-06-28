@@ -254,7 +254,7 @@ void UIState::initialize() {
 	state.resolve_regions();*/
 
 	// Setup viewer parameters
-	viewer.resize(1400, 1000);
+	viewer.resize(1400, 1280);
 	viewer.core.background_color.setOnes();
 	// viewer.core.set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_TRACKBALL);
 	viewer.core.set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_NO_ROTATION);

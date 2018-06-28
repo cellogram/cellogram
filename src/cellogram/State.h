@@ -30,10 +30,16 @@ public:
 
 	MmgOptions mmg_options;
 
-	float mesh_area_rel[2] = {0.001, 0.1};
-	float power = 0.5;
+	float target_mesh_size[2] = {0.001, 0.1};
+	float power = 1.0;
 	float padding_size = 25;
 	float thickness = 30;
+
+#ifdef NDEBUG
+	float target_volume = 0.5;
+#else
+	float target_volume = 0.05;
+#endif
 
 	float E = 12.5;
 	float nu = 0.49;
@@ -102,6 +108,8 @@ public:
 	// FEM part
 	void mesh_2d_adaptive();
 	void extrude_2d_mesh();
+	void mesh_3d_uniform();
+	void remesh_3d_adaptive();
 	void analyze_3d_mesh();
 
 	void reset_state();

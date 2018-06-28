@@ -10,6 +10,10 @@
 #include <cellogram/remesh_adaptive.h>
 #include <cellogram/tri2hex.h>
 #include <cellogram/voronoi.h>
+#include <MeshUtils.hpp>
+#include <igl/bounding_box.h>
+#include <igl/bounding_box_diagonal.h>
+#include <igl/copyleft/tetgen/tetrahedralize.h>
 #include <igl/list_to_matrix.h>
 #include <igl/point_in_poly.h>
 #include <igl/remove_duplicate_vertices.h>
@@ -808,13 +812,10 @@ namespace cellogram {
 
 		// Rescale displacement field
 		S = (S.array() - S.minCoeff()) / std::max(1e-9, (S.maxCoeff() - S.minCoeff()));
-		S = (1.0 - S.array()).pow(power) * (mesh_area_rel[1] - mesh_area_rel[0]) + mesh_area_rel[0];
+		S = (1.0 - S.array()).pow(power) * (target_mesh_size[1] - target_mesh_size[0]) + target_mesh_size[0];
+		S = S.array() * igl::bounding_box_diagonal(V);
 
-		double vmin = V.minCoeff();
-		double vmax = V.maxCoeff();
-		V = V.array() / std::max(1e-9, vmax - vmin);
 		remesh_adaptive_2d(V, F, S, V, F, mmg_options);
-		V = V.array() * std::max(1e-9, vmax - vmin);
 
 		// Mesh volume adaptively based on background mesh
 		mesh3d.V.resize(V.rows(), 3);
@@ -825,6 +826,8 @@ namespace cellogram {
 	}
 
 	void State::extrude_2d_mesh() {
+		if (mesh3d.V.size() == 0) { mesh_2d_adaptive(); }
+
 		double zmin = mesh3d.V.col(2).minCoeff();
 		double zmax = mesh3d.V.col(2).maxCoeff();
 
@@ -835,6 +838,27 @@ namespace cellogram {
 
 		// Extrude into a 3d mesh
 		extrude_mesh(mesh3d.V, mesh3d.F, -thickness, mesh3d.V, mesh3d.F, mesh3d.T);
+	}
+
+	void State::mesh_3d_uniform() {
+		extrude_2d_mesh(); // too lazy to recode this
+
+		Eigen::MatrixXd BV;
+		Eigen::MatrixXi BF;
+		igl::bounding_box(mesh3d.V, BV, BF);
+
+		std::stringstream buf;
+		buf.precision(100);
+		buf.setf(std::ios::fixed, std::ios::floatfield);
+		buf << "Qpq1.414a" << target_volume * igl::bounding_box_diagonal(BV);
+
+		// Mesh volume
+		igl::copyleft::tetgen::tetrahedralize(BV, BF, buf.str(), mesh3d.V, mesh3d.T, mesh3d.F);
+		poly_fem::orient_closed_surface(mesh3d.V, mesh3d.F);
+	}
+
+	void State::remesh_3d_adaptive() {
+
 	}
 
 	void State::analyze_3d_mesh() {
