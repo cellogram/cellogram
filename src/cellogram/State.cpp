@@ -276,6 +276,7 @@ namespace cellogram {
 
 	void State::untangle()
 	{
+		regions.clear();
 		mesh.untangle();
 	}
 
@@ -410,6 +411,7 @@ namespace cellogram {
 
 	void State::relax_with_lloyd()
 	{
+		regions.clear();
 		mesh.relax_with_lloyd(lloyd_iterations, hull_vertices, hull_faces, fix_regular_regions);
 	}
 

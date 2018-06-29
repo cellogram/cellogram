@@ -623,7 +623,7 @@ namespace cellogram {
 	{
 		Eigen::MatrixXd newPts;
 		std::vector<int> dropped;
-		std::cout<<points<<std::endl;
+		// std::cout<<points<<std::endl;
 		cellogram::PointsUntangler::pointsUntangler(points, triangles, dropped, newPts);
 
 		for(int gid : dropped)
