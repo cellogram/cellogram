@@ -20,7 +20,7 @@ matrix:
         - libglu1-mesa-dev
         - libsuitesparse-dev
     env:
-    - MATRIX_EVAL="export CC=gcc-7 && CXX=g++-7 && CONFIG=Debug && NPROC=1"
+    - MATRIX_EVAL="export CC=gcc-7 && CXX=g++-7 && CONFIG=Debug && NPROC=2"
   - os: osx
     compiler: clang
     env:

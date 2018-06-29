@@ -10,8 +10,8 @@
 #include <cellogram/remesh_adaptive.h>
 #include <cellogram/tri2hex.h>
 #include <cellogram/voronoi.h>
-#include <MeshUtils.hpp>
-#include <InterpolatedFunction.hpp>
+#include <polyfem/MeshUtils.hpp>
+#include <polyfem/InterpolatedFunction.hpp>
 #include <igl/bounding_box.h>
 #include <igl/bounding_box_diagonal.h>
 #include <igl/copyleft/tetgen/tetrahedralize.h>
@@ -859,7 +859,7 @@ namespace cellogram {
 
 		// Mesh volume
 		igl::copyleft::tetgen::tetrahedralize(BV, BF, buf.str(), mesh3d.V, mesh3d.T, mesh3d.F);
-		poly_fem::orient_closed_surface(mesh3d.V, mesh3d.F);
+		polyfem::orient_closed_surface(mesh3d.V, mesh3d.F);
 	}
 
 	void State::remesh_3d_adaptive() {
@@ -877,7 +877,7 @@ namespace cellogram {
 
 		// Interpolate
 		Eigen::MatrixXd VP = mesh3d.V.leftCols<2>();
-		poly_fem::InterpolatedFunction2d aux(S, V, F);
+		polyfem::InterpolatedFunction2d aux(S, V, F);
 		S = aux.interpolate(VP);
 
 		// Rescale displacement field

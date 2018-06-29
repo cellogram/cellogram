@@ -39,4 +39,4 @@ void to_geogram_mesh(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, const E
 ///
 void from_geogram_mesh(const GEO::Mesh &M, Eigen::MatrixXd &V, Eigen::MatrixXi &F, Eigen::MatrixXi &T);
 
-} // namespace poly_fem
+} // namespace cellogram

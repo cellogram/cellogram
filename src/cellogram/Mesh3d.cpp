@@ -2,10 +2,10 @@
 #include "Mesh3d.h"
 #include <cellogram/Mesh.h>
 #include <cellogram/remesh_adaptive.h>
-#include <State.hpp>
-#include <Mesh3D.hpp>
-#include <MeshUtils.hpp>
-#include <PointBasedProblem.hpp>
+#include <polyfem/State.hpp>
+#include <polyfem/Mesh3D.hpp>
+#include <polyfem/MeshUtils.hpp>
+#include <polyfem/PointBasedProblem.hpp>
 #include <igl/opengl/glfw/Viewer.h>
 #include <igl/copyleft/tetgen/tetrahedralize.h>
 #include <geogram/mesh/mesh_io.h>
@@ -58,10 +58,10 @@ namespace cellogram {
 				}},
 			};
 
-			poly_fem::State &state = poly_fem::State::state();
+			polyfem::State &state = polyfem::State::state();
 			state.init(j_args);
 
-			state.load_mesh(M, [thickness](const poly_fem::RowVectorNd &bary){
+			state.load_mesh(M, [thickness](const polyfem::RowVectorNd &bary){
 				// top, Id = 1
 				if(std::abs(bary(2)) < 1e-8){
 					return 1;
@@ -78,7 +78,7 @@ namespace cellogram {
 
 			// state.compute_mesh_stats();
 
-			poly_fem::PointBasedTensorProblem &problem = *dynamic_cast<poly_fem::PointBasedTensorProblem *>(state.problem.get());
+			polyfem::PointBasedTensorProblem &problem = *dynamic_cast<polyfem::PointBasedTensorProblem *>(state.problem.get());
 
 			Eigen::MatrixXd disp = (mesh.detected - mesh.points) * mesh.scaling;
 			Eigen::MatrixXd pts = mesh.points * mesh.scaling;
@@ -107,7 +107,7 @@ namespace cellogram {
 			// std::cout<<state.sol<<std::endl;
 
 
-			// auto &tmp_mesh = *dynamic_cast<poly_fem::Mesh3D *>(state.mesh.get());
+			// auto &tmp_mesh = *dynamic_cast<polyfem::Mesh3D *>(state.mesh.get());
 			// igl::opengl::glfw::Viewer viewer;
 			// Eigen::MatrixXi asdT;
 			// Eigen::MatrixXd asdP, asdC;

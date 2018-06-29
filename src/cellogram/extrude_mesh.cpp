@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "extrude_mesh.h"
-#include <MeshUtils.hpp>
+#include <polyfem/MeshUtils.hpp>
 #include <igl/boundary_loop.h>
 #include <igl/bfs_orient.h>
 #include <igl/triangle/triangulate.h>
@@ -58,7 +58,7 @@ void extrude_mesh(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, double thi
 
 	// Mesh volume
 	igl::copyleft::tetgen::tetrahedralize(VS, FS, "Qq1.414", VT, TT, FT);
-	poly_fem::orient_closed_surface(VT, FT);
+	polyfem::orient_closed_surface(VT, FT);
 }
 
 // -----------------------------------------------------------------------------
