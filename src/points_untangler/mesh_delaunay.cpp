@@ -40,7 +40,7 @@ inline short incircle( const scalar A[2], const scalar B[2], const scalar C[2], 
 
 }
 
-void Mesh::delaunay(){
+void Mesh::initWithDelaunay(){
     Eigen::MatrixXd VV;
     Eigen::MatrixXi FF;
 

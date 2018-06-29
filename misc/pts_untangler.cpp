@@ -59,7 +59,9 @@ int main(int argc, char** argv) {
 		pts.col(2).setZero();
 	}
 
-	cellogram::PointsUntangler::pointsUntangler(pts, F, newPts);
+	std::vector<int> dropped;
+
+	cellogram::PointsUntangler::pointsUntangler(pts, F, dropped, newPts);
 
 	Eigen::MatrixXd total(pts.rows()+newPts.rows(), pts.cols());
 	// total.setZero();

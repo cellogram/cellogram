@@ -42,6 +42,4 @@ if(TARGET gurobi::gurobi)
 	add_application(optimizer.cpp cellogram)
 endif()
 
-if(CELLOGRAM_WTIH_UNTANGLER)
-	add_application(pts_untangler.cpp cellogram)
-endif()
+add_application(pts_untangler.cpp cellogram)

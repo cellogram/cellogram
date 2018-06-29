@@ -8,9 +8,7 @@
 #include <cellogram/voronoi.h>
 #include <cellogram/vertex_degree.h>
 #include <cellogram/laplace_energy.h>
-#ifdef CELLOGRAM_WITH_UNTANGLER
 #include <points_untangler/points_untangler.h>
-#endif
 #include <igl/list_to_matrix.h>
 #include <igl/bounding_box.h>
 #include <igl/opengl/glfw/Viewer.h>
@@ -277,7 +275,7 @@ namespace cellogram {
 		}
 	}
 
-	void Mesh::add_vertex(Eigen::Vector3d & new_point)
+	void Mesh::add_vertex(Eigen::Vector3d & new_point, bool must_reset)
 	{
 		// Add vertex
 		{
@@ -310,7 +308,8 @@ namespace cellogram {
 		// Add zero row to params
 		params.push_back_const(0);
 
-		reset();
+		if(must_reset)
+			reset();
 	}
 
 	void Mesh::local_update(Eigen::VectorXi &local2global, const int global_to_remove, Eigen::MatrixXi & new_triangles)
@@ -620,27 +619,29 @@ namespace cellogram {
 		}
 	}
 
-#ifdef CELLOGRAM_WITH_UNTANGLER
 	void Mesh::untangle()
 	{
 		Eigen::MatrixXd newPts;
-		cellogram::PointsUntangler::pointsUntangler(detected, triangles, newPts);
+		std::vector<int> dropped;
+		std::cout<<points<<std::endl;
+		cellogram::PointsUntangler::pointsUntangler(points, triangles, dropped, newPts);
 
-		// Eigen::MatrixXd total = newPts;
-		// Eigen::MatrixXd total(detected.rows()+newPts.rows(), detected.cols());
-		// total.setZero();
+		for(int gid : dropped)
+			delete_vertex(gid, false);
 
-		// total.block(0, 0, detected.rows(), detected.cols()) = detected;
-		// total.block(detected.rows(), 0, newPts.rows(), newPts.cols()) = newPts;
+		for(int i = 0; i <newPts.rows();++i){
+			Eigen::Vector3d tmp; tmp.setZero();
+			for(int j = 0; j < newPts.cols(); ++j)
+				tmp(j) = newPts(i,j);
+			add_vertex(tmp, false);
+		}
 
-
-		// detected = total;
-		// points = total;
+		points = moved;
+		solved_vertex.setConstant(false);
 
 		adjacency_list(triangles, adj);
 		generate_vertex_to_tri();
 	}
-#endif
 
 	void Mesh::clear()
 	{

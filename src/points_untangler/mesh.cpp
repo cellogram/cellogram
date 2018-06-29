@@ -13,13 +13,14 @@ namespace cellogram
 namespace PointsUntangler
 {
 
+/*
 void Mesh::setFaceRegularity(){
     for (Face &f:F) {
         f.regularity =  goodTriangle( f[0],f[1],f[2] )*0.5;
         for (int w=0; w<3; w++)
             f.regularity += V[ f[w] ].distToIrr;
     }
-}
+}*/
 
 void Mesh::smoothDisputed(){
     std::vector<scalar> old(V.size());
@@ -42,13 +43,15 @@ void Mesh::smoothDisputed(){
 
 }
 
-int Mesh::mostRegularFace()const{
+int Mesh::bestFace()const{
+
     int res = -1;
     scalar best = -1000000;
     for (int i=0; i<(int)F.size(); i++) {
-        //std::cout<<"face "<<i<<": "<<F[i].regularity<<"\n";
-        if (F[i].regularity>best) {
-            best = F[i].regularity;
+        scalar appeal = V[ F[i][0] ].distToIrr + V[ F[i][1] ].distToIrr + V[ F[i][2] ].distToIrr ;
+
+        if (appeal>best) {
+            best = appeal;
             res = i;
         }
     }
@@ -132,7 +135,11 @@ scalar Mesh::parallelogramError( int vi, int va, int vb, int vj ) const{
 void Mesh::setDistanceToIrr(){
     for (Vert &v:V) v.distToIrr = ((v.val!=6) || v.dontcare)? 0 : 1000;
 
-
+    // badly shaped faces count as irregular
+    for (const Face &f:F) {
+        if (distFromEquilateral( f )>0.3)
+        V[f[0]].distToIrr = V[f[1]].distToIrr = V[f[2]].distToIrr =0;
+    }
     while (1){
         bool over = true;
         for (const Edge &e:E){
@@ -342,29 +349,20 @@ scalar Mesh::deltaEng(int v0, int v1, int delta){
     return -fabs(val1)/(1+d*d);
 }
 
-scalar Mesh::goodTriangle(int v0,int v1, int v2) const{
-    vec2 e0 = (V[v0].p-V[v1].p);
-    vec2 e1 = (V[v1].p-V[v2].p);
-    vec2 e2 = (V[v2].p-V[v0].p);
-    scalar a0 = e0.norm();
-    scalar a1 = e1.norm();
-    scalar a2 = e2.norm();
+// 0.0 if equilateral, 1.0 if flat
+scalar Mesh::distFromEquilateral(const Face &f) const{
 
-    if (a0<a1) std::swap(a0,a1);
-    if (a1<a2) std::swap(a1,a2);
-    if (a0<a1) std::swap(a0,a1);
-    return a2-a0;
-    /*
-    scalar avg = (a0+a1+a2)/3.0;
-    //return -avg;
-    scalar variance = (a0*a0+a1*a1+a2*a2)/3.0-avg*avg;
-    return -variance * 10;
-    */
+    scalar a0 = (V[f[0]].p-V[f[1]].p).norm();
+    scalar a1 = (V[f[1]].p-V[f[2]].p).norm();
+    scalar a2 = (V[f[1]].p-V[f[2]].p).norm();
 
-    //e0.normalize();
-    //e1.normalize();
-    //e2.normalize();
-    //return 3.0-(dot(e0,e1)+dot(e1,e2)+dot(e2,e0));
+    // sort to a2>a1>a0
+    if (a0>a1) std::swap(a0,a1);
+    if (a1>a2) std::swap(a1,a2);
+    if (a0>a1) std::swap(a0,a1);
+
+    if (a2==0) return 1;
+    return (a2-a0)/a2;
 }
 
 scalar myPow(scalar b, scalar exp){
@@ -376,9 +374,9 @@ scalar myPow(scalar b, scalar exp){
 
 scalar Vert::price()const{
     //return myPow(0.9,disputed);
-    return (disputed>0)?0.5:1.0;
+    //return (disputed>0)?0.5:1.0;
     //return 2.0-disputed;
-    //return 1;
+    return 1;
     //return std::max((scalar)0,0.4f-disputed);
 }
 
@@ -657,7 +655,7 @@ void Mesh::flipAs(const Grid& g){
 
 void Mesh::greedyFlips(int howDeep, Grid &g){
 
-    std::cout<<"Regularizing by FLIPS...\n";
+    std::cout<<"Greedy mesh regularization by FLIPS...\n";
     //buildEdgesFromFaces();
 
     //dontCareAboutBoundaries();
@@ -678,7 +676,8 @@ void Mesh::greedyFlips(int howDeep, Grid &g){
     bestEver.E=E;
 
     int patience = 0;
-    for (int i=0; i<1000; i++) {
+    int ndone=0;
+    while (1) {
         FlipScore score;
         int ei = bestFlip( score, g  );
 
@@ -687,6 +686,10 @@ void Mesh::greedyFlips(int howDeep, Grid &g){
         if (score.isPos()) {
             applyFlip(ei);
             totScore += score;
+            if (ndone++ > 1000) {
+                std::cout<<"ERROR infinte loop in greedy swaps! "<<ei<<" sci=ore move: " << score.valReduction << "," << score.lenReduction << "\n";
+                if (ndone>1100) break;
+            }
         } else if (howDeep>0) {
             // do a neg move?
 
@@ -719,6 +722,9 @@ void Mesh::greedyFlips(int howDeep, Grid &g){
 
         //sanityCheckValencies();
     }
+
+    std::cout<<ndone << " flips done!\n";
+
 
 
 }

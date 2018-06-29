@@ -16,13 +16,13 @@ struct Edge;
 struct Face{
     int vi[3];
     int ei[3];
-    bool fixed;
+    bool fixed = false;
 
     int operator[](int i) const {return vi[i];}
     int& operator[](int i){return vi[i];}
     bool dontcare;
 
-    scalar regularity; // the higer, the safest this face
+    //scalar regularity; // the higer, the safest this face
 
     bool has(int e) const{ return (ei[0]==e) || (ei[1]==e)  || (ei[2]==e);}
     int oppositeVertOfEdge(const Edge& e) const;
@@ -38,7 +38,7 @@ struct Face{
 struct Edge{
     int vi[2];
     int fi[2];
-    bool fixed;
+    bool fixed = false;
     int operator[](int i) const {return vi[i];}
     int& operator[](int i){return vi[i];}
     Edge(int a, int b){
@@ -99,6 +99,7 @@ struct FlipScore{
 class Grid;
 class Mesh;
 void meshToGrid(Mesh &m, Grid &g);
+void gridToMesh(Grid &g , Mesh &m);
 
 typedef enum { BY_VAL , BY_FLOOD , BY_DISPUTED} ColMode;
 
@@ -121,7 +122,7 @@ public:
 
     void greedyFlips(int howDeep, Grid &g);
     void flipAs(const Grid& g);
-    void delaunay();
+    void initWithDelaunay();
 
     void fuckUp(); // to test heuristic
 
@@ -167,7 +168,7 @@ private:
 
     bool canFlip(int ei);
     scalar deltaEng(int v0, int v1, int delta);
-    scalar goodTriangle(int v0,int v1, int v2) const;
+    scalar distFromEquilateral(const Face& f) const;
     FlipScore evaluateFlip(int ei, Grid &g);
     int bestFlip(FlipScore &score, Grid &g);
     bool sanityCheck();
@@ -175,8 +176,7 @@ private:
     void applyFlip(int ei);
     void removeDontcare();
     void setDistanceToIrr();
-    void setFaceRegularity();
-    int mostRegularFace() const;
+    int bestFace() const;
 
     vec2 parellelogramRule( int fi, int ei ) const;
     scalar parallelogramError( int ei ) const;

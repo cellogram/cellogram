@@ -65,8 +65,7 @@ option(LIBIGL_WITH_TETGEN                 "Use Tetgen"                   ON)
 option(LIBIGL_WITH_TRIANGLE               "Use Triangle"                 ON)
 option(LIBIGL_WITH_VIEWER                 "Use OpenGL viewer"            ON)
 option(LIBIGL_WITH_XML                    "Use XML"                      OFF)
-
-option(CELLOGRAM_WTIH_UNTANGLER           "Use Marco untangler"          OFF)
+# option(CELLOGRAM_WTIH_UNTANGLER           "Use untangler"          		 ON)
 
 ################################################################################
 # Required libraries

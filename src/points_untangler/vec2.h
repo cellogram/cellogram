@@ -93,6 +93,8 @@ struct mat2{
         return m;
     }
 
+    scalar squaredNorm() const { return x.x*x.x + x.y*x.y + y.x*y.x + y.y*y.y; }
+
 
 
 };

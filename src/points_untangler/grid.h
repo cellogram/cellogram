@@ -11,26 +11,28 @@
 
 namespace cellogram
 {
-    namespace PointsUntangler
-    {
+namespace PointsUntangler
+{
 
-        class Grid;
-        class Mesh;
-        void meshToGrid(Mesh &m, Grid &g);
+class Grid;
+class Mesh;
+void meshToGrid(Mesh &m, Grid &g);
 
-        class Grid{
-        public:
+class Grid{
+public:
     /* data per grid cell (size: sx*sy) */
-            std::vector<int> grid;
-            std::vector<bool> isExternal;
+    std::vector<int> grid;
+    std::vector<bool> isExternal;
 
 
     /* data per vert (size: vert.size()) */
-            std::vector<int> posInGrid;
-            std::vector<bool> madeUpVert;
-            std::vector<vec2> vert;
+    std::vector<int> posInGrid;
+    std::vector<bool> madeUpVert;
+    std::vector<vec2> vert;
     std::vector<int> vdesired; // this vert desires this grid position
     std::vector<mat2> mat;
+
+    int greedyOps();
 
     int sx,sy;
     void create(int sx, int sy);
@@ -40,8 +42,9 @@ namespace cellogram
     void initIndicesOnGrid(int nx,int ny);
     void initVertOnGrid(int nx,int ny);
 
-    int assignUnassignedNiceWay();
+    //int assignUnassignedNiceWay();
     int greedyAssignUnassigned();
+    int greedyFillEmpty();
 
     void printf() const;
 
@@ -51,7 +54,7 @@ namespace cellogram
 
     scalar energyTotal() const;
 
-    void exportEigen(Eigen::MatrixXi &tris, Eigen::MatrixXd &newPoints) const;
+    void exportEigen(Eigen::MatrixXi &tris, std::vector<int> &droppedPoints, Eigen::MatrixXd &newPoints) const;
     bool importXYZ(const std::string& filename );
     bool exportOBJ(const std::string& filename ) const;
     bool exportPLY(const std::string& filename ) const;
@@ -59,7 +62,6 @@ namespace cellogram
 
 
     int greedySwaps();
-    int tryAllSwapsBordersIncluded();
 
     int fillGapsMakingPtsUp();
 
@@ -85,9 +87,16 @@ private:
     int tryAllTriSwaps();
     int tryAllQuadriSwaps();
     int tryAllSwapsAround(int gi);
+    //int tryAllSwapsBordersIncluded();
+
+    bool testAndDoBiSwap( int gi, int gj);
+    bool testAndDoTriSwap( int gi, int gj, int gk);
+    bool testAndDoQuadriSwap( int gi, int gj, int gk, int gh);
+    //bool testAndDoSwapBordersIncluded( int gi, int gj);
 
     bool fixUnassignedVertexNiceWay(int vj);
     bool fixUnassignedVertexDijkstra(int vj);
+    bool fixEmptySlotDijkstra(int gj);
 
     std::vector<int> distFromBorder;
     void updateDistFromBorder();
@@ -111,22 +120,17 @@ private:
 
     //scalar energyDeltaForSwap(int gi, int gj); // positive if swap profitable
     scalar energyAround(int gi) const;
-    scalar energyAround(int gi, int gj) const;
-    scalar energyBetween(int grid, int vj) const;
-    scalar energyAroundIf(int gi, int vi) const; // if... grid[gi] is assigned to vi
+    scalar energyAroundIf(int gi, int vi) const;
+    scalar energyBetween(int vi, int vj) const;
+    scalar energyBetween(int vi, int vj, vec2 expectedJI ) const;
 
     scalar energyAroundExcept1(int gi) const;
 
-    scalar energyAround2(int gi) const;
-    scalar energyAround2(int gi, int gj) const;
-    scalar energyBetween2(int grid, int vj) const;
+    //scalar energyAround2(int gi) const;
+    //scalar energyBetween2(int grid, int vj) const;
 
     int friendsAround(int gi) const;
 
-    bool testAndDoSwap( int gi, int gj);
-    bool testAndDoTriSwap( int gi, int gj, int gk);
-    bool testAndDoQuadriSwap( int gi, int gj, int gk, int gh);
-    bool testAndDoSwapBordersIncluded( int gi, int gj);
 
     void clear();
 

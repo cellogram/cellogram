@@ -274,12 +274,10 @@ namespace cellogram {
 		return bboundary;
 	}
 
-#ifdef CELLOGRAM_WITH_UNTANGLER
 	void State::untangle()
 	{
 		mesh.untangle();
 	}
-#endif
 
 
 	class LocalThreadStorage

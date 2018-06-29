@@ -170,10 +170,20 @@ static void setColorByValency(int&r, int &g, int &b, int val){
 }
 
 static void setColorByFloodfill(int&r, int &g, int &b, float timeReached, float disputed){
-    r = g = b = 255;
     float rr,gg,bb;
-    rr = gg = timeReached;
-    bb = 1.0;
+
+    timeReached*=2;
+
+    rr = /*  \_  */ 1-timeReached;
+    gg = /*  /\  */ (timeReached>1)? 2-timeReached : timeReached;
+    bb = /*  _/  */ timeReached-1;
+
+    if (timeReached==0) rr=gg=bb=1;
+    if (timeReached==4) rr=gg=bb=0;
+
+    rr = std::max( 0.0f, std::min(rr,1.0f));
+    gg = std::max( 0.0f, std::min(gg,1.0f));
+    bb = std::max( 0.0f, std::min(bb,1.0f));
 
     gg *= 1.0-disputed;
     bb *= 1.0-disputed;
@@ -219,12 +229,21 @@ bool Mesh::exportPLY(const std::string& filename, ColMode colMode){
     for (const Vert& v:V) {
         int r,g,b;
         r=g=b=255;
+
+        float z = 0;
         switch (colMode){
-        case BY_FLOOD: setColorByFloodfill(r,g,b,v.timeReached,v.disputed); break;
-        case BY_VAL: setColorByValency(r,g,b,v.val); break;
-        case BY_DISPUTED: setColorByDisputed(r,g,b,v.disputed); break;
+        case BY_FLOOD:
+            setColorByFloodfill(r,g,b,v.timeReached,v.disputed);
+            z = -v.timeReached*200;
+            break;
+        case BY_VAL:
+            setColorByValency(r,g,b,v.val);
+            break;
+        case BY_DISPUTED:
+            setColorByDisputed(r,g,b,v.disputed);
+            break;
         }
-        f<<v.p.x<<" "<<v.p.y<<" 0 "<<r<<" "<<g<<" "<<b<<" "<<" 255\n";
+        f<<v.p.x<<" "<<v.p.y<<" "<<z<<" "<<r<<" "<<g<<" "<<b<<" "<<" 255\n";
     }
     for (const Face& ff:F) if (!ff.dontcare) f<<"3 "<<ff[0]<<" "<<ff[1]<<" "<<ff[2]<<"\n";
 

@@ -474,14 +474,12 @@ void UIState::draw_mesh_menu() {
 
 	ImGui::PopItemWidth();
 
-#ifdef WITH_UNTANGLER
 	if (ImGui::Button("Untangle", ImVec2((w - p), 0))) {
 		state.untangle();
 		t = 1;
 		mesh_color.resize(0, 0);
 		viewer_control();
 	}
-#endif
 
 	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.50f);
 	if (ImGui::Button("Lloyd", ImVec2((w - p), 0))) {

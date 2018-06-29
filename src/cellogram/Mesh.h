@@ -35,7 +35,7 @@ public:
 
 	void detect_vertices(const Eigen::MatrixXd &V, const DetectionParams &params);
 	void delete_vertex(const int index, bool recompute_triangulation = true);
-	void add_vertex(Eigen::Vector3d &new_point);
+	void add_vertex(Eigen::Vector3d &new_point, bool reset = true);
 
 	void local_update(Eigen::VectorXi &local2global, Eigen::MatrixXd &new_points, Eigen::MatrixXi &new_triangles, Eigen::VectorXi & old_triangles);
 	void local_update(Eigen::VectorXi & local2global, const int global_to_remove, Eigen::MatrixXi & new_triangles);
@@ -54,9 +54,7 @@ public:
 	void generate_vertex_to_tri();
 	void reset();
 
-#ifdef CELLOGRAM_WITH_UNTANGLER
 	void untangle();
-#endif
 
 	void clear();
 

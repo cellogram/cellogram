@@ -293,7 +293,7 @@ bool Grid::exportPLY(const std::string& filename ) const{
     return true;
 }
 
-void Grid::exportEigen(Eigen::MatrixXi &tris, Eigen::MatrixXd &newPoints) const
+void Grid::exportEigen(Eigen::MatrixXi &tris, std::vector<int> &droppedPoints, Eigen::MatrixXd &newPoints) const
 {
     int nMadeUp  = 0;
     for (uint i=0; i<vert.size(); i++) if (madeUpVert[i]) nMadeUp++;
@@ -308,6 +308,12 @@ void Grid::exportEigen(Eigen::MatrixXi &tris, Eigen::MatrixXd &newPoints) const
         if ((i!=-1) && (j!=-1) && (k!=-1)) { nf++;}
         i=grid[indexOf(x+1,y+1)]; j=grid[indexOf(x+1,y)]; k=grid[indexOf(x,y)];
         if ((i!=-1) && (j!=-1) && (k!=-1)) { nf++;}
+    }
+
+    for (uint vi=0; vi<vert.size(); vi++) {
+        if (posInGrid[vi]==-1) {
+            droppedPoints.push_back(vi);
+        }
     }
 
     newPoints.resize(nMadeUp, 3);
@@ -424,6 +430,7 @@ vec2 Grid::avgPos(int gi) const{
     return res;
 }
 
+/*
 scalar Grid::energyAround2(int gi) const{
     scalar res = 0, div = -0.5;
     scalar e;
@@ -436,10 +443,8 @@ scalar Grid::energyAround2(int gi) const{
     if (div<=0) return edgeLen*edgeLen*40.0;
     return res/div;
 }
-scalar Grid::energyAround2(int gi, int gj) const{
-    return energyAround2(gi)+energyAround2(gj);
-}
-
+*/
+/*
 scalar Grid::energyAroundExcept1(int gi) const{
     scalar e[6];
     e[0] = energyBetween(grid[gi],grid[gi-sx-1]);
@@ -452,23 +457,38 @@ scalar Grid::energyAroundExcept1(int gi) const{
     for (int i=1; i<6; i++) if (e[i]>e[max]) max = i;
     e[max] = 0;
     return e[0]+e[1]+e[2]+e[3]+e[4]+e[5];
-}
+}*/
 
 scalar Grid::energyAround(int gi) const{
+    /*
     return energyBetween(grid[gi],grid[gi-sx-1])+
            energyBetween(grid[gi],grid[gi-sx])+
            energyBetween(grid[gi],grid[gi-1])+
            energyBetween(grid[gi],grid[gi+1])+
            energyBetween(grid[gi],grid[gi+sx])+
            energyBetween(grid[gi],grid[gi+sx+1]);
+    */
+    const scalar S = 0.86602540378; // sin(60°)
+    const scalar C = 0.5;           // cos(60°)
+
+    return energyBetween(grid[gi],grid[gi-sx-1], vec2(-C,+S) )+
+           energyBetween(grid[gi],grid[gi-sx],   vec2(+C,+S) )+
+           energyBetween(grid[gi],grid[gi-1],    vec2(-1, 0) )+
+           energyBetween(grid[gi],grid[gi+1],    vec2(+1, 0) )+
+           energyBetween(grid[gi],grid[gi+sx],   vec2(-C,-S) )+
+           energyBetween(grid[gi],grid[gi+sx+1], vec2(+C,-S) );
 }
+
 scalar Grid::energyAroundIf(int gi, int vi) const{
-    return energyBetween(vi,grid[gi-sx-1])+
-           energyBetween(vi,grid[gi-sx])+
-           energyBetween(vi,grid[gi-1])+
-           energyBetween(vi,grid[gi+1])+
-           energyBetween(vi,grid[gi+sx])+
-           energyBetween(vi,grid[gi+sx+1]);
+    const scalar S = 0.86602540378; // sin(60°)
+    const scalar C = 0.5;           // cos(60°)
+
+    return energyBetween(vi,grid[gi-sx-1], vec2(-C,+S) )+
+           energyBetween(vi,grid[gi-sx],   vec2(+C,+S) )+
+           energyBetween(vi,grid[gi-1],    vec2(-1, 0) )+
+           energyBetween(vi,grid[gi+1],    vec2(+1, 0) )+
+           energyBetween(vi,grid[gi+sx],   vec2(-C,-S) )+
+           energyBetween(vi,grid[gi+sx+1], vec2(+C,-S) );
 }
 
 
@@ -479,10 +499,6 @@ int Grid::friendsAround(int gi) const{
            ((grid[gi+1]>=0)?1:0)+
            ((grid[gi+sx]>=0)?1:0)+
            ((grid[gi+sx+1]>=0)?1:0);
-}
-
-scalar Grid::energyAround(int gi, int gj) const{
-    return energyAround(gi)+energyAround(gj);
 }
 
 scalar Grid::energyTotal() const{
@@ -646,17 +662,17 @@ void Grid::smoothMatrices(){
         int gi = posInGrid[vi];
         if (gi<0) continue;
 
-        scalar det = copy[vi].det();
+        scalar weight = (copy[vi].squaredNorm()<0.001)?0.0:1.0; //copy[vi].det();
 
-        mat[vi]+=copy[vi]*det;
-        div[vi]+=det;
+        mat[vi]+=copy[vi]*weight;
+        div[vi]+=weight;
 
         for (int n=0; n<6; n++) {
             int gj = gi+neigh[n];
             int vj = grid[gj];
             if (vj<0) continue;
-            mat[vj]+=copy[vi]*det;
-            div[vj]+=det;
+            mat[vj]+=copy[vi]*weight;
+            div[vj]+=weight;
         }
     }
     for (uint vi=0; vi<vert.size(); vi++) {
@@ -791,14 +807,29 @@ int Grid::shiftPos(int gi, int dir) const{
 
 
 scalar Grid::energyBetween(int vi, int vj) const{
+    //if (vi==-1 && vj==-1) return edgeLen*edgeLen*8.0;
     if (vi==-1 || vj==-1) return edgeLen*edgeLen*2.0;
     return squaredDistance(vert[vi],vert[vj]);
 }
 
+
+scalar Grid::energyBetween(int vi, int vj, vec2 expectedJI) const{
+    //if (vi==-1 && vj==-1) return edgeLen*edgeLen*8.0;
+    if (vi==-1 || vj==-1) return edgeLen*edgeLen*4.0;
+
+    return squaredDistance(vert[vi],vert[vj]);
+    //mat2 m =  (mat[vj]+ mat[vi])/2.0;
+    mat2 m =  mat[vj];
+    vec2 exp =(vert[vj] - vert[vi]) ;
+    return squaredDistance(m*expectedJI,exp);
+}
+
+
+/*
 scalar Grid::energyBetween2(int vi, int vj) const{
     if (vi==-1 || vj==-1) return -1;
     return squaredDistance(vert[vi],vert[vj]);
-}
+}*/
 
 void Grid::printf() const{
     for (int y=0,k=0; y<sy; y++) {
@@ -813,12 +844,29 @@ void Grid::printf() const{
 }
 
 
+/*
 bool Grid::testAndDoSwapBordersIncluded(int gi, int gj){
-    if(grid[gi]==-1 && grid[gj]==-1) return false;
-    scalar before = energyAround2(gi,gj);
+    if((grid[gi]==-1) == (grid[gj]==-1)) return false;
+    scalar before = energyAround2(gi)+energyAround2(gj) ;
     swapTwo( gi, gj );
-    scalar after = energyAround2(gi,gj);
+    scalar after = energyAround2(gi)+energyAround2(gj);
     if (after+0.00001<before) {
+        return true;
+    }
+    swapTwo( gi, gj );
+    return false;
+}*/
+
+bool Grid::testAndDoBiSwap(int gi, int gj){
+
+    //if((grid[gi]==-1) || (grid[gj]==-1)) return false;
+    if((grid[gi]==-1) && (grid[gj]==-1)) return false;
+    scalar before = energyAround(gi)+energyAround(gj);
+    swapTwo( gi, gj );
+    scalar after = energyAround(gi)+energyAround(gj);
+    if (after+0.00001<before) {
+        //lastGain =
+        //PointsUntangler::m.swapVert(grid[gi],grid[gi]);
         return true;
     }
     swapTwo( gi, gj );
@@ -827,6 +875,7 @@ bool Grid::testAndDoSwapBordersIncluded(int gi, int gj){
 
 bool Grid::testAndDoTriSwap(int gi, int gj, int gk){
     if((grid[gi]==-1) || (grid[gj]==-1) || (grid[gk]==-1)) return false;
+    //if((grid[gi]==-1) && (grid[gj]==-1) && (grid[gk]==-1)) return false;
     scalar before = energyAround(gi)+energyAround(gj)+energyAround(gk);
     swapTwo( gi, gj );
     swapTwo( gj, gk );
@@ -841,6 +890,7 @@ bool Grid::testAndDoTriSwap(int gi, int gj, int gk){
 
 bool Grid::testAndDoQuadriSwap(int gi, int gj, int gk, int gh){
     if((grid[gi]==-1) || (grid[gj]==-1) || (grid[gk]==-1)|| (grid[gh]==-1)) return false;
+    //if((grid[gi]==-1) && (grid[gj]==-1) && (grid[gk]==-1) && (grid[gh]==-1)) return false;
     scalar before = energyAround(gi)+energyAround(gj)+energyAround(gk)+energyAround(gh);
     swapTwo( gi, gj );
     swapTwo( gj, gk );
@@ -888,7 +938,7 @@ int Grid::fillGapsMakingPtsUp(){
 int Grid::tryAllSwapsAround(int gi){
     int res = 0;
     for(int n=0; n<6; n++)
-    if (testAndDoSwap(gi,gi+neigh[n])) res++;
+    if (testAndDoBiSwap(gi,gi+neigh[n])) res++;
     return res;
 }
 
@@ -896,7 +946,31 @@ int Grid::greedySwaps(){
     int done = tryAllBiSwaps()+tryAllTriSwaps()+tryAllQuadriSwaps();
     done += tryAllBiSwaps()+tryAllTriSwaps();
     done += tryAllBiSwaps();
+    //done += tryAllSwapsBordersIncluded();
     return done;
+}
+
+void Grid::swapTwo(int gi, int gj){
+
+    /* */
+    //assert( (grid[gi]!=-1) && (grid[gj]!=-1) );
+
+    std::swap( grid[gi], grid[gj] );
+
+    if (grid[gi]!=-1) {
+        posInGrid[ grid[gi] ] = gi;
+    }
+    if (grid[gj]!=-1) {
+        posInGrid[ grid[gj] ] = gj;
+    }
+    /*
+    int vi = grid[gi];
+    int vj = grid[gj];
+
+    if (vi!=-1)
+    if (vj!=-1) posInGrid[vj] = gj;
+    assert( (vi!=-1) && (vj!=-1) );*/
+
 }
 
 int Grid::tryAllBiSwaps(){
@@ -907,9 +981,9 @@ int Grid::tryAllBiSwaps(){
     while (1) {
         int pass = 0;
         for (int i=safeGiMinS2; i<safeGiMaxS2; i++) {
-            if (testAndDoSwap(i,i+1)) pass++;
-            if (testAndDoSwap(i,i+sx+1)) pass++;
-            if (testAndDoSwap(i,i+sx)) pass++;
+            if (testAndDoBiSwap(i,i+1)) pass++;
+            if (testAndDoBiSwap(i,i+sx+1)) pass++;
+            if (testAndDoBiSwap(i,i+sx)) pass++;
         }
         if (pass==0) break;
         count+=pass;
@@ -958,7 +1032,7 @@ int Grid::tryAllQuadriSwaps(){
             if (testAndDoQuadriSwap(a,c,d,b)) pass++;
             if (testAndDoQuadriSwap(a,d,b,c)) pass++;
             if (testAndDoQuadriSwap(a,d,c,b)) pass++;
-            if (testAndDoSwap(b,c)) pass++;
+            if (testAndDoBiSwap(b,c)) pass++;
             a = i; b = i+1; c=i+sx+1; d=i+sx+2;
             if (testAndDoQuadriSwap(a,b,c,d)) pass++;
             if (testAndDoQuadriSwap(a,b,d,c)) pass++;
@@ -966,7 +1040,7 @@ int Grid::tryAllQuadriSwaps(){
             if (testAndDoQuadriSwap(a,c,d,b)) pass++;
             if (testAndDoQuadriSwap(a,d,b,c)) pass++;
             if (testAndDoQuadriSwap(a,d,c,b)) pass++;
-            if (testAndDoSwap(a,d)) pass++;
+            if (testAndDoBiSwap(a,d)) pass++;
             a = i; b = i+1; c=i-sx; d=i+sx+1;
             if (testAndDoQuadriSwap(a,b,c,d)) pass++;
             if (testAndDoQuadriSwap(a,b,d,c)) pass++;
@@ -974,7 +1048,7 @@ int Grid::tryAllQuadriSwaps(){
             if (testAndDoQuadriSwap(a,c,d,b)) pass++;
             if (testAndDoQuadriSwap(a,d,b,c)) pass++;
             if (testAndDoQuadriSwap(a,d,c,b)) pass++;
-            if (testAndDoSwap(c,d)) pass++;
+            if (testAndDoBiSwap(c,d)) pass++;
         }
         if (pass==0) break;
         count+=pass;
@@ -984,6 +1058,7 @@ int Grid::tryAllQuadriSwaps(){
 }
 
 
+/*
 int Grid::tryAllSwapsBordersIncluded(){
 
     //edgeLen = computeAvgEdgeLen();
@@ -999,9 +1074,9 @@ int Grid::tryAllSwapsBordersIncluded(){
         if (pass==0) break;
         count+=pass;
     }
-    if (count) std::cout<<"Done "<<count<<" greedy swaps;\n";
+    if (count) std::cout<<"Done "<<count<<" greedy border swaps;\n";
     return count;
-}
+}*/
 
 void Grid::initVertOnGrid(int sx, int sy){
     vert.clear();
@@ -1115,6 +1190,7 @@ static bool contains(const std::vector<int> &except, int i){
 }
 */
 
+/*
 bool Grid::fixUnassignedVertexNiceWay(int vi){
 
     while (1){
@@ -1141,6 +1217,88 @@ bool Grid::fixUnassignedVertexNiceWay(int vi){
         }
     }
 }
+*/
+
+bool Grid::fixEmptySlotDijkstra(int gi){
+    //std::cout<<"Assign "<<vi<<":...\n";
+    scalar maxCost = edgeLen*edgeLen*2*5;
+    std::vector<scalar> cost(grid.size(),maxCost);
+    std::vector<int> prevStep(grid.size(),-2);
+    std::set<int> boundary; // TODO: priority queue here
+    std::set<int> visited;
+
+    int orig = gi;
+    int dest = -1;
+    if (grid[gi]!=-1) {
+        std::cout<<"Fill "<<gi<<": I can't even.\n";
+        return false;
+    }
+    //prevStep[gi] = -1;
+    boundary.insert(gi);
+    cost[gi] = 0;
+    bool pathFound = false;
+    while (!pathFound) {
+        if (boundary.empty()) {
+            std::cout<<"Fill "<<gi<<": NOT doing it (too expensive).\n";
+            return false;
+        }
+
+        // find least expensive node on boundary
+        int gi = -1; scalar best = 10000000;
+        for (int gj:boundary) {
+            if (cost[gj]<best)  { best = cost[gj]; gi = gj;}
+        }
+        assert(gi!=-1);
+        boundary.erase(gi);
+        visited.insert(gi);
+
+        for (int n=0; n<6; n++) {
+            int gj = gi+neigh[n];
+            if (visited.find(gj)!=visited.end()) continue;
+
+            if ((grid[gj]==-1) && isExternal[gj]) {
+                pathFound = true;
+                dest = gi;
+                break;
+            }
+
+            scalar newCost = cost[gi] + energyAroundIf(gj, grid[gi] ) - energyAround(gj);
+
+            if (cost[gj] > newCost) {
+                cost[gj] = newCost;
+                boundary.insert(gj);
+                prevStep[gj] = gi;
+                //std::cout<<gi<<"-->"<<gj<<"\n";
+            }
+        }
+    }
+    std::cout<<"Fill "<<gi<<": path to "<<dest<<" found. Applyting it: ";
+
+    gi = dest;
+
+    std::vector<int> path;
+    while (1) {
+        path.push_back(gi);
+        gi = prevStep[gi];
+        if (gi<0) break;
+        //if (gi==orig) break;
+    }
+
+    swapTwo(dest,orig);
+
+    for (int i = path.size()-1; i>0; i--) {
+        swapTwo( path[i], path[i-1] );
+        std::cout<<"=";
+    }
+    std::cout<<"*\n";
+
+    for (int gi:path) tryAllSwapsAround(gi);
+
+    //posInGrid[vi]=vdesired[vi];
+
+    return true;
+
+}
 
 bool Grid::fixUnassignedVertexDijkstra(int vi){
 
@@ -1150,10 +1308,9 @@ bool Grid::fixUnassignedVertexDijkstra(int vi){
     std::vector<int> prevStep(grid.size(),-2);
     std::set<int> boundary; // TODO: priority queue here
     std::set<int> visited;
-    int orig, dest;
+    int dest;
 
     int gi = vdesired[vi]; //bestPositionFor(vi);
-    orig = gi;
     if (gi==-1) {
         std::cout<<"Assign "<<vi<<": I can't even.\n";
         return false;
@@ -1251,6 +1408,7 @@ bool Grid::fixUnassignedVertexDijkstra(int vi){
 }
 
 
+/*
 int Grid::assignUnassignedNiceWay(){
     int countYes = 0;
     int countNo=0;
@@ -1265,8 +1423,46 @@ int Grid::assignUnassignedNiceWay(){
     std::cout<<"Assigned "<<countYes<<" new pts ("<<countNo<<" left)\n";
     assert(false);
     return 0;
+}*/
+
+
+int Grid::greedyFillEmpty(){
+    for (int vi=0; vi<(int)vert.size(); vi++) {
+        if (posInGrid[vi]==-1) {
+            std::cout << "Unassigned verts still present: aborting fill empty";
+            return 0;
+        }
+    }
+
+    int count = 0, countFail = 0;
+    for (int gi=0; gi<(int)grid.size(); gi++) {
+
+        if (grid[gi]==-1 && !isExternal[gi]) {
+            if (fixEmptySlotDijkstra(gi)) count++;
+            else countFail++;
+            //break;
+        }
+    }
+
+    std::cout<<"Filled "<<count<<" unassigned points ("<<countFail<<" left)\n";
+
+    return count;
+
 }
 
+int Grid::greedyOps(){
+    int totOps = 0;
+
+    totOps += greedyAssignUnassigned();
+    totOps += greedyFillEmpty();
+    totOps += greedySwaps();
+    totOps += greedySwaps();
+
+    computeMatrices();
+    smoothMatrices(20);
+
+    return totOps;
+}
 
 int Grid::greedyAssignUnassigned(){
 

@@ -36,5 +36,5 @@ install:
 script:
 - mkdir build
 - cd build
-- cmake -DCMAKE_BUILD_TYPE=$CONFIG -DCELLOGRAM_WTIH_UNTANGLER=ON ..
+- cmake -DCMAKE_BUILD_TYPE=$CONFIG ..
 - make -j ${NPROC}
