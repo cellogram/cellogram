@@ -34,7 +34,7 @@ public:
 	void vertex_degree(Eigen::VectorXi &degree);
 
 	void detect_vertices(const Eigen::MatrixXd &V, const DetectionParams &params);
-	void delete_vertex(const int index, bool recompute_triangulation = true);
+	void delete_vertex(const int index, bool recompute_triangulation = true, bool update_triangulation = true);
 	void add_vertex(Eigen::Vector3d &new_point, bool reset = true);
 
 	void local_update(Eigen::VectorXi &local2global, Eigen::MatrixXd &new_points, Eigen::MatrixXi &new_triangles, Eigen::VectorXi & old_triangles);

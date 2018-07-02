@@ -224,7 +224,7 @@ namespace cellogram {
 
 	}
 
-	void Mesh::delete_vertex(const int index, bool recompute_triangulation)
+	void Mesh::delete_vertex(const int index, bool recompute_triangulation, bool update_triangulation)
 	{
 		// Delete vertex
 		removeRow(detected, index);
@@ -252,6 +252,9 @@ namespace cellogram {
 		{
 			// delete from points
 			removeRow(points, index);
+
+			if(!update_triangulation)
+				return;
 
 			// delete triangles
 			std::vector<int> ind, ind2;
@@ -624,12 +627,12 @@ namespace cellogram {
 		Eigen::MatrixXd newPts;
 		std::vector<int> dropped;
 		// std::cout<<points<<std::endl;
-		cellogram::PointsUntangler::pointsUntangler(points, triangles, dropped, newPts);
+		cellogram::PointsUntangler::pointsUntangler(moved, triangles, dropped, newPts);
 
 		for(int gid : dropped)
-			delete_vertex(gid, false);
+			delete_vertex(gid, false, false);
 
-		for(int i = 0; i <newPts.rows();++i){
+		for(int i = 0; i < newPts.rows(); ++i){
 			Eigen::Vector3d tmp; tmp.setZero();
 			for(int j = 0; j < newPts.cols(); ++j)
 				tmp(j) = newPts(i,j);
