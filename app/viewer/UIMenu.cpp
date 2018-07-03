@@ -168,10 +168,15 @@ namespace {
 		constexpr float right_panel_width = 180;
 		constexpr float vertical_padding = 0;
 		constexpr int height_colorbar = 20;
+		constexpr int header_hue = 205;
 
 		constexpr ImGuiWindowFlags window_flags =
 			ImGuiWindowFlags_NoSavedSettings
 			| ImGuiWindowFlags_AlwaysAutoResize;
+
+		constexpr ImGuiTreeNodeFlags header_flags =
+			ImGuiTreeNodeFlags_DefaultOpen
+			| ImGuiTreeNodeFlags_OpenOnDoubleClick;
 	};
 
 } // anonymous namespace
@@ -183,10 +188,14 @@ void UIState::draw_viewer_window() {
 	float h = draw_menu_bar();
 
 	// Menu on left
-	draw_left_panel(h, menu_scaling() * AppLayout::left_panel_width);
+	if (show_left_panel) {
+		draw_left_panel(h, menu_scaling() * AppLayout::left_panel_width);
+	}
 
 	// Menu on the right
-	draw_right_panel(h, menu_scaling() * AppLayout::right_panel_width);
+	if (show_right_panel) {
+		draw_right_panel(h, menu_scaling() * AppLayout::right_panel_width);
+	}
 
 	// Mess up with the mouse cursor
 	if (delete_vertex || add_vertex) {
@@ -244,17 +253,25 @@ float UIState::draw_menu_bar() {
 		}
 		if (ImGui::BeginMenu("View")) {
 			// Left panel
+			ImGui::MenuItem("Left Panel##Bar", nullptr, &show_left_panel);
+			ImGui::Indent();
 			ImGui::MenuItem("Input File##Bar", nullptr, &show_file_menu);
 			ImGui::MenuItem("Detection##Bar", nullptr, &show_points_menu);
 			ImGui::MenuItem("Matching##Bar", nullptr, &show_mesh_menu);
 			ImGui::MenuItem("Analysis##Bar", nullptr, &show_analysis_menu);
+			ImGui::Unindent();
+
 			ImGui::Separator();
 
 			// Right panel
+			ImGui::MenuItem("Right Panel##Bar", nullptr, &show_right_panel);
+			ImGui::Indent();
 			ImGui::MenuItem("Histogram", nullptr, &show_histogram_menu);
 			ImGui::MenuItem("Legend", nullptr, &show_legend_menu);
 			ImGui::MenuItem("Layers", nullptr, &show_layer_menu);
 			ImGui::MenuItem("Regions", nullptr, &show_region_menu);
+			ImGui::Unindent();
+
 			ImGui::EndMenu();
 		}
 		h = ImGui::GetWindowSize().y;
@@ -266,33 +283,32 @@ float UIState::draw_menu_bar() {
 // -----------------------------------------------------------------------------
 
 void UIState::draw_left_panel(float ypos, float width) {
-	const float hue = 205;
-
-	float vpad = AppLayout::vertical_padding * menu_scaling();
-	ypos += vpad;
+	const float hue = AppLayout::header_hue;
 
 	auto canvas = ImGui::GetIO().DisplaySize;
-	float height = canvas.y - ypos;
+	float vpad = AppLayout::vertical_padding * menu_scaling();
+	ypos += vpad;
+	float height = canvas.y - ypos - vpad;
 
 	ImGui::SetNextWindowPos(ImVec2(0.0f, ypos), ImGuiSetCond_Always);
 	ImGui::SetNextWindowSize(ImVec2(0.0f, 0.0f), ImGuiSetCond_Always);
 	ImGui::SetNextWindowSizeConstraints(ImVec2(width, 0.0f), ImVec2(width, height));
 
-	ImGui::Begin("Pipeline", &show_file_menu, AppLayout::window_flags);
+	ImGui::Begin("Pipeline", &show_left_panel, AppLayout::window_flags);
 
-	if (SetHue(hue) && ImGui::CollapsingHeader("Input File", &show_file_menu, ImGuiTreeNodeFlags_DefaultOpen)) {
+	if (SetHue(hue) && ImGui::CollapsingHeader("Input File", &show_file_menu, AppLayout::header_flags)) {
 		draw_file_menu();
 	}
 
-	if (SetHue(hue) && ImGui::CollapsingHeader("Stage 1 - Detection", &show_points_menu, ImGuiTreeNodeFlags_DefaultOpen)) {
+	if (SetHue(hue) && ImGui::CollapsingHeader("Stage 1 - Detection", &show_points_menu, AppLayout::header_flags)) {
 		draw_points_menu();
 	}
 
-	if (SetHue(hue) && ImGui::CollapsingHeader("Stage 2 - Matching", &show_mesh_menu, ImGuiTreeNodeFlags_DefaultOpen)) {
+	if (SetHue(hue) && ImGui::CollapsingHeader("Stage 2 - Matching", &show_mesh_menu, AppLayout::header_flags)) {
 		draw_mesh_menu();
 	}
 
-	if (SetHue(hue) && ImGui::CollapsingHeader("Stage 3 - Analysis", &show_analysis_menu, ImGuiTreeNodeFlags_DefaultOpen)) {
+	if (SetHue(hue) && ImGui::CollapsingHeader("Stage 3 - Analysis", &show_analysis_menu, AppLayout::header_flags)) {
 		draw_analysis_menu();
 	}
 
@@ -302,62 +318,37 @@ void UIState::draw_left_panel(float ypos, float width) {
 // -----------------------------------------------------------------------------
 
 void UIState::draw_right_panel(float ypos, float width) {
+	const float hue = AppLayout::header_hue;
+
 	auto canvas = ImGui::GetIO().DisplaySize;
 	float xpos = canvas.x - width;
 	float vpad = AppLayout::vertical_padding * menu_scaling();
 	ypos += vpad;
+	float height = canvas.y - ypos - vpad;
 
-	if (show_histogram_menu) {
-		ImGui::SetNextWindowPos(ImVec2(xpos, ypos), ImGuiSetCond_Always);
-		ImGui::SetNextWindowSize(ImVec2(0.0f, 0.0f), ImGuiSetCond_FirstUseEver);
-		ImGui::SetNextWindowSizeConstraints(ImVec2(width, -1.0f), ImVec2(width, -1.0f));
+	ImGui::SetNextWindowPos(ImVec2(xpos, ypos), ImGuiSetCond_Always);
+	ImGui::SetNextWindowSize(ImVec2(0.0f, 0.0f), ImGuiSetCond_FirstUseEver);
+	ImGui::SetNextWindowSizeConstraints(ImVec2(width, 0.0f), ImVec2(width, height));
 
-		ImGui::Begin("Histogram", &show_histogram_menu, AppLayout::window_flags);
+	ImGui::Begin("Viewer", &show_right_panel, AppLayout::window_flags);
 
+	if (SetHue(hue) && ImGui::CollapsingHeader("Histogram", &show_histogram_menu, AppLayout::header_flags)) {
 		draw_histogram_menu();
-
-		ypos += ImGui::GetWindowHeight() + vpad;
-		ImGui::End();
 	}
 
-	if (show_legend_menu) {
-		ImGui::SetNextWindowPos(ImVec2(xpos, ypos), ImGuiSetCond_Always);
-		ImGui::SetNextWindowSize(ImVec2(0.0f, 0.0f), ImGuiSetCond_FirstUseEver);
-		ImGui::SetNextWindowSizeConstraints(ImVec2(width, -1.0f), ImVec2(width, -1.0f));
-
-		ImGui::Begin("Legend", &show_legend_menu, AppLayout::window_flags);
-
+	if (SetHue(hue) && ImGui::CollapsingHeader("Legend", &show_legend_menu, AppLayout::header_flags)) {
 		draw_legend_menu();
-
-		ypos += ImGui::GetWindowHeight() + vpad;
-		ImGui::End();
 	}
 
-	if (show_layer_menu) {
-		ImGui::SetNextWindowPos(ImVec2(xpos, ypos), ImGuiSetCond_Always);
-		ImGui::SetNextWindowSize(ImVec2(0.0f, 0.0f), ImGuiSetCond_FirstUseEver);
-		ImGui::SetNextWindowSizeConstraints(ImVec2(width, -1.0f), ImVec2(width, -1.0f));
-
-		ImGui::Begin("Layers", &show_layer_menu, AppLayout::window_flags);
-
+	if (SetHue(hue) && ImGui::CollapsingHeader("Layers", &show_layer_menu, AppLayout::header_flags)) {
 		draw_layer_menu();
-
-		ypos += ImGui::GetWindowHeight() + vpad;
-		ImGui::End();
 	}
 
-	if (show_region_menu) {
-		ImGui::SetNextWindowPos(ImVec2(xpos, ypos), ImGuiSetCond_Always);
-		ImGui::SetNextWindowSize(ImVec2(0.0f, 0.0f), ImGuiSetCond_FirstUseEver);
-		ImGui::SetNextWindowSizeConstraints(ImVec2(width, -1.0f), ImVec2(width, -1.0f));
-
-		ImGui::Begin("Region", &show_region_menu, AppLayout::window_flags);
-
+	if (SetHue(hue) && ImGui::CollapsingHeader("Region", &show_region_menu, AppLayout::header_flags)) {
 		draw_region_menu();
-
-		ypos += ImGui::GetWindowHeight() + vpad;
-		ImGui::End();
 	}
+
+	ImGui::End();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
