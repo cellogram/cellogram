@@ -46,6 +46,42 @@ namespace {
 		ImGui::PopStyleColor();
 	}
 
+	void push_color(float hue) {
+		static float col_main_sat = 180.f/255.f;
+		static float col_main_val = 161.f/255.f;
+		static float col_area_sat = 124.f/255.f;
+		static float col_area_val = 100.f/255.f;
+		static float col_back_sat = 59.f/255.f;
+		static float col_back_val = 40.f/255.f;
+		ImVec4 col_text = ImColor::HSV(hue/255.f,  20.f/255.f, 235.f/255.f);
+		ImVec4 col_main = ImColor::HSV(hue/255.f, col_main_sat, col_main_val);
+		ImVec4 col_back = ImColor::HSV(hue/255.f, col_back_sat, col_back_val);
+		ImVec4 col_area = ImColor::HSV(hue/255.f, col_area_sat, col_area_val);
+
+		auto Vec4 = []( float r, float g, float b, float a ) {
+			float h, s, v;
+			ImGui::ColorConvertRGBtoHSV( r, g, b, h, s, v );
+			ImGui::ColorConvertHSVtoRGB( h, s, v, r, g, b );
+			return ImVec4(r,g,b,a);
+		};
+
+		ImGui::PushStyleColor(ImGuiCol_Header, Vec4(col_main.x, col_main.y, col_main.z, 0.56f));
+		ImGui::PushStyleColor(ImGuiCol_HeaderHovered, Vec4(col_main.x, col_main.y, col_main.z, 0.86f));
+		ImGui::PushStyleColor(ImGuiCol_HeaderActive, Vec4(col_main.x, col_main.y, col_main.z, 1.00f));
+	};
+
+	void pop_color() {
+		ImGui::PopStyleColor();
+		ImGui::PopStyleColor();
+		ImGui::PopStyleColor();
+	};
+
+	struct SetHue {
+		SetHue(float hue) { push_color(hue); }
+		~SetHue() { pop_color(); }
+		operator bool() const { return true; }
+	};
+
 	void draw_legend_item(float r, float g, float b, std::string label) {
 		ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
 		ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(r / 255, g / 255, b / 255));
@@ -134,8 +170,8 @@ namespace {
 		constexpr int height_colorbar = 20;
 
 		constexpr ImGuiWindowFlags window_flags =
-		ImGuiWindowFlags_NoSavedSettings
-		| ImGuiWindowFlags_AlwaysAutoResize;
+			ImGuiWindowFlags_NoSavedSettings
+			| ImGuiWindowFlags_AlwaysAutoResize;
 	};
 
 } // anonymous namespace
@@ -230,60 +266,37 @@ float UIState::draw_menu_bar() {
 // -----------------------------------------------------------------------------
 
 void UIState::draw_left_panel(float ypos, float width) {
+	const float hue = 205;
+
 	float vpad = AppLayout::vertical_padding * menu_scaling();
 	ypos += vpad;
 
-	if (show_file_menu) {
-		ImGui::SetNextWindowPos(ImVec2(0.0f, ypos), ImGuiSetCond_Always);
-		ImGui::SetNextWindowSize(ImVec2(0.0f, 0.0f), ImGuiSetCond_FirstUseEver);
-		ImGui::SetNextWindowSizeConstraints(ImVec2(width, -1.0f), ImVec2(width, -1.0f));
+	auto canvas = ImGui::GetIO().DisplaySize;
+	float height = canvas.y - ypos;
 
-		ImGui::Begin("Input File", &show_file_menu, AppLayout::window_flags);
+	ImGui::SetNextWindowPos(ImVec2(0.0f, ypos), ImGuiSetCond_Always);
+	ImGui::SetNextWindowSize(ImVec2(0.0f, 0.0f), ImGuiSetCond_Always);
+	ImGui::SetNextWindowSizeConstraints(ImVec2(width, 0.0f), ImVec2(width, height));
 
+	ImGui::Begin("Pipeline", &show_file_menu, AppLayout::window_flags);
+
+	if (SetHue(hue) && ImGui::CollapsingHeader("Input File", &show_file_menu, ImGuiTreeNodeFlags_DefaultOpen)) {
 		draw_file_menu();
-
-		ypos += ImGui::GetWindowHeight() + vpad;
-		ImGui::End();
 	}
 
-	if (show_points_menu) {
-		ImGui::SetNextWindowPos(ImVec2(0.0f, ypos), ImGuiSetCond_Always);
-		ImGui::SetNextWindowSize(ImVec2(0.0f, 0.0f), ImGuiSetCond_FirstUseEver);
-		ImGui::SetNextWindowSizeConstraints(ImVec2(width, -1.0f), ImVec2(width, -1.0f));
-
-		ImGui::Begin("Stage 1 - Detection", &show_points_menu, AppLayout::window_flags);
-
+	if (SetHue(hue) && ImGui::CollapsingHeader("Stage 1 - Detection", &show_points_menu, ImGuiTreeNodeFlags_DefaultOpen)) {
 		draw_points_menu();
-
-		ypos += ImGui::GetWindowHeight() + vpad;
-		ImGui::End();
 	}
 
-	if (show_mesh_menu) {
-		ImGui::SetNextWindowPos(ImVec2(0.0f, ypos), ImGuiSetCond_Always);
-		ImGui::SetNextWindowSize(ImVec2(0.0f, 0.0f), ImGuiSetCond_FirstUseEver);
-		ImGui::SetNextWindowSizeConstraints(ImVec2(width, -1.0f), ImVec2(width, -1.0f));
-
-		ImGui::Begin("Stage 2 - Matching", &show_mesh_menu, AppLayout::window_flags);
-
+	if (SetHue(hue) && ImGui::CollapsingHeader("Stage 2 - Matching", &show_mesh_menu, ImGuiTreeNodeFlags_DefaultOpen)) {
 		draw_mesh_menu();
-
-		ypos += ImGui::GetWindowHeight() + vpad;
-		ImGui::End();
 	}
 
-	if (show_analysis_menu) {
-		ImGui::SetNextWindowPos(ImVec2(0.0f, ypos), ImGuiSetCond_Always);
-		ImGui::SetNextWindowSize(ImVec2(0.0f, 0.0f), ImGuiSetCond_FirstUseEver);
-		ImGui::SetNextWindowSizeConstraints(ImVec2(width, -1.0f), ImVec2(width, -1.0f));
-
-		ImGui::Begin("Stage 3 - Analysis", &show_analysis_menu, AppLayout::window_flags);
-
+	if (SetHue(hue) && ImGui::CollapsingHeader("Stage 3 - Analysis", &show_analysis_menu, ImGuiTreeNodeFlags_DefaultOpen)) {
 		draw_analysis_menu();
-
-		ypos += ImGui::GetWindowHeight() + vpad;
-		ImGui::End();
 	}
+
+	ImGui::End();
 }
 
 // -----------------------------------------------------------------------------
@@ -412,7 +425,9 @@ void UIState::draw_points_menu() {
 	float w = ImGui::GetContentRegionAvailWidth();
 	float p = ImGui::GetStyle().FramePadding.x;
 
+	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.50f);
 	ImGui::InputFloat("Sigma", &state.sigma, 0.1, 0, 2);
+	ImGui::PopItemWidth();
 
 	if (ImGui::Button("Detection", ImVec2((w - p), 0))) {
 		detect_vertices();
