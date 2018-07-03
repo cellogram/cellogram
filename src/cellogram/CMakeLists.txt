@@ -58,7 +58,7 @@ add_library(${PROJECT_NAME} ${source_list})
 target_include_directories(${PROJECT_NAME} PUBLIC ..)
 
 # Dependencies
-target_link_libraries(${PROJECT_NAME}
+target_link_libraries(${PROJECT_NAME} PUBLIC
 	polyfem
 	mmg::mmg
 	igl::opengl_glfw_imgui # needs to be removed when all ok

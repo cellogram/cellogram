@@ -76,5 +76,5 @@ if(GUROBI_FOUND AND NOT TARGET gurobi::gurobi)
 	target_link_libraries(gurobi_gurobi INTERFACE
 		debug ${GUROBI_CXX_LIBRARY_DEBUG} ${GUROBI_LIBRARY}
 		optimized ${GUROBI_CXX_LIBRARY_RELEASE} ${GUROBI_LIBRARY})
-	# add_library(gurobi::gurobi ALIAS gurobi_gurobi)
+	add_library(gurobi::gurobi ALIAS gurobi_gurobi)
 endif()

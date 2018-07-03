@@ -9,6 +9,7 @@
 #include <igl/writeOBJ.h>
 
 using namespace std;
+using namespace Eigen;
 
 // IO
 
@@ -65,7 +66,7 @@ void State::init(const MatrixXd &vB, const MatrixXd &vI, const VectorXi &n)
 	Vdeformed = MatrixXd(V_boundary.rows() + V_internal.rows(), 2);
 	Vdeformed << V_boundary, V_internal;
 	/*
-	
+
 	V_boundary = vB;
 	V_internal = vI;
 	neigh = n;
@@ -762,7 +763,7 @@ void State::fill_hole()
 //  timer.start();
 
   create_initial_triangulation();
-  
+
   fit_triangulation();
 
   /* commented by Tobi - snapping is pointless if solved by gurobi

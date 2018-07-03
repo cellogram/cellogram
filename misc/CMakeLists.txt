@@ -38,7 +38,7 @@ add_application(image_test.cpp cellogram)
 add_application(adaptive_test.cpp cellogram)
 
 if(TARGET gurobi::gurobi)
-	add_application(delaunay.cpp tinyfiledialogs geogram geogram_gfx gurobi_solver)
+	add_application(delaunay.cpp tinyfiledialogs geogram geogram_gfx cellogram::gurobi)
 	add_application(optimizer.cpp cellogram)
 endif()
 

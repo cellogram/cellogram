@@ -66,6 +66,7 @@
 #include <algorithm>
 #include <numeric>
 
+using namespace Eigen;
 
 
 struct Compare {
