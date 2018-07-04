@@ -30,7 +30,7 @@ public:
 
 	MmgOptions mmg_options;
 
-	float target_mesh_size[2] = {0.001, 0.1};
+	float target_mesh_size[2] = {0.001f, 0.1f};
 	float power = 2.0;
 	float padding_size = 25;
 	float thickness = 30;

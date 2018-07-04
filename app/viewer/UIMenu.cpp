@@ -412,7 +412,9 @@ void UIState::draw_points_menu() {
 	float w = ImGui::GetContentRegionAvailWidth();
 	float p = ImGui::GetStyle().FramePadding.x;
 
+	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.50f);
 	ImGui::InputFloat("Sigma", &state.sigma, 0.1, 0, 2);
+	ImGui::PopItemWidth();
 
 	if (ImGui::Button("Detection", ImVec2((w - p), 0))) {
 		detect_vertices();
@@ -664,7 +666,7 @@ void UIState::draw_histogram_menu() {
 
 	auto pos = ImGui::GetWindowPos();
 	int startX = pos.x + 10;
-	int startY = pos.y + 47 * menu_scaling();
+	int startY = pos.y + 28 * menu_scaling();
 
 	ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
 	ImGui::PlotHistogram("", hist.data(), hist.size(), 0, NULL, 0.0f, hist.maxCoeff(), ImVec2(0, 80));
