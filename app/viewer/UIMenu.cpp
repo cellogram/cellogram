@@ -670,7 +670,7 @@ void UIState::draw_histogram_menu() {
 
 	auto pos = ImGui::GetWindowPos();
 	int startX = pos.x + 10;
-	int startY = pos.y + 28 * menu_scaling();
+	int startY = pos.y + 52 * menu_scaling();
 
 	ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
 	ImGui::PlotHistogram("", hist.data(), hist.size(), 0, NULL, 0.0f, hist.maxCoeff(), ImVec2(0, 80));
