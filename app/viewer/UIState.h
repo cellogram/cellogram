@@ -167,11 +167,13 @@ private:
 	void draw_region_menu();
 
 	// Toggle windows
+	bool show_left_panel = true;
 	bool show_file_menu = true;
 	bool show_points_menu = true;
 	bool show_mesh_menu = true;
 	bool show_analysis_menu = true;
 
+	bool show_right_panel = true;
 	bool show_histogram_menu = true;
 	bool show_legend_menu = true;
 	bool show_layer_menu = true;
