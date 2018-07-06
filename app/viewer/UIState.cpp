@@ -481,105 +481,106 @@ void UIState::compute_histogram() {
 }
 
 void UIState::export_region() {
-	// Eigen::VectorXi boundary = state.regions[selected_region].region_boundary;
-	// Eigen::VectorXi internal = state.regions[selected_region].region_interior;
-	//
-	// Eigen::MatrixXd V(boundary.size() + internal.size(), 3);
-	// for (int i = 0; i < boundary.size(); i++)
-	//{
-	//	V(i, 0) = state.mesh.detected(boundary(i), 0);
-	//	V(i, 1) = state.mesh.detected(boundary(i), 1);
-	//	double std_x = state.mesh.params.std_x(boundary(i));
-	//	double std_y = state.mesh.params.std_y(boundary(i));
-	//	V(i, 2) = std::sqrt(std_x*std_x + std_y * std_y);
-	//}
-	// for (int i = 0; i < internal.size(); i++)
-	//{
-	//	V(i + boundary.size(), 0) = state.mesh.detected(internal(i), 0);
-	//	V(i + boundary.size(), 1) = state.mesh.detected(internal(i), 1);
-	//	double std_x = state.mesh.params.std_x(internal(i));
-	//	double std_y = state.mesh.params.std_y(internal(i));
-	//	V(i + boundary.size(), 2) = std::sqrt(std_x*std_x + std_y*std_y);
-	//}
+	 Eigen::VectorXi boundary = state.regions[selected_region].region_boundary;
+	 Eigen::VectorXi internal = state.regions[selected_region].region_interior;
+	
+	 Eigen::MatrixXd V(boundary.size() + internal.size(), 3);
+	 for (int i = 0; i < boundary.size(); i++)
+	{
+		V(i, 0) = state.mesh.detected(boundary(i), 0);
+		V(i, 1) = state.mesh.detected(boundary(i), 1);
+		double std_x = state.mesh.params.std_x(boundary(i));
+		double std_y = state.mesh.params.std_y(boundary(i));
+		V(i, 2) = std::sqrt(std_x*std_x + std_y * std_y);
+	}
+	 for (int i = 0; i < internal.size(); i++)
+	{
+		V(i + boundary.size(), 0) = state.mesh.detected(internal(i), 0);
+		V(i + boundary.size(), 1) = state.mesh.detected(internal(i), 1);
+		double std_x = state.mesh.params.std_x(internal(i));
+		double std_y = state.mesh.params.std_y(internal(i));
+		V(i + boundary.size(), 2) = std::sqrt(std_x*std_x + std_y*std_y);
+	}
 
-	//// find vertices whose edges can be regarded as possibly wrong
-	// Eigen::VectorXi wrong_boundary =
-	// state.increase_boundary(state.mesh.boundary); wrong_boundary =
-	// state.increase_boundary(wrong_boundary);
+	// find vertices whose edges can be regarded as possibly wrong
+	 Eigen::VectorXi wrong_boundary =
+	 state.increase_boundary(state.mesh.boundary); wrong_boundary =
+	 state.increase_boundary(wrong_boundary);
 
-	// int index = 0;
-	// Eigen::MatrixXi E(boundary.size(), 2);
-	// for (int i = 0; i < boundary.size(); i++)
-	//{
-	//	if ((wrong_boundary.array() - boundary(i)).abs().minCoeff() == 0 ||
-	//(wrong_boundary.array() - boundary((i + 1) %
-	// boundary.size())).abs().minCoeff() == 0) 		continue; 	E(index, 0) =
-	// i; 	E(index, 1) = (i + 1) % boundary.size(); 	index++;
-	//}
-	// E.conservativeResize(index, 2);
+	 int index = 0;
+	 Eigen::MatrixXi E(boundary.size(), 2);
+	 for (int i = 0; i < boundary.size(); i++)
+	 {
+		 if ((wrong_boundary.array() - boundary(i)).abs().minCoeff() == 0 || (wrong_boundary.array() - boundary((i + 1) % boundary.size())).abs().minCoeff() == 0)
+			 continue;
+		 E(index, 0) = i;
+		 E(index, 1) = (i + 1) % boundary.size();
+		 index++;
+	 }
+	 E.conservativeResize(index, 2);
 
-	// cellogram_mkdir(save_dir);
-	// cellogram_mkdir(save_dir + "/cellogram");
-	// cellogram_mkdir(save_dir + "/cellogram" + "/regions");
-	// cellogram_mkdir(save_dir + "/cellogram" + "/regions/" +
-	// std::to_string(selected_region));
+	 cellogram_mkdir(save_dir);
+	 cellogram_mkdir(save_dir + "/cellogram");
+	 cellogram_mkdir(save_dir + "/cellogram" + "/regions");
+	 cellogram_mkdir(save_dir + "/cellogram" + "/regions/" +
+	 std::to_string(selected_region));
 
-	// std::string path = save_dir + "/cellogram" + "/regions/" +
-	// std::to_string(selected_region);
-	//
-	//{
-	//	std::ofstream V_path(path + "/V.vert");
-	//	V_path << V << std::endl;
-	//	V_path.close();
-	//}
-	//{
-	//	std::ofstream E_path(path + "/E.edge");
-	//	E_path << E << std::endl;
-	//	E_path.close();
-	//}
-
-	////---------- Save entire image and vector<bool> for faces that may not be
-	/// changed
-	cellogram_mkdir(save_dir);
-	cellogram_mkdir(save_dir + "/cellogram");
-	cellogram_mkdir(save_dir + "/cellogram" + "/untangler");
-	std::string path = save_dir + "/cellogram/untangler";
-
+	 std::string path = save_dir + "/cellogram" + "/regions/" +
+	 std::to_string(selected_region);
+	
 	{
 		std::ofstream V_path(path + "/V.vert");
-		V_path << state.mesh.moved << std::endl;
+		V_path << V << std::endl;
 		V_path.close();
 	}
 	{
-		std::ofstream F_path(path + "/F.tri");
-		F_path << state.mesh.triangles << std::endl;
-		F_path.close();
+		std::ofstream E_path(path + "/E.edge");
+		E_path << E << std::endl;
+		E_path.close();
 	}
 
-	Eigen::VectorXi fixed_face(state.mesh.triangles.rows());
-	fixed_face.setOnes();
+	////---------- Save entire image and vector<bool> for faces that may not be
+	/// changed
+	//cellogram_mkdir(save_dir);
+	//cellogram_mkdir(save_dir + "/cellogram");
+	//cellogram_mkdir(save_dir + "/cellogram" + "/untangler");
+	//std::string path = save_dir + "/cellogram/untangler";
 
-	// Loop through regions and set them to 0
-	for (auto &r : state.regions) {
-		for (int i = 0; i < r.region_triangles.size(); i++) {
-			fixed_face(r.region_triangles(i)) = 0;
-		}
-	}
+	//{
+	//	std::ofstream V_path(path + "/V.vert");
+	//	V_path << state.mesh.moved << std::endl;
+	//	V_path.close();
+	//}
+	//{
+	//	std::ofstream F_path(path + "/F.tri");
+	//	F_path << state.mesh.triangles << std::endl;
+	//	F_path.close();
+	//}
 
-	// Loop through boundary and also set them to zero
-	Eigen::VectorXi boundary = state.increase_boundary(state.mesh.boundary);
-	// boundary = state.increase_boundary(boundary);
-	for (int i = 0; i < boundary.size(); i++) {
-		std::vector<int> fixed_ind = state.mesh.vertex_to_tri[boundary(i)];
-		for (int j = 0; j < (int) fixed_ind.size(); j++) {
-			fixed_face(fixed_ind[j]) = 0;
-		}
-	}
-	{
-		std::ofstream fixed_path(path + "/fixed.txt");
-		fixed_path << fixed_face << std::endl;
-		fixed_path.close();
-	}
+	//Eigen::VectorXi fixed_face(state.mesh.triangles.rows());
+	//fixed_face.setOnes();
+
+	//// Loop through regions and set them to 0
+	//for (auto &r : state.regions) {
+	//	for (int i = 0; i < r.region_triangles.size(); i++) {
+	//		fixed_face(r.region_triangles(i)) = 0;
+	//	}
+	//}
+
+	//// Loop through boundary and also set them to zero
+	//Eigen::VectorXi boundary = state.increase_boundary(state.mesh.boundary);
+	//// boundary = state.increase_boundary(boundary);
+	//for (int i = 0; i < boundary.size(); i++) {
+	//	std::vector<int> fixed_ind = state.mesh.vertex_to_tri[boundary(i)];
+	//	for (int j = 0; j < (int) fixed_ind.size(); j++) {
+	//		fixed_face(fixed_ind[j]) = 0;
+	//	}
+	//}
+	//{
+	//	std::ofstream fixed_path(path + "/fixed.txt");
+	//	fixed_path << fixed_face << std::endl;
+	//	fixed_path.close();
+	//}/////////
 }
 
 void UIState::reset_viewer() {

@@ -433,27 +433,14 @@ namespace cellogram {
 		generate_vertex_to_tri();
 	}
 
-	void Mesh::final_relax()
+	void Mesh::final_relax(const Eigen::VectorXi & expanded_boundary)
 	{
 		int n = points.rows();
 		////Find vertices that have lower connectivity than 6
-		//Eigen::VectorXi neighCount = Eigen::VectorXi::Zero(n);
-
-		//for (size_t i = 0; i < triangles.rows(); i++)
-		//{
-		//	for (size_t j = 0; j < 3; j++)
-		//	{
-		//		neighCount(triangles(i, j))++;
-		//	}
-
-		//}
 
 		Eigen::VectorXi neighCount;
 		vertex_degree(neighCount);
-
-		//std::cout << neighCount.transpose() << std::endl;
-		//std::cout << degree.transpose() << std::endl;
-
+		
 		// Determine fixed vertices based on connectivity and bounding box
 		Eigen::VectorXi indFixed = Eigen::VectorXi::Zero(n);
 
@@ -464,23 +451,25 @@ namespace cellogram {
 				indFixed(i) = 1;
 			}
 		}
-		for (size_t i = 0; i < boundary.rows(); i++)
+		
+		// fix vertices on the boundary and the ones connected to the boundary
+		for (size_t i = 0; i < expanded_boundary.rows(); i++)
 		{
-			indFixed(boundary(i)) = 1;
+			indFixed(expanded_boundary(i)) = 1;
 		}
 
-		////PLEASE USE ME
+		//////PLEASE USE ME
 		//igl::opengl::glfw::Viewer viewer;
 
 		//viewer.data().set_mesh(points, triangles);
-		//Eigen::MatrixXd C(n, 3);
+		//Eigen::MatrixXd cc(n, 3);
 		//for (int i = 0; i < indFixed.rows(); ++i) {
 		//	if(indFixed(i) == 1)
-		//		C.row(i) = Eigen::RowVector3d(1, 0, 0);
+		//		cc.row(i) = Eigen::RowVector3d(1, 0, 0);
 		//	else
-		//		C.row(i) = Eigen::RowVector3d(0, 0, 0);
+		//		cc.row(i) = Eigen::RowVector3d(0, 0, 0);
 		//}
-		//viewer.data().set_points(points, C);
+		//viewer.data().set_points(points, cc);
 		//viewer.data().point_size = float(8);
 		//viewer.core.set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_NO_ROTATION);
 		//viewer.core.orthographic = true;

@@ -756,7 +756,9 @@ namespace cellogram {
 
 	void State::final_relax()
 	{
-		mesh.final_relax();
+		//increase boundary by one row for fixation
+		Eigen::VectorXi boundary = increase_boundary(mesh.boundary);
+		mesh.final_relax(boundary);
 	}
 
 	void State::delete_vertex(const int index)
