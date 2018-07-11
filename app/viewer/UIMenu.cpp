@@ -811,6 +811,8 @@ void UIState::draw_layer_menu() {
 	}
 	if (ImGui::Checkbox("Selected region", &show_selected_region)) {
 		viewer_control();
+		//debugging region, can be deleted after
+		state.check_region(selected_region);
 	}
 
 	if (ImGui::Checkbox("Enable 3D view", &analysis_mode)) {

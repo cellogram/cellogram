@@ -31,6 +31,18 @@
 namespace cellogram {
 	namespace
 	{
+		double polygon_area(Eigen::VectorXd X, Eigen::VectorXd Y) {
+			assert(X.size() == Y.size());
+			double area = 0;
+			int j = X.size()-1;
+			for (int i = 0; i < X.size(); i++)
+			{
+				area += (X(i) + X(j))*(Y(i) - Y(j));
+				j = i;
+			}
+			return 0.5 * std::abs(area);
+		}
+
 		double inline det(const Eigen::Vector2d &u, const Eigen::Vector2d &v) {
 			Eigen::Matrix2d M;
 			M.col(0) = u;
@@ -466,10 +478,15 @@ namespace cellogram {
 		s.fill_hole();
 
 		//// compare sizes
-		//std::cout << "\n\nregion_boundary: \n" << region_boundary.transpose() << "\n" <<region_boundary.rows();
-		//std::cout << "\n\nregion_interior: \n" << region_interior.transpose() << "\n" << region_interior.rows();
-		//std::cout << "\n\ns.Vdeformed: \n" << s.Vdeformed.transpose() << "\n" << s.Vdeformed.rows();
-		//std::cout << "\n\ns.Vperfect: \n" << s.Vperfect.transpose() << "\n" << s.Vperfect.rows();
+		//if (s.Vdeformed.rows() == 63)
+		//{
+		//	std::cout << "\n\nregion_triangles: \n" << region_triangles.transpose() << std::endl;
+		//	std::cout << "\n\nregion_boundary: \n" << region_boundary.transpose() << "\n\n#:" << region_boundary.rows() << std::endl;
+		//	std::cout << "\n\nregion_boundary: \n" << region_boundary.transpose() << "\n\n#:" <<region_boundary.rows() << std::endl;
+		//	std::cout << "\n\nregion_interior: \n" << region_interior.transpose() << "\n\n#:" << region_interior.rows() << std::endl;
+		//	std::cout << "\n\ns.Vdeformed: \n" << s.Vdeformed.transpose() << "\n\n#:" << s.Vdeformed.rows() << std::endl;
+		//	std::cout << "\n\ns.Vperfect: \n" << s.Vperfect.transpose() << "\n\n#:" << s.Vperfect.rows() << std::endl;
+		//}
 		////
 
 		// Check whether vertices inside region is equal to the ones expected
@@ -1172,6 +1189,101 @@ namespace cellogram {
 
 		region_boundary.resize(0);
 		bounding(mesh.triangles, mesh.points);
+
+		return true;
+	}
+
+	bool Region::fix_pinched_region(const Mesh & mesh)
+	{
+		if (region_boundary.size() < 7)
+			return false;
+
+		int p1 = 0, p2 = 0;
+		// loop through current boundary and check for triangles that have 
+		// two vertices on the boundary that are not consecutive in the boundary
+		for (int i = 1; i < region_boundary.size(); i++)
+		{
+			auto current_tri = mesh.vertex_to_tri[region_boundary(i)];
+			
+			// for each current_tri check whether it is somewhere else in the boundary
+			for (int j = 0; j < region_boundary.size(); j++)
+			{
+				if (std::abs(i - j) <= 1)
+					continue;
+				if (std::abs(i - j) == region_boundary.size()-1)
+					continue;
+
+				auto next_tri = mesh.vertex_to_tri[region_boundary(j)];
+				for (int m = 0; m < current_tri.size(); m++)
+				{
+					for (int n = 0; n < next_tri.size(); n++)
+					{
+						if ((current_tri[m] - next_tri[n]) == 0)
+						{
+							// if this is reached, it means that a triangle has been found
+							// with two boundary vertices in non-consective positions in the boundary
+							p1 = i;
+							p2 = j;
+							break;
+						}
+					}
+				}
+				
+			}
+		}
+		if (p1 == p2)
+			return false;
+
+		if (p1 > p2)
+		{
+			int tmp = p1;
+			p1 = p2;
+			p2 = tmp;
+		}
+
+		// split the boundary
+		Eigen::VectorXi b1(p1 - p2 + 1 + region_boundary.size()), b2(p2 - p1 + 1);
+
+		b1.segment(0, p1+1) = region_boundary.segment(0, p1+1);
+		b1.segment(p1 + 1, region_boundary.size() - p2) = region_boundary.segment(p2, region_boundary.size() - p2);
+
+		b2.segment(0, p2 - p1 + 1) = region_boundary.segment(p1, p2 - p1 + 1);
+		std::cout << "pinch found:\n" << std::endl;
+		////std::cout << "points\n" << mesh.points.transpose() << std::endl;
+		//std::cout << "boundary\n" << region_boundary.transpose() << std::endl;
+		//std::cout << "b1\n" << b1.transpose() << std::endl;
+		//std::cout << "b2\n" << b2.transpose() << std::endl;
+		//std::cout << "\n" << std::endl;
+
+		// determine which one to keep based on area
+		Eigen::VectorXd X1(b1.size()), Y1(b1.size());
+		for (int i = 0; i < X1.size(); i++)
+		{
+			X1(i) = mesh.points(b1(i),0);
+			Y1(i) = mesh.points(b1(i),1);
+		}
+		double A1 = polygon_area(X1,Y1);
+
+		Eigen::VectorXd X2(b2.size()), Y2(b2.size());
+		for (int i = 0; i < X2.size(); i++)
+		{
+			X2(i) = mesh.points(b1(i), 0);
+			Y2(i) = mesh.points(b1(i), 1);
+		}
+		double A2 = polygon_area(X2,Y2);
+		
+		std::cout << A1 << " " << A2 << std::endl;
+
+		Eigen::VectorXi new_boundary;
+		if (A1 > A2)
+			new_boundary = b1;
+		else
+			new_boundary = b2;
+
+		// overwrite current region
+		region_boundary = new_boundary;
+		find_interior_V(mesh, new_boundary, region_interior);
+		find_triangles(mesh.triangles, false);
 
 		return true;
 	}

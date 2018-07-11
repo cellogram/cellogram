@@ -496,6 +496,17 @@ namespace cellogram {
 				repeat = r.add_orphaned_triangles(mesh);
 			} while (repeat);
 
+			// fix pinched regions by closing area at pinch
+			repeat = false;
+			do {
+				repeat = r.fix_pinched_region(mesh);
+			} while (repeat);
+
+			repeat = false;
+			do {
+				repeat = r.fix_missing_points(mesh.triangles);
+			} while (repeat);
+
 			++index;
 
 			//r.find_triangles(mesh.triangles);

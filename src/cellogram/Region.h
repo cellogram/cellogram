@@ -57,6 +57,7 @@ namespace cellogram {
 
 		void local_to_global(Eigen::VectorXi &local2global);
 		bool add_orphaned_triangles(const Mesh &mesh);
+		bool fix_pinched_region(const Mesh &mesh);
 		//todo
 		//void reduce_index
 
