@@ -2,7 +2,7 @@
 #include "boundary_loop.h"
 #include <cellogram/tri2hex.h>
 #include <cellogram/navigation.h>
-#include <igl/is_border_vertex.h>
+// #include <igl/is_border_vertex.h>
 #include <igl/edges.h>
 #include <Eigen/Dense>
 #include <vector>
@@ -54,8 +54,8 @@ void boundary_loop(const Eigen::MatrixXi &F, Eigen::VectorXi &longest_path) {
 
 	int n = F.maxCoeff() + 1;
 
-	Eigen::VectorXd Vdummy(F.maxCoeff() + 1, 1);
-	std::vector<bool> border_vertex = igl::is_border_vertex(Vdummy, F);
+	// Eigen::VectorXd Vdummy(F.maxCoeff() + 1, 1);
+	// std::vector<bool> border_vertex = igl::is_border_vertex(Vdummy, F);
 
 	std::vector<std::vector<int>> adj;
 	//tri2hex(F, adj);

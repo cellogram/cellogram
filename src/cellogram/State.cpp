@@ -22,6 +22,7 @@
 #include <tbb/parallel_for.h>
 #include <tbb/task_scheduler_init.h>
 #include <tbb/enumerable_thread_specific.h>
+#include <fstream>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
@@ -136,7 +137,11 @@ namespace cellogram {
 
 	bool State::is_data_available(const std::string &path)
 	{
+#ifdef WIN32
 		std::string save_data = path + "\\cellogram\\moved.vert";
+#else
+		std::string save_data = path + "/cellogram/moved.vert";
+#endif
 		std::ifstream f(save_data.c_str());
 		bool ok = f.good();
 		return f.good();
