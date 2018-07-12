@@ -1285,9 +1285,9 @@ namespace cellogram {
 
 		Eigen::VectorXi tmp;
 		find_interior_V(mesh, new_boundary, tmp);
+		region_interior = tmp;
 		if(tmp.size() > 0)
 		{
-			region_interior = tmp;
 			find_triangles(mesh.triangles, false);
 		}
 
