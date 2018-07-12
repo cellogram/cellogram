@@ -1267,8 +1267,8 @@ namespace cellogram {
 		Eigen::VectorXd X2(b2.size()), Y2(b2.size());
 		for (int i = 0; i < X2.size(); i++)
 		{
-			X2(i) = mesh.points(b1(i), 0);
-			Y2(i) = mesh.points(b1(i), 1);
+			X2(i) = mesh.points(b2(i), 0);
+			Y2(i) = mesh.points(b2(i), 1);
 		}
 		double A2 = polygon_area(X2,Y2);
 		
@@ -1282,8 +1282,14 @@ namespace cellogram {
 
 		// overwrite current region
 		region_boundary = new_boundary;
-		find_interior_V(mesh, new_boundary, region_interior);
-		find_triangles(mesh.triangles, false);
+
+		Eigen::VectorXi tmp;
+		find_interior_V(mesh, new_boundary, tmp);
+		if(tmp.size() > 0)
+		{
+			region_interior = tmp;
+			find_triangles(mesh.triangles, false);
+		}
 
 		return true;
 	}
