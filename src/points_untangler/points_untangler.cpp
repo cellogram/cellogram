@@ -29,7 +29,7 @@ namespace cellogram
             Mesh m;
             Grid g;
             m.fromEigen(detected);
-            pointsUntangler(m, g);
+            pointsUntangler(m, g, "C:/Users/letobias/Dropbox/NY/GM/img12");
             g.fillGapsMakingPtsUp();
             g.exportEigen(tris, droppedPoints, newPoints);
         }
