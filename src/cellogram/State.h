@@ -12,6 +12,24 @@
 
 namespace cellogram {
 
+	template<class Mat>
+	void write_json_mat(const Mat &mat, nlohmann::json &data)
+	{
+		data["rows"] = mat.rows();
+		data["cols"] = mat.cols();
+		data["data"] = std::vector<typename Mat::Scalar>(mat.data(), mat.data() + mat.rows() * mat.cols());
+	}
+
+	template<class Mat>
+	void read_json_mat(const nlohmann::json &data, Mat &mat)
+	{
+		const int rows = data["rows"];
+		const int cols = data["cols"];
+		mat.resize(rows, cols);
+		std::vector<typename Mat::Scalar> tmp = data["data"];
+		mat = Eigen::Map<Mat>(&tmp[0], rows, cols);
+	}
+
 struct State {
 public:
 	static State &state();

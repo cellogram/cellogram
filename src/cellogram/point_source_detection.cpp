@@ -824,65 +824,112 @@ namespace cellogram {
 		pval_Ar.block(index, 0, new_params.size(), 1) = new_params.pval_Ar;
 	}
 
-	void DetectionParams::save(const std::string & path)
+	void DetectionParams::save(nlohmann::json &data)
 	{
-		using json = nlohmann::json;
-
-		json json_data;
-		json_data["A"] = std::vector<double>(A.data(), A.data() + A.size());
-		json_data["sigma"] = std::vector<double>(sigma.data(), sigma.data() + sigma.size());
-		json_data["C"] = std::vector<double>(C.data(), C.data() + C.size());
-		json_data["std_x"] = std::vector<double>(std_x.data(), std_x.data() + std_x.size());
-		json_data["std_y"] = std::vector<double>(std_y.data(), std_y.data() + std_y.size());
-		json_data["std_A"] = std::vector<double>(std_A.data(), std_A.data() + std_A.size());
-		json_data["std_sigma"] = std::vector<double>(std_sigma.data(), std_sigma.data() + std_sigma.size());
-		json_data["std_C"] = std::vector<double>(std_C.data(), std_C.data() + std_C.size());
-		json_data["mean"] = std::vector<double>(mean.data(), mean.data() + mean.size());
-		json_data["std"] = std::vector<double>(std.data(), std.data() + std.size());
-		json_data["RSS"] = std::vector<double>(RSS.data(), RSS.data() + RSS.size());
-		json_data["pval_Ar"] = std::vector<double>(pval_Ar.data(), pval_Ar.data() + pval_Ar.size());
-
-		std::ofstream json_out(path + "/params.json");
-		json_out << json_data.dump(4) << std::endl;
-		json_out.close();
+		data["A"] = std::vector<double>(A.data(), A.data() + A.size());
+		data["sigma"] = std::vector<double>(sigma.data(), sigma.data() + sigma.size());
+		data["C"] = std::vector<double>(C.data(), C.data() + C.size());
+		data["std_x"] = std::vector<double>(std_x.data(), std_x.data() + std_x.size());
+		data["std_y"] = std::vector<double>(std_y.data(), std_y.data() + std_y.size());
+		data["std_A"] = std::vector<double>(std_A.data(), std_A.data() + std_A.size());
+		data["std_sigma"] = std::vector<double>(std_sigma.data(), std_sigma.data() + std_sigma.size());
+		data["std_C"] = std::vector<double>(std_C.data(), std_C.data() + std_C.size());
+		data["mean"] = std::vector<double>(mean.data(), mean.data() + mean.size());
+		data["std"] = std::vector<double>(std.data(), std.data() + std.size());
+		data["RSS"] = std::vector<double>(RSS.data(), RSS.data() + RSS.size());
+		data["pval_Ar"] = std::vector<double>(pval_Ar.data(), pval_Ar.data() + pval_Ar.size());
 	}
 
-	void DetectionParams::load(const std::string & path)
+	// void DetectionParams::save(const std::string & path)
+	// {
+	// 	using json = nlohmann::json;
+
+	// 	json json_data;
+	// 	json_data["A"] = std::vector<double>(A.data(), A.data() + A.size());
+	// 	json_data["sigma"] = std::vector<double>(sigma.data(), sigma.data() + sigma.size());
+	// 	json_data["C"] = std::vector<double>(C.data(), C.data() + C.size());
+	// 	json_data["std_x"] = std::vector<double>(std_x.data(), std_x.data() + std_x.size());
+	// 	json_data["std_y"] = std::vector<double>(std_y.data(), std_y.data() + std_y.size());
+	// 	json_data["std_A"] = std::vector<double>(std_A.data(), std_A.data() + std_A.size());
+	// 	json_data["std_sigma"] = std::vector<double>(std_sigma.data(), std_sigma.data() + std_sigma.size());
+	// 	json_data["std_C"] = std::vector<double>(std_C.data(), std_C.data() + std_C.size());
+	// 	json_data["mean"] = std::vector<double>(mean.data(), mean.data() + mean.size());
+	// 	json_data["std"] = std::vector<double>(std.data(), std.data() + std.size());
+	// 	json_data["RSS"] = std::vector<double>(RSS.data(), RSS.data() + RSS.size());
+	// 	json_data["pval_Ar"] = std::vector<double>(pval_Ar.data(), pval_Ar.data() + pval_Ar.size());
+
+	// 	std::ofstream json_out(path + "/params.json");
+	// 	json_out << json_data.dump(4) << std::endl;
+	// 	json_out.close();
+	// }
+
+	// void DetectionParams::load(const std::string & path)
+	// {
+	// 	using json = nlohmann::json;
+	// 	std::ifstream json_in(path);
+
+	// 	json json_data;
+	// 	json_in >> json_data;
+
+	// 	std::vector<double> tmp;
+
+	// 	tmp.clear();  tmp.insert(tmp.end(), json_data["A"].begin(), json_data["A"].end());
+	// 	A = Eigen::Map<Eigen::VectorXd>(&tmp[0], tmp.size());
+	// 	tmp.clear();  tmp.insert(tmp.end(), json_data["sigma"].begin(), json_data["sigma"].end());
+	// 	sigma = Eigen::Map<Eigen::VectorXd>(&tmp[0], tmp.size());
+	// 	tmp.clear();  tmp.insert(tmp.end(), json_data["C"].begin(), json_data["C"].end());
+	// 	C = Eigen::Map<Eigen::VectorXd>(&tmp[0], tmp.size());
+	// 	tmp.clear();  tmp.insert(tmp.end(), json_data["std_x"].begin(), json_data["std_x"].end());
+	// 	std_x = Eigen::Map<Eigen::VectorXd>(&tmp[0], tmp.size());
+	// 	tmp.clear();  tmp.insert(tmp.end(), json_data["std_y"].begin(), json_data["std_y"].end());
+	// 	std_y = Eigen::Map<Eigen::VectorXd>(&tmp[0], tmp.size());
+	// 	tmp.clear();  tmp.insert(tmp.end(), json_data["std_A"].begin(), json_data["std_A"].end());
+	// 	std_A = Eigen::Map<Eigen::VectorXd>(&tmp[0], tmp.size());
+	// 	tmp.clear();  tmp.insert(tmp.end(), json_data["std_sigma"].begin(), json_data["std_sigma"].end());
+	// 	std_sigma = Eigen::Map<Eigen::VectorXd>(&tmp[0], tmp.size());
+	// 	tmp.clear();  tmp.insert(tmp.end(), json_data["std_C"].begin(), json_data["std_C"].end());
+	// 	std_C = Eigen::Map<Eigen::VectorXd>(&tmp[0], tmp.size());
+	// 	tmp.clear();  tmp.insert(tmp.end(), json_data["mean"].begin(), json_data["mean"].end());
+	// 	mean = Eigen::Map<Eigen::VectorXd>(&tmp[0], tmp.size());
+	// 	tmp.clear();  tmp.insert(tmp.end(), json_data["std"].begin(), json_data["std"].end());
+	// 	std = Eigen::Map<Eigen::VectorXd>(&tmp[0], tmp.size());
+	// 	tmp.clear();  tmp.insert(tmp.end(), json_data["RSS"].begin(), json_data["RSS"].end());
+	// 	RSS = Eigen::Map<Eigen::VectorXd>(&tmp[0], tmp.size());
+	// 	tmp.clear();  tmp.insert(tmp.end(), json_data["pval_Ar"].begin(), json_data["pval_Ar"].end());
+	// 	pval_Ar = Eigen::Map<Eigen::VectorXd>(&tmp[0], tmp.size());
+
+	// 	json_in.close();
+	// }
+
+
+	void DetectionParams::load(const nlohmann::json &data)
 	{
-		using json = nlohmann::json;
-		std::ifstream json_in(path);
-
-		json json_data;
-		json_in >> json_data;
-
 		std::vector<double> tmp;
 
-		tmp.clear();  tmp.insert(tmp.end(), json_data["A"].begin(), json_data["A"].end());
+		tmp.clear();  tmp.insert(tmp.end(), data["A"].begin(), data["A"].end());
 		A = Eigen::Map<Eigen::VectorXd>(&tmp[0], tmp.size());
-		tmp.clear();  tmp.insert(tmp.end(), json_data["sigma"].begin(), json_data["sigma"].end());
+		tmp.clear();  tmp.insert(tmp.end(), data["sigma"].begin(), data["sigma"].end());
 		sigma = Eigen::Map<Eigen::VectorXd>(&tmp[0], tmp.size());
-		tmp.clear();  tmp.insert(tmp.end(), json_data["C"].begin(), json_data["C"].end());
+		tmp.clear();  tmp.insert(tmp.end(), data["C"].begin(), data["C"].end());
 		C = Eigen::Map<Eigen::VectorXd>(&tmp[0], tmp.size());
-		tmp.clear();  tmp.insert(tmp.end(), json_data["std_x"].begin(), json_data["std_x"].end());
+		tmp.clear();  tmp.insert(tmp.end(), data["std_x"].begin(), data["std_x"].end());
 		std_x = Eigen::Map<Eigen::VectorXd>(&tmp[0], tmp.size());
-		tmp.clear();  tmp.insert(tmp.end(), json_data["std_y"].begin(), json_data["std_y"].end());
+		tmp.clear();  tmp.insert(tmp.end(), data["std_y"].begin(), data["std_y"].end());
 		std_y = Eigen::Map<Eigen::VectorXd>(&tmp[0], tmp.size());
-		tmp.clear();  tmp.insert(tmp.end(), json_data["std_A"].begin(), json_data["std_A"].end());
+		tmp.clear();  tmp.insert(tmp.end(), data["std_A"].begin(), data["std_A"].end());
 		std_A = Eigen::Map<Eigen::VectorXd>(&tmp[0], tmp.size());
-		tmp.clear();  tmp.insert(tmp.end(), json_data["std_sigma"].begin(), json_data["std_sigma"].end());
+		tmp.clear();  tmp.insert(tmp.end(), data["std_sigma"].begin(), data["std_sigma"].end());
 		std_sigma = Eigen::Map<Eigen::VectorXd>(&tmp[0], tmp.size());
-		tmp.clear();  tmp.insert(tmp.end(), json_data["std_C"].begin(), json_data["std_C"].end());
+		tmp.clear();  tmp.insert(tmp.end(), data["std_C"].begin(), data["std_C"].end());
 		std_C = Eigen::Map<Eigen::VectorXd>(&tmp[0], tmp.size());
-		tmp.clear();  tmp.insert(tmp.end(), json_data["mean"].begin(), json_data["mean"].end());
+		tmp.clear();  tmp.insert(tmp.end(), data["mean"].begin(), data["mean"].end());
 		mean = Eigen::Map<Eigen::VectorXd>(&tmp[0], tmp.size());
-		tmp.clear();  tmp.insert(tmp.end(), json_data["std"].begin(), json_data["std"].end());
+		tmp.clear();  tmp.insert(tmp.end(), data["std"].begin(), data["std"].end());
 		std = Eigen::Map<Eigen::VectorXd>(&tmp[0], tmp.size());
-		tmp.clear();  tmp.insert(tmp.end(), json_data["RSS"].begin(), json_data["RSS"].end());
+		tmp.clear();  tmp.insert(tmp.end(), data["RSS"].begin(), data["RSS"].end());
 		RSS = Eigen::Map<Eigen::VectorXd>(&tmp[0], tmp.size());
-		tmp.clear();  tmp.insert(tmp.end(), json_data["pval_Ar"].begin(), json_data["pval_Ar"].end());
+		tmp.clear();  tmp.insert(tmp.end(), data["pval_Ar"].begin(), data["pval_Ar"].end());
 		pval_Ar = Eigen::Map<Eigen::VectorXd>(&tmp[0], tmp.size());
-
-		json_in.close();
 	}
 
 	void DetectionParams::print()

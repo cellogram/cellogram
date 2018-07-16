@@ -28,7 +28,8 @@ public:
 
 	float scaling = 1; // [um/px]
 
-	bool load(const std::string &path);
+	// bool load(const std::string &path);
+	bool load(const nlohmann::json &data);
 
 	void relax_with_lloyd(const int lloyd_iterations, const Eigen::MatrixXd &hull_vertices, const Eigen::MatrixXi &hull_faces, const bool fix_regular_regions);
 	void vertex_degree(Eigen::VectorXi &degree);
@@ -58,7 +59,8 @@ public:
 
 	void clear();
 
-	void save(const std::string &path);
+	// void save(const std::string &path);
+	void save(nlohmann::json &data);
 
 private:
 	void compute_triangulation();

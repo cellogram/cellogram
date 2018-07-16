@@ -106,6 +106,8 @@ namespace cellogram {
 
 	bool State::load(const std::string & path)
 	{
+		using json = nlohmann::json;
+
 		bool ok = false;
 		// clear previous
 		hull_vertices.resize(0, 0); //needed for lloyd
@@ -113,23 +115,28 @@ namespace cellogram {
 		hull_polygon.resize(0, 0);
 		regions.clear();
 
-		// Load points
-		ok = mesh.load(path);
 
-		compute_hull();
 
 		// load settings
-		using json = nlohmann::json;
-		std::ifstream json_in(path + "/cellogram/settings.json");
 
-		json json_data;
-		json_in >> json_data;
+		std::ifstream json_in(path + "/cellogram/all.json");
+
+		json unique;
+		json_in >> unique;
+
+		json settings = unique["settings"];
 
 		std::vector<double> tmp;
-		lloyd_iterations = json_data["lloyd_iterations"];
-		energy_variation_from_mean = json_data["energy_variation_from_mean"];
-		perm_possibilities = json_data["perm_possibilities"];
-		sigma = json_data["sigma"];
+		lloyd_iterations = settings["lloyd_iterations"];
+		energy_variation_from_mean = settings["energy_variation_from_mean"];
+		perm_possibilities = settings["perm_possibilities"];
+		sigma = settings["sigma"];
+
+		// Load points
+		// ok = mesh.load(path);
+		ok = mesh.load(unique["mesh"]);
+
+		compute_hull();
 
 		return ok;
 
@@ -137,10 +144,16 @@ namespace cellogram {
 
 	bool State::is_data_available(const std::string &path)
 	{
+// #ifdef WIN32
+// 		std::string save_data = path + "\\cellogram\\moved.vert";
+// #else
+// 		std::string save_data = path + "/cellogram/moved.vert";
+// #endif
+
 #ifdef WIN32
-		std::string save_data = path + "\\cellogram\\moved.vert";
+		std::string save_data = path + "\\cellogram\\all.json";
 #else
-		std::string save_data = path + "/cellogram/moved.vert";
+		std::string save_data = path + "/cellogram/all.json";
 #endif
 		std::ifstream f(save_data.c_str());
 		bool ok = f.good();
@@ -172,6 +185,7 @@ namespace cellogram {
 	{
 		using json = nlohmann::json;
 
+		json unique;
 
 		json json_data;
 		json_data["lloyd_iterations"] = lloyd_iterations;
@@ -179,30 +193,54 @@ namespace cellogram {
 		json_data["perm_possibilities"] = perm_possibilities;
 		json_data["sigma"] = sigma;
 
-		{
-			std::ofstream json_out(path + "/settings.json");
-			json_out << json_data.dump(4) << std::endl;
-			json_out.close();
-		}
+		unique["settings"] = json_data;
 
-		mesh.save(path);
 
-		{
-			std::ofstream hull_path(path + "/hull.vert");
-			hull_path << hull_vertices << std::endl;
-			hull_path.close();
-		}
+		//remove me...
+		// {
+		// 	std::ofstream json_out(path + "/settings.json");
+		// 	json_out << json_data.dump(4) << std::endl;
+		// 	json_out.close();
+		// }
+		//remove me...
+		// mesh.save(path);
 
-		{
-			std::ofstream hull_path(path + "/hull.tri");
-			hull_path << hull_faces << std::endl;
-			hull_path.close();
-		}
+		unique["mesh"] = json::object();
+		mesh.save(unique["mesh"]);
+
+		json hull;
+		hull["vertices"] = json::object();
+		hull["triangles"] = json::object();
+		write_json_mat(hull_vertices, hull["vertices"]);
+		write_json_mat(hull_faces, hull["triangles"]);
+
+		unique["hull"] = hull;
+
+
+		//remove me...
+		// {
+		// 	std::ofstream hull_path(path + "/hull.vert");
+		// 	hull_path << hull_vertices << std::endl;
+		// 	hull_path.close();
+		// }
+
+		//remove me...
+		// {
+		// 	std::ofstream hull_path(path + "/hull.tri");
+		// 	hull_path << hull_faces << std::endl;
+		// 	hull_path.close();
+		// }
 
 		//std::vector<Region> regions;
 		//std::vector<int> fixed_as_good;
 
 
+
+		{
+			std::ofstream json_out(path + "/all.json");
+			json_out << unique.dump(4) << std::endl;
+			json_out.close();
+		}
 
 		return true;
 	}

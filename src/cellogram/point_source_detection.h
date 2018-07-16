@@ -52,9 +52,11 @@ namespace cellogram {
 
 		void push_back_params(const DetectionParams &value);
 
-		void save(const std::string &path);
+		// void save(const std::string &path);
+		void save(nlohmann::json &data);
 
-		void load(const std::string &path);
+		// void load(const std::string &path);
+		void load(const nlohmann::json &data);
 
 		void print();
 	};

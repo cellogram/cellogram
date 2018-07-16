@@ -1,5 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "Mesh.h"
+#include <cellogram/State.h>
 #include <cellogram/delaunay.h>
 #include <cellogram/load_points.h>
 #include <cellogram/convex_hull.h>
@@ -92,10 +93,8 @@ namespace cellogram {
 	}
 
 
-	bool Mesh::load(const std::string & path)
+	bool Mesh::load(const nlohmann::json &data)
 	{
-		if (path.empty()) { return false; }
-		// clear previous
 		params = {};
 		detected.resize(0, 0); // detected (unmoved) point positions
 		moved.resize(0, 0); // manually moved
@@ -106,16 +105,12 @@ namespace cellogram {
 		boundary.resize(0); // list of vertices on the boundary
 		vertex_status_fixed.resize(0);
 
-		// Load data
-		load_data(path + "/cellogram/detected.vert", detected);
-		load_data(path + "/cellogram/points.vert", points);
-		load_data(path + "/cellogram/moved.vert", moved);
-		load_data(path + "/cellogram/mesh.tri", triangles);
+		read_json_mat(data["detected"], detected);
+		read_json_mat(data["points"], points);
+		read_json_mat(data["moved"], moved);
+		read_json_mat(data["triangles"], triangles);
 
-		// change when moved is also saved
-		//moved = detected;
-
-		params.load(path + "/cellogram/params.json");
+		params.load(data["params"]);
 
 		solved_vertex.resize(points.rows(), 1);
 		solved_vertex.setConstant(false);
@@ -128,6 +123,44 @@ namespace cellogram {
 
 		return true;
 	}
+
+
+	// bool Mesh::load(const std::string & path)
+	// {
+	// 	if (path.empty()) { return false; }
+	// 	// clear previous
+	// 	params = {};
+	// 	detected.resize(0, 0); // detected (unmoved) point positions
+	// 	moved.resize(0, 0); // manually moved
+	// 	points.resize(0, 0); // relaxed point positions
+	// 	triangles.resize(0, 0); // triangular mesh
+	// 	adj.clear(); // adjaceny list of triangluar mesh
+	// 	vertex_to_tri.clear();
+	// 	boundary.resize(0); // list of vertices on the boundary
+	// 	vertex_status_fixed.resize(0);
+
+	// 	// Load data
+	// 	load_data(path + "/cellogram/detected.vert", detected);
+	// 	load_data(path + "/cellogram/points.vert", points);
+	// 	load_data(path + "/cellogram/moved.vert", moved);
+	// 	load_data(path + "/cellogram/mesh.tri", triangles);
+
+	// 	// change when moved is also saved
+	// 	//moved = detected;
+
+	// 	params.load(path + "/cellogram/params.json");
+
+	// 	solved_vertex.resize(points.rows(), 1);
+	// 	solved_vertex.setConstant(false);
+
+	// 	adjacency_list(triangles, adj);
+	// 	generate_vertex_to_tri();
+
+	// 	vertex_status_fixed.resize(points.rows(), 1);
+	// 	vertex_status_fixed.setZero();
+
+	// 	return true;
+	// }
 
 	void Mesh::relax_with_lloyd(const int lloyd_iterations, const Eigen::MatrixXd &hull_vertices,const Eigen::MatrixXi &hull_faces, const bool fix_regular_regions)
 	{
@@ -650,46 +683,72 @@ namespace cellogram {
 
 	}
 
-	void Mesh::save(const std::string & path)
+
+	void Mesh::save(nlohmann::json &data)
 	{
-		{
-			std::ofstream out(path + "/detected.vert");
-			out << detected << std::endl;
-			out.close();
-		}
+		data["detected"] = json::object();
+		write_json_mat(detected, data["detected"]);
 
-		{
-			std::ofstream out(path + "/moved.vert");
-			out << moved << std::endl;
-			out.close();
-		}
+		data["moved"] = json::object();
+		write_json_mat(moved, data["moved"]);
 
-		{
-			std::ofstream out(path + "/points.vert");
-			out << points << std::endl;
-			out.close();
-		}
+		data["points"] = json::object();
+		write_json_mat(points, data["points"]);
 
-		{
-			std::ofstream out(path + "/displacement.txt");
-			out << (points-detected) << std::endl;
-			out.close();
-		}
+		data["displacement"] = json::object();
+		write_json_mat((points-detected).eval(), data["displacement"]);
 
-		{
-			std::ofstream out(path + "/mesh.tri");
-			out << triangles << std::endl;
-			out.close();
-		}
+		data["triangles"] = json::object();
+		write_json_mat(triangles, data["triangles"]);
 
-		{
-			std::ofstream out(path + "/boundary.txt");
-			out << boundary << std::endl;
-			out.close();
-		}
+		data["boundary"] = json::object();
+		write_json_mat(boundary, data["boundary"]);
 
-		params.save(path);
+		data["params"] = json::object();
+
+		params.save(data["params"]);
 	}
+
+	// void Mesh::save(const std::string & path)
+	// {
+	// 	{
+	// 		std::ofstream out(path + "/detected.vert");
+	// 		out << detected << std::endl;
+	// 		out.close();
+	// 	}
+
+	// 	{
+	// 		std::ofstream out(path + "/moved.vert");
+	// 		out << moved << std::endl;
+	// 		out.close();
+	// 	}
+
+	// 	{
+	// 		std::ofstream out(path + "/points.vert");
+	// 		out << points << std::endl;
+	// 		out.close();
+	// 	}
+
+	// 	{
+	// 		std::ofstream out(path + "/displacement.txt");
+	// 		out << (points-detected) << std::endl;
+	// 		out.close();
+	// 	}
+
+	// 	{
+	// 		std::ofstream out(path + "/mesh.tri");
+	// 		out << triangles << std::endl;
+	// 		out.close();
+	// 	}
+
+	// 	{
+	// 		std::ofstream out(path + "/boundary.txt");
+	// 		out << boundary << std::endl;
+	// 		out.close();
+	// 	}
+
+	// 	params.save(path);
+	// }
 
 	void Mesh::reset()
 	{
