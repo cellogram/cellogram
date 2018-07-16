@@ -617,6 +617,7 @@ namespace cellogram {
 		std::vector<int> dropped;
 		// std::cout<<points<<std::endl;
 		cellogram::PointsUntangler::pointsUntangler(moved, triangles, dropped, newPts);
+		// assert(moved.rows() - dropped.size() + newPts.rows() == triangles.maxCoeff() - 1);
 
 		for(int gid : dropped)
 			delete_vertex(gid, false, false);
@@ -630,6 +631,8 @@ namespace cellogram {
 
 		points = moved;
 		solved_vertex.setConstant(false);
+
+		assert(triangles.maxCoeff() < points.rows());
 
 		adjacency_list(triangles, adj);
 		generate_vertex_to_tri();
