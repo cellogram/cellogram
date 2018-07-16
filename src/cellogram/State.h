@@ -50,7 +50,7 @@ public:
 
 	std::string formulation = "LinearElasticity"; //"LinearElasticity"; // NeoHookean
 
-	static const int max_region_vertices = 50;
+	static const int max_region_vertices = 45;
 	static const int gurobi_time_limit_short = 60;
 	static const int gurobi_time_limit_long = 300;
 	bool fix_regular_regions = false;
