@@ -1,6 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "Mesh3d.h"
 #include <cellogram/Mesh.h>
+#include <cellogram/State.h>
 #include <cellogram/remesh_adaptive.h>
 #include <polyfem/State.hpp>
 #include <polyfem/Mesh3D.hpp>
@@ -146,6 +147,16 @@ namespace cellogram {
 		traction_forces = scaling * displacement;
 	}
 
+	bool Mesh3d::empty()
+	{
+		return V.size() == 0;
+	}
+
+	bool Mesh3d::analysed()
+	{
+		return traction_forces.size() > 0;
+	}
+
 	void Mesh3d::init_nano_dots(const Mesh &mesh, float padding_size, const float thickness, float E, float nu, const std::string &formulation)
 	{
 		//Uncomment to used not adaptive tetgen mesher
@@ -212,6 +223,37 @@ namespace cellogram {
 	{
 		F.resize(0, 0);
 		V.resize(0, 0);
+	}
+
+	bool Mesh3d::load(const nlohmann::json & data)
+	{
+		read_json_mat(data["V"], V);
+		read_json_mat(data["F"], F);
+		read_json_mat(data["T"], T); // maybe the Tets are unnecessary
+		read_json_mat(data["displacement"], displacement);
+		read_json_mat(data["traction_forces"], traction_forces);
+
+		return true;
+	}
+
+	void Mesh3d::save_mesh(nlohmann::json & data)
+	{
+		data["V"] = json::object();
+		write_json_mat(V, data["V"]);
+
+		data["F"] = json::object();
+		write_json_mat(F, data["F"]);
+
+		data["T"] = json::object();
+		write_json_mat(T, data["T"]);
+
+		data["displacement"] = json::object();
+		write_json_mat(displacement, data["displacement"]);
+	}
+	void Mesh3d::save_traction(nlohmann::json & data)
+	{
+		data["traction_forces"] = json::object();
+		write_json_mat(traction_forces, data["traction_forces"]);
 	}
 
 }// namespace cellogram
