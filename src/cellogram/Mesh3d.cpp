@@ -5,6 +5,7 @@
 #include <polyfem/State.hpp>
 #include <polyfem/Mesh3D.hpp>
 #include <polyfem/MeshUtils.hpp>
+#include <igl/writeOBJ.h>
 #include <polyfem/PointBasedProblem.hpp>
 #include <igl/opengl/glfw/Viewer.h>
 #include <igl/copyleft/tetgen/tetrahedralize.h>
@@ -19,6 +20,7 @@ namespace cellogram {
 			float thickness, float E, float nu, const std::string &formulation,
 			Eigen::MatrixXd &vals, Eigen::MatrixXd &traction_forces)
 		{
+			static const bool export_data = true;
 			assert(tets.cols() == 4);
 			assert(vertices.cols() == 3);
 
@@ -38,6 +40,7 @@ namespace cellogram {
 					M.cells.set_vertex(c, lv, tets(c, lv));
 				}
 			}
+
 
 			const double lambda = (E * nu) / ((1 + nu) * (1 - 2 * nu));
 			const double mu = E / (2 * (1 + nu));
@@ -82,6 +85,22 @@ namespace cellogram {
 
 			Eigen::MatrixXd disp = (mesh.detected - mesh.points) * mesh.scaling;
 			Eigen::MatrixXd pts = mesh.points * mesh.scaling;
+
+			if(export_data){
+				GEO::mesh_save(M, "test.mesh");
+				igl::writeOBJ("fun.obj",pts, mesh.triangles);
+				{
+					std::ofstream out("fun.pts");
+					out << j_args.dump(4) << std::endl;
+					out.close();
+				}
+				{
+					std::ofstream out("problem.json");
+					out << disp << std::endl;
+					out.close();
+				}
+			}
+
 
 			//Id = 1, func, mesh, coord =2, means skip z for the interpolation
 			problem.add_function(1, disp, pts, mesh.triangles, 2);
