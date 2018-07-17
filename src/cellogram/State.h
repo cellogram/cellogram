@@ -59,14 +59,14 @@ public:
 	float target_volume = 0.5;
 #endif
 
-	float E = 12.5;
+	float E = 13.58;
 	float nu = 0.49;
 
 	float eps = 0.32967032967032966;
 	float I = 0.5;
 	float L = 3;
 
-	std::string formulation = "LinearElasticity"; //"LinearElasticity"; // NeoHookean
+	std::string formulation = "NeoHookean"; //"LinearElasticity"; // NeoHookean
 
 	static const int max_region_vertices = 45;
 	static const int gurobi_time_limit_short = 60;

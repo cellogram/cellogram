@@ -111,7 +111,7 @@ namespace cellogram {
 		bool ok = false;
 		// clear previous
 		hull_vertices.resize(0, 0); //needed for lloyd
-		hull_faces.resize(0,0);
+		hull_faces.resize(0, 0);
 		hull_polygon.resize(0, 0);
 		regions.clear();
 
@@ -136,10 +136,29 @@ namespace cellogram {
 		// ok = mesh.load(path);
 		ok = mesh.load(unique["mesh"]);
 
+		if (!unique["analysis"].empty())
+			ok = mesh3d.load(unique["analysis"]);
+
+		if (!unique["analysis_setting"].empty())
+		{
+			json analysis_settings = unique["analysis_settings"];
+			std::vector<float> tmp = analysis_settings["target_mesh_size"];
+			target_mesh_size[0] = tmp[0];
+			target_mesh_size[1] = tmp[1];
+			power = analysis_settings["power"];
+			padding_size = analysis_settings["padding_size"];
+			thickness = analysis_settings["thickness"];
+			target_volume = analysis_settings["target_volume"];
+			E = analysis_settings["E"];
+			nu = analysis_settings["nu"];
+			eps = analysis_settings["eps"];
+			I = analysis_settings["I"];
+			L = analysis_settings["L"];
+		}
+
 		compute_hull();
 
 		return ok;
-
 	}
 
 	bool State::is_data_available(const std::string &path)
@@ -207,6 +226,31 @@ namespace cellogram {
 
 		unique["mesh"] = json::object();
 		mesh.save(unique["mesh"]);
+
+		unique["analysis"] = json::object();
+		if (mesh3d.empty() == false)
+		{
+			mesh3d.save_mesh(unique["analysis"]);
+		}
+		if (mesh3d.analysed())
+		{
+			mesh3d.save_traction(unique["analysis"]);
+
+			json_data.clear();
+
+			json_data["target_mesh_size"] = target_mesh_size;
+			json_data["power"] = power;
+			json_data["padding_size"] = padding_size;
+			json_data["thickness"] = thickness;
+			json_data["target_volume"] = target_volume;
+			json_data["E"] = E;
+			json_data["nu"] = nu;
+			json_data["eps"] = eps;
+			json_data["I"] = I;
+			json_data["L"] = L;
+
+			unique["analysis_settings"] = json_data;
+		}
 
 		json hull;
 		hull["vertices"] = json::object();
