@@ -21,7 +21,7 @@ namespace cellogram {
 			float thickness, float E, float nu, const std::string &formulation,
 			Eigen::MatrixXd &vals, Eigen::MatrixXd &traction_forces)
 		{
-			static const bool export_data = true;
+			// static const bool export_data = true;
 			assert(tets.cols() == 4);
 			assert(vertices.cols() == 3);
 
@@ -41,6 +41,12 @@ namespace cellogram {
 					M.cells.set_vertex(c, lv, tets(c, lv));
 				}
 			}
+			M.cells.connect();
+
+			// if(export_data){
+			// 	GEO::mesh_save(M, "mesh.mesh");
+			// 	GEO::mesh_load("mesh.mesh", M);
+			// }
 
 
 			const double lambda = (E * nu) / ((1 + nu) * (1 - 2 * nu));
@@ -87,20 +93,43 @@ namespace cellogram {
 			Eigen::MatrixXd disp = (mesh.detected - mesh.points) * mesh.scaling;
 			Eigen::MatrixXd pts = mesh.points * mesh.scaling;
 
-			if(export_data){
-				GEO::mesh_save(M, "test.mesh");
-				igl::writeOBJ("fun.obj",pts, mesh.triangles);
-				{
-					std::ofstream out("fun.pts");
-					out << j_args.dump(4) << std::endl;
-					out.close();
-				}
-				{
-					std::ofstream out("problem.json");
-					out << disp << std::endl;
-					out.close();
-				}
-			}
+			// if(export_data){
+			// 	GEO::mesh_save(M, "mesh.mesh");
+			// 	{
+			// 		std::ofstream out("problem.json");
+			// 		out.precision(100);
+			// 		out << j_args.dump(4) << std::endl;
+			// 		out.close();
+			// 	}
+			// 	{
+			// 		std::ofstream out("fun.pts");
+			// 		out.precision(100);
+			// 		out << pts << std::endl;
+			// 		out.close();
+			// 	}
+
+			// 	{
+			// 		std::ofstream out("fun.tri");
+			// 		out.precision(100);
+			// 		out << mesh.triangles << std::endl;
+			// 		out.close();
+			// 	}
+
+			// 	{
+			// 		std::ofstream out("fun.txt");
+			// 		out.precision(100);
+			// 		out << disp << std::endl;
+			// 		out.close();
+			// 	}
+
+			// 	{
+			// 		std::ofstream out("tags.txt");
+
+			// 		for(int i = 0; i < state.mesh->n_faces(); ++i)
+			// 			out << state.mesh->get_boundary_id(i) << std::endl;
+			// 		out.close();
+			// 	}
+			// }
 
 
 			//Id = 1, func, mesh, coord =2, means skip z for the interpolation
@@ -108,6 +137,8 @@ namespace cellogram {
 
 			//Id = 3, zero Dirichelt
 			problem.add_constant(3, Eigen::Vector3d(0,0,0));
+
+			// state.compute_mesh_stats();
 
 			state.build_basis();
 			state.build_polygonal_basis();
@@ -118,13 +149,42 @@ namespace cellogram {
 
 			state.solve_problem();
 
-			state.interpolate_boundary_function(vertices, faces, state.sol, vals);
-			state.interpolate_boundary_tensor_function(vertices, faces, state.sol, traction_forces);
+			//true = compute average insteat of just integral
+			state.interpolate_boundary_function(vertices, faces, state.sol, true, vals);
+			state.interpolate_boundary_tensor_function(vertices, faces, state.sol, true, traction_forces);
 			// vals = Eigen::Map<Eigen::MatrixXd>(state.sol.data(), 3, vertices.rows());
 			// vals = Eigen::Map<Eigen::MatrixXd>(state.rhs.data(), 3, vertices.rows());
 			// vals = vals.transpose().eval();
 			// std::cout<<vals<<std::endl;
-			// std::cout<<state.sol<<std::endl;
+
+			
+
+			// if(export_data)
+			// {
+			// 	std::ofstream out("sol.txt");
+			// 	out.precision(100);
+			// 	out << state.sol << std::endl;
+			// 	out.close();
+			// }
+
+			// if(export_data)
+			// {
+			// 	Eigen::MatrixXd nodes(state.n_bases, state.mesh->dimension());
+			// 	for(const auto &eb : state.bases)
+			// 	{
+			// 		for(const auto &b : eb.bases)
+			// 		{
+			// 			for(const auto &lg : b.global())
+			// 			{
+			// 				nodes.row(lg.index) = lg.node;
+			// 			}
+			// 		}
+			// 	}
+			// 	std::ofstream out("nodes.txt");
+			// 	out.precision(100);
+			// 	out << nodes;
+			// 	out.close();
+			// }
 
 
 			// auto &tmp_mesh = *dynamic_cast<polyfem::Mesh3D *>(state.mesh.get());
@@ -248,7 +308,7 @@ namespace cellogram {
 	{
 		read_json_mat(data["V"], V);
 		read_json_mat(data["F"], F);
-		read_json_mat(data["T"], T); // maybe the Tets are unnecessary
+		// read_json_mat(data["T"], T); // maybe the Tets are unnecessary
 		read_json_mat(data["displacement"], displacement);
 		read_json_mat(data["traction_forces"], traction_forces);
 

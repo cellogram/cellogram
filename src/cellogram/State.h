@@ -66,7 +66,7 @@ public:
 	float I = 0.5;
 	float L = 3;
 
-	std::string formulation = "NeoHookean"; //"LinearElasticity"; // NeoHookean
+	std::string formulation = "LinearElasticity"; //"LinearElasticity"; // NeoHookean
 
 	static const int max_region_vertices = 45;
 	static const int gurobi_time_limit_short = 60;
