@@ -652,9 +652,6 @@ namespace cellogram {
 		cellogram::PointsUntangler::pointsUntangler(moved, triangles, dropped, newPts);
 		// assert(moved.rows() - dropped.size() + newPts.rows() == triangles.maxCoeff() - 1);
 
-		for(int gid : dropped)
-			delete_vertex(gid, false, false);
-
 		for(int i = 0; i < newPts.rows(); ++i){
 			Eigen::Vector3d tmp; tmp.setZero();
 			for(int j = 0; j < newPts.cols(); ++j)
@@ -663,12 +660,14 @@ namespace cellogram {
 		}
 
 		points = moved;
+
+		for(int gid : dropped)
+			delete_vertex(gid, false, true);
+
+
 		solved_vertex.setConstant(false);
 
 		assert(triangles.maxCoeff() < points.rows());
-
-		adjacency_list(triangles, adj);
-		generate_vertex_to_tri();
 	}
 
 	void Mesh::clear()
