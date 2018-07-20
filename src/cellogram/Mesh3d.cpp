@@ -18,7 +18,7 @@ namespace cellogram {
 	namespace
 	{
 		void compute_analysis(const Eigen::MatrixXd &vertices, const Eigen::MatrixXi &faces, const Eigen::MatrixXi &tets, const Mesh &mesh,
-			float thickness, float E, float nu, const std::string &formulation,
+			float thickness, float E, float nu, const std::string &formulation, double scaling,
 			Eigen::MatrixXd &vals, Eigen::MatrixXd &traction_forces)
 		{
 			// static const bool export_data = true;
@@ -90,8 +90,8 @@ namespace cellogram {
 
 			polyfem::PointBasedTensorProblem &problem = *dynamic_cast<polyfem::PointBasedTensorProblem *>(state.problem.get());
 
-			Eigen::MatrixXd disp = (mesh.detected - mesh.points) * mesh.scaling;
-			Eigen::MatrixXd pts = mesh.points * mesh.scaling;
+			Eigen::MatrixXd disp = (mesh.detected - mesh.points) * scaling;
+			Eigen::MatrixXd pts = mesh.points * scaling;
 
 			// if(export_data){
 			// 	GEO::mesh_save(M, "mesh.mesh");
@@ -215,15 +215,15 @@ namespace cellogram {
 		}
 	}
 
-	void Mesh3d::init_pillars(const Mesh &mesh, float eps, float I, float L)
+	void Mesh3d::init_pillars(const Mesh &mesh, float eps, float I, float L, double scaling)
 	{
 		clear();
 
-		displacement = (mesh.detected - mesh.points) * mesh.scaling;
-		V = mesh.points * mesh.scaling;
+		displacement = (mesh.detected - mesh.points) * scaling;
+		V = mesh.points * scaling;
 
-		const float scaling = 3*eps * I /(L*L*L);
-		traction_forces = scaling * displacement;
+		const float bending_force = 3*eps * I /(L*L*L);
+		traction_forces = bending_force * displacement;
 	}
 
 	bool Mesh3d::empty()
@@ -236,7 +236,7 @@ namespace cellogram {
 		return traction_forces.size() > 0;
 	}
 
-	void Mesh3d::init_nano_dots(const Mesh &mesh, float padding_size, const float thickness, float E, float nu, const std::string &formulation)
+	void Mesh3d::init_nano_dots(const Mesh &mesh, float padding_size, const float thickness, float E, float nu, double scaling, const std::string &formulation)
 	{
 		//Uncomment to used not adaptive tetgen mesher
 // 		clear();
@@ -295,7 +295,7 @@ namespace cellogram {
 // 		F = TF;
 // 		T = TT;
 
-		compute_analysis(V, F, T, mesh, thickness, E, nu, formulation, displacement, traction_forces);
+		compute_analysis(V, F, T, mesh, thickness, E, nu, formulation, scaling, displacement, traction_forces);
 	}
 
 	void Mesh3d::clear()

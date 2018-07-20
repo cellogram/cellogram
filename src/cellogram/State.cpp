@@ -38,6 +38,7 @@ namespace cellogram {
      		})"_json;
 
 		json default_analysis_settings = R"({
+			"scaling": 0.2,
 			"E": 13.578,
 			"I": 0.5,
 			"L": 3.0,
@@ -150,6 +151,7 @@ namespace cellogram {
 		target_mesh_size[0] = tmp[0];
 		target_mesh_size[1] = tmp[1];
 		power = settings["power"];
+		power = settings["scaling"];
 		padding_size = settings["padding_size"];
 		thickness = settings["thickness"];
 		target_volume = settings["target_volume"];
@@ -297,6 +299,7 @@ namespace cellogram {
 			json_data["eps"] = eps;
 			json_data["I"] = I;
 			json_data["L"] = L;
+			json_data["scaling"] = scaling;
 
 			unique["analysis_settings"] = json_data;
 		}
@@ -938,7 +941,7 @@ namespace cellogram {
 		Eigen::MatrixXd V;
 		Eigen::MatrixXi F;
 		Eigen::VectorXd S;
-		mesh.get_background_mesh(V, F, S, padding_size);
+		mesh.get_background_mesh(scaling, V, F, S, padding_size);
 
 		// Rescale displacement field
 		S = (S.array() - S.minCoeff()) / std::max(1e-9, (S.maxCoeff() - S.minCoeff()));
@@ -1002,7 +1005,7 @@ namespace cellogram {
 		Eigen::MatrixXd V;
 		Eigen::MatrixXi F;
 		Eigen::VectorXd S;
-		mesh.get_background_mesh(V, F, S, padding_size);
+		mesh.get_background_mesh(scaling, V, F, S, padding_size);
 
 		// Interpolate
 		Eigen::MatrixXd VP = mesh3d.V.leftCols<2>();
@@ -1024,11 +1027,11 @@ namespace cellogram {
 	void State::analyze_3d_mesh() {
 		if(image_from_pillars)
 		{
-			mesh3d.init_pillars(mesh, eps, I, L);
+			mesh3d.init_pillars(mesh, eps, I, L, scaling);
 		}
 		else
 		{
-			mesh3d.init_nano_dots(mesh, padding_size, thickness, E, nu, formulation);
+			mesh3d.init_nano_dots(mesh, padding_size, thickness, E, nu, scaling, formulation);
 		}
 	}
 

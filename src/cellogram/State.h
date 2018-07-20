@@ -59,6 +59,7 @@ public:
 	float target_volume = 0.5;
 #endif
 
+	float scaling; // [um/px]
 	float E = 13.58;
 	float nu = 0.49;
 
