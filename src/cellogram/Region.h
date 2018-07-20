@@ -72,7 +72,7 @@ namespace cellogram {
 		Eigen::MatrixXi get_triangulation(const Eigen::MatrixXi &F);
 
 #ifdef CELLOGRAM_WITH_GUROBI
-		State s;
+		gurobi::State s;
 #endif
 	};
 } // namespace cellogram

@@ -765,7 +765,6 @@ namespace cellogram {
 		// delaunay_triangulation(points, triangles);
 		constrained_delaunay_triangulation(points, boundary, triangles);
 
-		delaunay_triangulation(points, triangles);
 		// Calculate the graph adjancency
 		adjacency_list(triangles, adj);
 		generate_vertex_to_tri();

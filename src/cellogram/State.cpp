@@ -29,6 +29,38 @@ namespace cellogram {
 
 	// -----------------------------------------------------------------------------
 
+	namespace {
+		json default_detection_settings = R"({
+			"energy_variation_from_mean": 2.0,
+			"lloyd_iterations": 20,
+			"perm_possibilities": 15,
+			"sigma": 2.0
+     		})"_json;
+
+		json default_analysis_settings = R"({
+			"E": 13.578,
+			"I": 0.5,
+			"L": 3.0,
+			"eps": 0.32967033982276917,
+			"formulation": "LinearElasticity",
+			"image_from_pillars": false,
+			"nu": 0.49,
+			"padding_size": 25.0,
+			"power": 2.0,
+			"target_mesh_size": [
+				0.0010000000474974513,
+				0.10000000149011612
+			],
+			"target_volume": 0.25,
+			"thickness": 30.0
+     		})"_json;
+	}
+
+
+	State::State() {
+	}
+
+
 	State &State::state() {
 		static State instance;
 		return instance;
@@ -103,7 +135,47 @@ namespace cellogram {
 	}
 
 	// -----------------------------------------------------------------------------
+	void State::load_detection_settings(json args) {
+		json settings = default_detection_settings;
+		settings.merge_patch(args);
+		lloyd_iterations = settings["lloyd_iterations"];
+		energy_variation_from_mean = settings["energy_variation_from_mean"];
+		perm_possibilities = settings["perm_possibilities"];
+		sigma = settings["sigma"];
+	}
+	void State::load_analysis_settings(json args) {
+		json settings = default_analysis_settings;
+		settings.merge_patch(args);
+		std::vector<float> tmp = settings["target_mesh_size"];
+		target_mesh_size[0] = tmp[0];
+		target_mesh_size[1] = tmp[1];
+		power = settings["power"];
+		padding_size = settings["padding_size"];
+		thickness = settings["thickness"];
+		target_volume = settings["target_volume"];
+		E = settings["E"];
+		nu = settings["nu"];
+		eps = settings["eps"];
+		I = settings["I"];
+		L = settings["L"];
+		formulation = settings["formulation"];
+		image_from_pillars = settings["image_from_pillars"];
+	}
 
+	void State::load_settings(json args) {
+		load_detection_settings(args.value("detection_settings", json::object()));
+		load_analysis_settings(args.value("analysis_settings", json::object()));
+	}
+
+	void State::load_settings(const std::string &path) {
+		json settings = json::object();
+		if (!path.empty()) {
+			std::ifstream in(path);
+			in >> settings;
+		}
+		load_settings(settings);
+	}
+	
 	bool State::load(const std::string & path)
 	{
 		using json = nlohmann::json;
@@ -123,15 +195,12 @@ namespace cellogram {
 
 		json unique;
 		json_in >> unique;
-
-		json settings = unique["settings"];
-
-		std::vector<double> tmp;
-		lloyd_iterations = settings["lloyd_iterations"];
-		energy_variation_from_mean = settings["energy_variation_from_mean"];
-		perm_possibilities = settings["perm_possibilities"];
-		sigma = settings["sigma"];
-
+		
+		if (!unique["settings"].empty())
+		{
+			json settings = unique["settings"];
+			load_settings(settings);
+		}
 		// Load points
 		// ok = mesh.load(path);
 		ok = mesh.load(unique["mesh"]);
@@ -142,18 +211,7 @@ namespace cellogram {
 		if (!unique["analysis_setting"].empty())
 		{
 			json analysis_settings = unique["analysis_settings"];
-			std::vector<float> tmp = analysis_settings["target_mesh_size"];
-			target_mesh_size[0] = tmp[0];
-			target_mesh_size[1] = tmp[1];
-			power = analysis_settings["power"];
-			padding_size = analysis_settings["padding_size"];
-			thickness = analysis_settings["thickness"];
-			target_volume = analysis_settings["target_volume"];
-			E = analysis_settings["E"];
-			nu = analysis_settings["nu"];
-			eps = analysis_settings["eps"];
-			I = analysis_settings["I"];
-			L = analysis_settings["L"];
+			load_analysis_settings(analysis_settings);
 		}
 
 		compute_hull();
@@ -214,16 +272,6 @@ namespace cellogram {
 
 		unique["settings"] = json_data;
 
-
-		//remove me...
-		// {
-		// 	std::ofstream json_out(path + "/settings.json");
-		// 	json_out << json_data.dump(4) << std::endl;
-		// 	json_out.close();
-		// }
-		//remove me...
-		// mesh.save(path);
-
 		unique["mesh"] = json::object();
 		mesh.save(unique["mesh"]);
 
@@ -237,7 +285,8 @@ namespace cellogram {
 			mesh3d.save_traction(unique["analysis"]);
 
 			json_data.clear();
-
+			json_data["formulation"] = formulation;
+			json_data["image_from_pillars"] = image_from_pillars;
 			json_data["target_mesh_size"] = target_mesh_size;
 			json_data["power"] = power;
 			json_data["padding_size"] = padding_size;
@@ -259,26 +308,6 @@ namespace cellogram {
 		write_json_mat(hull_faces, hull["triangles"]);
 
 		unique["hull"] = hull;
-
-
-		//remove me...
-		// {
-		// 	std::ofstream hull_path(path + "/hull.vert");
-		// 	hull_path << hull_vertices << std::endl;
-		// 	hull_path.close();
-		// }
-
-		//remove me...
-		// {
-		// 	std::ofstream hull_path(path + "/hull.tri");
-		// 	hull_path << hull_faces << std::endl;
-		// 	hull_path.close();
-		// }
-
-		//std::vector<Region> regions;
-		//std::vector<int> fixed_as_good;
-
-
 
 		{
 			std::ofstream json_out(path + "/all.json");

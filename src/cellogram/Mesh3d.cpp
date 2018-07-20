@@ -229,7 +229,7 @@ namespace cellogram {
 	{
 		read_json_mat(data["V"], V);
 		read_json_mat(data["F"], F);
-		read_json_mat(data["T"], T); // maybe the Tets are unnecessary
+		//read_json_mat(data["T"], T); // maybe the Tets are unnecessary
 		read_json_mat(data["displacement"], displacement);
 		read_json_mat(data["traction_forces"], traction_forces);
 
@@ -244,8 +244,8 @@ namespace cellogram {
 		data["F"] = json::object();
 		write_json_mat(F, data["F"]);
 
-		data["T"] = json::object();
-		write_json_mat(T, data["T"]);
+		//data["T"] = json::object();
+		//write_json_mat(T, data["T"]);
 
 		data["displacement"] = json::object();
 		write_json_mat(displacement, data["displacement"]);

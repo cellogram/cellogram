@@ -36,13 +36,13 @@ public:
 	~State() = default;
 
 private:
-	State() { }
+	State();
 
 public:
-	int lloyd_iterations = 20;
-	float energy_variation_from_mean = 1.7;
-	int perm_possibilities = 12;
-	float sigma = 2.2;
+	int lloyd_iterations;
+	float energy_variation_from_mean;
+	int perm_possibilities;
+	float sigma;
 
 	bool image_from_pillars = false;
 
@@ -66,7 +66,7 @@ public:
 	float I = 0.5;
 	float L = 3;
 
-	std::string formulation = "NeoHookean"; //"LinearElasticity"; // NeoHookean
+	std::string formulation = "LinearElasticity"; //"LinearElasticity"; // NeoHookean
 
 	static const int max_region_vertices = 45;
 	static const int gurobi_time_limit_short = 60;
@@ -90,6 +90,10 @@ public:
 	std::vector<Region> regions;
 
 	bool load(const std::string &path);
+	void load_settings(const std::string &path);
+	void load_settings(json args);
+	void load_detection_settings(json args);
+	void load_analysis_settings(json args);
 	bool is_data_available(const std::string &path);
 	bool load_image(const std::string fname);
 	//bool load_param(const std::string &path);
