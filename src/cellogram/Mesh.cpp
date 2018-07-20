@@ -409,7 +409,7 @@ namespace cellogram {
 		}
 	}
 
-	void Mesh::get_physical_bounding_box(Eigen::Vector2d & min, Eigen::Vector2d & max) const
+	void Mesh::get_physical_bounding_box(double scaling, Eigen::Vector2d & min, Eigen::Vector2d & max) const
 	{
 		Eigen::RowVector3d maxVal = points.colwise().maxCoeff();
 		Eigen::RowVector3d minVal = points.colwise().minCoeff();
@@ -420,7 +420,7 @@ namespace cellogram {
 		// std::cout << "max:\n" << max << "\n\nmin:\n" << min << std::endl;
 	}
 
-	void Mesh::get_background_mesh(Eigen::MatrixXd &V, Eigen::MatrixXi &F, Eigen::VectorXd &S, double padding) const {
+	void Mesh::get_background_mesh(double scaling, Eigen::MatrixXd &V, Eigen::MatrixXi &F, Eigen::VectorXd &S, double padding) const {
 		Eigen::MatrixXd BV;
 		Eigen::MatrixXi BF;
 		V = points.leftCols<2>();
@@ -760,7 +760,6 @@ namespace cellogram {
 		// delaunay_triangulation(points, triangles);
 		constrained_delaunay_triangulation(points, boundary, triangles);
 
-		delaunay_triangulation(points, triangles);
 		// Calculate the graph adjancency
 		adjacency_list(triangles, adj);
 		generate_vertex_to_tri();

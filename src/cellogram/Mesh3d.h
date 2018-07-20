@@ -20,8 +20,8 @@ namespace cellogram {
 		bool empty();
 		bool analysed();
 
-		void init_nano_dots(const Mesh &mesh, float padding_size, float thickness, float E, float nu, const std::string &formulation);
-		void init_pillars(const Mesh &mesh, float eps, float I, float L);
+		void init_nano_dots(const Mesh &mesh, float padding_size, float thickness, float E, float nu, double  scaling, const std::string &formulation);
+		void init_pillars(const Mesh &mesh, float eps, float I, float L, double scaling);
 		void clear();
 
 		bool load(const nlohmann::json &data);

@@ -589,7 +589,7 @@ void UIState::draw_analysis_menu() {
 		}
 	} else {
 		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.40f);
-		ImGui::InputFloat("Scaling [µm/px]", &state.mesh.scaling, 0.01, 0.001, 3);
+		ImGui::InputFloat("Scaling [µm/px]", &state.scaling, 0.01, 0.001, 3);
 		ImGui::InputFloat("Padding [µm]", &state.padding_size, 1, 0, 0);
 		ImGui::InputFloat("Thickness [µm]", &state.thickness, 1, 0, 0);
 		ImGui::InputFloat("Target volume (%)", &state.target_volume, 0, 0, 3);

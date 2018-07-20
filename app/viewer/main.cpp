@@ -1,6 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "UIState.h"
 #include "CLI11.hpp"
+#include <cellogram/State.h>
 #include <geogram/basic/command_line.h>
 #include <geogram/basic/command_line_args.h>
 ////////////////////////////////////////////////////////////////////////////////
@@ -32,21 +33,45 @@ int main(int argc, char *argv[]) {
 	// Default arguments
 	struct {
 		std::string input = DATA_DIR "perfects.png";
+		std::string settings = "";
+		bool cmd = false;
 	} args;
 
 	// Parse arguments
 	CLI::App app{"cellogram"};
 	app.add_option("input,-i,--input", args.input, "Input image.");
+	app.add_option("-s,--settings", args.settings, "Path to json settings");
+	app.add_flag("-c,--cmd", args.cmd);
 	try {
 		app.parse(argc, argv);
 	} catch (const CLI::ParseError &e) {
 		return app.exit(e);
 	}
 
-	UIState::ui_state().initialize();
-	UIState::ui_state().load_image(args.input);
-	//UIState::ui_state().load_param(args.param);
-	UIState::ui_state().launch();
+	if (args.cmd)
+	{
+		auto &state = cellogram::State::state();
+		state.load_image(args.input);
+		state.load_settings(args.settings);
 
+		state.detect_vertices();
+		state.untangle();
+		state.detect_bad_regions();
+		state.resolve_regions();
+		state.final_relax();
+
+		state.mesh_3d_uniform();
+		state.remesh_3d_adaptive();
+		state.analyze_3d_mesh();
+
+		//state.save();
+	}
+	else
+	{
+		UIState::ui_state().initialize();
+		UIState::ui_state().load_image(args.input);
+		UIState::ui_state().state.load_settings(args.settings);
+		UIState::ui_state().launch();
+	}
 	return 0;
 }

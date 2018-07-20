@@ -882,7 +882,7 @@ void UIState::viewer_control_3d() {
 	if (state.mesh3d.V.size() == 0)
 		return;
 
-	Eigen::MatrixXd Vtmp = state.mesh3d.V / state.mesh.scaling;
+	Eigen::MatrixXd Vtmp = state.mesh3d.V / state.scaling;
 
 	// Vtmp.col(2).array() -= 0.1;
 	// physical_data().set_mesh(Vtmp, state.mesh3d.F);
