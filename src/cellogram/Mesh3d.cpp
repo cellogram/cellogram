@@ -58,7 +58,7 @@ namespace cellogram {
 
 				{"tensor_formulation", formulation},
 
-				{"discr_order", 1},
+				{"discr_order", 2},
 
 				{"nl_solver_rhs_steps", 5},
 
@@ -133,7 +133,10 @@ namespace cellogram {
 
 
 			//Id = 1, func, mesh, coord =2, means skip z for the interpolation
-			problem.add_function(1, disp, pts, mesh.triangles, 2);
+			Eigen::Matrix<bool, 3, 1> dirichet_dims;
+			dirichet_dims(0) = dirichet_dims(1) = true;
+			dirichet_dims(2) = false; // z is not dirichet
+			problem.add_function(1, disp, pts, mesh.triangles, 2, dirichet_dims);
 
 			//Id = 3, zero Dirichelt
 			problem.add_constant(3, Eigen::Vector3d(0,0,0));

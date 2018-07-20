@@ -257,7 +257,7 @@ namespace cellogram {
 
 	}
 
-	void Mesh::delete_vertex(const int index, bool recompute_triangulation, bool update_triangulation)
+	void Mesh::delete_vertex(const int index, bool recompute_triangulation)
 	{
 		// Delete vertex
 		removeRow(detected, index);
@@ -286,12 +286,10 @@ namespace cellogram {
 			// delete from points
 			removeRow(points, index);
 
-			if(!update_triangulation)
-				return;
-
 			// delete triangles
-			std::vector<int> ind, ind2;
+			std::vector<int> ind;
 			ind = vertex_to_tri[index];
+			std::sort(ind.begin(), ind.end());
 
 			for (int i = ind.size()-1; i >= 0; i--)
 			{
@@ -659,12 +657,10 @@ namespace cellogram {
 			add_vertex(tmp, false);
 		}
 
-		points = moved;
-
 		for(int gid : dropped)
-			delete_vertex(gid, false, true);
+			delete_vertex(gid, false);
 
-
+		points = moved;
 		solved_vertex.setConstant(false);
 
 		assert(triangles.maxCoeff() < points.rows());
