@@ -160,7 +160,7 @@ namespace cellogram {
 		eps = settings["eps"];
 		I = settings["I"];
 		L = settings["L"];
-		formulation = settings["formulation"];
+		formulation = settings["formulation"].get<std::string>();
 		image_from_pillars = settings["image_from_pillars"];
 	}
 
