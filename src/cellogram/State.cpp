@@ -151,7 +151,7 @@ namespace cellogram {
 		target_mesh_size[0] = tmp[0];
 		target_mesh_size[1] = tmp[1];
 		power = settings["power"];
-		power = settings["scaling"];
+		scaling = settings["scaling"];
 		padding_size = settings["padding_size"];
 		thickness = settings["thickness"];
 		target_volume = settings["target_volume"];
