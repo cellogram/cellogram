@@ -69,7 +69,7 @@ int main(int argc, char** argv) {
 	Eigen::VectorXi neigh(Eigen::Map<Eigen::VectorXi>(tmpi.data(), tmpi.cols()*tmpi.rows()));
 
 	// Perparing data
-	State s;
+	cellogram::gurobi::State s;
 	s.init(vB, vI, neigh);
 	s.fill_hole();
 

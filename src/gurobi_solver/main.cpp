@@ -10,7 +10,7 @@
 using namespace std;
 using namespace Eigen;
 
-State s;
+cellogram::gurobi::State s;
 generateQ q;
 gurobiModel g;
 

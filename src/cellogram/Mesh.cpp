@@ -664,6 +664,9 @@ namespace cellogram {
 		solved_vertex.setConstant(false);
 
 		assert(triangles.maxCoeff() < points.rows());
+
+		adjacency_list(triangles, adj);
+		generate_vertex_to_tri();
 	}
 
 	void Mesh::clear()

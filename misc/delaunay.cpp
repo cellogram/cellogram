@@ -1031,7 +1031,7 @@ namespace {
 		/* 0 At this point we assume that lloyd's has finished
 		 It is ok to produce the matrix triangles, if it does
 		 not already exist */
-		State s;
+		cellogram::gurobi::State s;
 		generateQ q;
 		gurobiModel g;
 		if (triangles.size() == 0)
