@@ -10,6 +10,8 @@ namespace cellogram {
 
 namespace StringUtils {
 
+	int cellogram_mkdir(const std::string &path);
+
 	// Split a string into tokens
 	std::vector<std::string> split(const std::string &str, const std::string &delimiters = " ");
 

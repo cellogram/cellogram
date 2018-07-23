@@ -8,6 +8,18 @@ namespace StringUtils {
 
 // -----------------------------------------------------------------------------
 
+
+	int cellogram_mkdir(const std::string &path) {
+		int nError;
+#if defined(_WIN32)
+		std::wstring widestr = std::wstring(path.begin(), path.end());
+		nError = _wmkdir(widestr.c_str()); // can be used on Windows
+#else
+		nError = mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH); // can be used on non-Windows
+#endif
+		return nError;
+	}
+
 // Split a string into tokens
 std::vector<std::string> split(const std::string &str, const std::string &delimiters) {
 	// Skip delimiters at beginning.

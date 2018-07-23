@@ -17,17 +17,17 @@ namespace cellogram {
 
 	namespace {
 
-	int cellogram_mkdir(const std::string &path) {
-		int nError;
-#if defined(_WIN32)
-		std::wstring widestr = std::wstring(path.begin(), path.end());
-		nError = _wmkdir(widestr.c_str()); // can be used on Windows
-#else
-		nError = mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH); // can be used on non-Windows
-#endif
-		return nError;
-	}
-
+//	int cellogram_mkdir(const std::string &path) {
+//		int nError;
+//#if defined(_WIN32)
+//		std::wstring widestr = std::wstring(path.begin(), path.end());
+//		nError = _wmkdir(widestr.c_str()); // can be used on Windows
+//#else
+//		nError = mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH); // can be used on non-Windows
+//#endif
+//		return nError;
+//	}
+//
 	void get_region_color(const int &status, Eigen::RowVector3d &color) {
 		switch (status) {
 			case Region::OK:
@@ -379,7 +379,7 @@ void UIState::detect_vertices() {
 
 bool UIState::save() {
 	int nError = 0;
-	cellogram_mkdir(save_dir);
+	StringUtils::cellogram_mkdir(save_dir);
 	//cellogram_mkdir(save_dir + "/cellogram");
 	bool ok = state.save(save_dir);
 	data_available = state.is_data_available(save_dir);
@@ -519,10 +519,10 @@ void UIState::export_region() {
 	 }
 	 E.conservativeResize(index, 2);
 
-	 cellogram_mkdir(save_dir);
-	 cellogram_mkdir(save_dir + "/cellogram");
-	 cellogram_mkdir(save_dir + "/cellogram" + "/regions");
-	 cellogram_mkdir(save_dir + "/cellogram" + "/regions/" +
+	 StringUtils::cellogram_mkdir(save_dir);
+	 StringUtils::cellogram_mkdir(save_dir + "/cellogram");
+	 StringUtils::cellogram_mkdir(save_dir + "/cellogram" + "/regions");
+	 StringUtils::cellogram_mkdir(save_dir + "/cellogram" + "/regions/" +
 	 std::to_string(selected_region));
 
 	 std::string path = save_dir + "/cellogram" + "/regions/" +
