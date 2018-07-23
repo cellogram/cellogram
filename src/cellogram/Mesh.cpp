@@ -656,6 +656,7 @@ namespace cellogram {
 				tmp(j) = newPts(i,j);
 			add_vertex(tmp, false);
 		}
+		std::cout << "New points added (" << newPts << ")" << std::endl;
 
 		for(int gid : dropped)
 			delete_vertex(gid, false);

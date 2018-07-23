@@ -576,10 +576,13 @@ void UIState::draw_analysis_menu() {
 
 	if (state.image_from_pillars) {
 		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.40f);
-		ImGui::InputFloat("eps", &state.eps, 0.1, 0.01, 3);
-		ImGui::InputFloat("I [µm]", &state.I, 0.1, 0.01, 3);
+		ImGui::InputFloat("E [MPa]", &state.eps, 0.1, 0.01, 3);
+		ShowTooltip("Young's modulus of pillars");
+		ImGui::InputFloat("I [µm^4]", &state.I, 0.1, 0.01, 3);
+		ShowTooltip("Area moment of inertia");
 		ImGui::InputFloat("L [µm]", &state.L, 0.1, 0.01, 3);
-		ImGui::PopItemWidth();
+		ShowTooltip("Length of pillars");
+		ImGui::PopItemWidth(); //---> the resulting force is in micro-newtons (if displacements or in micrometers)
 
 		if (ImGui::Button("Analyze 3D mesh", ImVec2(-1, 0))) {
 			state.analyze_3d_mesh();

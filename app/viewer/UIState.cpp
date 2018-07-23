@@ -380,8 +380,8 @@ void UIState::detect_vertices() {
 bool UIState::save() {
 	int nError = 0;
 	cellogram_mkdir(save_dir);
-	cellogram_mkdir(save_dir + "/cellogram");
-	bool ok = state.save(save_dir + "/cellogram");
+	//cellogram_mkdir(save_dir + "/cellogram");
+	bool ok = state.save(save_dir);
 	data_available = state.is_data_available(save_dir);
 
 	return ok;

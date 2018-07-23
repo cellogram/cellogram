@@ -165,7 +165,7 @@ namespace cellogram {
 	}
 
 	void State::load_settings(json args) {
-		load_detection_settings(args.value("detection_settings", json::object()));
+		load_detection_settings(args.value("settings", json::object()));
 		load_analysis_settings(args.value("analysis_settings", json::object()));
 	}
 
@@ -193,16 +193,16 @@ namespace cellogram {
 
 		// load settings
 
-		std::ifstream json_in(path + "/cellogram/all.json");
+		std::ifstream json_in(path + "/all.json");
 
 		json unique;
 		json_in >> unique;
-		
-		if (!unique["settings"].empty())
+		load_settings(unique);
+		/*if (!unique["settings"].empty())
 		{
 			json settings = unique["settings"];
 			load_settings(settings);
-		}
+		}*/
 		// Load points
 		// ok = mesh.load(path);
 		ok = mesh.load(unique["mesh"]);
@@ -210,11 +210,11 @@ namespace cellogram {
 		if (!unique["analysis"].empty())
 			ok = mesh3d.load(unique["analysis"]);
 
-		if (!unique["analysis_setting"].empty())
-		{
-			json analysis_settings = unique["analysis_settings"];
-			load_analysis_settings(analysis_settings);
-		}
+		//if (!unique["analysis_setting"].empty())
+		//{
+		//	json analysis_settings = unique["analysis_settings"];
+		//	load_analysis_settings(analysis_settings);
+		//}
 
 		compute_hull();
 
@@ -230,9 +230,9 @@ namespace cellogram {
 // #endif
 
 #ifdef WIN32
-		std::string save_data = path + "\\cellogram\\all.json";
+		std::string save_data = path + "\\all.json";
 #else
-		std::string save_data = path + "/cellogram/all.json";
+		std::string save_data = path + "/all.json";
 #endif
 		std::ifstream f(save_data.c_str());
 		bool ok = f.good();

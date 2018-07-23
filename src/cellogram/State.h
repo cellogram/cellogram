@@ -49,23 +49,23 @@ public:
 	MmgOptions mmg_options;
 
 	float target_mesh_size[2] = {0.001f, 0.1f};
-	float power = 2.0;
-	float padding_size = 25;
-	float thickness = 30;
+	float power;
+	float padding_size;
+	float thickness;
 
 #ifdef NDEBUG
 	float target_volume = 0.25;
 #else
-	float target_volume = 0.5;
+	float target_volume;
 #endif
 
 	float scaling; // [um/px]
-	float E = 13.58;
-	float nu = 0.49;
+	float E;
+	float nu;
 
-	float eps = 0.32967032967032966;
-	float I = 0.5;
-	float L = 3;
+	float eps;
+	float I;
+	float L;
 
 	std::string formulation = "LinearElasticity"; //"LinearElasticity"; // NeoHookean
 
