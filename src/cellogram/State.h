@@ -48,16 +48,11 @@ public:
 
 	MmgOptions mmg_options;
 
-	float target_mesh_size[2] = {0.001f, 0.1f};
+	float uniform_mesh_size;
+	float adaptive_mesh_size[2];
 	float power;
 	float padding_size;
 	float thickness;
-
-#ifdef NDEBUG
-	float target_volume = 0.25;
-#else
-	float target_volume;
-#endif
 
 	float scaling; // [um/px]
 	float E;

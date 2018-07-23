@@ -2,6 +2,9 @@
 #include "MeshUtils.h"
 #include <iomanip>
 #include <cassert>
+#include <igl/edges.h>
+#undef IGL_STATIC_LIBRARY
+#include <igl/median.h>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
@@ -40,7 +43,7 @@ void to_geogram_mesh(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, const E
 	to_geogram_mesh(V, F, M);
 	if (T.cols() == 4) {
 		M.cells.create_tets((int) T.rows());
-	} else {
+	} else if (T.rows() != 0) {
 		throw std::runtime_error("Mesh cells not supported");
 	}
 	for (int c = 0; c < (int) M.cells.nb(); ++c) {
@@ -73,6 +76,21 @@ void from_geogram_mesh(const GEO::Mesh &M, Eigen::MatrixXd &V, Eigen::MatrixXi &
 			T(c, lv) = M.cells.vertex(c, lv);
 		}
 	}
+}
+
+// -----------------------------------------------------------------------------
+
+double median_edge_length(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F) {
+	Eigen::MatrixXi E;
+	Eigen::VectorXd L;
+	double res = 0;
+	igl::edges(F, E);
+	L.resize(E.rows());
+	for (int e = 0; e < E.rows(); ++e) {
+		L[e] = (V.row(E(e, 0)) - V.row(E(e, 1))).stableNorm();
+	}
+	igl::median(L, res);
+	return res;
 }
 
 // -----------------------------------------------------------------------------

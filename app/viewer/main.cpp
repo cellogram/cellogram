@@ -64,15 +64,15 @@ int main(int argc, char *argv[]) {
 		state.remesh_3d_adaptive();
 		state.analyze_3d_mesh();
 
-		const int index = args.input.find_last_of(".");
-		std::string save_dir = args.input.substr(0, index);
-#if defined(_WIN32)
-		std::wstring widestr = std::wstring(save_dir.begin(), save_dir.end());
-		_wmkdir(widestr.c_str()); // can be used on Windows
-#else
-		nError = mkdir(save_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH); // can be used on non-Windows
-#endif
-		state.save(save_dir);
+// 		const int index = args.input.find_last_of(".");
+// 		std::string save_dir = args.input.substr(0, index);
+// #if defined(_WIN32)
+// 		std::wstring widestr = std::wstring(save_dir.begin(), save_dir.end());
+// 		_wmkdir(widestr.c_str()); // can be used on Windows
+// #else
+// 		nError = mkdir(save_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH); // can be used on non-Windows
+// #endif
+// 		state.save(save_dir);
 	}
 	else
 	{

@@ -595,16 +595,28 @@ void UIState::draw_analysis_menu() {
 		ImGui::InputFloat("Scaling [µm/px]", &state.scaling, 0.01, 0.001, 3);
 		ImGui::InputFloat("Padding [µm]", &state.padding_size, 1, 0, 0);
 		ImGui::InputFloat("Thickness [µm]", &state.thickness, 1, 0, 0);
-		ImGui::InputFloat("Target volume (%)", &state.target_volume, 0, 0, 3);
-		ShowTooltip("Target volume (for uniform 3D meshing only), in % of the bbox diagonal");
-		ImGui::InputFloat("Power", &state.power, 0, 0, 3);
+		ImGui::Text("Target edge length (remeshing):");
+		ImGui::InputFloat("Uniform", &state.uniform_mesh_size, 0, 0, 3);
 		ShowTooltip(
-			"After the norm of the displacement field has been remapped to [0, 1]\n"
-			"(0 being the largest displacement, 1 being no displacement), applies the\n"
-			"power law x^p to the to the scalar field to produce the size map driving\nthe adaptive mesh.");
-		ImGui::InputFloat2("Edge length (%)", state.target_mesh_size);
-		ShowTooltip("Lower and upper bound of the size map driving the adaptive mesh");
+			"Target edge length controlling the background used for sampling the deformation field.\n"
+			"The length is expressed in terms of the median edge-length of the reconstructed Delaunay mesh.");
+		ImGui::InputFloat2("Adaptive", state.adaptive_mesh_size, 3);
+		ShowTooltip(
+			"Lower and upper bounds of the size map driving the adaptive mesh.\n"
+			"The length is expressed in terms of the median edge-length of the reconstructed Delaunay mesh.");
+		// ImGui::InputFloat("Target volume (%)", &state.target_volume, 0, 0, 3);
+		// ShowTooltip("Target volume (for uniform 3D meshing only), in % of the bbox diagonal");
+		// ImGui::InputFloat2("Edge length (%)", state.target_mesh_size);
+		// ShowTooltip("Lower and upper bound of the size map driving the adaptive mesh");
 		if (ImGui::TreeNode("Advanced meshing options")) {
+			ImGui::InputFloat("Power", &state.power, 0, 0, 3);
+			ShowTooltip(
+				"After the norm of the displacement field has been remapped to [0, 1]\n"
+				"(0 being the largest displacement, 1 being no displacement), applies the\n"
+				"power law x^p to the to the scalar field to produce the size map driving\nthe adaptive mesh.");
+			// Adaptive meshing options
+			ImGui::Spacing();
+			ImGui::Text("mmg");
 			SetMmgOptions(state.mmg_options);
 			ImGui::TreePop();
 		}

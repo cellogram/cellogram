@@ -39,4 +39,14 @@ void to_geogram_mesh(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, const E
 ///
 void from_geogram_mesh(const GEO::Mesh &M, Eigen::MatrixXd &V, Eigen::MatrixXi &F, Eigen::MatrixXi &T);
 
+///
+/// @brief      { Compute the median edge length of a mesh }
+///
+/// @param[in]  V     { #V x (2|3) mesh vertices }
+/// @param[in]  F     { #F x 3 mesh faces }
+///
+/// @return     { Median edge length }
+///
+double median_edge_length(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F);
+
 } // namespace cellogram

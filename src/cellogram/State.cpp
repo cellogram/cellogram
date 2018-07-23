@@ -4,6 +4,7 @@
 #include <cellogram/extrude_mesh.h>
 #include <cellogram/image_reader.h>
 #include <cellogram/laplace_energy.h>
+#include <cellogram/MeshUtils.h>
 #include <cellogram/point_source_detection.h>
 #include <cellogram/PolygonUtils.h>
 #include <cellogram/region_grow.h>
@@ -48,11 +49,11 @@ namespace cellogram {
 			"nu": 0.49,
 			"padding_size": 25.0,
 			"power": 2.0,
-			"target_mesh_size": [
-				0.0010000000474974513,
-				0.10000000149011612
+			"uniform_mesh_size": 0.5,
+			"adaptive_mesh_size": [
+				0.2,
+				1.0
 			],
-			"target_volume": 0.25,
 			"thickness": 30.0
      		})"_json;
 	}
@@ -147,14 +148,14 @@ namespace cellogram {
 	void State::load_analysis_settings(json args) {
 		json settings = default_analysis_settings;
 		settings.merge_patch(args);
-		std::vector<float> tmp = settings["target_mesh_size"];
-		target_mesh_size[0] = tmp[0];
-		target_mesh_size[1] = tmp[1];
+		std::vector<float> tmp = settings["adaptive_mesh_size"];
+		adaptive_mesh_size[0] = tmp[0];
+		adaptive_mesh_size[1] = tmp[1];
 		power = settings["power"];
 		scaling = settings["scaling"];
 		padding_size = settings["padding_size"];
 		thickness = settings["thickness"];
-		target_volume = settings["target_volume"];
+		uniform_mesh_size = settings["uniform_mesh_size"];
 		E = settings["E"];
 		nu = settings["nu"];
 		eps = settings["eps"];
@@ -177,7 +178,7 @@ namespace cellogram {
 		}
 		load_settings(settings);
 	}
-	
+
 	bool State::load(const std::string & path)
 	{
 		using json = nlohmann::json;
@@ -289,11 +290,11 @@ namespace cellogram {
 			json_data.clear();
 			json_data["formulation"] = formulation;
 			json_data["image_from_pillars"] = image_from_pillars;
-			json_data["target_mesh_size"] = target_mesh_size;
+			json_data["adaptive_mesh_size"] = adaptive_mesh_size;
 			json_data["power"] = power;
 			json_data["padding_size"] = padding_size;
 			json_data["thickness"] = thickness;
-			json_data["target_volume"] = target_volume;
+			json_data["uniform_mesh_size"] = uniform_mesh_size;
 			json_data["E"] = E;
 			json_data["nu"] = nu;
 			json_data["eps"] = eps;
@@ -944,12 +945,16 @@ namespace cellogram {
 		mesh.get_background_mesh(scaling, V, F, S, padding_size);
 
 		// Rescale displacement field
-		S = (S.array() - S.minCoeff()) / std::max(1e-9, (S.maxCoeff() - S.minCoeff()));
-		S = (1.0 - S.array()).pow(power) * (target_mesh_size[1] - target_mesh_size[0]) + target_mesh_size[0];
-
-		// Remesh triangle mesh
 		double vmin = V.minCoeff();
 		double vmax = V.maxCoeff();
+		S = (S.array() - S.minCoeff()) / std::max(1e-9, (S.maxCoeff() - S.minCoeff()));
+		S = (1.0 - S.array()).pow(power) * (adaptive_mesh_size[1] - adaptive_mesh_size[0]) + adaptive_mesh_size[0];
+		std::cout << S.transpose() << std::endl;
+		S *= median_edge_length(mesh.detected, mesh.triangles) * scaling / std::max(1e-9, vmax - vmin);
+		std::cout << S.transpose() << std::endl;
+		std::cout << median_edge_length(mesh.detected, mesh.triangles) * scaling / std::max(1e-9, vmax - vmin) << std::endl;
+
+		// Remesh triangle mesh
 		V = V.array() / std::max(1e-9, vmax - vmin);
  		remesh_adaptive_2d(V, F, S, V, F, mmg_options);
 		V = V.array() * std::max(1e-9, vmax - vmin);
@@ -960,6 +965,7 @@ namespace cellogram {
 		mesh3d.V.col(2).setZero();
 
 		mesh3d.F = F;
+		mesh3d.T = Eigen::MatrixXi(0, 4);
 	}
 
 	void State::extrude_2d_mesh() {
@@ -984,10 +990,14 @@ namespace cellogram {
 		Eigen::MatrixXi BF;
 		igl::bounding_box(mesh3d.V, BV, BF);
 
+		// Target tetrahedron volume
+		double a = uniform_mesh_size * median_edge_length(mesh.detected, mesh.triangles) * scaling;
+		double target_volume = std::sqrt(2.0) / 12.0 * a * a * a;
+
 		std::stringstream buf;
 		buf.precision(100);
 		buf.setf(std::ios::fixed, std::ios::floatfield);
-		buf << "Qpq1.414a" << target_volume * igl::bounding_box_diagonal(BV);
+		buf << "Qpq1.414a" << target_volume;
 
 		// Mesh volume
 		igl::copyleft::tetgen::tetrahedralize(BV, BF, buf.str(), mesh3d.V, mesh3d.T, mesh3d.F);
@@ -996,7 +1006,7 @@ namespace cellogram {
 
 	void State::remesh_3d_adaptive() {
 		// Generate background mesh if needed
-		if (mesh3d.V.size() == 0) { mesh_3d_uniform(); }
+		if (mesh3d.V.size() == 0 || mesh3d.T.rows() == 0) { mesh_3d_uniform(); }
 		double zmin = mesh3d.V.col(2).minCoeff();
 		double zmax = mesh3d.V.col(2).maxCoeff();
 		if (std::abs(zmin - zmax) > 1e-6) { mesh_3d_uniform(); }
@@ -1013,12 +1023,13 @@ namespace cellogram {
 		S = aux.interpolate(VP);
 
 		// Rescale displacement field
-		S = (S.array() - S.minCoeff()) / std::max(1e-9, (S.maxCoeff() - S.minCoeff()));
-		S = (1.0 - S.array()).pow(power) * (target_mesh_size[1] - target_mesh_size[0]) + target_mesh_size[0];
-
-		// Remesh volume mesh
 		double vmin = mesh3d.V.minCoeff();
 		double vmax = mesh3d.V.maxCoeff();
+		S = (S.array() - S.minCoeff()) / std::max(1e-9, (S.maxCoeff() - S.minCoeff()));
+		S = (1.0 - S.array()).pow(power) * (adaptive_mesh_size[1] - adaptive_mesh_size[0]) + adaptive_mesh_size[0];
+		S *= median_edge_length(mesh.detected, mesh.triangles) * scaling / std::max(1e-9, vmax - vmin);
+
+		// Remesh volume mesh
 		mesh3d.V = mesh3d.V.array() / std::max(1e-9, vmax - vmin);
  		remesh_adaptive_3d(mesh3d.V, mesh3d.T, S, mesh3d.V, mesh3d.F, mesh3d.T, mmg_options);
 		mesh3d.V = mesh3d.V.array() * std::max(1e-9, vmax - vmin);
