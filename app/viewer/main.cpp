@@ -2,6 +2,7 @@
 #include "UIState.h"
 #include "CLI11.hpp"
 #include <cellogram/State.h>
+#include <cellogram/StringUtils.h>
 #include <geogram/basic/command_line.h>
 #include <geogram/basic/command_line_args.h>
 ////////////////////////////////////////////////////////////////////////////////
@@ -52,6 +53,12 @@ int main(int argc, char *argv[]) {
 	{
 		auto &state = cellogram::State::state();
 		state.load_image(args.input);
+
+		if (state.img.size() == 0)
+		{
+			std::cout << "Image not loaded" << std::endl;
+			exit(0);
+		}
 		state.load_settings(args.settings);
 
 		state.detect_vertices();
@@ -60,19 +67,17 @@ int main(int argc, char *argv[]) {
 		state.resolve_regions();
 		state.final_relax();
 
-		state.mesh_3d_uniform();
-		state.remesh_3d_adaptive();
+		if (!state.image_from_pillars)
+		{
+			state.mesh_3d_uniform();
+			state.remesh_3d_adaptive();
+		}
 		state.analyze_3d_mesh();
 
-// 		const int index = args.input.find_last_of(".");
-// 		std::string save_dir = args.input.substr(0, index);
-// #if defined(_WIN32)
-// 		std::wstring widestr = std::wstring(save_dir.begin(), save_dir.end());
-// 		_wmkdir(widestr.c_str()); // can be used on Windows
-// #else
-// 		nError = mkdir(save_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH); // can be used on non-Windows
-// #endif
-// 		state.save(save_dir);
+		const int index = args.input.find_last_of(".");
+		std::string save_dir = args.input.substr(0, index);
+		StringUtils::cellogram_mkdir(save_dir);
+		state.save(save_dir);
 	}
 	else
 	{

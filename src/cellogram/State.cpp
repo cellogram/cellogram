@@ -208,7 +208,7 @@ namespace cellogram {
 		// ok = mesh.load(path);
 		ok = mesh.load(unique["mesh"]);
 
-		if (!unique["analysis"].empty())
+		if (!unique["analysis"].empty() && !image_from_pillars)
 			ok = mesh3d.load(unique["analysis"]);
 
 		//if (!unique["analysis_setting"].empty())
