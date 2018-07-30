@@ -249,8 +249,11 @@ namespace cellogram {
 		solved_vertex.resize(points.rows(), 1);
 		solved_vertex.setConstant(false);
 
-		loose_convex_hull(moved, boundary, 6);
 
+		if (V.rows() < 3)
+			return;
+
+		loose_convex_hull(moved, boundary, 6);
 		compute_triangulation();
 
 		// automatically load params if available

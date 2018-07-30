@@ -339,7 +339,7 @@ namespace cellogram {
 
 				Eigen::RowVector2d Vrow = xy.row(p).cast<double>().array() + xy_detected.transpose().array() + 1; //+0.5 middle of the pixel // +1 because c++
 				//std::cout << Vrow << " - Status" << ok << std::endl;
-				if (Vrow(0) < 0 || Vrow(1) < 0 || Vrow(0) > img.cols() || Vrow(1) > img.rows())
+				if (Vrow(0) < 0 || Vrow(1) < 0 || Vrow(1) > img.cols() || Vrow(0) > img.rows())
 				{
 					//std::cout << Vrow << " - Status" << ok << std::endl;
 					continue;

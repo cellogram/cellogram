@@ -714,7 +714,7 @@ void UIState::viewer_control_2d() {
 	// points
 	Eigen::MatrixXd V = t * state.mesh.points + (1 - t) * state.mesh.moved;
 
-	if (V.size() > 0 && show_mesh)
+	if (V.rows() > 2 && show_mesh)
 		points_data().set_mesh(V, state.mesh.triangles);
 
 	points_data().show_lines = dragging_id < 0;
