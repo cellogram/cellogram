@@ -106,7 +106,7 @@ public:
 	void erase_small_regions();
 	void check_regions();
 	void check_region(const int index);
-	void fix_regions();
+	// void fix_regions();
 	void grow_region(const int index);
 	void grow_regions();
 	void resolve_region(const int index);

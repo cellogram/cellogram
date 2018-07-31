@@ -672,55 +672,55 @@ namespace cellogram {
 		regions[index].check_region(mesh.detected, mesh.points, mesh.triangles, mesh.adj);
 	}
 
-	void State::fix_regions()
-	{
-		bool must_continue = true;
+	// void State::fix_regions()
+	// {
+	// 	bool must_continue = true;
 
-		std::vector<int> to_remove;
-		// loop through remaining regions and act depending on status
-		for (auto & r : regions)
-		{
-			// If too many vertices are in the region, find the least likely to be correct and remove
-			if (r.status == Region::TOO_MANY_VERTICES)
-			{
-				int n = r.region_interior.rows();
-				Eigen::VectorXd x_pstd(n), y_pstd(n), pval_Ar(n);
-				for (int i = 0; i < r.region_interior.size(); i++)
-				{
-					x_pstd(i) = mesh.params.std_x(r.region_interior(i));
-					y_pstd(i) = mesh.params.std_y(r.region_interior(i));
-					pval_Ar(i) = mesh.params.pval_Ar(r.region_interior(i));
-				}
-				int xMax, yMax, pMax;
-				x_pstd.maxCoeff(&xMax);
-				y_pstd.maxCoeff(&yMax);
-				pval_Ar.maxCoeff(&pMax);
+	// 	std::vector<int> to_remove;
+	// 	// loop through remaining regions and act depending on status
+	// 	for (auto & r : regions)
+	// 	{
+	// 		// If too many vertices are in the region, find the least likely to be correct and remove
+	// 		if (r.status == Region::TOO_MANY_VERTICES)
+	// 		{
+	// 			int n = r.region_interior.rows();
+	// 			Eigen::VectorXd x_pstd(n), y_pstd(n), pval_Ar(n);
+	// 			for (int i = 0; i < r.region_interior.size(); i++)
+	// 			{
+	// 				x_pstd(i) = mesh.params.std_x(r.region_interior(i));
+	// 				y_pstd(i) = mesh.params.std_y(r.region_interior(i));
+	// 				pval_Ar(i) = mesh.params.pval_Ar(r.region_interior(i));
+	// 			}
+	// 			int xMax, yMax, pMax;
+	// 			x_pstd.maxCoeff(&xMax);
+	// 			y_pstd.maxCoeff(&yMax);
+	// 			pval_Ar.maxCoeff(&pMax);
 
-				if (xMax == yMax && xMax == pMax)
-				{
-					int ind = r.region_interior(xMax);
-					to_remove.push_back(ind);
+	// 			if (xMax == yMax && xMax == pMax)
+	// 			{
+	// 				int ind = r.region_interior(xMax);
+	// 				to_remove.push_back(ind);
 
-					// pop and rebuild current region
-					// solve rebuilt region
-				}
-			}
-		}
+	// 				// pop and rebuild current region
+	// 				// solve rebuilt region
+	// 			}
+	// 		}
+	// 	}
 
 
-		std::sort(to_remove.begin(), to_remove.end());
+	// 	std::sort(to_remove.begin(), to_remove.end());
 
-		for (int i = to_remove.size() - 1; i >= 0; --i)
-		{
-			delete_vertex(to_remove[i]);
-		}
+	// 	for (int i = to_remove.size() - 1; i >= 0; --i)
+	// 	{
+	// 		delete_vertex(to_remove[i]);
+	// 	}
 
-		for (auto & r : regions)
-			r.find_triangles(mesh.triangles);
+	// 	for (auto & r : regions)
+	// 		r.find_triangles(mesh.triangles);
 
-		check_regions();
-		//resolve_regions();
-	}
+	// 	check_regions();
+	// 	//resolve_regions();
+	// }
 
 
 	void State::grow_region(const int index)

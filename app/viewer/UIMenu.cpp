@@ -493,7 +493,7 @@ void UIState::draw_mesh_menu() {
 		if (!state.regions.empty()) {
 			state.detect_bad_regions();
 			state.check_regions();
-			state.fix_regions();
+			// state.fix_regions();
 		}
 		t = 1;
 		mesh_color.resize(0, 0);
@@ -520,7 +520,7 @@ void UIState::draw_mesh_menu() {
 
 		state.detect_bad_regions();
 		state.check_regions();
-		state.fix_regions();
+		// state.fix_regions();
 
 		show_bad_regions = true;
 		show_mesh_fill = true;
