@@ -325,6 +325,9 @@ namespace cellogram {
 	void State::compute_hull()
 	{
 		//convex_hull(points, boundary);
+		if (mesh.moved.rows() < 3)
+			return;
+
 		loose_convex_hull(mesh.moved, mesh.boundary, 6);
 		int dims = (int)mesh.moved.cols();
 

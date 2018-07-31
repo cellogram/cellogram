@@ -249,8 +249,11 @@ namespace cellogram {
 		solved_vertex.resize(points.rows(), 1);
 		solved_vertex.setConstant(false);
 
-		loose_convex_hull(moved, boundary, 6);
 
+		if (V.rows() < 3)
+			return;
+
+		//loose_convex_hull(moved, boundary, 6); moved to compute_triangulation 
 		compute_triangulation();
 
 		// automatically load params if available
@@ -755,6 +758,9 @@ namespace cellogram {
 		//points = detected;
 		points = moved;
 		solved_vertex.setConstant(false);
+		
+		//recompute boundary
+
 		compute_triangulation();
 	}
 
@@ -763,6 +769,8 @@ namespace cellogram {
 		if (points.size() == 0)
 			return;
 		// delaunay_triangulation(points, triangles);
+
+		loose_convex_hull(moved, boundary, 6);
 		constrained_delaunay_triangulation(points, boundary, triangles);
 
 		// Calculate the graph adjancency

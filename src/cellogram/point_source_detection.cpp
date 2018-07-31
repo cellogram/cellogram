@@ -26,6 +26,58 @@ namespace cellogram {
 
 	namespace {
 
+		double otsu_threshold(const Eigen::MatrixXd & img) {
+			//normalize
+			Eigen::MatrixXd imgn;
+			imgn = (img.array() - img.minCoeff()) / (img.maxCoeff() - img.minCoeff());
+
+			//otsu
+			int n_bins = 256;
+			int total = imgn.size();
+			Eigen::VectorXi histogramCounts;
+
+			histogramCounts.resize(n_bins+1, 1);
+			histogramCounts.setZero();
+
+			for (long i = 0; i < imgn.size(); ++i) {
+				histogramCounts(imgn(i) * n_bins)++;
+			}
+
+			histogramCounts(n_bins-1) = 1;
+
+			int sumB = 0;
+			int wB = 0;
+
+			double maximum = 0.0;
+			double sum1 = 0;
+			double level = 0;
+			for (int i = 0; i < n_bins; i++)
+			{
+				sum1 += i * histogramCounts(i);
+			}
+			for (int j = 0; j < n_bins; j++)
+			{
+				wB = wB + histogramCounts(j);
+				int wF = total - wB;
+				
+				if (wB == 0 || wF == 0)
+					continue;
+
+				sumB = sumB + j * histogramCounts(j);
+				double mF = (sum1 - sumB) / wF;
+				double between = wB * wF * ((sumB / wB) - mF) * ((sumB / wB) - mF);
+				if (between >= maximum)
+				{
+					level = j;
+					maximum = between;
+				}
+			}
+
+			// turn level back into whatever format it was before
+			double level_original = img.minCoeff() + level * (img.maxCoeff() - img.minCoeff()) / 256.0;
+			return level_original;
+		}
+		
 		//put here all helpers functions
 		void padarray_symmetric(const Eigen::MatrixXd &img, int padSize, Eigen::MatrixXd &imgXT)
 		{
@@ -491,8 +543,10 @@ namespace cellogram {
 		matlabautogen::tcdf(-T, df2, pval);
 
 		//mask of admissible positions for local maxima
-		MatrixXb mask = pval.array() < 0.05;
-
+		double level = otsu_threshold(imgLoG);
+		MatrixXb mask = pval.array() < 0.05 && imgLoG.array() > 0.2*level;
+		
+		//std::cout << mask << std::endl;
 		// everything correct so far. Checked: fg, fu2, g, mask, imgLoG
 
 		// all local max
