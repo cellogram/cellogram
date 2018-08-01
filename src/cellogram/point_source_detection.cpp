@@ -443,7 +443,7 @@ namespace cellogram {
 
 
 
-	void point_source_detection(const Eigen::MatrixXd &img, const double sigma, Eigen::MatrixXd &V, DetectionParams &params)
+	void point_source_detection(const Eigen::MatrixXd &img, const double sigma, const float otsu_multiplier, Eigen::MatrixXd &V, DetectionParams &params)
 	{
 		assert(img.minCoeff() >= 0);
 		assert(img.maxCoeff() <= 1);
@@ -544,7 +544,7 @@ namespace cellogram {
 
 		//mask of admissible positions for local maxima
 		double level = otsu_threshold(imgLoG);
-		MatrixXb mask = pval.array() < 0.05 && imgLoG.array() > 0.2*level;
+		MatrixXb mask = pval.array() < 0.05 && imgLoG.array() > otsu_multiplier*level;
 		
 		//std::cout << mask << std::endl;
 		// everything correct so far. Checked: fg, fu2, g, mask, imgLoG

@@ -61,5 +61,5 @@ namespace cellogram {
 		void print();
 	};
 
-	void point_source_detection(const Eigen::MatrixXd &img, const double sigma, Eigen::MatrixXd &V, DetectionParams &params);
+	void point_source_detection(const Eigen::MatrixXd &img, const double sigma, const float otsu_multiplier, Eigen::MatrixXd &V, DetectionParams &params);
 } // namespace cellogram

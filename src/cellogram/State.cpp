@@ -35,7 +35,8 @@ namespace cellogram {
 			"energy_variation_from_mean": 2.0,
 			"lloyd_iterations": 20,
 			"perm_possibilities": 15,
-			"sigma": 2.0
+			"sigma": 2.0,
+			"otsu_multiplier": 1.0
      		})"_json;
 
 		json default_analysis_settings = R"({
@@ -144,6 +145,7 @@ namespace cellogram {
 		energy_variation_from_mean = settings["energy_variation_from_mean"];
 		perm_possibilities = settings["perm_possibilities"];
 		sigma = settings["sigma"];
+		otsu_multiplier = settings["otsu_multiplier"];
 	}
 	void State::load_analysis_settings(json args) {
 		json settings = default_analysis_settings;
@@ -272,6 +274,7 @@ namespace cellogram {
 		json_data["energy_variation_from_mean"] = energy_variation_from_mean;
 		json_data["perm_possibilities"] = perm_possibilities;
 		json_data["sigma"] = sigma;
+		json_data["otsu_multiplier"] = otsu_multiplier;
 
 		unique["settings"] = json_data;
 
@@ -521,7 +524,7 @@ namespace cellogram {
 		params = P_final;
 #else
 
-		point_source_detection(img, sigma, V, params);
+		point_source_detection(img, sigma, otsu_multiplier, V, params);
 
 #endif
 		if (V.cols() != 3)

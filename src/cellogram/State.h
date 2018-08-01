@@ -43,6 +43,7 @@ public:
 	float energy_variation_from_mean;
 	int perm_possibilities;
 	float sigma;
+	float otsu_multiplier;
 
 	bool image_from_pillars = false;
 

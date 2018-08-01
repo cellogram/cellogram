@@ -418,6 +418,9 @@ void UIState::draw_points_menu() {
 
 	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.50f);
 	ImGui::InputFloat("Sigma", &state.sigma, 0.1, 0, 2);
+	ShowTooltip("Sigma for fitting Gaussians");
+	ImGui::InputFloat("Otsu", &state.otsu_multiplier, 0.1, 0, 2);
+	ShowTooltip("Multiplier to Otsu level for thresholding");
 	ImGui::PopItemWidth();
 
 	if (ImGui::Button("Detection", ImVec2((w - p), 0))) {
