@@ -653,10 +653,10 @@ namespace cellogram {
 		cellogram::PointsUntangler::pointsUntangler(moved, triangles, dropped, newPts);
 		// assert(moved.rows() - dropped.size() + newPts.rows() == triangles.maxCoeff() - 1);
 
-		for(int i = 0; i < newPts.rows(); ++i){
+		for (int i = 0; i < newPts.rows(); ++i) {
 			Eigen::Vector3d tmp; tmp.setZero();
-			for(int j = 0; j < newPts.cols(); ++j)
-				tmp(j) = newPts(i,j);
+			for (int j = 0; j < newPts.cols(); ++j)
+				tmp(j) = newPts(i, j);
 			add_vertex(tmp, false);
 		}
 		if(newPts.rows()>0)
