@@ -617,7 +617,7 @@ namespace cellogram {
 		for (int i = 0; i < n_regions; ++i)
 		{
 			regions[i].find_points(regions_id, i + 1);
-			regions[i].find_triangles(mesh.triangles, regions_id, i + 1);
+			regions[i].find_triangles(mesh.vertex_to_tri, regions_id, i + 1);
 		}
 
 		int index = 0;
@@ -744,7 +744,7 @@ namespace cellogram {
 
 	void State::grow_region(const int index)
 	{
-		regions[index].grow(mesh.points, mesh.triangles);
+		regions[index].grow(mesh.points, mesh.triangles, mesh.vertex_to_tri);
 	}
 
 	void State::grow_regions()
@@ -778,7 +778,7 @@ namespace cellogram {
 		for (int i = 0; i < n_regions; ++i)
 		{
 			regions[i].find_points(regions_id, i + 1);
-			regions[i].find_triangles(mesh.triangles, regions_id, i + 1);
+			regions[i].find_triangles(mesh.vertex_to_tri, regions_id, i + 1);
 		}
 
 		for (auto & r : regions)

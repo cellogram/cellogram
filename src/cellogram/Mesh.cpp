@@ -645,17 +645,27 @@ namespace cellogram {
 		}
 	}
 
-	void Mesh::untangle()
+	bool Mesh::untangle()
 	{
+		bool has_changed_points = false;
+		triangles.resize(0, 0); // triangular mesh
+		adj.clear(); // adjaceny list of triangluar mesh
+		vertex_to_tri.clear();
+
+		added_by_untangler.resize(0);
+		deleted_by_untangler.resize(0, 0);
+
+
+
 		Eigen::MatrixXd newPts;
 		std::vector<int> dropped;
 		// std::cout<<points<<std::endl;
 		cellogram::PointsUntangler::pointsUntangler(moved, triangles, dropped, newPts);
 		// assert(moved.rows() - dropped.size() + newPts.rows() == triangles.maxCoeff() - 1);
 
-		if (newPts.rows() > 0)
+		if (newPts.rows() > 0 || !dropped.empty())
 		{
-			//todo: warn user that points have been added
+			has_changed_points = true;
 		}
 
 		int old_size = added_by_untangler.size();
@@ -673,19 +683,25 @@ namespace cellogram {
 
 		old_size = deleted_by_untangler.size();
 		deleted_by_untangler.conservativeResize(old_size + dropped.size(), moved.cols());
-		for (int gid : dropped)
+		std::sort(dropped.begin(), dropped.end());
+
+		for (int i = dropped.size() - 1; i >= 0; i--)
 		{
+			const int gid = dropped[i];
 			deleted_by_untangler.row(old_size++) = moved.row(gid);
 			delete_vertex(gid, false);
 		}
 
 		points = moved;
 		solved_vertex.setConstant(false);
+		vertex_status_fixed.setZero();
 
 		assert(triangles.maxCoeff() < points.rows());
 
 		adjacency_list(triangles, adj);
 		generate_vertex_to_tri();
+
+		return has_changed_points;
 	}
 
 	void Mesh::clear()

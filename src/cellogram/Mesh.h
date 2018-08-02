@@ -55,7 +55,7 @@ public:
 	void generate_vertex_to_tri();
 	void reset();
 
-	void untangle();
+	bool untangle();
 
 	void clear();
 

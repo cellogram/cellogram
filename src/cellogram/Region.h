@@ -39,10 +39,10 @@ namespace cellogram {
 
 		void compute_edges(const Eigen::MatrixXd &V, Eigen::MatrixXd &bad_P1, Eigen::MatrixXd &bad_P2);
 
-		void grow(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F);
+		void grow(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, const std::vector<std::vector<int>> &vertex_to_tri);
 
 		void find_points(const Eigen::VectorXi &region_ids, const int id);
-		void find_triangles(const Eigen::MatrixXi &F, const Eigen::VectorXi &region_ids, const int id);
+		void find_triangles(const std::vector<std::vector<int>> &vertex_to_tri, const Eigen::VectorXi &region_ids, const int id);
 		void find_triangles(const Eigen::MatrixXi & F, bool force_add_boundaries = false);
 		void bounding(const Eigen::MatrixXi &F, const Eigen::MatrixXd &V);
 

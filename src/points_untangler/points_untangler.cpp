@@ -27,7 +27,7 @@ namespace cellogram
 
         void pointsUntangler(const Eigen::MatrixXd &detected, Eigen::MatrixXi &tris, std::vector<int> &droppedPoints, Eigen::MatrixXd &newPoints)
         {
-            bool verbose = false;
+            bool verbose = true;
             Mesh m;
             Grid g;
 
