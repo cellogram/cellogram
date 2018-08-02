@@ -52,6 +52,9 @@ Win32
 x64
 yimg.dir
 
+/3rdparty/.cache
+/3rdparty/polyfem
+
 # Mac OS
 .DS_Store
 
