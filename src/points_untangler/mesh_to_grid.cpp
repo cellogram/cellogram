@@ -249,16 +249,28 @@ namespace cellogram
 				if (m.canFlip(eL) && minBad>badL) { choice = 1; minBad = badL; }
 				if (m.canFlip(eR) && minBad>badR) { choice = 2; minBad = badR; }
 
-				if (choice != 0) {
-					m.applyFlip((choice == 1) ? eL : eR);
-					f0 = E.fi[0];
-					f1 = E.fi[1];
-					if (move.fi == f0) { std::swap(f0, f1); }
 
-					// will redo this move
-					addMove(move.ei, move.fi, move.pos, move.dir, move.time);
+
+                if (choice != 0) {
+
+                    int e = (choice == 1) ? eL : eR;
+                    // anti loop: never flip twice an edge
+                    if (m.E[e].fixed) choice == 0;
+                    else {
+
+                        m.applyFlip(e);
+                        m.E[e].fixed = true;
+
+                        f0 = E.fi[0];
+                        f1 = E.fi[1];
+                        if (move.fi == f0) { std::swap(f0, f1); }
+
+                        // will redo this move
+                        addMove(move.ei, move.fi, move.pos, move.dir, move.time);
+                    }
 				}
-				else {
+
+                if (choice == 0) {
 					// conquer!
 					int vi = m.F[f0].oppositeVertOfEdge(move.ei);
 
@@ -294,6 +306,7 @@ namespace cellogram
 			for (uint i = 0; i<m.V.size();i++) g.vert[i] = m.V[i].p;
 
 			for (Vert& v : m.V) { v.disputed = 0; v.timeReached = -1; }
+            for (Edge& e : m.E) { e.fixed = false; }
 			//for (Vert& v:m.V) v.discrepancy = 9e99;
 
 			int fi = m.bestFace();

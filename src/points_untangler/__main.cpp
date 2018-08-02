@@ -5,7 +5,7 @@
 #include"grid.h"
 
 
-std::string inputPath = "C:/projects/github/cellogram/data/debug/macro_bad.txt";
+std::string inputPath = "C:/projects/github/cellogram/data/debug/macro_loop.txt";
 std::string outputPath = "C:/projects/github/cellogram/data/debug/";
 
 namespace cellogram
