@@ -1,6 +1,7 @@
 #include "points_untangler.h"
 
 #include<iostream>
+#include <fstream>
 #include"mesh.h"
 
 
@@ -28,9 +29,16 @@ namespace cellogram
         {
             Mesh m;
             Grid g;
+
+            std::ofstream file("marco.txt");
+            if(file.good())
+                file << detected<<std::endl;
+            file.close();
+
             m.fromEigen(detected);
-            pointsUntangler(m, g);
+            pointsUntangler(m, g, "./");
             g.fillGapsMakingPtsUp();
+            g.exportOBJ("./output.obj");
             g.exportEigen(tris, droppedPoints, newPoints);
         }
 
