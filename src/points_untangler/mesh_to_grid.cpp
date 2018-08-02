@@ -217,7 +217,7 @@ namespace cellogram
 				int gi = g.shiftPos(move.pos, move.dir); // grid square to conquer
 				int vG = g.grid[gi]; // vertex currently in that square (if any)
 
-									 // GO STRAIGHT?
+                // GO STRAIGHT?
 				int vC = m.F[f0].vi[w2];
 				scalar badC = m.parallelogramError(vB, E.vi[0], E.vi[1], vC);
 				if ((vG != -1) && (vC != vG)) badC += 1000; // some other vert is here already
@@ -300,9 +300,11 @@ namespace cellogram
 			const Face &f(m.F[fi]);
 			//std::cout<<"start from face "<<fi<<" (with "<<"score="<< f.regularity<<"="<<m.V[f[0]].distToIrr<<"+"<<m.V[f[1]].distToIrr<<"+"<<m.V[f[2]].distToIrr<<")\n";
 
-			fillGrid(g.indexOf(x + 0, y + 0), f[0]);
-			fillGrid(g.indexOf(x + 1, y + 0), f[1]);
-			fillGrid(g.indexOf(x + 1, y + 1), f[2]);
+            if (floodfillMode != 1) {
+                fillGrid(g.indexOf(x + 0, y + 0), f[0]);
+                fillGrid(g.indexOf(x + 1, y + 0), f[1]);
+                fillGrid(g.indexOf(x + 1, y + 1), f[2]);
+            }
 			//m.V[ f[0] ].discrepancy = m.V[ f[1] ].discrepancy = m.V[ f[2] ].discrepancy =  0.0;
 
 			addMove(f.ei[0], fi, g.indexOf(x + 0, y + 0), 0, 1);
@@ -341,9 +343,7 @@ namespace cellogram
 			std::cout << "GRID TO MESH... \n";
 			floodFill(m, g, 1);
 			//m.flipAs(g);
-			floodFill(m, g, 1);
-
-		}
+        }
 
 
 	}
