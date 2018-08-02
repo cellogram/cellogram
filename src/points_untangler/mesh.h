@@ -99,8 +99,8 @@ struct FlipScore{
 
 class Grid;
 class Mesh;
-void meshToGrid(Mesh &m, Grid &g);
-void gridToMesh(Grid &g , Mesh &m);
+void meshToGrid(Mesh &m, Grid &g, bool verbose);
+void gridToMesh(Grid &g , Mesh &m, bool verbose);
 
 typedef enum { BY_VAL , BY_FLOOD , BY_DISPUTED} ColMode;
 
@@ -143,9 +143,11 @@ public:
     void propagateFixedF2E();
     void updateValencies();
 
+    bool verbose = false;
 private:
     //vec2 avgEdgeDir;
     float avgEdge;
+
 
     std::set<int> irregulars;
 

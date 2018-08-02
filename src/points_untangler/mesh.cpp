@@ -182,7 +182,7 @@ void Mesh::fromEigen(const Eigen::MatrixXd &mat){
 void Mesh::fuckUp(){
     //Vert v; v.p = vec2(200,600); V.push_back(v);
     V[2420].p = vec2(200,600);
-
+    
     std::cout<<"Fucked up mesh :D ! ";
 }
 
@@ -198,6 +198,7 @@ void Mesh::sanityCheckValencies(){
     for (uint i=0; i<V.size(); i++){
         if (val[i] != V[i].val) {
             nerr++;
+            if(verbose)
             std::cout<<"\nVALENCY ERROR: "<<val[i] <<"!="<< V[i].val<<" \n";
         }
     }
@@ -599,6 +600,7 @@ void Mesh::removeDontcare(){
 }*/
 
 void Mesh::flipAs(const Grid& g){
+    if(verbose)
     std::cout<<"Flipping to match grid...\n";
     int tot = 0;
     while(1){
@@ -650,11 +652,13 @@ void Mesh::flipAs(const Grid& g){
         if (!done) break;
         tot+=done;
     }
+    if(verbose)
     std::cout<<tot<<" flips done!\n";
 }
 
 void Mesh::greedyFlips(int howDeep, Grid &g){
 
+    if(verbose)
     std::cout<<"Greedy mesh regularization by FLIPS...\n";
     //buildEdgesFromFaces();
 
@@ -687,6 +691,7 @@ void Mesh::greedyFlips(int howDeep, Grid &g){
             applyFlip(ei);
             totScore += score;
             if (ndone++ > 1000) {
+                if(verbose)
                 std::cout<<"ERROR infinte loop in greedy swaps! "<<ei<<" score move: " << score.valReduction << "," << score.lenReduction << "\n";
                 if (ndone>1100) break;
             }
@@ -723,6 +728,7 @@ void Mesh::greedyFlips(int howDeep, Grid &g){
         //sanityCheckValencies();
     }
 
+    if(verbose)
     std::cout<<ndone << " flips done!\n";
 
 
