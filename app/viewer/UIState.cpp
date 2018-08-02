@@ -385,6 +385,12 @@ bool UIState::save() {
 	return ok;
 }
 
+bool UIState::save_as(const std::string &save_as_dir) {
+	bool ok = state.save(save_as_dir, true);
+
+	return ok;
+}
+
 bool UIState::mouse_scroll(float delta_y) {
 	viewer.scroll_position += delta_y;
 

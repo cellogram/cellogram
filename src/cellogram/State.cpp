@@ -263,7 +263,7 @@ namespace cellogram {
 	//	return mesh.load_params(path);
 	//}
 
-	bool State::save(const std::string & path)
+	bool State::save(const std::string & path, const bool full_path)
 	{
 		using json = nlohmann::json;
 
@@ -317,9 +317,19 @@ namespace cellogram {
 		unique["hull"] = hull;
 
 		{
-			std::ofstream json_out(path + "/all.json");
-			json_out << unique.dump(4) << std::endl;
-			json_out.close();
+			if (full_path)
+			{
+				// todo: check if .json is already at end of string
+				std::ofstream json_out(path + ".json");
+				json_out << unique.dump(4) << std::endl;
+				json_out.close();
+			}
+			else
+			{
+				std::ofstream json_out(path + "/all.json");
+				json_out << unique.dump(4) << std::endl;
+				json_out.close();
+			}
 		}
 
 		return true;

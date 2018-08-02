@@ -94,7 +94,7 @@ public:
 	bool is_data_available(const std::string &path);
 	bool load_image(const std::string fname);
 	//bool load_param(const std::string &path);
-	bool save(const std::string &path);
+	bool save(const std::string &path, const bool full_path = false);
 	void compute_hull();
 	void clean_hull();
 
