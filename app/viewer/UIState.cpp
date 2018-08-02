@@ -809,7 +809,8 @@ void UIState::viewer_control_2d() {
 	// if (show_mesh_fill && !state.regions.empty())
 	if (show_mesh_fill)
 		create_region_label();
-	points_data().set_colors(mesh_color);
+	if(mesh_color.size() > 0)
+		points_data().set_colors(mesh_color);
 
 	// bad regions
 	if (show_bad_regions) {
