@@ -584,7 +584,7 @@ void UIState::export_region() {
 void UIState::reset_viewer() {
 	// Display flags
 	t = 0;
-	vertex_color = Eigen::RowVector3f(1, 0, 0);
+	vertex_color = Eigen::RowVector3f(44, 62, 80)/255;
 	selected_region = -1;
 	show_hull = true;
 	show_points = true;
@@ -777,16 +777,23 @@ void UIState::viewer_control_2d() {
 		} else {
 			for (auto &r : state.regions) {
 				for (int i = 0; i < r.region_boundary.size(); ++i) {
-					C.row(r.region_boundary(i)) = Eigen::RowVector3d(0, 0, 1);
+					C.row(r.region_boundary(i)) = Eigen::RowVector3d(155, 89, 182)/255;
 				}
 
 				for (int i = 0; i < r.region_interior.size(); ++i) {
-					C.row(r.region_interior(i)) = Eigen::RowVector3d(0, 1, 0);
+					C.row(r.region_interior(i)) = Eigen::RowVector3d(22, 160, 133)/255;
 				}
 			}
+			// mark points added and deleted by untangler
+			for (int i = 0; i < state.mesh.added_by_untangler.size(); ++i) {
+				C.row(state.mesh.added_by_untangler(i)) = Eigen::RowVector3d(46, 204, 113) / 255;
+			}
+			
+			points_data().add_points(state.mesh.deleted_by_untangler, Eigen::RowVector3d(230, 126, 34) / 255);
+			
 		}
 
-		points_data().set_points(V, C);
+		points_data().add_points(V, C);
 
 		//}
 	}

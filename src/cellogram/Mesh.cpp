@@ -653,17 +653,31 @@ namespace cellogram {
 		cellogram::PointsUntangler::pointsUntangler(moved, triangles, dropped, newPts);
 		// assert(moved.rows() - dropped.size() + newPts.rows() == triangles.maxCoeff() - 1);
 
+		if (newPts.rows() > 0)
+		{
+			//todo: warn user that points have been added
+		}
+
+		int old_size = added_by_untangler.size();
+		added_by_untangler.conservativeResize(old_size + newPts.rows());
+
 		for (int i = 0; i < newPts.rows(); ++i) {
+
 			Eigen::Vector3d tmp; tmp.setZero();
 			for (int j = 0; j < newPts.cols(); ++j)
 				tmp(j) = newPts(i, j);
+
+			added_by_untangler(old_size + i) = points.rows();
 			add_vertex(tmp, false);
 		}
-		if(newPts.rows()>0)
-			std::cout << "New points added (" << newPts.rows() << ")" << std::endl;
 
-		for(int gid : dropped)
+		old_size = deleted_by_untangler.size();
+		deleted_by_untangler.conservativeResize(old_size + dropped.size(), moved.cols());
+		for (int gid : dropped)
+		{
+			deleted_by_untangler.row(old_size++) = moved.row(gid);
 			delete_vertex(gid, false);
+		}
 
 		points = moved;
 		solved_vertex.setConstant(false);

@@ -25,6 +25,8 @@ public:
 
 	Eigen::Matrix<bool, Eigen::Dynamic, 1> solved_vertex;
 	Eigen::VectorXi vertex_status_fixed;
+	Eigen::VectorXi added_by_untangler;
+	Eigen::MatrixXd deleted_by_untangler;
 
 	// bool load(const std::string &path);
 	bool load(const nlohmann::json &data);
