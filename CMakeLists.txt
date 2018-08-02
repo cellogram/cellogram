@@ -46,6 +46,14 @@ endif()
 
 ################################################################################
 
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+	set(CELLOGRAM_USE_HTTPS_DEFAULT ON)
+else()
+	set(CELLOGRAM_USE_HTTPS_DEFAULT OFF)
+endif()
+
+option(CELLOGRAM_USE_HTTPS "Favor http link for external projects" ${CELLOGRAM_USE_HTTPS_DEFAULT})
+
 # Options for libigl modules
 option(LIBIGL_USE_STATIC_LIBRARY          "Use libigl as static library" ON)
 option(LIBIGL_WITH_ANTTWEAKBAR            "Use AntTweakBar"              OFF)
@@ -68,9 +76,16 @@ option(LIBIGL_WITH_XML                    "Use XML"                      OFF)
 # option(CELLOGRAM_WTIH_UNTANGLER           "Use untangler"          		 ON)
 
 ################################################################################
+# Download external dependencies
+################################################################################
+
+include(CellogramDownloadExternal)
+
+################################################################################
 # Required libraries
 ################################################################################
 
+cellogram_download_polyfem()
 add_subdirectory(${THIRD_PARTY_DIR}/polyfem/cpp)
 
 # Eigen

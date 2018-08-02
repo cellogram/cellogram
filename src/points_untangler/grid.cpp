@@ -198,6 +198,8 @@ bool Grid::exportPLYtartan(const std::string &filename) const{
 }
 
 bool Grid::exportPLY(const std::string& filename ) const{
+
+    std::cout<<"--> Exporting GRID: "<<(filename+".ply")<<"\n";
     int nUnassigned = 0;
     for (uint vi=0; vi<posInGrid.size(); vi++)
         if (posInGrid[vi]==-1) nUnassigned++;

@@ -106,6 +106,7 @@ public:
 	//bool load_param(std::string name);
 
 	bool save();
+	bool save_as(const std::string & save_as_dir);
 
 	virtual bool mouse_down(int button, int modifier) override;
 	virtual bool mouse_move(int button, int modifier) override;

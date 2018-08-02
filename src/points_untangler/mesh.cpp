@@ -681,13 +681,13 @@ void Mesh::greedyFlips(int howDeep, Grid &g){
         FlipScore score;
         int ei = bestFlip( score, g  );
 
-        assert(ei>=0);
+        if (ei==-1) { break; } // no valid moves at all (this is RARE)
 
         if (score.isPos()) {
             applyFlip(ei);
             totScore += score;
             if (ndone++ > 1000) {
-                std::cout<<"ERROR infinte loop in greedy swaps! "<<ei<<" sci=ore move: " << score.valReduction << "," << score.lenReduction << "\n";
+                std::cout<<"ERROR infinte loop in greedy swaps! "<<ei<<" score move: " << score.valReduction << "," << score.lenReduction << "\n";
                 if (ndone>1100) break;
             }
         } else if (howDeep>0) {
@@ -717,7 +717,7 @@ void Mesh::greedyFlips(int howDeep, Grid &g){
             totScore += score;
         }
         //forcedTurns--;
-        if (ei==-1) { break; }
+
 
 
         //sanityCheckValencies();

@@ -77,6 +77,7 @@ struct FlipScore{
 
     bool isPos() const {
         if(valReduction>0) return true;
+        if(valReduction<0) return false;
         return lenReduction > 0.0002;
     }
 

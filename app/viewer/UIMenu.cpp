@@ -244,6 +244,10 @@ float UIState::draw_menu_bar() {
 				save();
 			}
 			if (ImGui::MenuItem("Save As..")) {
+				std::string fname = FileDialog::saveFileName(DATA_DIR, { "*.json" });
+				if (!fname.empty()) {
+					save_as(fname);
+				}
 			}
 
 			if (ImGui::MenuItem("Quit", "Alt+F4")) {
@@ -391,7 +395,7 @@ void UIState::draw_file_menu() {
 	if (state.mesh.points.size() == 0) {
 		push_disabled();
 	}
-	if (ImGui::Button("Save##Points", ImVec2((w - p) / 2.f, 0))) {
+	if (ImGui::Button("Save scene", ImVec2((w - p) / 2.f, 0))) {
 		save();
 	}
 	if (state.mesh.points.size() == 0) {
@@ -402,7 +406,7 @@ void UIState::draw_file_menu() {
 	if (!data_available) {
 		push_disabled();
 	}
-	if (ImGui::Button("Load##Points", ImVec2((w - p) / 2.f, 0))) {
+	if (ImGui::Button("Load scene", ImVec2((w - p) / 2.f, 0))) {
 		load();
 	}
 	if (!data_available) {

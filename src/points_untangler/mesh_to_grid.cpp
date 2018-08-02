@@ -217,7 +217,7 @@ namespace cellogram
 				int gi = g.shiftPos(move.pos, move.dir); // grid square to conquer
 				int vG = g.grid[gi]; // vertex currently in that square (if any)
 
-									 // GO STRAIGHT?
+                // GO STRAIGHT?
 				int vC = m.F[f0].vi[w2];
 				scalar badC = m.parallelogramError(vB, E.vi[0], E.vi[1], vC);
 				if ((vG != -1) && (vC != vG)) badC += 1000; // some other vert is here already
@@ -249,16 +249,28 @@ namespace cellogram
 				if (m.canFlip(eL) && minBad>badL) { choice = 1; minBad = badL; }
 				if (m.canFlip(eR) && minBad>badR) { choice = 2; minBad = badR; }
 
-				if (choice != 0) {
-					m.applyFlip((choice == 1) ? eL : eR);
-					f0 = E.fi[0];
-					f1 = E.fi[1];
-					if (move.fi == f0) { std::swap(f0, f1); }
 
-					// will redo this move
-					addMove(move.ei, move.fi, move.pos, move.dir, move.time);
+
+                if (choice != 0) {
+
+                    int e = (choice == 1) ? eL : eR;
+                    // anti loop: never flip twice an edge
+                    if (m.E[e].fixed) choice == 0;
+                    else {
+
+                        m.applyFlip(e);
+                        m.E[e].fixed = true;
+
+                        f0 = E.fi[0];
+                        f1 = E.fi[1];
+                        if (move.fi == f0) { std::swap(f0, f1); }
+
+                        // will redo this move
+                        addMove(move.ei, move.fi, move.pos, move.dir, move.time);
+                    }
 				}
-				else {
+
+                if (choice == 0) {
 					// conquer!
 					int vi = m.F[f0].oppositeVertOfEdge(move.ei);
 
@@ -294,15 +306,18 @@ namespace cellogram
 			for (uint i = 0; i<m.V.size();i++) g.vert[i] = m.V[i].p;
 
 			for (Vert& v : m.V) { v.disputed = 0; v.timeReached = -1; }
+            for (Edge& e : m.E) { e.fixed = false; }
 			//for (Vert& v:m.V) v.discrepancy = 9e99;
 
 			int fi = m.bestFace();
 			const Face &f(m.F[fi]);
 			//std::cout<<"start from face "<<fi<<" (with "<<"score="<< f.regularity<<"="<<m.V[f[0]].distToIrr<<"+"<<m.V[f[1]].distToIrr<<"+"<<m.V[f[2]].distToIrr<<")\n";
 
-			fillGrid(g.indexOf(x + 0, y + 0), f[0]);
-			fillGrid(g.indexOf(x + 1, y + 0), f[1]);
-			fillGrid(g.indexOf(x + 1, y + 1), f[2]);
+            if (floodfillMode != 1) {
+                fillGrid(g.indexOf(x + 0, y + 0), f[0]);
+                fillGrid(g.indexOf(x + 1, y + 0), f[1]);
+                fillGrid(g.indexOf(x + 1, y + 1), f[2]);
+            }
 			//m.V[ f[0] ].discrepancy = m.V[ f[1] ].discrepancy = m.V[ f[2] ].discrepancy =  0.0;
 
 			addMove(f.ei[0], fi, g.indexOf(x + 0, y + 0), 0, 1);
@@ -341,9 +356,7 @@ namespace cellogram
 			std::cout << "GRID TO MESH... \n";
 			floodFill(m, g, 1);
 			//m.flipAs(g);
-			floodFill(m, g, 1);
-
-		}
+        }
 
 
 	}
