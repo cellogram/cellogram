@@ -399,6 +399,8 @@ bool UIState::mouse_scroll(float delta_y) {
 		float mult = (1.0 + ((delta_y > 0) ? 1. : -1.) * 0.1);
 		const float min_zoom = 0.1f;
 		viewer.core.camera_zoom = (viewer.core.camera_zoom * mult > min_zoom ? viewer.core.camera_zoom * mult : min_zoom);
+
+		points_data().point_size *= mult;
 	}
 
 	return super::mouse_scroll(delta_y);
@@ -637,7 +639,7 @@ void UIState::load_image(std::string fname) {
 	compute_histogram();
 
 	double extent = (V.colwise().maxCoeff() - V.colwise().minCoeff()).maxCoeff();
-	points_data().point_size = std::ceil(float(700. / extent)) + 3;
+	// points_data().point_size = std::ceil(float(700. / extent)) + 3;
 
 	// HIGH dpi
 	// int width, height;
@@ -739,7 +741,7 @@ void UIState::viewer_control_2d() {
 	if (show_points) {
 		if (viewer.window != NULL) {
 			float ui_scaling_factor = hidpi_scaling() / pixel_ratio();
-			points_data().point_size = std::ceil(ui_scaling_factor) + 3;
+			points_data().point_size = std::ceil(ui_scaling_factor) * 5;
 		}
 
 		// if (state.regions.empty())
