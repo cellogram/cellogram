@@ -698,6 +698,12 @@ namespace cellogram {
 		vertex_to_tri.clear();
 		boundary.resize(0); // list of vertices on the boundary
 
+		solved_vertex.resize(0);
+		vertex_status_fixed.resize(0);
+		added_by_untangler.resize(0);
+		deleted_by_untangler.resize(0, 0);
+
+		params.clear();
 	}
 
 

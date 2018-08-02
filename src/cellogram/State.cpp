@@ -436,6 +436,8 @@ namespace cellogram {
 		hull_polygon.resize(0, 0);
 		regions.clear();
 
+		mesh3d.clear();
+
 		Eigen::MatrixXd V;
 		DetectionParams params;
 
@@ -542,6 +544,7 @@ namespace cellogram {
 			V.conservativeResize(V.rows(), 3);
 			V.col(2).setConstant(0);
 		}
+		mesh.clear();
 		mesh.detect_vertices(V, params);
 	}
 
