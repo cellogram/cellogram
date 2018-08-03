@@ -640,7 +640,8 @@ namespace cellogram {
 		for (int f = 0; f < triangles.rows(); ++f) {
 			for (int lv = 0; lv < triangles.cols(); ++lv)
 			{
-				vertex_to_tri[triangles(f, lv)].push_back(f);
+				const int v_index = triangles(f, lv);
+				vertex_to_tri[v_index].push_back(f);
 			}
 		}
 	}
@@ -680,10 +681,20 @@ namespace cellogram {
 			added_by_untangler(old_size + i) = points.rows();
 			add_vertex(tmp, false);
 		}
+		points = moved;
+
+		solved_vertex.setConstant(false);
+		vertex_status_fixed.setZero();
+
+		//Now mesh is valid, but it has to many points....
+		generate_vertex_to_tri();
+
+
 
 		old_size = deleted_by_untangler.size();
 		deleted_by_untangler.conservativeResize(old_size + dropped.size(), moved.cols());
 		std::sort(dropped.begin(), dropped.end());
+
 
 		for (int i = dropped.size() - 1; i >= 0; i--)
 		{
@@ -692,11 +703,8 @@ namespace cellogram {
 			delete_vertex(gid, false);
 		}
 
-		points = moved;
-		solved_vertex.setConstant(false);
-		vertex_status_fixed.setZero();
-
 		assert(triangles.maxCoeff() < points.rows());
+		assert(triangles.minCoeff() >= 0);
 
 		adjacency_list(triangles, adj);
 		generate_vertex_to_tri();
