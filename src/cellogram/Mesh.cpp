@@ -279,7 +279,13 @@ namespace cellogram {
 			if (boundary(i) > index)
 				--boundary(i);
 		}
-
+		for (int i = 0; i < added_by_untangler.size(); ++i)
+		{
+			if (added_by_untangler(i) == index)
+				removeRow(added_by_untangler, index);
+			if (added_by_untangler(i) > index)
+				--added_by_untangler(i);
+		}
 		if (recompute_triangulation)
 		{
 			reset();
@@ -656,8 +662,6 @@ namespace cellogram {
 		added_by_untangler.resize(0);
 		deleted_by_untangler.resize(0, 0);
 
-
-
 		Eigen::MatrixXd newPts;
 		std::vector<int> dropped;
 		// std::cout<<points<<std::endl;
@@ -678,7 +682,7 @@ namespace cellogram {
 			for (int j = 0; j < newPts.cols(); ++j)
 				tmp(j) = newPts(i, j);
 
-			added_by_untangler(old_size + i) = points.rows();
+			added_by_untangler(old_size + i) = detected.rows();
 			add_vertex(tmp, false);
 		}
 		points = moved;
@@ -688,8 +692,6 @@ namespace cellogram {
 
 		//Now mesh is valid, but it has to many points....
 		generate_vertex_to_tri();
-
-
 
 		old_size = deleted_by_untangler.size();
 		deleted_by_untangler.conservativeResize(old_size + dropped.size(), moved.cols());

@@ -36,7 +36,7 @@ namespace cellogram {
 			"lloyd_iterations": 20,
 			"perm_possibilities": 15,
 			"sigma": 2.0,
-			"otsu_multiplier": 1.0
+			"otsu_multiplier": 0.5
      		})"_json;
 
 		json default_analysis_settings = R"({

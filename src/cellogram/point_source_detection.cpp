@@ -77,6 +77,16 @@ namespace cellogram {
 			double level_original = img.minCoeff() + level * (img.maxCoeff() - img.minCoeff()) / 256.0;
 			return level_original;
 		}
+
+		double mean_threshold(const Eigen::MatrixXd & img) {
+			double total = 0;
+			for (int i = 0; i < img.size(); i++)
+			{
+				total += img(i);
+			}
+
+			return total / img.size();
+		}
 		
 		//put here all helpers functions
 		void padarray_symmetric(const Eigen::MatrixXd &img, int padSize, Eigen::MatrixXd &imgXT)
@@ -543,8 +553,8 @@ namespace cellogram {
 		matlabautogen::tcdf(-T, df2, pval);
 
 		//mask of admissible positions for local maxima
-		double level = otsu_threshold(imgLoG);
-		MatrixXb mask = pval.array() < 0.05 && imgLoG.array() > otsu_multiplier*level;
+		double level = otsu_threshold(img_padded);
+		MatrixXb mask = pval.array() < 0.05 && img_padded.array() > otsu_multiplier*level;
 		
 		//std::cout << mask << std::endl;
 		// everything correct so far. Checked: fg, fu2, g, mask, imgLoG

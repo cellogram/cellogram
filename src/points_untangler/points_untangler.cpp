@@ -34,7 +34,7 @@ namespace cellogram
             if(verbose){
                 std::ofstream file("marco.txt");
                 if(file.good())
-                    file << detected<<std::endl;
+                    file << detected <<std::endl;
                 file.close();
             }
 
