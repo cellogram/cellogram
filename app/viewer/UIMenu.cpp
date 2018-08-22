@@ -256,6 +256,38 @@ float UIState::draw_menu_bar() {
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("View")) {
+			// Image
+			ImGui::MenuItem("Image##Bar", nullptr, &show_image);
+
+			ImGui::Separator();
+
+			// Points
+			ImGui::MenuItem("Points##Bar", nullptr, &show_points);
+			ImGui::Indent();
+			ImGui::ColorEdit4("Color", points_data().line_color.data(),
+				ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueWheel);
+			ImGui::MenuItem("Coded##Bar", nullptr, &show_analysis_menu);
+
+			ImGui::Unindent();
+			ImGui::Separator();
+
+			// Mesh
+			ImGui::MenuItem("Mesh##Bar", nullptr, &show_mesh);
+			ImGui::Indent();
+			ImGui::ColorEdit4("Color", points_data().line_color.data(),
+				ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueWheel);
+			ImGui::MenuItem("Fill##Bar", nullptr, &show_mesh_fill);
+
+			ImGui::Unindent();
+			ImGui::Separator();
+			
+			// Analysis
+			ImGui::MenuItem("Displacements##Bar", nullptr, false);
+			ImGui::MenuItem("Tractions##Bar", nullptr, &show_traction_forces);
+
+			ImGui::EndMenu();
+		}
+		if (ImGui::BeginMenu("Windows")) {
 			// Left panel
 			ImGui::MenuItem("Left Panel##Bar", nullptr, &show_left_panel);
 			ImGui::Indent();
@@ -275,6 +307,28 @@ float UIState::draw_menu_bar() {
 			ImGui::MenuItem("Layers", nullptr, &show_layer_menu);
 			ImGui::MenuItem("Regions", nullptr, &show_region_menu);
 			ImGui::Unindent();
+
+			ImGui::EndMenu();
+		}
+		if (ImGui::BeginMenu("Regions")) {
+			// Left panel
+			ImGui::MenuItem("Select Region");
+			ImGui::MenuItem("Grow selected");
+			ImGui::MenuItem("Solve selected");
+
+			ImGui::Separator();
+			ImGui::MenuItem("Split Region");
+
+			// Legend
+			ImGui::Separator();
+			ImGui::Text("Region Legend");
+			draw_legend_item(46, 204, 113, "Ok");
+			draw_legend_item(155, 89, 182, "Too Many Vertices");
+			draw_legend_item(241, 196, 15, "Too Few Vertices");
+			draw_legend_item(41, 128, 185, "Region Too Large");
+			draw_legend_item(192, 57, 43, "No Solution");
+			draw_legend_item(149, 165, 166, "Not Properly Closed");
+			draw_legend_item(52, 73, 94, "Other");
 
 			ImGui::EndMenu();
 		}

@@ -32,6 +32,7 @@
 *.app
 
 # Images
+*.ai
 *.png
 *.jpg
 *.gif
