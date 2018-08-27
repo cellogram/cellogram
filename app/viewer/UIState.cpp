@@ -796,9 +796,9 @@ void UIState::viewer_control_2d() {
 			for (int i = 0; i < state.mesh.added_by_untangler.size(); ++i) {
 				C.row(state.mesh.added_by_untangler(i)) = Eigen::RowVector3d(46, 204, 113) / 255;
 			}
-			
+
 			points_data().add_points(state.mesh.deleted_by_untangler, Eigen::RowVector3d(230, 126, 34) / 255);
-			
+
 		}
 
 		points_data().add_points(V, C);

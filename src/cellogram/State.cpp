@@ -2,6 +2,7 @@
 #include "State.h"
 #include <cellogram/convex_hull.h>
 #include <cellogram/extrude_mesh.h>
+#include <cellogram/dijkstra.h>
 #include <cellogram/image_reader.h>
 #include <cellogram/laplace_energy.h>
 #include <cellogram/MeshUtils.h>
@@ -956,6 +957,54 @@ namespace cellogram {
 	// 		mesh3d.init_nano_dots(mesh, padding_size, thickness, E, nu, formulation);
 	// }
 
+	void State::extract_meshing_region() {
+		// Create background mesh with a scalar field = norm of the displacements of the dots
+		Eigen::MatrixXd V;
+		Eigen::MatrixXi F;
+		Eigen::VectorXd S;
+		mesh.get_background_mesh(scaling, V, F, S, padding_size);
+		// std::cout << S << std::endl;
+
+		// Extract triangles where all vertices are beyond the thresholded displacement
+		std::vector<int> sources;
+		std::vector<bool> keep_triangle(F.rows(), false);
+		double max_disp = S.maxCoeff();
+		double thres = 0.18 * max_disp;
+		int num_kept = 0;
+		for (int f = 0; f < F.rows(); ++f) {
+			if (S(F(f,0)) > thres && S(F(f,1)) > thres && S(F(f,2)) > thres) {
+				keep_triangle[f] = true;
+				++num_kept;
+				for (int lv : {0, 1, 2}) {
+					sources.push_back(F(f,lv));
+					S[F(f,lv)] = adaptive_mesh_size[0];
+				}
+			}
+		}
+		Eigen::MatrixXi F2(num_kept, 3);
+		for (int f = 0, f2 = 0; f < F.rows(); ++f) {
+			if (keep_triangle[f]) {
+				F2.row(f2++) = F.row(f);
+			}
+		}
+
+		dijkstra_grading(V, F, S, mmg_options.hgrad, sources);
+		adaptive_mesh_size[1] = S.maxCoeff();
+		mesh.sizing = S;
+
+		mmg_options.hmin = S.minCoeff();
+		mmg_options.hmax = S.maxCoeff();
+ 		remesh_adaptive_2d(V, F, S, V, F, mmg_options);
+
+		// Set volume mesh based on the current surface
+		mesh3d.V.resize(V.rows(), 3);
+		mesh3d.V.leftCols<2>() = V.leftCols<2>();
+		mesh3d.V.col(2).setZero();
+
+		mesh3d.F = F;
+		mesh3d.T = Eigen::MatrixXi(0, 4);
+	}
+
 	void State::mesh_2d_adaptive() {
 		// Create background mesh with a scalar field = norm of the displacements of the dots
 		Eigen::MatrixXd V;
@@ -978,7 +1027,7 @@ namespace cellogram {
  		remesh_adaptive_2d(V, F, S, V, F, mmg_options);
 		V = V.array() * std::max(1e-9, vmax - vmin);
 
-		// Mesh volume adaptively based on background mesh
+		// Set volume mesh based on the current surface
 		mesh3d.V.resize(V.rows(), 3);
 		mesh3d.V.leftCols<2>() = V.leftCols<2>();
 		mesh3d.V.col(2).setZero();

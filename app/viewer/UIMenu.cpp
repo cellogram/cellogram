@@ -280,7 +280,7 @@ float UIState::draw_menu_bar() {
 
 			ImGui::Unindent();
 			ImGui::Separator();
-			
+
 			// Analysis
 			ImGui::MenuItem("Displacements##Bar", nullptr, false);
 			ImGui::MenuItem("Tractions##Bar", nullptr, &show_traction_forces);
@@ -691,9 +691,24 @@ void UIState::draw_analysis_menu() {
 		float p = ImGui::GetStyle().FramePadding.x;
 
 		if (ImGui::Button("Mesh 2D adaptive", ImVec2(2.5f*(w-p)/4.f, 0))) {
-			state.mesh_2d_adaptive();
+			// state.mesh_2d_adaptive();
+			state.extract_meshing_region();
+			min_val = state.mesh.sizing.minCoeff();
+			max_val = state.mesh.sizing.maxCoeff();
 			reset_view_3d();
 			viewer_control();
+			// Eigen::MatrixXd V;
+			// Eigen::MatrixXi F;
+			// Eigen::VectorXd S;
+			// state.mesh.get_background_mesh(state.scaling, V, F, S, state.padding_size);
+			// igl::colormap(cm, state.mesh.sizing, true, mesh_color);
+			// V /= state.scaling;
+			// points_data().clear();
+			// points_data().show_faces = true;
+			// points_data().set_mesh(V, F);
+			// points_data().set_colors(mesh_color);
+			// std::cout << state.mesh.sizing << std::endl;
+			// physical_data().clear();
 		}
 		ImGui::SameLine(0, p);
 		if (ImGui::Button("Extrude", ImVec2(1.5f*(w-p)/4.f, 0))) {

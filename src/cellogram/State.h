@@ -123,6 +123,7 @@ public:
 	void add_vertex(Eigen::Vector3d new_point);
 
 	// FEM part
+	void extract_meshing_region();
 	void mesh_2d_adaptive();
 	void extrude_2d_mesh();
 	void mesh_3d_uniform();
