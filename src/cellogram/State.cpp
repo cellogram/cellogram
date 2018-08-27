@@ -50,12 +50,9 @@ namespace cellogram {
 			"image_from_pillars": false,
 			"nu": 0.49,
 			"padding_size": 25.0,
-			"power": 2.0,
-			"uniform_mesh_size": 0.5,
-			"adaptive_mesh_size": [
-				0.2,
-				1.0
-			],
+			"displacement_threshold": 0.18,
+			"relative_threshold": true,
+			"mesh_size": 0.3,
 			"thickness": 30.0
      		})"_json;
 	}
@@ -151,14 +148,12 @@ namespace cellogram {
 	void State::load_analysis_settings(json args) {
 		json settings = default_analysis_settings;
 		settings.merge_patch(args);
-		std::vector<float> tmp = settings["adaptive_mesh_size"];
-		adaptive_mesh_size[0] = tmp[0];
-		adaptive_mesh_size[1] = tmp[1];
-		power = settings["power"];
 		scaling = settings["scaling"];
 		padding_size = settings["padding_size"];
 		thickness = settings["thickness"];
-		uniform_mesh_size = settings["uniform_mesh_size"];
+		uniform_mesh_size = settings["mesh_size"];
+		displacement_threshold = settings["displacement_threshold"];
+		relative_threshold = settings["relative_threshold"];
 		E = settings["E"];
 		nu = settings["nu"];
 		eps = settings["eps"];
@@ -294,11 +289,13 @@ namespace cellogram {
 			json_data.clear();
 			json_data["formulation"] = formulation;
 			json_data["image_from_pillars"] = image_from_pillars;
-			json_data["adaptive_mesh_size"] = adaptive_mesh_size;
-			json_data["power"] = power;
+			// json_data["adaptive_mesh_size"] = adaptive_mesh_size;
+			// json_data["power"] = power;
 			json_data["padding_size"] = padding_size;
 			json_data["thickness"] = thickness;
-			json_data["uniform_mesh_size"] = uniform_mesh_size;
+			json_data["mesh_size"] = uniform_mesh_size;
+			json_data["displacement_threshold"] = displacement_threshold;
+			json_data["relative_threshold"] = relative_threshold;
 			json_data["E"] = E;
 			json_data["nu"] = nu;
 			json_data["eps"] = eps;
@@ -957,40 +954,32 @@ namespace cellogram {
 	// 		mesh3d.init_nano_dots(mesh, padding_size, thickness, E, nu, formulation);
 	// }
 
-	void State::extract_meshing_region() {
-		// Create background mesh with a scalar field = norm of the displacements of the dots
-		Eigen::MatrixXd V;
-		Eigen::MatrixXi F;
-		Eigen::VectorXd S;
-		mesh.get_background_mesh(scaling, V, F, S, padding_size);
-		// std::cout << S << std::endl;
-
-		// Extract triangles where all vertices are beyond the thresholded displacement
+	void State::propagate_sizing_field(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, const Eigen::VectorXd &disp, Eigen::VectorXd &S) {
+		// Propagate a sizing field from the triangle where all vertices are beyond the displacement threshold
 		std::vector<int> sources;
-		std::vector<bool> keep_triangle(F.rows(), false);
-		double max_disp = S.maxCoeff();
-		double thres = 0.18 * max_disp;
-		int num_kept = 0;
+		double thres = displacement_threshold;
+		if (relative_threshold) {
+			thres *= disp.maxCoeff();
+		}
+		S.resize(V.rows());
 		for (int f = 0; f < F.rows(); ++f) {
-			if (S(F(f,0)) > thres && S(F(f,1)) > thres && S(F(f,2)) > thres) {
-				keep_triangle[f] = true;
-				++num_kept;
+			if (disp(F(f,0)) > thres && disp(F(f,1)) > thres && disp(F(f,2)) > thres) {
 				for (int lv : {0, 1, 2}) {
 					sources.push_back(F(f,lv));
-					S[F(f,lv)] = adaptive_mesh_size[0];
+					S[F(f,lv)] = uniform_mesh_size;
 				}
 			}
 		}
-		Eigen::MatrixXi F2(num_kept, 3);
-		for (int f = 0, f2 = 0; f < F.rows(); ++f) {
-			if (keep_triangle[f]) {
-				F2.row(f2++) = F.row(f);
-			}
-		}
-
 		dijkstra_grading(V, F, S, mmg_options.hgrad, sources);
-		adaptive_mesh_size[1] = S.maxCoeff();
-		mesh.sizing = S;
+	}
+
+	void State::mesh_2d_adaptive() {
+		// Create background mesh with a scalar field = norm of the displacements of the dots
+		Eigen::MatrixXd V;
+		Eigen::MatrixXi F;
+		Eigen::VectorXd D, S;
+		mesh.get_background_mesh(scaling, V, F, D, padding_size);
+		propagate_sizing_field(V, F, D, S);
 
 		mmg_options.hmin = S.minCoeff();
 		mmg_options.hmax = S.maxCoeff();
@@ -1005,6 +994,8 @@ namespace cellogram {
 		mesh3d.T = Eigen::MatrixXi(0, 4);
 	}
 
+#if 0
+	// Old version
 	void State::mesh_2d_adaptive() {
 		// Create background mesh with a scalar field = norm of the displacements of the dots
 		Eigen::MatrixXd V;
@@ -1035,6 +1026,7 @@ namespace cellogram {
 		mesh3d.F = F;
 		mesh3d.T = Eigen::MatrixXi(0, 4);
 	}
+#endif
 
 	void State::extrude_2d_mesh() {
 		if (mesh3d.V.size() == 0) { mesh_2d_adaptive(); }
@@ -1082,8 +1074,9 @@ namespace cellogram {
 		// Scalar field to interpolate
 		Eigen::MatrixXd V;
 		Eigen::MatrixXi F;
-		Eigen::VectorXd S;
-		mesh.get_background_mesh(scaling, V, F, S, padding_size);
+		Eigen::VectorXd D, S;
+		mesh.get_background_mesh(scaling, V, F, D, padding_size);
+		propagate_sizing_field(V, F, D, S);
 
 		// Interpolate
 		Eigen::MatrixXd VP = mesh3d.V.leftCols<2>();
@@ -1094,7 +1087,7 @@ namespace cellogram {
 		double vmin = mesh3d.V.minCoeff();
 		double vmax = mesh3d.V.maxCoeff();
 		S = (S.array() - S.minCoeff()) / std::max(1e-9, (S.maxCoeff() - S.minCoeff()));
-		S = (1.0 - S.array()).pow(power) * (adaptive_mesh_size[1] - adaptive_mesh_size[0]) + adaptive_mesh_size[0];
+		// S = (1.0 - S.array()).pow(power) * (adaptive_mesh_size[1] - adaptive_mesh_size[0]) + adaptive_mesh_size[0];
 		S *= median_edge_length(mesh.detected, mesh.triangles) * scaling / std::max(1e-9, vmax - vmin);
 
 		// Remesh volume mesh

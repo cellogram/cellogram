@@ -18,7 +18,6 @@ public:
 	Eigen::MatrixXd moved; // manually moved point from detected positions
 	Eigen::MatrixXd points; // relaxed point positions
 	Eigen::VectorXi boundary; // list of vertices on the boundary
-	Eigen::VectorXd sizing; // size map for adaptive remeshing
 
 	Eigen::MatrixXi triangles; // triangular mesh
 	std::vector<std::vector<int>> adj; // adjacency list of triangular mesh
