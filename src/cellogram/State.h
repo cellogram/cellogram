@@ -126,7 +126,7 @@ public:
 	void propagate_sizing_field(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, const Eigen::VectorXd &disp, Eigen::VectorXd &S);
 	void mesh_2d_adaptive();
 	void extrude_2d_mesh();
-	void mesh_3d_uniform();
+	void mesh_3d_volume();
 	void remesh_3d_adaptive();
 	void analyze_3d_mesh();
 

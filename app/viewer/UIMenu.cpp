@@ -656,19 +656,25 @@ void UIState::draw_analysis_menu() {
 		ImGui::InputFloat("Scaling [µm/px]", &state.scaling, 0.01, 0.001, 3);
 		ImGui::InputFloat("Padding [µm]", &state.padding_size, 1, 0, 0);
 		ImGui::InputFloat("Thickness [µm]", &state.thickness, 1, 0, 0);
+		const char disp_abs[] = "Displ. Thres. [µm]";
+		const char disp_rel[] = "Displ. Thres. [%]";
+		ImGui::InputFloat(state.relative_threshold ? disp_rel : disp_abs, &state.displacement_threshold, 0, 0, 3);
+		ShowTooltip("Threshold on the displacement to identify regions that will be meshed more finely.");
+		ImGui::Checkbox("Relative Threshold", &state.relative_threshold);
+		ShowTooltip("Set the threshold relative to the maximum displacement of the detected points.");
 		ImGui::InputFloat("Edge Length", &state.uniform_mesh_size, 0, 0, 3);
 		ShowTooltip(
 			"Target edge length for the mesh generated for the physical simulation.\n"
 			"If adaptive meshing is used, this value specifies the minimum edge length.\n"
-			"The length is expressed in terms of the median edge-length of the reconstructed Delaunay mesh.");
+			"The length is expressed in terms of the median edge-length of the\nreconstructed Delaunay mesh.");
 		float hgrad = state.mmg_options.hgrad;
 		ImGui::InputFloat("Gradation", &hgrad);
 		ShowTooltip(
 			"Use this parameter to control the ratio between the length of\n"
 			"adjacent edges of the mesh generated for the physical simulation.");
-		state.mmg_options.hgrad = hgrad;
-		// if (ImGui::TreeNode("Advanced meshing options")) {
-		// Advanced meshing options
+		state.mmg_options.hgrad = std::max(hgrad, 1.f);
+		// if (ImGui::TreeNode("Advanced options")) {
+		// Advanced options
 		// }
 
 		ImGui::InputFloat("E", &state.E, 0.1, 0.01, 3);
@@ -679,7 +685,7 @@ void UIState::draw_analysis_menu() {
 		float w = ImGui::GetContentRegionAvailWidth();
 		float p = ImGui::GetStyle().FramePadding.x;
 
-		if (ImGui::Button("Mesh 2D adaptive", ImVec2(2.5f*(w-p)/4.f, 0))) {
+		if (ImGui::Button("Mesh 2D adaptive", ImVec2(-1.0, 0))) {
 			state.mesh_2d_adaptive();
 			reset_view_3d();
 			viewer_control();
@@ -696,26 +702,27 @@ void UIState::draw_analysis_menu() {
 			// std::cout << state.mesh.sizing << std::endl;
 			// physical_data().clear();
 		}
-		ImGui::SameLine(0, p);
-		if (ImGui::Button("Extrude", ImVec2(1.5f*(w-p)/4.f, 0))) {
-			state.extrude_2d_mesh();
-			reset_view_3d();
-			viewer_control();
-		}
-		ShowTooltip("Extrude the 2D mesh into a 3D volume mesh.");
+		// ImGui::SameLine(0, p);
+		// if (ImGui::Button("Extrude", ImVec2(1.5f*(w-p)/4.f, 0))) {
+		// 	state.extrude_2d_mesh();
+		// 	reset_view_3d();
+		// 	viewer_control();
+		// }
+		// ShowTooltip("Extrude the 2D mesh into a 3D volume mesh.");
 
-		if (ImGui::Button("Mesh 3D uniform", ImVec2(2.5f*(w-p)/4.f, 0))) {
-			state.mesh_3d_uniform();
-			reset_view_3d();
-			viewer_control();
-		}
-		ImGui::SameLine(0, p);
-		if (ImGui::Button("Remesh", ImVec2(1.5f*(w-p)/4.f, 0))) {
+		if (ImGui::Button("Mesh 3D volume", ImVec2(-1.0, 0))) {
+			state.mesh_3d_volume();
 			state.remesh_3d_adaptive();
 			reset_view_3d();
 			viewer_control();
 		}
-		ShowTooltip("Remesh the current 3D volume mesh adaptively using mmg3d.");
+		// ImGui::SameLine(0, p);
+		// if (ImGui::Button("Remesh", ImVec2(1.5f*(w-p)/4.f, 0))) {
+		// 	state.remesh_3d_adaptive();
+		// 	reset_view_3d();
+		// 	viewer_control();
+		// }
+		// ShowTooltip("Remesh the current 3D volume mesh adaptively using mmg3d.");
 
 		ImGui::Spacing();
 		ImGui::Separator();
