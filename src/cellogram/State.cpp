@@ -1089,11 +1089,12 @@ namespace cellogram {
 		zmin = mesh3d.V.col(2).minCoeff();
 		zmax = mesh3d.V.col(2).maxCoeff();
 		for (int v = 0; v < mesh3d.V.rows(); ++v) {
-			double t = (mesh3d.V(2) - zmin) / (zmax - zmin); // 0 on zmin, 1 on zmax
+			double t = (mesh3d.V(v,2) - zmin) / (zmax - zmin); // 0 on zmin, 1 on zmax
+			// std::cout << "z: " << t << " " << S(v) << " " << t*S(v) + (1.0-t)*smax << std::endl;
 			S(v) = t*S(v) + (1.0-t)*smax;
 		}
 
-		std::cout << S << std::endl;
+		// std::cout << S << std::endl;
 
 		// Remesh volume mesh
 		mmg_options.hmin = S.minCoeff();
