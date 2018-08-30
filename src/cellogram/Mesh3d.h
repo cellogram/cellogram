@@ -16,6 +16,7 @@ namespace cellogram {
 		Eigen::MatrixXi T;
 		Eigen::MatrixXd displacement;
 		Eigen::MatrixXd traction_forces;
+		Eigen::VectorXd sizing;
 
 		bool empty();
 		bool analysed();

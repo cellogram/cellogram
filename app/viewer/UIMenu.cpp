@@ -140,16 +140,16 @@ namespace {
 		float hmax = opt.hmax;
 		float hmin = opt.hmin;
 		float hsiz = opt.hsiz;
-		ImGui::InputFloat("hausd", &hausd);
-		ShowTooltip("Maximal Hausdorff distance for the boundaries approximation.");
+		// ImGui::InputFloat("hausd", &hausd);
+		// ShowTooltip("Maximal Hausdorff distance for the boundaries approximation.");
 		ImGui::InputFloat("hgrad", &hgrad);
 		ShowTooltip("Gradation value.");
-		ImGui::InputFloat("hmax", &hmax);
-		ShowTooltip("Maximal edge size.");
-		ImGui::InputFloat("hmin", &hmin);
-		ShowTooltip("Minimal edge size.");
-		ImGui::InputFloat("hsiz", &hsiz);
-		ShowTooltip("Build a constant size map of size x.");
+		// ImGui::InputFloat("hmax", &hmax);
+		// ShowTooltip("Maximal edge size.");
+		// ImGui::InputFloat("hmin", &hmin);
+		// ShowTooltip("Minimal edge size.");
+		// ImGui::InputFloat("hsiz", &hsiz);
+		// ShowTooltip("Build a constant size map of size x.");
 		opt.hausd = hausd;
 		opt.hgrad = hgrad;
 		opt.hmax = hmax;
@@ -289,7 +289,7 @@ float UIState::draw_menu_bar() {
 
 			ImGui::Unindent();
 			ImGui::Separator();
-			
+
 			// Analysis
 			ImGui::MenuItem("Displacements##Bar", nullptr, false);
 			ImGui::MenuItem("Tractions##Bar", nullptr, &show_traction_forces);
@@ -822,31 +822,26 @@ void UIState::draw_analysis_menu() {
 		ImGui::InputFloat("Scaling [µm/px]", &state.scaling, 0.01, 0.001, 3);
 		ImGui::InputFloat("Padding [µm]", &state.padding_size, 1, 0, 0);
 		ImGui::InputFloat("Thickness [µm]", &state.thickness, 1, 0, 0);
-		ImGui::Text("Target edge length (remeshing):");
-		ImGui::InputFloat("Uniform", &state.uniform_mesh_size, 0, 0, 3);
+		const char disp_abs[] = "Displ. Thres. [µm]";
+		const char disp_rel[] = "Displ. Thres. [%]";
+		ImGui::InputFloat(state.relative_threshold ? disp_rel : disp_abs, &state.displacement_threshold, 0, 0, 3);
+		ShowTooltip("Threshold on the displacement to identify regions that will be meshed more finely.");
+		ImGui::Checkbox("Relative Threshold", &state.relative_threshold);
+		ShowTooltip("Set the threshold relative to the maximum displacement of the detected points.");
+		ImGui::InputFloat("Edge Length", &state.uniform_mesh_size, 0, 0, 3);
 		ShowTooltip(
-			"Target edge length controlling the background used for sampling the deformation field.\n"
-			"The length is expressed in terms of the median edge-length of the reconstructed Delaunay mesh.");
-		ImGui::InputFloat2("Adaptive", state.adaptive_mesh_size, 3);
+			"Target edge length for the mesh generated for the physical simulation.\n"
+			"If adaptive meshing is used, this value specifies the minimum edge length.\n"
+			"The length is expressed in terms of the median edge-length of the\nreconstructed Delaunay mesh.");
+		float hgrad = state.mmg_options.hgrad;
+		ImGui::InputFloat("Gradation", &hgrad);
 		ShowTooltip(
-			"Lower and upper bounds of the size map driving the adaptive mesh.\n"
-			"The length is expressed in terms of the median edge-length of the reconstructed Delaunay mesh.");
-		// ImGui::InputFloat("Target volume (%)", &state.target_volume, 0, 0, 3);
-		// ShowTooltip("Target volume (for uniform 3D meshing only), in % of the bbox diagonal");
-		// ImGui::InputFloat2("Edge length (%)", state.target_mesh_size);
-		// ShowTooltip("Lower and upper bound of the size map driving the adaptive mesh");
-		if (ImGui::TreeNode("Advanced meshing options")) {
-			ImGui::InputFloat("Power", &state.power, 0, 0, 3);
-			ShowTooltip(
-				"After the norm of the displacement field has been remapped to [0, 1]\n"
-				"(0 being the largest displacement, 1 being no displacement), applies the\n"
-				"power law x^p to the to the scalar field to produce the size map driving\nthe adaptive mesh.");
-			// Adaptive meshing options
-			ImGui::Spacing();
-			ImGui::Text("mmg");
-			SetMmgOptions(state.mmg_options);
-			ImGui::TreePop();
-		}
+			"Use this parameter to control the ratio between the length of\n"
+			"adjacent edges of the mesh generated for the physical simulation.");
+		state.mmg_options.hgrad = std::max(hgrad, 1.f);
+		// if (ImGui::TreeNode("Advanced options")) {
+		// Advanced options
+		// }
 
 		ImGui::InputFloat("E", &state.E, 0.1, 0.01, 3);
 		ImGui::InputFloat("nu", &state.nu, 0.1, 0.01, 3);
@@ -856,31 +851,44 @@ void UIState::draw_analysis_menu() {
 		float w = ImGui::GetContentRegionAvailWidth();
 		float p = ImGui::GetStyle().FramePadding.x;
 
-		if (ImGui::Button("Mesh 2D adaptive", ImVec2(2.5f*(w-p)/4.f, 0))) {
+		if (ImGui::Button("Mesh 2D adaptive", ImVec2(-1.0, 0))) {
 			state.mesh_2d_adaptive();
 			reset_view_3d();
 			viewer_control();
+			// Eigen::MatrixXd V;
+			// Eigen::MatrixXi F;
+			// Eigen::VectorXd S;
+			// state.mesh.get_background_mesh(state.scaling, V, F, S, state.padding_size);
+			// igl::colormap(cm, state.mesh.sizing, true, mesh_color);
+			// V /= state.scaling;
+			// points_data().clear();
+			// points_data().show_faces = true;
+			// points_data().set_mesh(V, F);
+			// points_data().set_colors(mesh_color);
+			// std::cout << state.mesh.sizing << std::endl;
+			// physical_data().clear();
 		}
-		ImGui::SameLine(0, p);
-		if (ImGui::Button("Extrude", ImVec2(1.5f*(w-p)/4.f, 0))) {
-			state.extrude_2d_mesh();
-			reset_view_3d();
-			viewer_control();
-		}
-		ShowTooltip("Extrude the 2D mesh into a 3D volume mesh.");
+		// ImGui::SameLine(0, p);
+		// if (ImGui::Button("Extrude", ImVec2(1.5f*(w-p)/4.f, 0))) {
+		// 	state.extrude_2d_mesh();
+		// 	reset_view_3d();
+		// 	viewer_control();
+		// }
+		// ShowTooltip("Extrude the 2D mesh into a 3D volume mesh.");
 
-		if (ImGui::Button("Mesh 3D uniform", ImVec2(2.5f*(w-p)/4.f, 0))) {
-			state.mesh_3d_uniform();
-			reset_view_3d();
-			viewer_control();
-		}
-		ImGui::SameLine(0, p);
-		if (ImGui::Button("Remesh", ImVec2(1.5f*(w-p)/4.f, 0))) {
+		if (ImGui::Button("Mesh 3D volume", ImVec2(-1.0, 0))) {
+			state.mesh_3d_volume();
 			state.remesh_3d_adaptive();
 			reset_view_3d();
 			viewer_control();
 		}
-		ShowTooltip("Remesh the current 3D volume mesh adaptively using mmg3d.");
+		// ImGui::SameLine(0, p);
+		// if (ImGui::Button("Remesh", ImVec2(1.5f*(w-p)/4.f, 0))) {
+		// 	state.remesh_3d_adaptive();
+		// 	reset_view_3d();
+		// 	viewer_control();
+		// }
+		// ShowTooltip("Remesh the current 3D volume mesh adaptively using mmg3d.");
 
 		ImGui::Spacing();
 		ImGui::Separator();

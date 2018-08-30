@@ -3,6 +3,7 @@
 #include <cellogram/MeshUtils.h>
 #include <geogram/basic/attributes.h>
 #include <geogram/mesh/mesh.h>
+#include <geogram/mesh/mesh_io.h>
 #include <mmg/libmmg.h>
 ////////////////////////////////////////////////////////////////////////////////
 //

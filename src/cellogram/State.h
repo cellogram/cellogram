@@ -51,10 +51,10 @@ public:
 
 	MmgOptions mmg_options;
 
-	float uniform_mesh_size;
-	float adaptive_mesh_size[2];
-	float power;
 	float padding_size;
+	float uniform_mesh_size;
+	float displacement_threshold;
+	bool relative_threshold;
 	float thickness;
 
 	float scaling; // [um/px]
@@ -126,9 +126,10 @@ public:
 	void add_vertex(Eigen::Vector3d new_point);
 
 	// FEM part
+	void propagate_sizing_field(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, const Eigen::VectorXd &disp, Eigen::VectorXd &S);
 	void mesh_2d_adaptive();
 	void extrude_2d_mesh();
-	void mesh_3d_uniform();
+	void mesh_3d_volume();
 	void remesh_3d_adaptive();
 	void analyze_3d_mesh();
 

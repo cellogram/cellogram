@@ -69,8 +69,8 @@ int main(int argc, char *argv[]) {
 
 		if (!state.image_from_pillars)
 		{
-			state.mesh_3d_uniform();
-			state.remesh_3d_adaptive();
+			state.mesh_3d_volume();
+			// state.remesh_3d_adaptive();
 		}
 		state.analyze_3d_mesh();
 

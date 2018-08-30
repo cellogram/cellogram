@@ -17,6 +17,8 @@ set(source_list
 	fitGaussian2D.h
 	image_reader.cpp
 	image_reader.h
+	interpolate.cpp
+	interpolate.h
 	laplace_energy.cpp
 	laplace_energy.h
 	load_points.cpp

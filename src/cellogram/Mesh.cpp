@@ -253,7 +253,7 @@ namespace cellogram {
 		if (V.rows() < 3)
 			return;
 
-		//loose_convex_hull(moved, boundary, 6); moved to compute_triangulation 
+		//loose_convex_hull(moved, boundary, 6); moved to compute_triangulation
 		compute_triangulation();
 
 		// automatically load params if available
@@ -444,7 +444,7 @@ namespace cellogram {
 		V *= scaling;
 
 		S.resize(V.rows());
-		S.head(points.rows()) = (detected - points).rowwise().norm();
+		S.head(points.rows()) = (detected - points).rowwise().norm() * scaling;
 		S.tail(BV.rows()).setZero();
 	}
 
@@ -480,7 +480,7 @@ namespace cellogram {
 
 		Eigen::VectorXi neighCount;
 		vertex_degree(neighCount);
-		
+
 		// Determine fixed vertices based on connectivity and bounding box
 		Eigen::VectorXi indFixed = Eigen::VectorXi::Zero(n);
 
@@ -491,7 +491,7 @@ namespace cellogram {
 				indFixed(i) = 1;
 			}
 		}
-		
+
 		// fix vertices on the boundary and the ones connected to the boundary
 		for (size_t i = 0; i < expanded_boundary.rows(); i++)
 		{
@@ -804,7 +804,7 @@ namespace cellogram {
 		//points = detected;
 		points = moved;
 		solved_vertex.setConstant(false);
-		
+
 		//recompute boundary
 
 		compute_triangulation();

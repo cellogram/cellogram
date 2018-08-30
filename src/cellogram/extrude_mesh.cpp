@@ -1,8 +1,10 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "extrude_mesh.h"
 #include <polyfem/MeshUtils.hpp>
+#include <igl/all_edges.h>
 #include <igl/boundary_loop.h>
 #include <igl/bfs_orient.h>
+#include <igl/orient_outward.h>
 #include <igl/triangle/triangulate.h>
 #include <igl/copyleft/tetgen/tetrahedralize.h>
 ////////////////////////////////////////////////////////////////////////////////
@@ -11,7 +13,84 @@ namespace cellogram {
 
 // -----------------------------------------------------------------------------
 
-void extrude_mesh(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, double thickness, Eigen::MatrixXd &VT, Eigen::MatrixXi &FT, Eigen::MatrixXi &TT) {
+void extrude_mesh(const Eigen::MatrixXd &V1, const Eigen::MatrixXi &F1, double thickness, Eigen::MatrixXd &VT, Eigen::MatrixXi &FT, Eigen::MatrixXi &TT) {
+	// 1. Create box vertices
+	const int n = V1.rows();
+	double z0 = (V1.cols() < 3 ? 0 : V1.col(2).mean());
+	Eigen::RowVector2d minV = V1.colwise().minCoeff().head<2>();
+	Eigen::RowVector2d maxV = V1.colwise().maxCoeff().head<2>();
+	Eigen::MatrixXd V2(V1.rows() + 4, 3);
+	V2.topLeftCorner(V1.rows(), V1.cols()) = V1;
+	V2.col(2).setConstant(z0);
+	V2.bottomRows(4) <<
+		minV(0), minV(1), z0 + thickness,
+		maxV(0), minV(1), z0 + thickness,
+		maxV(0), maxV(1), z0 + thickness,
+		minV(0), maxV(1), z0 + thickness;
+	Eigen::MatrixXi F2 = F1;
+
+	// 2. Project coordinate of boundary points of input surface to lie exactly on the bbox boundary
+	Eigen::MatrixXi E;
+	igl::all_edges(F1, E);
+	std::vector<bool> boundary_vertex(V2.rows(), false);
+	double eps = 1e-9 * (maxV - minV).sum();
+	for (int e  = 0; e < E.rows(); ++e) {
+		for (int lv = 0; lv < 2; ++lv) {
+			boundary_vertex[E(e, lv)] = true;
+			for (int d  : {0, 1}) {
+				double &x = V2(E(e, lv), d);
+				if (std::abs(x - minV(d)) < eps) {
+					x = minV(d);
+				} else if (std::abs(x - maxV(d)) < eps) {
+					x = maxV(d);
+				}
+			}
+		}
+	}
+	for (int i = 0; i < 4; ++i) {
+		boundary_vertex.rbegin()[i] = true;
+	}
+
+	// 3. Trivial triangulation of boundary vertices
+	std::cout << "n = " << n << std::endl;
+	for (int d = 0; d < 2; ++d) {
+		for (double coord : {minV(d), maxV(d)}) {
+			std::vector<std::pair<double, int>> top;
+			std::vector<std::pair<double, int>> bottom;
+			for (int v = 0; v < V2.rows(); ++v) {
+				if (boundary_vertex[v] && V2(v, d) == coord) {
+					if (v < n) {
+						top.emplace_back(V2(v, 1 - d), v);
+					} else {
+						bottom.emplace_back(V2(v, 1 - d), v);
+					}
+				}
+			}
+			cel_assert(bottom.size() == 2);
+			std::sort(top.begin(), top.end());
+			std::sort(bottom.begin(), bottom.end());
+			const int f0 = F2.rows();
+			F2.conservativeResize(F2.rows() + top.size(), F2.cols());
+			for (size_t i = 0; i < top.size(); ++i) {
+				F2.row(f0 + i) << bottom.front().second, top[i].second, (i + 1 == top.size() ? bottom.back().second : top[i + 1].second);
+			}
+		}
+	}
+
+	// 4. Trivial trangulation of bottom side
+	const int f0 = F2.rows();
+	F2.conservativeResize(F2.rows() + 2, F2.cols());
+	F2.row(f0+0) << n+0, n+1, n+2;
+	F2.row(f0+1) << n+2, n+0, n+3;
+
+	// 5. Orient facets and tetrahedralize
+	Eigen::VectorXi C;
+	igl::bfs_orient(F2, F2, C);
+	igl::copyleft::tetgen::tetrahedralize(V2, F2, "Qq1.414", VT, TT, FT);
+	polyfem::orient_closed_surface(VT, FT);
+}
+
+void extrude_mesh_old(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, double thickness, Eigen::MatrixXd &VT, Eigen::MatrixXi &FT, Eigen::MatrixXi &TT) {
 	// Extract boundary loop
 	Eigen::VectorXi L;
 	igl::boundary_loop(F, L);
