@@ -184,6 +184,7 @@ namespace {
 ////////////////////////////////////////////////////////////////////////////////
 
 void UIState::draw_viewer_window() {
+
 	// Top menu bar
 	float h = draw_menu_bar();
 
@@ -194,7 +195,7 @@ void UIState::draw_viewer_window() {
 
 	// Menu on the right
 	if (show_right_panel) {
-		draw_right_panel(h, menu_scaling() * AppLayout::right_panel_width);
+		//draw_right_panel(h, menu_scaling() * AppLayout::right_panel_width);
 	}
 
 	// Mess up with the mouse cursor
@@ -218,6 +219,14 @@ void UIState::draw_viewer_window() {
 		ImGui::GetIO().MouseDrawCursor = false;
 		ImGui::SetMouseCursor(0);
 	}
+	//ImGuiWindow* window = ImGui::GetCurrentWindow();
+	//ImGuiContext& g = *GImGui;
+	//
+	//std::cout << "-----" << window->IDStack.size() << std::endl;
+	//std::cout << window->DC.GroupStack.size() << std::endl;
+	//std::cout << g.ColorModifiers.size() << std::endl;
+	//std::cout << g.StyleModifiers.size() << std::endl;
+	//std::cout << g.FontStack.size() << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -313,10 +322,13 @@ float UIState::draw_menu_bar() {
 		if (ImGui::BeginMenu("Regions")) {
 			// Left panel
 			ImGui::MenuItem("Select Region");
-			ImGui::MenuItem("Grow selected");
-			ImGui::MenuItem("Solve selected");
+			if (ImGui::MenuItem("Mark Good"))
+				std::cout << "bla bla" << std::endl;
+			ImGui::MenuItem("Mark bad");
 
 			ImGui::Separator();
+			ImGui::MenuItem("Split Region");
+			ImGui::MenuItem("Split Region");
 			ImGui::MenuItem("Split Region");
 
 			// Legend
@@ -334,6 +346,8 @@ float UIState::draw_menu_bar() {
 		}
 		h = ImGui::GetWindowSize().y;
 		ImGui::EndMainMenuBar();
+
+		viewer_control();
 	}
 	return h;
 }
@@ -352,25 +366,47 @@ void UIState::draw_left_panel(float ypos, float width) {
 	ImGui::SetNextWindowSize(ImVec2(0.0f, 0.0f), ImGuiSetCond_Always);
 	ImGui::SetNextWindowSizeConstraints(ImVec2(width, 0.0f), ImVec2(width, height));
 
-	ImGui::Begin("Pipeline", &show_left_panel, AppLayout::window_flags);
-
-	if (SetHue(hue) && ImGui::CollapsingHeader("Input File", &show_file_menu, AppLayout::header_flags)) {
+	if (state.phase_enumeration == 0)
+	{
+		ImGui::Begin("Input File", &show_left_panel, AppLayout::window_flags);
 		draw_file_menu();
+		ImGui::End();
 	}
-
-	if (SetHue(hue) && ImGui::CollapsingHeader("Stage 1 - Detection", &show_points_menu, AppLayout::header_flags)) {
+	if (state.phase_enumeration == 1)
+	{
+		ImGui::Begin("Stage 1 - Detection", &show_left_panel, AppLayout::window_flags);
 		draw_points_menu();
+		ImGui::End();
 	}
-
-	if (SetHue(hue) && ImGui::CollapsingHeader("Stage 2 - Matching", &show_mesh_menu, AppLayout::header_flags)) {
+	if (state.phase_enumeration == 2)
+	{
+		ImGui::Begin("Stage 2 - Meshing", &show_left_panel, AppLayout::window_flags);
 		draw_mesh_menu();
+		ImGui::End();
 	}
-
-	if (SetHue(hue) && ImGui::CollapsingHeader("Stage 3 - Analysis", &show_analysis_menu, AppLayout::header_flags)) {
+	if (state.phase_enumeration == 3)
+	{
+		ImGui::Begin("Stage 3 - Analysis", &show_left_panel, AppLayout::window_flags);
 		draw_analysis_menu();
+		ImGui::End();
 	}
+	//if (SetHue(hue) && state.phase_enumeration == 0 && ImGui::CollapsingHeader("Input File", &show_file_menu, AppLayout::header_flags)) {
+	//	draw_file_menu();
+	//}
 
-	ImGui::End();
+	//if (SetHue(hue) && state.phase_enumeration == 1 && ImGui::CollapsingHeader("Detection", &show_points_menu, AppLayout::header_flags)) {
+	//	draw_points_menu();
+	//}
+
+	//if (SetHue(hue) && state.phase_enumeration == 2 && ImGui::CollapsingHeader("Matching", &show_mesh_menu, AppLayout::header_flags)) {
+	//	draw_mesh_menu();
+	//}
+
+	//if (SetHue(hue) && state.phase_enumeration == 3 && ImGui::CollapsingHeader("Analysis", &show_analysis_menu, AppLayout::header_flags)) {
+	//	draw_analysis_menu();
+	//}
+
+
 }
 
 // -----------------------------------------------------------------------------
@@ -444,6 +480,7 @@ void UIState::draw_file_menu() {
 			// update UI
 			viewer_control();
 		}
+		phase_1();
 	}
 
 	if (state.mesh.points.size() == 0) {
@@ -485,40 +522,150 @@ void UIState::draw_points_menu() {
 		detect_vertices();
 	}
 
-	bool was_delete = delete_vertex;
-	if (was_delete) {
-		push_selected();
-	}
-	if (ImGui::Button("Delete Vertex", ImVec2((w - p), 0))) {
-		add_vertex = false;
-		delete_vertex = !delete_vertex;
-	}
-	if (was_delete) {
-		pop_selected();
+	// Histogram is only relevant for detection so should go here
+	{
+		ImGui::Separator();
+		if (hist.size() == 0) {
+			compute_histogram();
+		}
+
+		const float hist_w = ImGui::GetWindowWidth() * 0.75f - 2;
+		ImGui::PushItemWidth(hist_w + 2);
+
+		static float min_img = 0;
+		static float max_img = 1;
+
+		auto pos = ImGui::GetWindowPos();
+		int startX = pos.x + 10;
+		int startY = pos.y + 102 * menu_scaling();
+
+		ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+		ImGui::PlotHistogram("", hist.data(), hist.size(), 0, NULL, 0.0f, hist.maxCoeff(), ImVec2(0, 80));
+
+		ImDrawList *draw_list = ImGui::GetWindowDrawList();
+		draw_list->PushClipRectFullScreen();
+		draw_list->AddLine(ImVec2(startX + hist_w * min_img, startY), ImVec2(startX + hist_w * min_img, startY + 75),
+			IM_COL32(0, 255, 0, 255), 2.0f);
+		draw_list->AddLine(ImVec2(startX + hist_w * max_img, startY), ImVec2(startX + hist_w * max_img, startY + 75),
+			IM_COL32(0, 255, 0, 255), 2.0f);
+		draw_list->PopClipRect();
+
+		ImGui::PopItemFlag();
+
+		static const auto clamping = [](const double x) {
+			if (x > 0) {
+				if (x < 1)
+					return x;
+				else
+					return 1.;
+			}
+			else {
+				return 0.0;
+			}
+		};
+
+		if (ImGui::SliderFloat("min", &min_img, 0.f, 1.f)) {
+			Eigen::MatrixXd tmp = (state.img.array() - min_img) / (max_img - min_img);
+			tmp = tmp.unaryExpr(clamping);
+
+			texture = (tmp.array() * 255).cast<unsigned char>();
+
+			viewer_control();
+		}
+		if (ImGui::SliderFloat("max", &max_img, 0.f, 1.f)) {
+			Eigen::MatrixXd tmp = (state.img.array() - min_img) / (max_img - min_img);
+			tmp = tmp.unaryExpr(clamping);
+			texture = (tmp.array() * 255).cast<unsigned char>();
+
+			viewer_control();
+		}
+
+		ImGui::PopItemWidth();
 	}
 
-	bool was_add = add_vertex;
-	if (was_add)
-		push_selected();
-	if (ImGui::Button("Add Vertex", ImVec2((w - p), 0))) {
-		delete_vertex = false;
-		add_vertex = !add_vertex;
+	if (ImGui::TreeNode("Advanced vertex options")) {
+		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.70f);
+		bool was_delete = delete_vertex;
+		if (was_delete) {
+			push_selected();
+		}
+
+		if (ImGui::Button("Delete Vertex")) {
+			add_vertex = false;
+			delete_vertex = !delete_vertex;
+		}
+		ShowTooltip("Delete points (d)");
+		if (was_delete) {
+			pop_selected();
+		}
+
+		bool was_add = add_vertex;
+		if (was_add)
+			push_selected();
+		if (ImGui::Button("Add Vertex")) {
+			delete_vertex = false;
+			add_vertex = !add_vertex;
+		}
+		ShowTooltip("Add missing points (a)");
+		if (was_add) {
+			pop_selected();
+		}
+
+		bool was_moved = move_vertex;
+		if (was_moved)
+			push_selected();
+		if (ImGui::Button("Move vertex")) {
+			// drag a single vertex to a new starting position
+			move_vertex = !move_vertex;
+			viewer_control();
+		}
+		ShowTooltip("Move points to their correct position by clicking and dragging");
+		if (was_moved) {
+			pop_selected();
+		}
+		ImGui::PopItemWidth();
+		ImGui::TreePop();
 	}
-	if (was_add){
-		pop_selected();
+	
+	// Arrow buttons
+	{
+		float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
+
+		if (ImGui::Button("<<"))
+			//if (ImGui::ArrowButton("##left", ImGuiDir_Left))
+		{
+			std::cout << "back" << std::endl;
+			state.phase_enumeration = 0;
+			
+			// add here also the clean up of this stage
+			state.img.resize(0, 0);
+			phase_0();
+
+			viewer_control();
+		}
+		ImGui::SameLine(0.0f, spacing);
+
+		// disable if points are not detected
+		int nothing_detected = state.mesh.points.size();
+		if (nothing_detected == 0) {
+			push_disabled();
+		}
+
+		if (ImGui::Button(">>"))
+		{
+			state.untangle();
+			/*state.detect_bad_regions();
+			state.check_regions();*/
+			phase_2();
+			state.phase_enumeration = 2;
+			viewer_control();
+		}
+		if (nothing_detected == 0) {
+			pop_disabled();
+		}
+		ImGui::PopButtonRepeat();
 	}
 
-	bool was_moved = move_vertex;
-	if (was_moved)
-		push_selected();
-	if (ImGui::Button("Move vertex", ImVec2((w - p), 0))) {
-		// drag a single vertex to a new starting position
-		move_vertex = !move_vertex;
-		viewer_control();
-	}
-	if (was_moved) {
-		pop_selected();
-	}
 }
 
 // -----------------------------------------------------------------------------
@@ -530,39 +677,35 @@ void UIState::draw_mesh_menu() {
 	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.50f);
 
 	// disable if points are not detected
-	if (state.mesh.points.size() == 0) {
-		push_disabled();
-	}
-	ImGui::InputInt("Num Iter", &state.lloyd_iterations);
-
-	if (ImGui::SliderFloat("t", &t, 0, 1)) {
-		viewer_control();
-	}
+	//if (state.mesh.points.size() == 0) {
+	//	push_disabled();
+	//}
+	/*ImGui::InputInt("Num Iter", &state.lloyd_iterations);*/
 
 	ImGui::PopItemWidth();
 
-	if (ImGui::Button("Untangle", ImVec2((w - p), 0))) {
-		state.untangle();
-		t = 1;
-		mesh_color.resize(0, 0);
-		viewer_control();
-	}
+	//if (ImGui::Button("Untangle", ImVec2((w - p), 0))) {
+	//	state.untangle();
+	//	t = 1;
+	//	mesh_color.resize(0, 0);
+	//	viewer_control();
+	//}
 
-	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.50f);
-	if (ImGui::Button("Lloyd", ImVec2((w - p), 0))) {
-		state.relax_with_lloyd();
-		if (!state.regions.empty()) {
-			state.detect_bad_regions();
-			state.check_regions();
-			// state.fix_regions();
-		}
-		t = 1;
-		mesh_color.resize(0, 0);
-		viewer_control();
-	}
-	// ImGui::PopItemWidth();
+	//ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.50f);
+	//if (ImGui::Button("Lloyd", ImVec2((w - p), 0))) {
+	//	state.relax_with_lloyd();
+	//	if (!state.regions.empty()) {
+	//		state.detect_bad_regions();
+	//		state.check_regions();
+	//		// state.fix_regions();
+	//	}
+	//	t = 1;
+	//	mesh_color.resize(0, 0);
+	//	viewer_control();
+	//}
+	//ImGui::PopItemWidth();
 
-	ImGui::Checkbox("Fix", &state.fix_regular_regions);
+	//ImGui::Checkbox("Fix", &state.fix_regular_regions);
 
 	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.50f);
 	if (ImGui::SliderFloat("energy", &state.energy_variation_from_mean, 0, 5)) {
@@ -591,9 +734,9 @@ void UIState::draw_mesh_menu() {
 		viewer_control();
 	}
 
-	if (state.mesh.points.size() == 0) {
-		pop_disabled();
-	}
+	//if (state.mesh.points.size() == 0) {
+	//	pop_disabled();
+	//}
 
 	// disable if regions are not availabe
 	bool disable_region = state.regions.size() == 0;
@@ -613,18 +756,41 @@ void UIState::draw_mesh_menu() {
 		pop_disabled();
 	}
 
-	if (ImGui::Button("Ultimate relaxation", ImVec2((w - p), 0))) {
-		state.final_relax();
-		t = 1;
-		create_region_label();
+	// Arrow buttons
+	{
+		float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
 
-		viewer_control();
+		if (ImGui::Button("<<"))
+		{
+			state.phase_enumeration = 1;
+			phase_1();
+			// add here also the clean up of this stage
+			state.mesh.triangles.resize(0,0);
+			state.mesh.added_by_untangler.resize(0);
+			state.mesh.deleted_by_untangler.resize(0, 0);
+
+			viewer_control();
+		}
+		ImGui::SameLine(0.0f, spacing);
+
+		if (ImGui::Button(">>"))
+		{
+			state.final_relax();
+			state.phase_enumeration = 3;
+			phase_3();
+			viewer_control();
+		}
 	}
+
 }
 
 // -----------------------------------------------------------------------------
 
 void UIState::draw_analysis_menu() {
+	if (ImGui::SliderFloat("t", &t, 0, 1)) {
+		viewer_control();
+	}
+
 	ImGui::Checkbox("Pillars", &state.image_from_pillars);
 
 	auto reset_view_3d = [&]() {
@@ -806,7 +972,7 @@ void UIState::draw_legend_menu() {
 
 	static GLuint color_bar_texture = -1;
 	static const int width = ImGui::GetWindowWidth();
-	if (color_bar_texture) {
+	if (color_bar_texture == -1) {
 		Eigen::Matrix<unsigned char, Eigen::Dynamic, 4, Eigen::RowMajor> cmap(width * AppLayout::height_colorbar, 4);
 
 		Eigen::MatrixXd t = Eigen::VectorXd::LinSpaced(width, 0, width);

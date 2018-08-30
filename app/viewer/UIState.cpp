@@ -1033,6 +1033,62 @@ void UIState::build_region_edges(const Eigen::MatrixXd &pts, Eigen::MatrixXd &ba
 	bad_P2.conservativeResize(index, 3);
 }
 
+void UIState::phase_0()
+{
+	show_mesh = false;
+	show_hull = false;
+	show_points = false;
+	show_mesh_fill = false;
+	show_image = false;
+	show_matching = false;
+	show_bad_regions = false;
+	color_code = false;
+	show_selected_region = false;
+	analysis_mode = false;
+	show_traction_forces = false;
+}
+void UIState::phase_1()
+{
+	show_mesh = false;
+	show_hull = false;
+	show_points = true;
+	show_mesh_fill = false;
+	show_image = true;
+	show_matching = false;
+	show_bad_regions = false;
+	color_code = false;
+	show_selected_region = false;
+	analysis_mode = false;
+	show_traction_forces = false;
+}
+void UIState::phase_2()
+{
+	show_mesh = true;
+	show_hull = false;
+	show_points = true;
+	show_mesh_fill = false;
+	show_image = true;
+	show_matching = false;
+	show_bad_regions = false;
+	color_code = false;
+	show_selected_region = false;
+	analysis_mode = false;
+	show_traction_forces = false;
+}
+void UIState::phase_3()
+{
+	show_mesh = true;
+	show_hull = false;
+	show_points = true;
+	show_mesh_fill = true;
+	show_image = true;
+	show_matching = true;
+	show_bad_regions = false;
+	color_code = false;
+	show_selected_region = false;
+	analysis_mode = false;
+	show_traction_forces = false;
+}
 // -----------------------------------------------------------------------------
 
 } // namespace cellogram

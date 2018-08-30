@@ -146,6 +146,10 @@ private:
 	void create_region_label();
 	void build_region_edges(const Eigen::MatrixXd &pts, Eigen::MatrixXd &bad_P1, Eigen::MatrixXd &bad_P2, Eigen::MatrixXd &C);
 
+	void phase_0();
+	void phase_1();
+	void phase_2();
+	void phase_3();
 	///////////////
 	// UI Panels //
 	///////////////

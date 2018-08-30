@@ -39,6 +39,8 @@ private:
 	State();
 
 public:
+	int phase_enumeration;
+
 	int lloyd_iterations;
 	float energy_variation_from_mean;
 	int perm_possibilities;
@@ -89,6 +91,7 @@ public:
 	bool load(const std::string &path);
 	void load_settings(const std::string &path);
 	void load_settings(json args);
+	void load_phase(json args);
 	void load_detection_settings(json args);
 	void load_analysis_settings(json args);
 	bool is_data_available(const std::string &path);

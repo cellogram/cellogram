@@ -31,6 +31,10 @@ namespace cellogram {
 	// -----------------------------------------------------------------------------
 
 	namespace {
+		json default_phase = R"({
+			"phase_enumeration": 0
+			})"_json;
+
 		json default_detection_settings = R"({
 			"energy_variation_from_mean": 2.0,
 			"lloyd_iterations": 20,
@@ -138,6 +142,12 @@ namespace cellogram {
 	}
 
 	// -----------------------------------------------------------------------------
+	void State::load_phase(json args) {
+		json phase = default_phase;
+		phase.merge_patch(args);
+		phase_enumeration = phase["phase_enumeration"];
+	}
+
 	void State::load_detection_settings(json args) {
 		json settings = default_detection_settings;
 		settings.merge_patch(args);
@@ -168,6 +178,7 @@ namespace cellogram {
 	}
 
 	void State::load_settings(json args) {
+		load_phase(args.value("settings", json::object()));
 		load_detection_settings(args.value("settings", json::object()));
 		load_analysis_settings(args.value("analysis_settings", json::object()));
 	}
@@ -226,11 +237,6 @@ namespace cellogram {
 
 	bool State::is_data_available(const std::string &path)
 	{
-// #ifdef WIN32
-// 		std::string save_data = path + "\\cellogram\\moved.vert";
-// #else
-// 		std::string save_data = path + "/cellogram/moved.vert";
-// #endif
 
 #ifdef WIN32
 		std::string save_data = path + "\\all.json";
@@ -245,7 +251,7 @@ namespace cellogram {
 	bool State::load_image(const std::string fname)
 	{
 		bool ok = read_image(fname, img);
-
+		phase_enumeration = 1;
 		//std::cout << std::setprecision(std::numeric_limits<long double>::digits10 + 1) << img << std::endl;
 
 		hull_vertices.resize(0, 0); //needed for lloyd
@@ -258,11 +264,6 @@ namespace cellogram {
 		return ok;
 	}
 
-	//bool State::load_param(const std::string & path)
-	//{
-	//	return mesh.load_params(path);
-	//}
-
 	bool State::save(const std::string & path, const bool full_path)
 	{
 		using json = nlohmann::json;
@@ -270,6 +271,10 @@ namespace cellogram {
 		json unique;
 
 		json json_data;
+		json_data["phase_enumeration"] = phase_enumeration;
+		unique["phase"] = json_data;
+
+		json_data.clear();
 		json_data["lloyd_iterations"] = lloyd_iterations;
 		json_data["energy_variation_from_mean"] = energy_variation_from_mean;
 		json_data["perm_possibilities"] = perm_possibilities;
