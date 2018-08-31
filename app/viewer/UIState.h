@@ -138,6 +138,7 @@ public:
 private:
 	igl::ColorMapType cm = igl::ColorMapType::COLOR_MAP_TYPE_PARULA;
 	double min_val = 0, max_val = 0;
+	std::string current_file_name = "";
 
 	bool block_mouse_behavior(int button);
 	void viewer_control();

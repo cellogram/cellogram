@@ -82,8 +82,8 @@ int main(int argc, char *argv[]) {
 	else
 	{
 		UIState::ui_state().initialize();
-		UIState::ui_state().load_image(args.input);
 		UIState::ui_state().state.load_settings(args.settings);
+		UIState::ui_state().load_image(args.input);
 		UIState::ui_state().launch();
 	}
 	return 0;

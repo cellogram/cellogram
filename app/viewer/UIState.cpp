@@ -111,7 +111,10 @@ bool UIState::mouse_up(int button, int modifier) {
 	// move_vertex = false;
 	dragging_id = -1;
 
-	state.reset_state();
+	if(state.phase_enumeration != 2)
+		state.reset_state();
+	else
+		move_vertex = false;
 	viewer_control();
 
 	return true;
@@ -338,8 +341,8 @@ bool UIState::load() {
 	// img.resize(0, 0);
 	// reset flags
 
-	mesh_color.resize(1, 3);
-	mesh_color.row(0) = Eigen::RowVector3d(255, 255, 120) / 255.0;
+	mesh_color.resize(0,0);
+	// mesh_color.row(0) = Eigen::RowVector3d(52, 152, 219) / 255.0;
 	reset_viewer();
 	
 	selected_region = -1;
@@ -361,8 +364,8 @@ void UIState::detect_vertices() {
 	if (state.mesh.points.size() == 0)
 		return;
 
-	mesh_color.resize(1, 3);
-	mesh_color.row(0) = Eigen::RowVector3d(255, 255, 120) / 255.0;
+	mesh_color.resize(0,0);
+	// mesh_color.row(0) = Eigen::RowVector3d(52, 152, 219) / 255.0;
 	// reset_viewer();
 	show_points = true;
 
@@ -370,7 +373,7 @@ void UIState::detect_vertices() {
 	// clean_hull();
 	compute_triangulation();
 
-	color_code = true;
+	// color_code = true;
 	selected_region = -1;
 	current_region_status = "";
 	viewer_control();
@@ -407,6 +410,7 @@ bool UIState::mouse_scroll(float delta_y) {
 		viewer.core.camera_zoom = (viewer.core.camera_zoom * mult > min_zoom ? viewer.core.camera_zoom * mult : min_zoom);
 
 		points_data().point_size *= mult;
+		physical_data().point_size *= mult;
 	}
 
 	return super::mouse_scroll(delta_y);
@@ -598,7 +602,9 @@ void UIState::export_region() {
 void UIState::reset_viewer() {
 	// Display flags
 	t = 0;
-	vertex_color = Eigen::RowVector3f(44, 62, 80)/255;
+	// vertex_color = Eigen::RowVector3f(44, 62, 80)/255;
+	vertex_color = Eigen::RowVector3f(41, 128, 185)/255;
+
 	selected_region = -1;
 	show_hull = true;
 	show_points = true;
@@ -620,7 +626,7 @@ void UIState::deselect_all_buttons() {
 
 // TODO refactor when more clear
 void UIState::load_image(std::string fname) {
-	state.load_image(fname);
+	bool ok = state.load_image(fname);
 
 	const int index = fname.find_last_of(".");
 	save_dir = fname.substr(0, index);
@@ -645,7 +651,12 @@ void UIState::load_image(std::string fname) {
 	compute_histogram();
 
 	double extent = (V.colwise().maxCoeff() - V.colwise().minCoeff()).maxCoeff();
-	// points_data().point_size = std::ceil(float(700. / extent)) + 3;
+	float ui_scaling_factor = viewer.window != NULL ? hidpi_scaling() / pixel_ratio() : 1;
+	// points_data().point_size = std::ceil(ui_scaling_factor) / 5.;
+	points_data().point_size = std::ceil(float(ui_scaling_factor / extent)) * 10;
+	points_data().line_color = Eigen::Vector4f(52, 152, 219, 255) / 255.0;
+
+	physical_data().point_size = std::ceil(float(ui_scaling_factor / extent)) * 10;
 
 	// HIGH dpi
 	// int width, height;
@@ -654,7 +665,18 @@ void UIState::load_image(std::string fname) {
 	// glfwGetWindowSize(viewer.window, &width_window, &height_window);
 	// const int highdpi = width / width_window;
 
-	viewer_control();
+	if(ok)
+	{
+		current_file_name = fname;
+
+		show_image = true;
+
+	// update UI
+		phase_1();
+		state.phase_enumeration = 1;
+
+		viewer_control();
+	}
 }
 
 void UIState::display_image() {
@@ -728,8 +750,9 @@ void UIState::viewer_control_2d() {
 	// points
 	Eigen::MatrixXd V = t * state.mesh.points + (1 - t) * state.mesh.moved;
 
-	if (V.rows() > 2 && show_mesh)
+	if (V.rows() > 2 && show_mesh){
 		points_data().set_mesh(V, state.mesh.triangles);
+	}
 
 	points_data().show_lines = dragging_id < 0;
 
@@ -745,10 +768,9 @@ void UIState::viewer_control_2d() {
 	        points_data().set_colors(Eigen::RowVector3d(1, 1, 1));
 	}*/
 	if (show_points) {
-		if (viewer.window != NULL) {
-			float ui_scaling_factor = hidpi_scaling() / pixel_ratio();
-			points_data().point_size = std::ceil(ui_scaling_factor) * 5;
-		}
+		// if (viewer.window != NULL) {
+		// 	float ui_scaling_factor = hidpi_scaling() / pixel_ratio();
+		// }
 
 		// if (state.regions.empty())
 		//{
@@ -804,7 +826,6 @@ void UIState::viewer_control_2d() {
 			}
 
 			points_data().add_points(state.mesh.deleted_by_untangler, Eigen::RowVector3d(230, 126, 34) / 255);
-
 		}
 
 		points_data().add_points(V, C);
@@ -817,7 +838,7 @@ void UIState::viewer_control_2d() {
 	// if (show_mesh_fill && !state.regions.empty())
 	if (show_mesh_fill)
 		create_region_label();
-	if(mesh_color.size() > 0)
+	if(show_mesh && mesh_color.size() > 0) //FIXME
 		points_data().set_colors(mesh_color);
 
 	// bad regions
@@ -1085,7 +1106,7 @@ void UIState::phase_3()
 {
 	show_mesh = true;
 	show_hull = false;
-	show_points = true;
+	show_points = false;
 	show_mesh_fill = true;
 	show_image = true;
 	show_matching = true;

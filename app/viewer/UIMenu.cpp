@@ -26,101 +26,101 @@
 
 namespace cellogram {
 
-namespace {
+	namespace {
 
-	void push_disabled() {
-		ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-		ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
-	}
+		void push_disabled() {
+			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+		}
 
-	void pop_disabled() {
-		ImGui::PopItemFlag();
-		ImGui::PopStyleVar();
-	}
+		void pop_disabled() {
+			ImGui::PopItemFlag();
+			ImGui::PopStyleVar();
+		}
 
-	void push_selected() {
-		ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyle().Colors[ImGuiCol_ButtonHovered]);
-	}
+		void push_selected() {
+			ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyle().Colors[ImGuiCol_ButtonHovered]);
+		}
 
-	void pop_selected() {
-		ImGui::PopStyleColor();
-	}
+		void pop_selected() {
+			ImGui::PopStyleColor();
+		}
 
-	void push_color(float hue) {
-		static float col_main_sat = 180.f/255.f;
-		static float col_main_val = 161.f/255.f;
-		static float col_area_sat = 124.f/255.f;
-		static float col_area_val = 100.f/255.f;
-		static float col_back_sat = 59.f/255.f;
-		static float col_back_val = 40.f/255.f;
-		ImVec4 col_text = ImColor::HSV(hue/255.f,  20.f/255.f, 235.f/255.f);
-		ImVec4 col_main = ImColor::HSV(hue/255.f, col_main_sat, col_main_val);
-		ImVec4 col_back = ImColor::HSV(hue/255.f, col_back_sat, col_back_val);
-		ImVec4 col_area = ImColor::HSV(hue/255.f, col_area_sat, col_area_val);
+		void push_color(float hue) {
+			static float col_main_sat = 180.f/255.f;
+			static float col_main_val = 161.f/255.f;
+			static float col_area_sat = 124.f/255.f;
+			static float col_area_val = 100.f/255.f;
+			static float col_back_sat = 59.f/255.f;
+			static float col_back_val = 40.f/255.f;
+			ImVec4 col_text = ImColor::HSV(hue/255.f,  20.f/255.f, 235.f/255.f);
+			ImVec4 col_main = ImColor::HSV(hue/255.f, col_main_sat, col_main_val);
+			ImVec4 col_back = ImColor::HSV(hue/255.f, col_back_sat, col_back_val);
+			ImVec4 col_area = ImColor::HSV(hue/255.f, col_area_sat, col_area_val);
 
-		auto Vec4 = []( float r, float g, float b, float a ) {
-			float h, s, v;
-			ImGui::ColorConvertRGBtoHSV( r, g, b, h, s, v );
-			ImGui::ColorConvertHSVtoRGB( h, s, v, r, g, b );
-			return ImVec4(r,g,b,a);
+			auto Vec4 = []( float r, float g, float b, float a ) {
+				float h, s, v;
+				ImGui::ColorConvertRGBtoHSV( r, g, b, h, s, v );
+				ImGui::ColorConvertHSVtoRGB( h, s, v, r, g, b );
+				return ImVec4(r,g,b,a);
+			};
+
+			ImGui::PushStyleColor(ImGuiCol_Header, Vec4(col_main.x, col_main.y, col_main.z, 0.56f));
+			ImGui::PushStyleColor(ImGuiCol_HeaderHovered, Vec4(col_main.x, col_main.y, col_main.z, 0.86f));
+			ImGui::PushStyleColor(ImGuiCol_HeaderActive, Vec4(col_main.x, col_main.y, col_main.z, 1.00f));
 		};
 
-		ImGui::PushStyleColor(ImGuiCol_Header, Vec4(col_main.x, col_main.y, col_main.z, 0.56f));
-		ImGui::PushStyleColor(ImGuiCol_HeaderHovered, Vec4(col_main.x, col_main.y, col_main.z, 0.86f));
-		ImGui::PushStyleColor(ImGuiCol_HeaderActive, Vec4(col_main.x, col_main.y, col_main.z, 1.00f));
-	};
+		void pop_color() {
+			ImGui::PopStyleColor();
+			ImGui::PopStyleColor();
+			ImGui::PopStyleColor();
+		};
 
-	void pop_color() {
-		ImGui::PopStyleColor();
-		ImGui::PopStyleColor();
-		ImGui::PopStyleColor();
-	};
+		struct SetHue {
+			SetHue(float hue) { push_color(hue); }
+			~SetHue() { pop_color(); }
+			operator bool() const { return true; }
+		};
 
-	struct SetHue {
-		SetHue(float hue) { push_color(hue); }
-		~SetHue() { pop_color(); }
-		operator bool() const { return true; }
-	};
-
-	void draw_legend_item(float r, float g, float b, std::string label) {
-		ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-		ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(r / 255, g / 255, b / 255));
-		ImGui::Button("    ");
-		ImGui::SameLine();
-		ImGui::Text("%s", label.c_str());
-		ImGui::PopStyleColor(1);
-		ImGui::PopItemFlag();
-	}
-
-	void ShowTooltip(const std::string &desc) {
-		if (ImGui::IsItemActive() || ImGui::IsItemHovered()) {
-			ImGui::SetTooltip("%s", desc.c_str());
+		void draw_legend_item(float r, float g, float b, std::string label) {
+			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+			ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(r / 255, g / 255, b / 255));
+			ImGui::Button("    ");
+			ImGui::SameLine();
+			ImGui::Text("%s", label.c_str());
+			ImGui::PopStyleColor(1);
+			ImGui::PopItemFlag();
 		}
-	}
 
-	bool ComboWithTooltips(const char *label, int *idx, std::vector<const char *> items,
-		const std::vector<const char *> &tips) {
-		bool value_changed = false;
-		if (ImGui::BeginCombo(label, items[*idx])) {
-			for (int i = 0; i < (int)items.size(); ++i) {
-				bool is_selected = (*idx == i);
-				if (ImGui::Selectable(items[i], is_selected)) {
-					value_changed = true;
-					*idx = i;
-				}
-				if (std::strlen(tips[i]) && (ImGui::IsItemActive() || ImGui::IsItemHovered())) {
-					ImGui::SetTooltip("%s", tips[i]);
-				}
-				if (is_selected) {
-					ImGui::SetItemDefaultFocus();
-				}
+		void ShowTooltip(const std::string &desc) {
+			if (ImGui::IsItemActive() || ImGui::IsItemHovered()) {
+				ImGui::SetTooltip("%s", desc.c_str());
 			}
-			ImGui::EndCombo();
 		}
-		return value_changed;
-	}
 
-	void SetMmgOptions(MmgOptions &opt) {
+		bool ComboWithTooltips(const char *label, int *idx, std::vector<const char *> items,
+			const std::vector<const char *> &tips) {
+			bool value_changed = false;
+			if (ImGui::BeginCombo(label, items[*idx])) {
+				for (int i = 0; i < (int)items.size(); ++i) {
+					bool is_selected = (*idx == i);
+					if (ImGui::Selectable(items[i], is_selected)) {
+						value_changed = true;
+						*idx = i;
+					}
+					if (std::strlen(tips[i]) && (ImGui::IsItemActive() || ImGui::IsItemHovered())) {
+						ImGui::SetTooltip("%s", tips[i]);
+					}
+					if (is_selected) {
+						ImGui::SetItemDefaultFocus();
+					}
+				}
+				ImGui::EndCombo();
+			}
+			return value_changed;
+		}
+
+		void SetMmgOptions(MmgOptions &opt) {
 		// -ar  x 	all codes 	Value for angle detection.
 		// -hausd  x 	all codes 	Maximal Hausdorff distance for the boundaries approximation.
 		// -hgrad  x 	all codes 	Gradation value.
@@ -135,27 +135,27 @@ namespace {
 		// -nsd  n 	mmg2d 	In mesh generation mode (no given triangle), save the subdomain of index n. Save all subdomains
 		// if n=0 (default).
 
-		float hausd = opt.hausd;
-		float hgrad = opt.hgrad;
-		float hmax = opt.hmax;
-		float hmin = opt.hmin;
-		float hsiz = opt.hsiz;
+			float hausd = opt.hausd;
+			float hgrad = opt.hgrad;
+			float hmax = opt.hmax;
+			float hmin = opt.hmin;
+			float hsiz = opt.hsiz;
 		// ImGui::InputFloat("hausd", &hausd);
 		// ShowTooltip("Maximal Hausdorff distance for the boundaries approximation.");
-		ImGui::InputFloat("hgrad", &hgrad);
-		ShowTooltip("Gradation value.");
+			ImGui::InputFloat("hgrad", &hgrad);
+			ShowTooltip("Gradation value.");
 		// ImGui::InputFloat("hmax", &hmax);
 		// ShowTooltip("Maximal edge size.");
 		// ImGui::InputFloat("hmin", &hmin);
 		// ShowTooltip("Minimal edge size.");
 		// ImGui::InputFloat("hsiz", &hsiz);
 		// ShowTooltip("Build a constant size map of size x.");
-		opt.hausd = hausd;
-		opt.hgrad = hgrad;
-		opt.hmax = hmax;
-		opt.hmin = hmin;
-		opt.hsiz = hsiz;
-	}
+			opt.hausd = hausd;
+			opt.hgrad = hgrad;
+			opt.hmax = hmax;
+			opt.hmin = hmin;
+			opt.hsiz = hsiz;
+		}
 
 } // anonymous namespace
 
@@ -171,12 +171,12 @@ namespace {
 		constexpr int header_hue = 205;
 
 		constexpr ImGuiWindowFlags window_flags =
-			ImGuiWindowFlags_NoSavedSettings
-			| ImGuiWindowFlags_AlwaysAutoResize;
+		ImGuiWindowFlags_NoSavedSettings
+		| ImGuiWindowFlags_AlwaysAutoResize;
 
 		constexpr ImGuiTreeNodeFlags header_flags =
-			ImGuiTreeNodeFlags_DefaultOpen
-			| ImGuiTreeNodeFlags_OpenOnDoubleClick;
+		ImGuiTreeNodeFlags_DefaultOpen
+		| ImGuiTreeNodeFlags_OpenOnDoubleClick;
 	};
 
 } // anonymous namespace
@@ -238,7 +238,7 @@ float UIState::draw_menu_bar() {
 	float h = 0;
 	if (ImGui::BeginMainMenuBar()) {
 		if (ImGui::BeginMenu("File")) {
-			if (ImGui::MenuItem("Open", "Ctrl+O")) {
+			if (ImGui::MenuItem("Load image", "Ctrl+O")) {
 				std::string fname = FileDialog::openFileName(DATA_DIR, {"*.png", "*.tif", "*.tiff"});
 				if (!fname.empty()) {
 					load_image(fname);
@@ -296,7 +296,7 @@ float UIState::draw_menu_bar() {
 
 			ImGui::EndMenu();
 		}
-		if (ImGui::BeginMenu("Windows")) {
+		if (false && ImGui::BeginMenu("Windows")) {
 			// Left panel
 			ImGui::MenuItem("Left Panel##Bar", nullptr, &show_left_panel);
 			ImGui::Indent();
@@ -319,21 +319,33 @@ float UIState::draw_menu_bar() {
 
 			ImGui::EndMenu();
 		}
-		if (ImGui::BeginMenu("Regions")) {
-			// Left panel
-			ImGui::MenuItem("Select Region");
-			if (ImGui::MenuItem("Mark Good"))
-				std::cout << "bla bla" << std::endl;
-			ImGui::MenuItem("Mark bad");
+		// if (ImGui::BeginMenu("Regions")) {
+		// 	// Left panel
+		// 	ImGui::MenuItem("Select Region");
+		// 	if (ImGui::MenuItem("Mark Good"))
+		// 		std::cout << "bla bla" << std::endl;
+		// 	ImGui::MenuItem("Mark bad");
 
-			ImGui::Separator();
-			ImGui::MenuItem("Split Region");
-			ImGui::MenuItem("Split Region");
-			ImGui::MenuItem("Split Region");
+		// 	ImGui::Separator();
+		// 	ImGui::MenuItem("Split Region");
+		// 	ImGui::MenuItem("Split Region");
+		// 	ImGui::MenuItem("Split Region");
 
-			// Legend
-			ImGui::Separator();
-			ImGui::Text("Region Legend");
+		// 	// Legend
+		// 	ImGui::Separator();
+		// 	ImGui::Text("Region Legend");
+		// 	draw_legend_item(46, 204, 113, "Ok");
+		// 	draw_legend_item(155, 89, 182, "Too Many Vertices");
+		// 	draw_legend_item(241, 196, 15, "Too Few Vertices");
+		// 	draw_legend_item(41, 128, 185, "Region Too Large");
+		// 	draw_legend_item(192, 57, 43, "No Solution");
+		// 	draw_legend_item(149, 165, 166, "Not Properly Closed");
+		// 	draw_legend_item(52, 73, 94, "Other");
+
+		// 	ImGui::EndMenu();
+		// }
+
+		if (ImGui::BeginMenu("Legend")) {
 			draw_legend_item(46, 204, 113, "Ok");
 			draw_legend_item(155, 89, 182, "Too Many Vertices");
 			draw_legend_item(241, 196, 15, "Too Few Vertices");
@@ -344,6 +356,9 @@ float UIState::draw_menu_bar() {
 
 			ImGui::EndMenu();
 		}
+
+		ImGui::SameLine(0, 100);
+		ImGui::Text(current_file_name.c_str());
 		h = ImGui::GetWindowSize().y;
 		ImGui::EndMainMenuBar();
 
@@ -365,7 +380,7 @@ void UIState::draw_left_panel(float ypos, float width) {
 	ImGui::SetNextWindowPos(ImVec2(0.0f, ypos), ImGuiSetCond_Always);
 	ImGui::SetNextWindowSize(ImVec2(0.0f, 0.0f), ImGuiSetCond_Always);
 	ImGui::SetNextWindowSizeConstraints(ImVec2(width, 0.0f), ImVec2(width, height));
-	
+
 	if (true)
 	{
 		ImGui::Begin("Input File", &show_left_panel, AppLayout::window_flags);
@@ -467,14 +482,14 @@ float UIState::draw_file_menu() {
 	float p = ImGui::GetStyle().FramePadding.x;
 
 	// Text filed showing loaded image
-	std::vector<std::string> strings;
-	std::istringstream f(save_dir);
-	std::string s;
-	while (std::getline(f, s, '\\')) {
-		strings.push_back(s);
-	}
+	// std::vector<std::string> strings;
+	// std::istringstream f(save_dir);
+	// std::string s;
+	// while (std::getline(f, s, '\\')) {
+	// 	strings.push_back(s);
+	// }
 
-	ImGui::Text("File: %s", strings.back().c_str());
+	// ImGui::Text("File: %s", strings.back().c_str());
 	if (ImGui::IsItemHovered()) {
 		ImGui::BeginTooltip();
 		ImGui::PushTextWrapPos(w * 35.0f);
@@ -487,13 +502,7 @@ float UIState::draw_file_menu() {
 		std::string fname = FileDialog::openFileName(DATA_DIR, {"*.png", "*.tif", "*.tiff"});
 		if (!fname.empty()) {
 			load_image(fname);
-
-			show_image = true;
-
-			// update UI
-			viewer_control();
 		}
-		phase_1();
 	}
 
 	if (state.mesh.points.size() == 0) {
@@ -505,7 +514,7 @@ float UIState::draw_file_menu() {
 	if (state.mesh.points.size() == 0) {
 		pop_disabled();
 	}
-    ImGui::SameLine(0, p);
+	ImGui::SameLine(0, p);
 
 	if (!data_available) {
 		push_disabled();
@@ -605,7 +614,7 @@ void UIState::draw_points_menu() {
 			push_selected();
 		}
 
-		if (ImGui::Button("Delete Vertex")) {
+		if (ImGui::Button("Delete")) {
 			add_vertex = false;
 			delete_vertex = !delete_vertex;
 		}
@@ -617,7 +626,8 @@ void UIState::draw_points_menu() {
 		bool was_add = add_vertex;
 		if (was_add)
 			push_selected();
-		if (ImGui::Button("Add Vertex")) {
+		ImGui::SameLine();
+		if (ImGui::Button("Add")) {
 			delete_vertex = false;
 			add_vertex = !add_vertex;
 		}
@@ -629,7 +639,8 @@ void UIState::draw_points_menu() {
 		bool was_moved = move_vertex;
 		if (was_moved)
 			push_selected();
-		if (ImGui::Button("Move vertex")) {
+		ImGui::SameLine();
+		if (ImGui::Button("Move")) {
 			// drag a single vertex to a new starting position
 			move_vertex = !move_vertex;
 			viewer_control();
@@ -641,7 +652,7 @@ void UIState::draw_points_menu() {
 		ImGui::PopItemWidth();
 		ImGui::TreePop();
 	}
-	
+
 	// Arrow buttons
 	{
 		float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
@@ -651,7 +662,10 @@ void UIState::draw_points_menu() {
 		{
 			std::cout << "back" << std::endl;
 			state.phase_enumeration = 0;
-			
+			add_vertex = false;
+			move_vertex = false;
+			delete_vertex = false;
+
 			// add here also the clean up of this stage
 			state.img.resize(0, 0);
 			phase_0();
@@ -661,13 +675,17 @@ void UIState::draw_points_menu() {
 		ImGui::SameLine(0.0f, spacing);
 
 		// disable if points are not detected
-		int nothing_detected = state.mesh.points.size();
+		const int nothing_detected = state.mesh.points.size();
 		if (nothing_detected == 0) {
 			push_disabled();
 		}
 
 		if (ImGui::Button(">>"))
 		{
+			add_vertex = false;
+			move_vertex = false;
+			delete_vertex = false;
+
 			state.untangle();
 			/*state.detect_bad_regions();
 			state.check_regions();*/
@@ -678,7 +696,7 @@ void UIState::draw_points_menu() {
 		if (nothing_detected == 0) {
 			pop_disabled();
 		}
-		ImGui::PopButtonRepeat();
+		// ImGui::PopButtonRepeat();
 	}
 
 }
@@ -734,6 +752,15 @@ void UIState::draw_mesh_menu() {
 	}
 	ImGui::PopItemWidth();
 
+	if(state.mesh.added_by_untangler.size() > 0)
+	{
+		if (ImGui::Button("Move vertex", ImVec2((w - p), 0))) {
+		// drag a single vertex to a new starting position
+			move_vertex = !move_vertex;
+			viewer_control();
+		}
+	}
+
 	if (ImGui::Button("build regions", ImVec2((w - p), 0))) {
 		selected_region = -1;
 
@@ -769,6 +796,12 @@ void UIState::draw_mesh_menu() {
 	}
 	if (disable_region) {
 		pop_disabled();
+	}
+
+	if (ImGui::TreeNode("Advanced regions options"))
+	{
+		draw_region_menu();
+		ImGui::TreePop();
 	}
 
 	// Arrow buttons
@@ -829,8 +862,10 @@ void UIState::draw_analysis_menu() {
 		ShowTooltip("Length of pillars");
 		ImGui::PopItemWidth(); //---> the resulting force is in micro-newtons (if displacements or in micrometers)
 
-		if (ImGui::Button("Analyze 3D mesh", ImVec2(-1, 0))) {
+		if (ImGui::Button("Analyze data", ImVec2(-1, 0))) {
 			state.analyze_3d_mesh();
+			state.phase_enumeration = 4;
+			phase_4();
 			reset_view_3d();
 			view_mode_3d = Mesh3DAttribute::NORM_DISP;
 			viewer_control();
@@ -920,7 +955,7 @@ void UIState::draw_analysis_menu() {
 		ImGui::Spacing();
 		ImGui::Separator();
 		ImGui::Spacing();
-		
+
 		bool mesh_3d_empty = state.mesh3d.empty();
 		if (mesh_3d_empty) {
 			push_disabled();
@@ -942,30 +977,34 @@ void UIState::draw_analysis_menu() {
 
 void UIState::draw_results_menu()
 {
-	//static int view_current = 0;
-	//ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.40f);
-	//{
-	//	const char* views[] = { "U", "S", "T"};
-	//	ImGui::Combo("View", &view_current, views, IM_ARRAYSIZE(views));
-	//}
-	//
-	//static int sub_view_current = 0;
-	//{
-	//	if (view_current == 0)
-	//		const char* sub_views[] = { "Mag", "Ux" };
-	//	else if (view_current == 1)
-	//		const char* sub_views[] = { "Mises", "Sxx" };
-	//	else if (view_current == 2)
-	//		const char* sub_views[] = { "Mag", "Tx" };
-	//	ImGui::Combo("View", &sub_view_current, sub_views, IM_ARRAYSIZE(sub_views));
-	//	ImGui::PopItemWidth();
-	//}
+	if(!state.image_from_pillars)
+	{
+		static int view_current = 0;
+		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.4f);
+		const char* views[] = { "U", "S", "T"};
+		ImGui::Combo("View", &view_current, views, IM_ARRAYSIZE(views));
+
+		static int sub_view_current = 0;
+		if (view_current == 0){
+			const char* sub_views[] = { "Mag", "Ux" };
+			ImGui::Combo("Uview##View", &sub_view_current, sub_views, IM_ARRAYSIZE(sub_views));
+		}
+		else if (view_current == 1){
+			const char* sub_views[] = { "Mises", "Sxx" };
+			ImGui::Combo("Sview##View", &sub_view_current, sub_views, IM_ARRAYSIZE(sub_views));
+		}
+		else if (view_current == 2){
+			const char* sub_views[] = { "Mag", "Tx" };
+			ImGui::Combo("Tview##View", &sub_view_current, sub_views, IM_ARRAYSIZE(sub_views));
+		}
+		ImGui::PopItemWidth();
+	}
 
 
 	// Colorbar
-	static GLuint color_bar_texture = -1;
-	static const int width = ImGui::GetWindowWidth();
-	if (color_bar_texture == -1) {
+	static GLuint color_bar_texture = 0;
+	const int width = ImGui::GetWindowWidth();
+	if (color_bar_texture == 0) {
 		Eigen::Matrix<unsigned char, Eigen::Dynamic, 4, Eigen::RowMajor> cmap(width * AppLayout::height_colorbar, 4);
 
 		Eigen::MatrixXd t = Eigen::VectorXd::LinSpaced(width, 0, width);
@@ -1090,9 +1129,9 @@ void UIState::draw_legend_menu() {
 
 	ImGui::Separator();
 
-	static GLuint color_bar_texture = -1;
+	static GLuint color_bar_texture = 0;
 	static const int width = ImGui::GetWindowWidth();
-	if (color_bar_texture == -1) {
+	if (color_bar_texture == 0) {
 		Eigen::Matrix<unsigned char, Eigen::Dynamic, 4, Eigen::RowMajor> cmap(width * AppLayout::height_colorbar, 4);
 
 		Eigen::MatrixXd t = Eigen::VectorXd::LinSpaced(width, 0, width);
@@ -1146,59 +1185,59 @@ void UIState::draw_layer_menu() {
 	if (ImGui::ColorEdit4("Mesh", points_data().line_color.data(),
 		ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueWheel)) {
 		viewer_control();
-	}
+}
 
-	if (ImGui::Checkbox("Show hull", &show_hull)) {
-		viewer_control();
-	}
-	if (ImGui::Checkbox("Points", &show_points)) {
-		viewer_control();
-	}
-	ImGui::SameLine();
-	if (ImGui::Checkbox("Coded", &color_code)) {
-		viewer_control();
-	}
+if (ImGui::Checkbox("Show hull", &show_hull)) {
+	viewer_control();
+}
+if (ImGui::Checkbox("Points", &show_points)) {
+	viewer_control();
+}
+ImGui::SameLine();
+if (ImGui::Checkbox("Coded", &color_code)) {
+	viewer_control();
+}
 
-	if (ImGui::Checkbox("Mesh Fill", &show_mesh_fill)) {
-		viewer_control();
-	}
-	if (ImGui::Checkbox("Show image", &show_image)) {
-		viewer_control();
-	}
-	if (ImGui::Checkbox("Show matching", &show_matching)) {
-		viewer_control();
-	}
-	if (ImGui::Checkbox("Bad regions", &show_bad_regions)) {
-		viewer_control();
-	}
-	if (ImGui::Checkbox("Selected region", &show_selected_region)) {
-		viewer_control();
+if (ImGui::Checkbox("Mesh Fill", &show_mesh_fill)) {
+	viewer_control();
+}
+if (ImGui::Checkbox("Show image", &show_image)) {
+	viewer_control();
+}
+if (ImGui::Checkbox("Show matching", &show_matching)) {
+	viewer_control();
+}
+if (ImGui::Checkbox("Bad regions", &show_bad_regions)) {
+	viewer_control();
+}
+if (ImGui::Checkbox("Selected region", &show_selected_region)) {
+	viewer_control();
 		//debugging region, can be deleted after
-		state.check_region(selected_region);
-	}
+	state.check_region(selected_region);
+}
 
-	if (ImGui::Checkbox("Enable 3D view", &analysis_mode)) {
-		if (!analysis_mode) {
-			viewer.core.trackball_angle = Eigen::Quaternionf::Identity();
-		}
+if (ImGui::Checkbox("Enable 3D view", &analysis_mode)) {
+	if (!analysis_mode) {
+		viewer.core.trackball_angle = Eigen::Quaternionf::Identity();
+	}
+	viewer_control();
+}
+
+ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.30f);
+
+{
+	auto labels = {"--", "X", "Y", "Z", "Norm"};
+	auto tips = {"", "Displacement along X", "Displacement along Y", "Displacement along Z", "Norm of the displacement"};
+	if (ComboWithTooltips("Show attribute", (int *)(&view_mode_3d), labels, tips)) {
 		viewer_control();
 	}
+}
 
-	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.30f);
+if (ImGui::Checkbox("Traction forces", &show_traction_forces)) {
+	viewer_control();
+}
 
-	{
-		auto labels = {"--", "X", "Y", "Z", "Norm"};
-		auto tips = {"", "Displacement along X", "Displacement along Y", "Displacement along Z", "Norm of the displacement"};
-		if (ComboWithTooltips("Show attribute", (int *)(&view_mode_3d), labels, tips)) {
-			viewer_control();
-		}
-	}
-
-	if (ImGui::Checkbox("Traction forces", &show_traction_forces)) {
-		viewer_control();
-	}
-
-	ImGui::PopItemWidth();
+ImGui::PopItemWidth();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
