@@ -333,6 +333,7 @@ bool UIState::load() {
 	if (!state.load(save_dir)) {
 		return false;
 	}
+
 	current_region_status = "";
 	// img.resize(0, 0);
 	// reset flags
@@ -340,11 +341,16 @@ bool UIState::load() {
 	mesh_color.resize(1, 3);
 	mesh_color.row(0) = Eigen::RowVector3d(255, 255, 120) / 255.0;
 	reset_viewer();
-
-	color_code = true;
-
+	
 	selected_region = -1;
 
+	switch (state.phase_enumeration) {
+	case 0: phase_0();
+	case 1: phase_1();
+	case 2: phase_2();
+	case 3: phase_3();
+	}
+	
 	viewer_control();
 	return true;
 }

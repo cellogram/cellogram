@@ -176,7 +176,7 @@ namespace cellogram {
 	}
 
 	void State::load_settings(json args) {
-		load_phase(args.value("settings", json::object()));
+		load_phase(args.value("phase", json::object()));
 		load_detection_settings(args.value("settings", json::object()));
 		load_analysis_settings(args.value("analysis_settings", json::object()));
 	}
@@ -204,7 +204,6 @@ namespace cellogram {
 
 
 		// load settings
-
 		std::ifstream json_in(path + "/all.json");
 
 		json unique;

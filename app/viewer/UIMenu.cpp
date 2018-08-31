@@ -358,20 +358,26 @@ void UIState::draw_left_panel(float ypos, float width) {
 	const float hue = AppLayout::header_hue;
 
 	auto canvas = ImGui::GetIO().DisplaySize;
-	float vpad = AppLayout::vertical_padding * menu_scaling();
+	float vpad = AppLayout::vertical_padding * menu_scaling() + 1;
 	ypos += vpad;
 	float height = canvas.y - ypos - vpad;
 
 	ImGui::SetNextWindowPos(ImVec2(0.0f, ypos), ImGuiSetCond_Always);
 	ImGui::SetNextWindowSize(ImVec2(0.0f, 0.0f), ImGuiSetCond_Always);
 	ImGui::SetNextWindowSizeConstraints(ImVec2(width, 0.0f), ImVec2(width, height));
-
-	if (state.phase_enumeration == 0)
+	
+	if (true)
 	{
 		ImGui::Begin("Input File", &show_left_panel, AppLayout::window_flags);
-		draw_file_menu();
+		ypos += draw_file_menu();
 		ImGui::End();
 	}
+
+	ypos += vpad;
+	ImGui::SetNextWindowPos(ImVec2(0.0f, ypos), ImGuiSetCond_Always);
+	ImGui::SetNextWindowSize(ImVec2(0.0f, 0.0f), ImGuiSetCond_Always);
+	ImGui::SetNextWindowSizeConstraints(ImVec2(width, 0.0f), ImVec2(width, height));
+
 	if (state.phase_enumeration == 1)
 	{
 		ImGui::Begin("Stage 1 - Detection", &show_left_panel, AppLayout::window_flags);
@@ -449,7 +455,8 @@ void UIState::draw_right_panel(float ypos, float width) {
 // Left panel
 ////////////////////////////////////////////////////////////////////////////////
 
-void UIState::draw_file_menu() {
+float UIState::draw_file_menu() {
+	float h = 0;
 	float w = ImGui::GetContentRegionAvailWidth();
 	float p = ImGui::GetStyle().FramePadding.x;
 
@@ -503,6 +510,8 @@ void UIState::draw_file_menu() {
 	if (!data_available) {
 		pop_disabled();
 	}
+	h = ImGui::GetWindowSize().y;
+	return h;
 }
 
 // -----------------------------------------------------------------------------
@@ -787,9 +796,12 @@ void UIState::draw_mesh_menu() {
 // -----------------------------------------------------------------------------
 
 void UIState::draw_analysis_menu() {
+
+	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.40f);
 	if (ImGui::SliderFloat("t", &t, 0, 1)) {
 		viewer_control();
 	}
+	ImGui::PopItemWidth();
 
 	ImGui::Checkbox("Pillars", &state.image_from_pillars);
 

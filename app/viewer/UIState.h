@@ -125,6 +125,8 @@ public:
 	void reset_viewer();
 	void deselect_all_buttons();
 public:
+	//initial line color: rgb(52, 152, 219)
+	//initial vertex color: rgb(41, 128, 185)
 	igl::opengl::ViewerData & points_data() { return mesh_by_id(points_id); }
 	igl::opengl::ViewerData & hull_data() { return mesh_by_id(hull_id); }
 	igl::opengl::ViewerData & image_data() { return mesh_by_id(image_id); }
@@ -159,7 +161,7 @@ private:
 
 	// Left panel
 	void draw_left_panel(float ypos, float width);
-	void draw_file_menu();
+	float draw_file_menu();
 	void draw_points_menu();
 	void draw_mesh_menu();
 	void draw_analysis_menu();
