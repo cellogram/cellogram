@@ -396,6 +396,12 @@ void UIState::draw_left_panel(float ypos, float width) {
 		draw_analysis_menu();
 		ImGui::End();
 	}
+	if (state.phase_enumeration == 4)
+	{
+		ImGui::Begin("Results", &show_left_panel, AppLayout::window_flags);
+		draw_results_menu();
+		ImGui::End();
+	}
 	//if (SetHue(hue) && state.phase_enumeration == 0 && ImGui::CollapsingHeader("Input File", &show_file_menu, AppLayout::header_flags)) {
 	//	draw_file_menu();
 	//}
@@ -830,33 +836,35 @@ void UIState::draw_analysis_menu() {
 			viewer_control();
 		}
 	} else {
+
 		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.40f);
 		ImGui::InputFloat("Scaling [µm/px]", &state.scaling, 0.01, 0.001, 3);
-		ImGui::InputFloat("Padding [µm]", &state.padding_size, 1, 0, 0);
-		ImGui::InputFloat("Thickness [µm]", &state.thickness, 1, 0, 0);
-		const char disp_abs[] = "Displ. Thres. [µm]";
-		const char disp_rel[] = "Displ. Thres. [%]";
-		ImGui::InputFloat(state.relative_threshold ? disp_rel : disp_abs, &state.displacement_threshold, 0, 0, 3);
-		ShowTooltip("Threshold on the displacement to identify regions that will be meshed more finely.");
-		ImGui::Checkbox("Relative Threshold", &state.relative_threshold);
-		ShowTooltip("Set the threshold relative to the maximum displacement of the detected points.");
-		ImGui::InputFloat("Edge Length", &state.uniform_mesh_size, 0, 0, 3);
-		ShowTooltip(
-			"Target edge length for the mesh generated for the physical simulation.\n"
-			"If adaptive meshing is used, this value specifies the minimum edge length.\n"
-			"The length is expressed in terms of the median edge-length of the\nreconstructed Delaunay mesh.");
-		float hgrad = state.mmg_options.hgrad;
-		ImGui::InputFloat("Gradation", &hgrad);
-		ShowTooltip(
-			"Use this parameter to control the ratio between the length of\n"
-			"adjacent edges of the mesh generated for the physical simulation.");
-		state.mmg_options.hgrad = std::max(hgrad, 1.f);
-		// if (ImGui::TreeNode("Advanced options")) {
-		// Advanced options
-		// }
-
 		ImGui::InputFloat("E", &state.E, 0.1, 0.01, 3);
 		ImGui::InputFloat("nu", &state.nu, 0.1, 0.01, 3);
+
+		if (ImGui::TreeNode("Advanced vertex options"))
+		{
+			ImGui::InputFloat("Padding [µm]", &state.padding_size, 1, 0, 0);
+			ImGui::InputFloat("Thickness [µm]", &state.thickness, 1, 0, 0);
+			const char disp_abs[] = "Displ. Thres. [µm]";
+			const char disp_rel[] = "Displ. Thres. [%]";
+			ImGui::InputFloat(state.relative_threshold ? disp_rel : disp_abs, &state.displacement_threshold, 0, 0, 3);
+			ShowTooltip("Threshold on the displacement to identify regions that will be meshed more finely.");
+			ImGui::Checkbox("Relative Threshold", &state.relative_threshold);
+			ShowTooltip("Set the threshold relative to the maximum displacement of the detected points.");
+			ImGui::InputFloat("Edge Length", &state.uniform_mesh_size, 0, 0, 3);
+			ShowTooltip(
+				"Target edge length for the mesh generated for the physical simulation.\n"
+				"If adaptive meshing is used, this value specifies the minimum edge length.\n"
+				"The length is expressed in terms of the median edge-length of the\nreconstructed Delaunay mesh.");
+			float hgrad = state.mmg_options.hgrad;
+			ImGui::InputFloat("Gradation", &hgrad);
+			ShowTooltip(
+				"Use this parameter to control the ratio between the length of\n"
+				"adjacent edges of the mesh generated for the physical simulation.");
+			state.mmg_options.hgrad = std::max(hgrad, 1.f);
+			ImGui::TreePop();
+		}
 
 		ImGui::PopItemWidth();
 
@@ -888,11 +896,18 @@ void UIState::draw_analysis_menu() {
 		// }
 		// ShowTooltip("Extrude the 2D mesh into a 3D volume mesh.");
 
+		bool mesh_2d_empty = state.mesh3d.empty();
+		if (mesh_2d_empty) {
+			push_disabled();
+		}
 		if (ImGui::Button("Mesh 3D volume", ImVec2(-1.0, 0))) {
 			state.mesh_3d_volume();
 			state.remesh_3d_adaptive();
 			reset_view_3d();
 			viewer_control();
+		}
+		if (mesh_2d_empty) {
+			pop_disabled();
 		}
 		// ImGui::SameLine(0, p);
 		// if (ImGui::Button("Remesh", ImVec2(1.5f*(w-p)/4.f, 0))) {
@@ -905,15 +920,100 @@ void UIState::draw_analysis_menu() {
 		ImGui::Spacing();
 		ImGui::Separator();
 		ImGui::Spacing();
+		
+		bool mesh_3d_empty = state.mesh3d.empty();
+		if (mesh_3d_empty) {
+			push_disabled();
+		}
 
 		if (ImGui::Button("Analyze 3D mesh", ImVec2(-1, 0))) {
 			state.analyze_3d_mesh();
+			state.phase_enumeration = 4;
+			phase_4();
 			reset_view_3d();
 			view_mode_3d = Mesh3DAttribute::NORM_DISP;
 			viewer_control();
 		}
+		if (mesh_3d_empty) {
+			pop_disabled();
+		}
 	}
 }
+
+void UIState::draw_results_menu()
+{
+	//static int view_current = 0;
+	//ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.40f);
+	//{
+	//	const char* views[] = { "U", "S", "T"};
+	//	ImGui::Combo("View", &view_current, views, IM_ARRAYSIZE(views));
+	//}
+	//
+	//static int sub_view_current = 0;
+	//{
+	//	if (view_current == 0)
+	//		const char* sub_views[] = { "Mag", "Ux" };
+	//	else if (view_current == 1)
+	//		const char* sub_views[] = { "Mises", "Sxx" };
+	//	else if (view_current == 2)
+	//		const char* sub_views[] = { "Mag", "Tx" };
+	//	ImGui::Combo("View", &sub_view_current, sub_views, IM_ARRAYSIZE(sub_views));
+	//	ImGui::PopItemWidth();
+	//}
+
+
+	// Colorbar
+	static GLuint color_bar_texture = -1;
+	static const int width = ImGui::GetWindowWidth();
+	if (color_bar_texture == -1) {
+		Eigen::Matrix<unsigned char, Eigen::Dynamic, 4, Eigen::RowMajor> cmap(width * AppLayout::height_colorbar, 4);
+
+		Eigen::MatrixXd t = Eigen::VectorXd::LinSpaced(width, 0, width);
+		Eigen::MatrixXd col;
+		igl::colormap(cm, t, true, col);
+		assert(col.rows() == width);
+		for (int i = 0; i < width; ++i) {
+			for (int j = 0; j < AppLayout::height_colorbar; ++j) {
+				for (int c = 0; c < 3; ++c)
+					cmap(j * width + i, c) = col(i, c) * 255;
+			}
+		}
+		cmap.col(3).setConstant(255);
+
+		glGenTextures(1, &color_bar_texture);
+		glBindTexture(GL_TEXTURE_2D, color_bar_texture);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, AppLayout::height_colorbar, 0, GL_RGBA, GL_UNSIGNED_BYTE, cmap.data());
+		glGenerateMipmap(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, 0);
+	}
+	ImGui::Image(reinterpret_cast<ImTextureID>(color_bar_texture), ImVec2(width, AppLayout::height_colorbar));
+
+	if (std::abs(min_val) <= 1e-20)
+		ImGui::Text("0");
+	else {
+		const int min_power = floor(log10(std::abs(min_val)));
+		ImGui::Text("%ge%d", round(min_val * pow(10, -min_power) * 100) / 100., min_power);
+	}
+
+	if (std::abs(max_val) <= 1e-20) {
+		ImGui::SameLine(width - 10);
+		ImGui::Text("0");
+	}
+	else {
+		ImGui::SameLine(width - 40);
+		const int max_power = floor(log10(std::abs(max_val)));
+		ImGui::Text("%ge%d", round(max_val * pow(10, -max_power) * 100) / 100., max_power);
+	}
+
+
+
+}
+
+// -----------------------------------------------------------------------------
 
 ////////////////////////////////////////////////////////////////////////////////
 // Right panel

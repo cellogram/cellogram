@@ -1095,6 +1095,11 @@ void UIState::phase_3()
 	analysis_mode = false;
 	show_traction_forces = false;
 }
+void UIState::phase_4()
+{
+	show_matching = false;
+	show_traction_forces = true;
+}
 // -----------------------------------------------------------------------------
 
 } // namespace cellogram

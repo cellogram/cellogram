@@ -152,6 +152,7 @@ private:
 	void phase_1();
 	void phase_2();
 	void phase_3();
+	void phase_4();
 	///////////////
 	// UI Panels //
 	///////////////
@@ -165,6 +166,7 @@ private:
 	void draw_points_menu();
 	void draw_mesh_menu();
 	void draw_analysis_menu();
+	void draw_results_menu();
 
 	// Right panel
 	void draw_right_panel(float ypos, float width);
