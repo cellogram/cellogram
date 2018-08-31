@@ -1,6 +1,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "FileDialog.h"
 #include "UIState.h"
+
+#include "IconsFontAwesome5.h"
+
 #include <cellogram/convex_hull.h>
 #include <cellogram/laplace_energy.h>
 #include <cellogram/mesh_solver.h>
@@ -607,14 +610,16 @@ void UIState::draw_points_menu() {
 		ImGui::PopItemWidth();
 	}
 
+
 	if (ImGui::TreeNode("Advanced vertex options")) {
 		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.70f);
+        ImGui::PushFont(icon_font);
 		bool was_delete = delete_vertex;
 		if (was_delete) {
 			push_selected();
 		}
 
-		if (ImGui::Button("Delete")) {
+		if (ImGui::Button(ICON_FA_TRASH_ALT)) {
 			add_vertex = false;
 			delete_vertex = !delete_vertex;
 		}
@@ -627,7 +632,7 @@ void UIState::draw_points_menu() {
 		if (was_add)
 			push_selected();
 		ImGui::SameLine();
-		if (ImGui::Button("Add")) {
+		if (ImGui::Button(ICON_FA_PLUS)) {
 			delete_vertex = false;
 			add_vertex = !add_vertex;
 		}
@@ -640,7 +645,7 @@ void UIState::draw_points_menu() {
 		if (was_moved)
 			push_selected();
 		ImGui::SameLine();
-		if (ImGui::Button("Move")) {
+		if (ImGui::Button(ICON_FA_ARROWS_ALT)) {
 			// drag a single vertex to a new starting position
 			move_vertex = !move_vertex;
 			viewer_control();
@@ -649,6 +654,7 @@ void UIState::draw_points_menu() {
 		if (was_moved) {
 			pop_selected();
 		}
+        ImGui::PopFont();
 		ImGui::PopItemWidth();
 		ImGui::TreePop();
 	}

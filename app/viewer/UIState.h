@@ -6,6 +6,8 @@
 #include <igl/colormap.h>
 #include <igl/opengl/glfw/Viewer.h>
 #include <igl/opengl/glfw/imgui/ImGuiMenu.h>
+
+#include <imgui/imgui.h>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
@@ -139,6 +141,7 @@ private:
 	igl::ColorMapType cm = igl::ColorMapType::COLOR_MAP_TYPE_PARULA;
 	double min_val = 0, max_val = 0;
 	std::string current_file_name = "";
+	ImFont *icon_font;
 
 	bool block_mouse_behavior(int button);
 	void viewer_control();

@@ -1,13 +1,16 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "UIState.h"
 #include "FileDialog.h"
+
+#include "IconsFontAwesome5.h"
+
+
 #include <cellogram/PolygonUtils.h>
 #include <cellogram/StringUtils.h>
 #include <igl/colon.h>
 #include <igl/colormap.h>
 #include <igl/per_face_normals.h>
 #include <igl/unproject_onto_mesh.h>
-#include <imgui/imgui.h>
 #include <GLFW/glfw3.h>
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -286,6 +289,14 @@ void UIState::init(igl::opengl::glfw::Viewer *_viewer) {
 
 	ImGuiIO& io = ImGui::GetIO();
 	io.IniFilename = nullptr;
+
+
+    io.Fonts->AddFontDefault();
+
+    // merge in icons from Font Awesome
+    static const ImWchar icons_ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
+    ImFontConfig icons_config; icons_config.MergeMode = true; icons_config.PixelSnapH = true;
+    icon_font = io.Fonts->AddFontFromFileTTF( FONT_ICON_FILE_NAME_FAS, 16.0f, &icons_config, icons_ranges );
 
 	glfwSetWindowTitle(viewer.window, "Cellogram viewer");
 }

@@ -9,6 +9,8 @@ elseif(WIN32)
 	set(EXTRA_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/resources/im.rc")
 endif()
 
+set(EXTRA_SOURCE "${EXTRA_SOURCE};${CMAKE_CURRENT_SOURCE_DIR}/resources/fa-regular-400.ttf;${CMAKE_CURRENT_SOURCE_DIR}/resources/fa-solid-900.ttf")
+
 # Main executable
 add_executable(${PROJECT_NAME} ${BUILD_TYPE}
 	main.cpp
@@ -17,6 +19,8 @@ add_executable(${PROJECT_NAME} ${BUILD_TYPE}
 	UIMenu.cpp
 	UIState.cpp
 	UIState.h
+
+	IconsFontAwesome5.h
 
 	${EXTRA_SOURCE}
 )
