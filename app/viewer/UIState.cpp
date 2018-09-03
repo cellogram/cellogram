@@ -5,6 +5,7 @@
 #include "IconsFontAwesome5.h"
 
 
+
 #include <cellogram/PolygonUtils.h>
 #include <cellogram/StringUtils.h>
 #include <igl/colon.h>
@@ -17,6 +18,8 @@
 namespace cellogram {
 
 	namespace {
+
+		#include "fa-solid-900.hpp"
 
 //	int cellogram_mkdir(const std::string &path) {
 //		int nError;
@@ -296,7 +299,9 @@ void UIState::init(igl::opengl::glfw::Viewer *_viewer) {
     // merge in icons from Font Awesome
     static const ImWchar icons_ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
     ImFontConfig icons_config; icons_config.MergeMode = true; icons_config.PixelSnapH = true;
-    icon_font = io.Fonts->AddFontFromFileTTF( FONT_ICON_FILE_NAME_FAS, 16.0f, &icons_config, icons_ranges );
+    // icon_font = io.Fonts->AddFontFromFileTTF( FONT_ICON_FILE_NAME_FAS, 16.0f, &icons_config, icons_ranges );
+    icon_font = io.Fonts->AddFontFromMemoryCompressedTTF(fa_solid_compressed_data, fa_solid_compressed_size, 16.0f, &icons_config, icons_ranges);
+
 
 	glfwSetWindowTitle(viewer.window, "Cellogram viewer");
 }
