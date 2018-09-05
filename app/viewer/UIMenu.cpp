@@ -386,7 +386,7 @@ void UIState::draw_left_panel(float ypos, float width) {
 
 	if (true)
 	{
-		ImGui::Begin("Input File", &show_left_panel, AppLayout::window_flags);
+		ImGui::Begin("Input File", NULL, AppLayout::window_flags);
 		ypos += draw_file_menu();
 		ImGui::End();
 	}
@@ -501,33 +501,42 @@ float UIState::draw_file_menu() {
 		ImGui::EndTooltip();
 	}
 
-	if (ImGui::Button("Load Image", ImVec2(-1, 0))) {
+	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.70f);
+	if (ImGui::Button("Load Image")) {
 		std::string fname = FileDialog::openFileName(DATA_DIR, {"*.png", "*.tif", "*.tiff"});
 		if (!fname.empty()) {
 			load_image(fname);
 		}
 	}
+	ImGui::PopItemWidth();
+	float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
+	ImGui::SameLine(0.0f, spacing);
 
-	if (state.mesh.points.size() == 0) {
-		push_disabled();
-	}
-	if (ImGui::Button("Save scene", ImVec2((w - p) / 2.f, 0))) {
-		save();
-	}
-	if (state.mesh.points.size() == 0) {
-		pop_disabled();
-	}
-	ImGui::SameLine(0, p);
+	ImGui::PushFont(icon_font);
 
 	if (!data_available) {
 		push_disabled();
 	}
-	if (ImGui::Button("Load scene", ImVec2((w - p) / 2.f, 0))) {
+	if (ImGui::Button(ICON_FA_FOLDER_OPEN)) {
 		load();
 	}
 	if (!data_available) {
 		pop_disabled();
 	}
+
+	ImGui::SameLine(0.0f, spacing);
+
+	if (state.mesh.points.size() == 0) {
+		push_disabled();
+	}
+	if (ImGui::Button(ICON_FA_SAVE)) {
+		save();
+	}
+	if (state.mesh.points.size() == 0) {
+		pop_disabled();
+	}
+
+	ImGui::PopFont();
 	h = ImGui::GetWindowSize().y;
 	return h;
 }
@@ -660,10 +669,14 @@ void UIState::draw_points_menu() {
 	}
 
 	// Arrow buttons
+	ImGui::Spacing();
+	ImGui::Separator();
+	ImGui::Spacing();
+
 	{
 		float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
-
-		if (ImGui::Button("<<"))
+		ImGui::PushFont(icon_font);
+		if (ImGui::Button(ICON_FA_CHEVRON_LEFT))
 			//if (ImGui::ArrowButton("##left", ImGuiDir_Left))
 		{
 			std::cout << "back" << std::endl;
@@ -678,6 +691,7 @@ void UIState::draw_points_menu() {
 
 			viewer_control();
 		}
+		
 		ImGui::SameLine(0.0f, spacing);
 
 		// disable if points are not detected
@@ -686,7 +700,7 @@ void UIState::draw_points_menu() {
 			push_disabled();
 		}
 
-		if (ImGui::Button(">>"))
+		if (ImGui::Button(ICON_FA_CHEVRON_RIGHT))
 		{
 			add_vertex = false;
 			move_vertex = false;
@@ -702,7 +716,7 @@ void UIState::draw_points_menu() {
 		if (nothing_detected == 0) {
 			pop_disabled();
 		}
-		// ImGui::PopButtonRepeat();
+		ImGui::PopFont();
 	}
 
 }
@@ -811,10 +825,14 @@ void UIState::draw_mesh_menu() {
 	}
 
 	// Arrow buttons
+	ImGui::Spacing();
+	ImGui::Separator();
+	ImGui::Spacing();
+
 	{
 		float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
-
-		if (ImGui::Button("<<"))
+		ImGui::PushFont(icon_font);
+		if (ImGui::Button(ICON_FA_CHEVRON_LEFT))
 		{
 			state.phase_enumeration = 1;
 			phase_1();
@@ -827,13 +845,14 @@ void UIState::draw_mesh_menu() {
 		}
 		ImGui::SameLine(0.0f, spacing);
 
-		if (ImGui::Button(">>"))
+		if (ImGui::Button(ICON_FA_CHEVRON_RIGHT))
 		{
 			state.final_relax();
 			state.phase_enumeration = 3;
 			phase_3();
 			viewer_control();
 		}
+		ImGui::PopFont();
 	}
 
 }
@@ -958,26 +977,43 @@ void UIState::draw_analysis_menu() {
 		// }
 		// ShowTooltip("Remesh the current 3D volume mesh adaptively using mmg3d.");
 
+		// Arrow buttons
 		ImGui::Spacing();
 		ImGui::Separator();
 		ImGui::Spacing();
 
-		bool mesh_3d_empty = state.mesh3d.empty();
-		if (mesh_3d_empty) {
-			push_disabled();
+		{
+			float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
+			ImGui::PushFont(icon_font);
+			if (ImGui::Button(ICON_FA_CHEVRON_LEFT))
+			{
+				state.phase_enumeration = 2;
+				phase_2();
+				viewer_control();
+			}
+
+			bool mesh_3d_empty = state.mesh3d.empty();
+			if (mesh_3d_empty) {
+				push_disabled();
+			}
+
+			ImGui::SameLine(0.0f, spacing);
+
+			if (ImGui::Button(ICON_FA_CHEVRON_RIGHT))
+			{
+				state.analyze_3d_mesh();
+				state.phase_enumeration = 4;
+				phase_4();
+				reset_view_3d();
+				view_mode_3d = Mesh3DAttribute::NORM_DISP;
+				viewer_control();
+			}
+			if (mesh_3d_empty) {
+				pop_disabled();
+			}
+			ImGui::PopFont();
 		}
 
-		if (ImGui::Button("Analyze 3D mesh", ImVec2(-1, 0))) {
-			state.analyze_3d_mesh();
-			state.phase_enumeration = 4;
-			phase_4();
-			reset_view_3d();
-			view_mode_3d = Mesh3DAttribute::NORM_DISP;
-			viewer_control();
-		}
-		if (mesh_3d_empty) {
-			pop_disabled();
-		}
 	}
 }
 
@@ -992,19 +1028,19 @@ void UIState::draw_results_menu()
 
 		static int sub_view_current = 0;
 		if (view_current == 0){
-			const char* sub_views[] = { "Mag", "Ux" };
+			const char* sub_views[] = { "Mag", "Ux", "Uy", "Uz" };
 			ImGui::Combo("Uview##View", &sub_view_current, sub_views, IM_ARRAYSIZE(sub_views));
 		}
 		else if (view_current == 1){
-			const char* sub_views[] = { "Mises", "Sxx" };
+			const char* sub_views[] = { "Mises", "Sxx", "Syy", "Szz", "Sxy", "Sxz", "Syz" };
 			ImGui::Combo("Sview##View", &sub_view_current, sub_views, IM_ARRAYSIZE(sub_views));
 		}
 		else if (view_current == 2){
-			const char* sub_views[] = { "Mag", "Tx" };
+			const char* sub_views[] = { "Mag", "Tx", "Ty", "Tz" };
 			ImGui::Combo("Tview##View", &sub_view_current, sub_views, IM_ARRAYSIZE(sub_views));
 		}
 		ImGui::PopItemWidth();
-	}
+
 
 
 	// Colorbar
@@ -1054,7 +1090,28 @@ void UIState::draw_results_menu()
 		ImGui::Text("%ge%d", round(max_val * pow(10, -max_power) * 100) / 100., max_power);
 	}
 
+	// Arrow buttons
+	ImGui::Spacing();
+	ImGui::Separator();
+	ImGui::Spacing();
 
+	float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
+	ImGui::PushFont(icon_font);
+	if (ImGui::Button(ICON_FA_CHEVRON_LEFT))
+	{
+		// go back to analysis stage and possibly remove current solution
+		state.phase_enumeration = 3;
+		phase_3();
+		viewer_control();
+	}
+	ImGui::SameLine(0.0f, spacing);
+	if (ImGui::Button(ICON_FA_SAVE))
+	{
+		// save solution
+		save();
+	}
+	ImGui::PopFont();
+	}
 
 }
 
