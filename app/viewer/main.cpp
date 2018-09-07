@@ -35,6 +35,7 @@ int main(int argc, char *argv[]) {
 	struct {
 		std::string input = DATA_DIR "perfects.png";
 		std::string settings = "";
+		int phase = 3;
 		bool cmd = false;
 	} args;
 
@@ -42,7 +43,9 @@ int main(int argc, char *argv[]) {
 	CLI::App app{"cellogram"};
 	app.add_option("input,-i,--input", args.input, "Input image.");
 	app.add_option("-s,--settings", args.settings, "Path to json settings");
+	app.add_option("-p,--phase", args.phase, "Until which phase to run the script");
 	app.add_flag("-c,--cmd", args.cmd, "Run without GUI");
+	
 	try {
 		app.parse(argc, argv);
 	} catch (const CLI::ParseError &e) {
@@ -61,19 +64,25 @@ int main(int argc, char *argv[]) {
 		}
 		state.load_settings(args.settings);
 
-		state.detect_vertices();
-		state.untangle();
-		state.detect_bad_regions();
-		state.resolve_regions();
-		state.final_relax();
-
-		if (!state.image_from_pillars)
+		if(args.phase > 0)
+			state.detect_vertices();
+		if (args.phase > 1)
 		{
-			state.mesh_3d_volume();
-			// state.remesh_3d_adaptive();
+			state.untangle();
+			state.detect_bad_regions();
+			state.resolve_regions();
+			state.final_relax();
 		}
-		state.analyze_3d_mesh();
-
+		if (args.phase > 2)
+		{
+			if (!state.image_from_pillars)
+			{
+				state.mesh_3d_volume();
+				// state.remesh_3d_adaptive();
+			}
+			state.analyze_3d_mesh();
+		}
+		state.phase_enumeration = args.phase;
 		const int index = args.input.find_last_of(".");
 		std::string save_dir = args.input.substr(0, index);
 		StringUtils::cellogram_mkdir(save_dir);

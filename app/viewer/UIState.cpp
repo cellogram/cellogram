@@ -365,9 +365,14 @@ bool UIState::load() {
 
 	switch (state.phase_enumeration) {
 	case 0: phase_0();
+		break;
 	case 1: phase_1();
+		break;
 	case 2: phase_2();
+		break;
 	case 3: phase_3();
+		break;
+	case 4: phase_4();
 	}
 	
 	viewer_control();
@@ -1106,6 +1111,7 @@ void UIState::phase_1()
 }
 void UIState::phase_2()
 {
+	t = 0;
 	show_mesh = true;
 	show_hull = false;
 	show_points = true;

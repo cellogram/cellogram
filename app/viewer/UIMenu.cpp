@@ -169,7 +169,7 @@ namespace {
 	namespace AppLayout {
 		constexpr float left_panel_width = 180;
 		constexpr float right_panel_width = 180;
-		constexpr float vertical_padding = 0;
+		constexpr float vertical_padding = 1;
 		constexpr int height_colorbar = 20;
 		constexpr int header_hue = 205;
 
@@ -376,7 +376,7 @@ void UIState::draw_left_panel(float ypos, float width) {
 	const float hue = AppLayout::header_hue;
 
 	auto canvas = ImGui::GetIO().DisplaySize;
-	float vpad = AppLayout::vertical_padding * menu_scaling() + 1;
+	float vpad = AppLayout::vertical_padding * menu_scaling();
 	ypos += vpad;
 	float height = canvas.y - ypos - vpad;
 
@@ -710,7 +710,7 @@ void UIState::draw_points_menu() {
 			/*state.detect_bad_regions();
 			state.check_regions();*/
 			phase_2();
-			state.phase_enumeration = 2;
+			//state.phase_enumeration = 2;
 			viewer_control();
 		}
 		if (nothing_detected == 0) {
@@ -848,7 +848,7 @@ void UIState::draw_mesh_menu() {
 		if (ImGui::Button(ICON_FA_CHEVRON_RIGHT))
 		{
 			state.final_relax();
-			state.phase_enumeration = 3;
+			//state.phase_enumeration = 3;
 			phase_3();
 			viewer_control();
 		}
@@ -1002,7 +1002,7 @@ void UIState::draw_analysis_menu() {
 			if (ImGui::Button(ICON_FA_CHEVRON_RIGHT))
 			{
 				state.analyze_3d_mesh();
-				state.phase_enumeration = 4;
+				//state.phase_enumeration = 4;
 				phase_4();
 				reset_view_3d();
 				view_mode_3d = Mesh3DAttribute::NORM_DISP;

@@ -418,6 +418,7 @@ namespace cellogram {
 	{
 		regions.clear();
 		mesh.untangle();
+		phase_enumeration = 2;
 	}
 
 
@@ -913,6 +914,7 @@ namespace cellogram {
 		//increase boundary by one row for fixation
 		Eigen::VectorXi boundary = increase_boundary(mesh.boundary);
 		mesh.final_relax(boundary);
+		phase_enumeration = 3;
 	}
 
 	void State::delete_vertex(const int index)
@@ -1115,6 +1117,7 @@ namespace cellogram {
 		{
 			mesh3d.init_nano_dots(mesh, padding_size, thickness, E, nu, scaling, formulation);
 		}
+		phase_enumeration = 4;
 	}
 
 	void State::reset_state()
