@@ -1041,7 +1041,7 @@ void UIState::draw_results_menu()
 		}
 		ImGui::PopItemWidth();
 
-
+	}
 
 	// Colorbar
 	static GLuint color_bar_texture = 0;
@@ -1111,9 +1111,8 @@ void UIState::draw_results_menu()
 		save();
 	}
 	ImGui::PopFont();
-	}
-
 }
+
 
 // -----------------------------------------------------------------------------
 
