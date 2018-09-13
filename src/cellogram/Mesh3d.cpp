@@ -21,7 +21,11 @@ namespace cellogram {
 			float thickness, float E, float nu, const std::string &formulation, double scaling,
 			Eigen::MatrixXd &vals, Eigen::MatrixXd &traction_forces)
 		{
-			static const bool export_data = true;
+			//TODO
+			const std::string rbf_function = "gaussian";
+			const double eps = 1.5;
+
+			static const bool export_data = false;
 			assert(tets.cols() == 4);
 			assert(vertices.cols() == 3);
 
@@ -49,9 +53,6 @@ namespace cellogram {
 			}
 
 
-			const double lambda = (E * nu) / ((1 + nu) * (1 - 2 * nu));
-			const double mu = E / (2 * (1 + nu));
-
 			json j_args = {
 				{"problem", "PointBasedTensor"},
 				{"normalize_mesh", false},
@@ -63,9 +64,8 @@ namespace cellogram {
 				{"nl_solver_rhs_steps", 5},
 
 				{"params", {
-					{"elasticity_tensor", {}},
-					{"lambda", lambda},
-					{"mu", mu},
+					{"E", E},
+					{"nu", nu},
 				}},
 			};
 
@@ -91,7 +91,7 @@ namespace cellogram {
 
 			polyfem::PointBasedTensorProblem &problem = *dynamic_cast<polyfem::PointBasedTensorProblem *>(state.problem.get());
 
-			Eigen::MatrixXd disp = (mesh.detected - mesh.points) * scaling / 100;
+			Eigen::MatrixXd disp = (mesh.detected - mesh.points) * scaling /100;
 			Eigen::MatrixXd pts = mesh.points * scaling;
 
 			if(export_data){
@@ -137,7 +137,7 @@ namespace cellogram {
 			Eigen::Matrix<bool, 3, 1> dirichet_dims;
 			dirichet_dims(0) = dirichet_dims(1) = true;
 			dirichet_dims(2) = false; // z is not dirichet
-			problem.add_function(1, disp, pts, mesh.triangles, 2, dirichet_dims);
+			problem.add_function(1, disp, pts, rbf_function, eps, 2, dirichet_dims);
 
 			//Id = 3, zero Dirichelt
 			problem.add_constant(3, Eigen::Vector3d(0,0,0));
