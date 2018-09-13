@@ -1251,7 +1251,7 @@ namespace cellogram {
 		b1.segment(p1 + 1, region_boundary.size() - p2) = region_boundary.segment(p2, region_boundary.size() - p2);
 
 		b2.segment(0, p2 - p1 + 1) = region_boundary.segment(p1, p2 - p1 + 1);
-		std::cout << "pinch found:\n" << std::endl;
+		//std::cout << "pinch found:\n" << std::endl;
 		////std::cout << "points\n" << mesh.points.transpose() << std::endl;
 		//std::cout << "boundary\n" << region_boundary.transpose() << std::endl;
 		//std::cout << "b1\n" << b1.transpose() << std::endl;

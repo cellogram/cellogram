@@ -172,6 +172,7 @@ namespace {
 		constexpr float vertical_padding = 1;
 		constexpr int height_colorbar = 20;
 		constexpr int header_hue = 205;
+		constexpr int button_height = 50;
 
 		constexpr ImGuiWindowFlags window_flags =
 		ImGuiWindowFlags_NoSavedSettings
@@ -502,7 +503,7 @@ float UIState::draw_file_menu() {
 	}
 
 	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.70f);
-	if (ImGui::Button("Load Image")) {
+	if (ImGui::Button("Load Image", ImVec2(0, AppLayout::button_height))) {
 		std::string fname = FileDialog::openFileName(DATA_DIR, {"*.png", "*.tif", "*.tiff"});
 		if (!fname.empty()) {
 			load_image(fname);
@@ -517,7 +518,7 @@ float UIState::draw_file_menu() {
 	if (!data_available) {
 		push_disabled();
 	}
-	if (ImGui::Button(ICON_FA_FOLDER_OPEN)) {
+	if (ImGui::Button(ICON_FA_FOLDER_OPEN, ImVec2(AppLayout::button_height,AppLayout::button_height))) {
 		load();
 	}
 	if (!data_available) {
@@ -672,14 +673,13 @@ void UIState::draw_points_menu() {
 	ImGui::Spacing();
 	ImGui::Separator();
 	ImGui::Spacing();
-
+	ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, ImVec2(0.5f, 0.6f));
 	{
 		float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
 		ImGui::PushFont(icon_font);
-		if (ImGui::Button(ICON_FA_CHEVRON_LEFT))
+		if (ImGui::Button(ICON_FA_CHEVRON_LEFT, ImVec2(AppLayout::button_height, AppLayout::button_height)))
 			//if (ImGui::ArrowButton("##left", ImGuiDir_Left))
 		{
-			std::cout << "back" << std::endl;
 			state.phase_enumeration = 0;
 			add_vertex = false;
 			move_vertex = false;
@@ -700,7 +700,7 @@ void UIState::draw_points_menu() {
 			push_disabled();
 		}
 
-		if (ImGui::Button(ICON_FA_CHEVRON_RIGHT))
+		if (ImGui::Button(ICON_FA_CHEVRON_RIGHT, ImVec2(AppLayout::button_height, AppLayout::button_height)))
 		{
 			add_vertex = false;
 			move_vertex = false;
@@ -718,7 +718,7 @@ void UIState::draw_points_menu() {
 		}
 		ImGui::PopFont();
 	}
-
+	ImGui::PopStyleVar();
 }
 
 // -----------------------------------------------------------------------------
@@ -985,7 +985,7 @@ void UIState::draw_analysis_menu() {
 		{
 			float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
 			ImGui::PushFont(icon_font);
-			if (ImGui::Button(ICON_FA_CHEVRON_LEFT))
+			if (ImGui::Button(ICON_FA_CHEVRON_LEFT)) // replace icon with constant name // write function with button and alignment
 			{
 				state.phase_enumeration = 2;
 				phase_2();
@@ -1028,14 +1028,27 @@ void UIState::draw_results_menu()
 
 		static int sub_view_current = 0;
 		if (view_current == 0){
+			show_traction_forces = false;
 			const char* sub_views[] = { "Mag", "Ux", "Uy", "Uz" };
-			ImGui::Combo("Uview##View", &sub_view_current, sub_views, IM_ARRAYSIZE(sub_views));
+			if (ImGui::Combo("Uview##View", &sub_view_current, sub_views, IM_ARRAYSIZE(sub_views))) 
+			{
+				switch (sub_view_current)
+				{
+				case 0: view_mode_3d = Mesh3DAttribute::NORM_DISP; break;
+				case 1: view_mode_3d = Mesh3DAttribute::X_DISP; break;
+				case 2: view_mode_3d = Mesh3DAttribute::Y_DISP; break;
+				case 3: view_mode_3d = Mesh3DAttribute::Z_DISP; break;
+				default:
+					assert(false);
+				}
+			};
 		}
 		else if (view_current == 1){
 			const char* sub_views[] = { "Mises", "Sxx", "Syy", "Szz", "Sxy", "Sxz", "Syz" };
 			ImGui::Combo("Sview##View", &sub_view_current, sub_views, IM_ARRAYSIZE(sub_views));
 		}
 		else if (view_current == 2){
+			show_traction_forces = true;
 			const char* sub_views[] = { "Mag", "Tx", "Ty", "Tz" };
 			ImGui::Combo("Tview##View", &sub_view_current, sub_views, IM_ARRAYSIZE(sub_views));
 		}
