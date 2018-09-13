@@ -96,7 +96,9 @@ namespace cellogram {
 		}
 
 		void ShowTooltip(const std::string &desc) {
-			if (ImGui::IsItemActive() || ImGui::IsItemHovered()) {
+			static const float TIME_THRESHOLD = 1; //In secs
+
+			if ((ImGui::IsItemActive() || ImGui::IsItemHovered())  && GImGui->HoveredIdTimer > TIME_THRESHOLD) {
 				ImGui::SetTooltip("%s", desc.c_str());
 			}
 		}
