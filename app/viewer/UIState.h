@@ -201,9 +201,10 @@ public:
 
 	std::function<void(void)> next_call_back;
 	bool has_next_callback = false;
+	bool close_next = false;
 	int run_next = 0;
-	template<typename Function, typename Function1>
-	void wait_window(const std::string & id, const std::string & msg, Function & button, Function1 & call_back)
+	template<typename BtnFun, typename CallBackFun>
+	void wait_window(const std::string & id, const std::string & msg, const BtnFun & button, const CallBackFun & call_back)
 	{
 		std::string title = "Please wait##" + id;
 		if (button()) {
@@ -216,6 +217,12 @@ public:
 		if (ImGui::BeginPopupModal(title.c_str(), NULL, ImGuiWindowFlags_AlwaysAutoResize))
 		{
 			ImGui::Text(msg.c_str());
+
+			if(close_next)
+			{
+				ImGui::CloseCurrentPopup();
+				close_next = false;
+			}
 			ImGui::EndPopup();
 
 		}

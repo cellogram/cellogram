@@ -233,7 +233,7 @@ void UIState::draw_viewer_window() {
 
 		has_next_callback = false;
 		run_next = 0;
-		ImGui::CloseCurrentPopup();
+		close_next = true;
 	}
 
 	if (has_next_callback)
