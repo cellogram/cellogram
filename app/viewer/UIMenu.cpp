@@ -123,6 +123,39 @@ namespace cellogram {
 			return value_changed;
 		}
 
+		constexpr int arrow_button_size = 40;
+		constexpr int icon_button_size = 28;
+
+		bool button_right(ImFont *icon_font)
+		{
+			ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, ImVec2(0.5f, 0.6f));
+			ImGui::PushFont(icon_font);
+			bool ok = ImGui::Button(ICON_FA_CHEVRON_RIGHT, ImVec2(arrow_button_size, arrow_button_size));
+			ImGui::PopFont();
+			ImGui::PopStyleVar();
+			ShowTooltip("Next");
+			return ok;
+		}
+		bool button_left(ImFont *icon_font)
+		{
+			ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, ImVec2(0.5f, 0.6f));
+			ImGui::PushFont(icon_font);
+			bool ok = ImGui::Button(ICON_FA_CHEVRON_LEFT, ImVec2(arrow_button_size, arrow_button_size));
+			ImGui::PopFont();
+			ImGui::PopStyleVar();
+			ShowTooltip("Back");
+			return ok;
+		}
+		bool icon_button(ImFont *icon_font, const char* button_name)
+		{
+			ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, ImVec2(0.5f, 0.6f));
+			ImGui::PushFont(icon_font);
+			bool ok = ImGui::Button(button_name, ImVec2(icon_button_size, icon_button_size));
+			ImGui::PopFont();
+			ImGui::PopStyleVar();
+			return ok;
+		}
+
 		void SetMmgOptions(MmgOptions &opt) {
 		// -ar  x 	all codes 	Value for angle detection.
 		// -hausd  x 	all codes 	Maximal Hausdorff distance for the boundaries approximation.
@@ -172,7 +205,7 @@ namespace {
 		constexpr float vertical_padding = 1;
 		constexpr int height_colorbar = 20;
 		constexpr int header_hue = 205;
-		constexpr int button_height = 50;
+		constexpr int button_height = 25;
 
 		constexpr ImGuiWindowFlags window_flags =
 		ImGuiWindowFlags_NoSavedSettings
@@ -191,6 +224,23 @@ void UIState::draw_viewer_window() {
 
 	// Top menu bar
 	float h = draw_menu_bar();
+
+	if(run_next == 5)
+	{
+		next_call_back();
+
+		next_call_back = []() {};
+
+		has_next_callback = false;
+		run_next = 0;
+		ImGui::CloseCurrentPopup();
+	}
+
+	if (has_next_callback)
+	{
+		run_next++;
+	}
+
 
 	// Menu on left
 	if (show_left_panel) {
@@ -503,24 +553,24 @@ float UIState::draw_file_menu() {
 	}
 
 	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.70f);
-	if (ImGui::Button("Load Image", ImVec2(0, AppLayout::button_height))) {
-		std::string fname = FileDialog::openFileName(DATA_DIR, {"*.png", "*.tif", "*.tiff"});
+	if (ImGui::Button("Load Image", ImVec2(0, icon_button_size))) {
+		std::string fname = FileDialog::openFileName(DATA_DIR, { "*.png", "*.tif", "*.tiff" });
 		if (!fname.empty()) {
 			load_image(fname);
 		}
 	}
+
 	ImGui::PopItemWidth();
 	float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
 	ImGui::SameLine(0.0f, spacing);
 
-	ImGui::PushFont(icon_font);
-
 	if (!data_available) {
 		push_disabled();
 	}
-	if (ImGui::Button(ICON_FA_FOLDER_OPEN, ImVec2(AppLayout::button_height,AppLayout::button_height))) {
+	if (icon_button(icon_font,ICON_FA_FOLDER_OPEN)) {
 		load();
 	}
+	ShowTooltip("Load saved data for current image");
 	if (!data_available) {
 		pop_disabled();
 	}
@@ -530,14 +580,13 @@ float UIState::draw_file_menu() {
 	if (state.mesh.points.size() == 0) {
 		push_disabled();
 	}
-	if (ImGui::Button(ICON_FA_SAVE)) {
+	if (icon_button(icon_font, ICON_FA_SAVE)) {
 		save();
 	}
+	ShowTooltip("Save data for current image");
 	if (state.mesh.points.size() == 0) {
 		pop_disabled();
 	}
-
-	ImGui::PopFont();
 	h = ImGui::GetWindowSize().y;
 	return h;
 }
@@ -555,10 +604,14 @@ void UIState::draw_points_menu() {
 	ShowTooltip("Multiplier to Otsu level for thresholding");
 	ImGui::PopItemWidth();
 
-	if (ImGui::Button("Detection", ImVec2((w - p), 0))) {
-		detect_vertices();
-	}
-
+	//if (ImGui::Button("Detection", ImVec2((w - p), 0))) {
+	wait_window("wait_detect", "Detecting vertices", 
+		[&]() {return ImGui::Button("Detection", ImVec2((w - p), 0));},
+		[&]() {detect_vertices();});
+	
+		//viewer_control();
+		//detect_vertices();
+	//}
 	// Histogram is only relevant for detection so should go here
 	{
 		ImGui::Separator();
@@ -629,7 +682,7 @@ void UIState::draw_points_menu() {
 			push_selected();
 		}
 
-		if (ImGui::Button(ICON_FA_TRASH_ALT)) {
+		if (icon_button(icon_font, ICON_FA_TRASH_ALT)) {
 			add_vertex = false;
 			delete_vertex = !delete_vertex;
 		}
@@ -642,7 +695,7 @@ void UIState::draw_points_menu() {
 		if (was_add)
 			push_selected();
 		ImGui::SameLine();
-		if (ImGui::Button(ICON_FA_PLUS)) {
+		if (icon_button(icon_font, ICON_FA_PLUS)) {
 			delete_vertex = false;
 			add_vertex = !add_vertex;
 		}
@@ -655,7 +708,7 @@ void UIState::draw_points_menu() {
 		if (was_moved)
 			push_selected();
 		ImGui::SameLine();
-		if (ImGui::Button(ICON_FA_ARROWS_ALT)) {
+		if (icon_button(icon_font, ICON_FA_ARROWS_ALT)) {
 			// drag a single vertex to a new starting position
 			move_vertex = !move_vertex;
 			viewer_control();
@@ -673,12 +726,9 @@ void UIState::draw_points_menu() {
 	ImGui::Spacing();
 	ImGui::Separator();
 	ImGui::Spacing();
-	ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, ImVec2(0.5f, 0.6f));
 	{
 		float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
-		ImGui::PushFont(icon_font);
-		if (ImGui::Button(ICON_FA_CHEVRON_LEFT, ImVec2(AppLayout::button_height, AppLayout::button_height)))
-			//if (ImGui::ArrowButton("##left", ImGuiDir_Left))
+		if (button_left(icon_font))
 		{
 			state.phase_enumeration = 0;
 			add_vertex = false;
@@ -700,7 +750,7 @@ void UIState::draw_points_menu() {
 			push_disabled();
 		}
 
-		if (ImGui::Button(ICON_FA_CHEVRON_RIGHT, ImVec2(AppLayout::button_height, AppLayout::button_height)))
+		if (button_right(icon_font))
 		{
 			add_vertex = false;
 			move_vertex = false;
@@ -716,9 +766,7 @@ void UIState::draw_points_menu() {
 		if (nothing_detected == 0) {
 			pop_disabled();
 		}
-		ImGui::PopFont();
 	}
-	ImGui::PopStyleVar();
 }
 
 // -----------------------------------------------------------------------------
@@ -761,7 +809,7 @@ void UIState::draw_mesh_menu() {
 	//ImGui::Checkbox("Fix", &state.fix_regular_regions);
 
 	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.50f);
-	if (ImGui::SliderFloat("energy", &state.energy_variation_from_mean, 0, 5)) {
+	if (ImGui::SliderFloat("Energy", &state.energy_variation_from_mean, 0, 5)) {
 		selected_region = -1;
 		state.detect_bad_regions();
 		state.check_regions();
@@ -771,6 +819,7 @@ void UIState::draw_mesh_menu() {
 		viewer_control();
 	}
 	ImGui::PopItemWidth();
+	ShowTooltip("Set energy threshold for difficult to mesh regions");
 
 	if(state.mesh.added_by_untangler.size() > 0)
 	{
@@ -795,6 +844,7 @@ void UIState::draw_mesh_menu() {
 
 		viewer_control();
 	}
+	ShowTooltip("Detect difficult to mesh regions");
 
 	//if (state.mesh.points.size() == 0) {
 	//	pop_disabled();
@@ -814,6 +864,7 @@ void UIState::draw_mesh_menu() {
 
 		viewer_control();
 	}
+	ShowTooltip("Solve difficult to mesh regions");
 	if (disable_region) {
 		pop_disabled();
 	}
@@ -831,8 +882,7 @@ void UIState::draw_mesh_menu() {
 
 	{
 		float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
-		ImGui::PushFont(icon_font);
-		if (ImGui::Button(ICON_FA_CHEVRON_LEFT))
+		if (button_left(icon_font))
 		{
 			state.phase_enumeration = 1;
 			phase_1();
@@ -845,14 +895,13 @@ void UIState::draw_mesh_menu() {
 		}
 		ImGui::SameLine(0.0f, spacing);
 
-		if (ImGui::Button(ICON_FA_CHEVRON_RIGHT))
+		if (button_right(icon_font))
 		{
 			state.final_relax();
 			//state.phase_enumeration = 3;
 			phase_3();
 			viewer_control();
 		}
-		ImGui::PopFont();
 	}
 
 }
@@ -862,7 +911,7 @@ void UIState::draw_mesh_menu() {
 void UIState::draw_analysis_menu() {
 
 	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.40f);
-	if (ImGui::SliderFloat("t", &t, 0, 1)) {
+	if (ImGui::SliderFloat("Displacement", &t, 0, 1)) {
 		viewer_control();
 	}
 	ImGui::PopItemWidth();
@@ -879,10 +928,10 @@ void UIState::draw_analysis_menu() {
 
 	if (state.image_from_pillars) {
 		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.40f);
-		ImGui::InputFloat("E [MPa]", &state.eps, 0.1, 0.01, 3);
-		ShowTooltip("Young's modulus of pillars");
-		ImGui::InputFloat("I [µm^4]", &state.I, 0.1, 0.01, 3);
-		ShowTooltip("Area moment of inertia");
+		ImGui::InputFloat("E", &state.eps, 0.1, 0.01, 3);
+		ShowTooltip("Young's modulus of pillars [MPa]");
+		ImGui::InputFloat("I", &state.I, 0.1, 0.01, 3);
+		ShowTooltip("Area moment of inertia [µm^4]");
 		ImGui::InputFloat("L [µm]", &state.L, 0.1, 0.01, 3);
 		ShowTooltip("Length of pillars");
 		ImGui::PopItemWidth(); //---> the resulting force is in micro-newtons (if displacements or in micrometers)
@@ -897,10 +946,13 @@ void UIState::draw_analysis_menu() {
 		}
 	} else {
 
-		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.40f);
-		ImGui::InputFloat("Scaling [µm/px]", &state.scaling, 0.01, 0.001, 3);
+		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.50f);
+		ImGui::InputFloat("Scaling", &state.scaling, 0.01, 0.001, 3);
+		ShowTooltip("Magnification factor of image [µm/px]");
 		ImGui::InputFloat("E", &state.E, 0.1, 0.01, 3);
+		ShowTooltip("Young's modulus [kPa]");
 		ImGui::InputFloat("nu", &state.nu, 0.1, 0.01, 3);
+		ShowTooltip("Poisson's ratio");
 
 		if (ImGui::TreeNode("Advanced vertex options"))
 		{
@@ -984,8 +1036,7 @@ void UIState::draw_analysis_menu() {
 
 		{
 			float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
-			ImGui::PushFont(icon_font);
-			if (ImGui::Button(ICON_FA_CHEVRON_LEFT)) // replace icon with constant name // write function with button and alignment
+			if (button_left(icon_font)) // replace icon with constant name // write function with button and alignment
 			{
 				state.phase_enumeration = 2;
 				phase_2();
@@ -999,7 +1050,7 @@ void UIState::draw_analysis_menu() {
 
 			ImGui::SameLine(0.0f, spacing);
 
-			if (ImGui::Button(ICON_FA_CHEVRON_RIGHT))
+			if (button_right(icon_font))
 			{
 				state.analyze_3d_mesh();
 				//state.phase_enumeration = 4;
@@ -1011,7 +1062,6 @@ void UIState::draw_analysis_menu() {
 			if (mesh_3d_empty) {
 				pop_disabled();
 			}
-			ImGui::PopFont();
 		}
 
 	}
@@ -1110,7 +1160,7 @@ void UIState::draw_results_menu()
 
 	float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
 	ImGui::PushFont(icon_font);
-	if (ImGui::Button(ICON_FA_CHEVRON_LEFT))
+	if (button_left(icon_font))
 	{
 		// go back to analysis stage and possibly remove current solution
 		state.phase_enumeration = 3;
@@ -1118,7 +1168,7 @@ void UIState::draw_results_menu()
 		viewer_control();
 	}
 	ImGui::SameLine(0.0f, spacing);
-	if (ImGui::Button(ICON_FA_SAVE))
+	if (ImGui::Button(ICON_FA_SAVE, ImVec2(arrow_button_size, arrow_button_size)))
 	{
 		// save solution
 		save();

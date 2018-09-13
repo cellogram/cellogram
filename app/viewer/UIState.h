@@ -198,6 +198,28 @@ public:
 
 	bool key_pressed(unsigned int unicode_key, int modifiers) override;
 	bool key_up(int key, int modifiers) override;
+
+	std::function<void(void)> next_call_back;
+	bool has_next_callback = false;
+	int run_next = 0;
+	template<typename Function, typename Function1>
+	void wait_window(const std::string & id, const std::string & msg, Function & button, Function1 & call_back)
+	{
+		std::string title = "Please wait##" + id;
+		if (button()) {
+			ImGui::OpenPopup(title.c_str());
+
+
+			next_call_back = call_back;
+			has_next_callback = true;
+		}
+		if (ImGui::BeginPopupModal(title.c_str(), NULL, ImGuiWindowFlags_AlwaysAutoResize))
+		{
+			ImGui::Text(msg.c_str());
+			ImGui::EndPopup();
+
+		}
+	}
 };
 
 // -----------------------------------------------------------------------------
