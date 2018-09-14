@@ -142,6 +142,7 @@ private:
 	double min_val = 0, max_val = 0;
 	std::string current_file_name = "";
 	ImFont *icon_font;
+	ImFont *icon_font_big;
 
 	bool block_mouse_behavior(int button);
 	void viewer_control();
@@ -204,18 +205,28 @@ public:
 	bool close_next = false;
 	int run_next = 0;
 	template<typename BtnFun, typename CallBackFun>
-	void wait_window(const std::string & id, const std::string & msg, const BtnFun & button, const CallBackFun & call_back)
+	void wait_window(const std::string & id, const std::string & msg, const char* icon, const BtnFun & button, const CallBackFun & call_back)
 	{
 		std::string title = "Please wait##" + id;
 		if (button()) {
 			ImGui::OpenPopup(title.c_str());
+			run_next = 0;
 
-
+			close_next = false;
 			next_call_back = call_back;
 			has_next_callback = true;
 		}
+		ImGui::SetNextWindowSize(ImVec2(0.0f, 0.0f), ImGuiSetCond_Always);
+		ImGui::SetNextWindowSizeConstraints(ImVec2(200, 70), ImVec2(200, 70));
 		if (ImGui::BeginPopupModal(title.c_str(), NULL, ImGuiWindowFlags_AlwaysAutoResize))
 		{
+			ImGui::Spacing();
+			ImGui::PushFont(icon_font);
+			ImGui::Text(icon);
+			ImGui::PopFont();
+
+			ImGui::SameLine();
+
 			ImGui::Text(msg.c_str());
 
 			if(close_next)
@@ -224,7 +235,6 @@ public:
 				close_next = false;
 			}
 			ImGui::EndPopup();
-
 		}
 	}
 };

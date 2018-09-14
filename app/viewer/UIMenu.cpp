@@ -31,6 +31,26 @@ namespace cellogram {
 
 	namespace {
 
+		namespace AppLayout {
+			constexpr float left_panel_width = 180;
+			constexpr float right_panel_width = 180;
+			constexpr float vertical_padding = 1;
+			constexpr int height_colorbar = 20;
+			constexpr int header_hue = 205;
+			constexpr int button_height = 25;
+
+			static const float TIME_THRESHOLD = 1; //In secs
+
+			constexpr ImGuiWindowFlags window_flags =
+				ImGuiWindowFlags_NoSavedSettings
+				| ImGuiWindowFlags_AlwaysAutoResize;
+
+			constexpr ImGuiTreeNodeFlags header_flags =
+				ImGuiTreeNodeFlags_DefaultOpen
+				| ImGuiTreeNodeFlags_OpenOnDoubleClick;
+		};
+
+
 		void push_disabled() {
 			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
 			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
@@ -96,9 +116,8 @@ namespace cellogram {
 		}
 
 		void ShowTooltip(const std::string &desc) {
-			static const float TIME_THRESHOLD = 1; //In secs
-
-			if ((ImGui::IsItemActive() || ImGui::IsItemHovered())  && GImGui->HoveredIdTimer > TIME_THRESHOLD) {
+			
+			if ((ImGui::IsItemActive() || ImGui::IsItemHovered())  && GImGui->HoveredIdTimer > AppLayout::TIME_THRESHOLD) {
 				ImGui::SetTooltip("%s", desc.c_str());
 			}
 		}
@@ -199,28 +218,6 @@ namespace cellogram {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-namespace {
-
-	namespace AppLayout {
-		constexpr float left_panel_width = 180;
-		constexpr float right_panel_width = 180;
-		constexpr float vertical_padding = 1;
-		constexpr int height_colorbar = 20;
-		constexpr int header_hue = 205;
-		constexpr int button_height = 25;
-
-		constexpr ImGuiWindowFlags window_flags =
-		ImGuiWindowFlags_NoSavedSettings
-		| ImGuiWindowFlags_AlwaysAutoResize;
-
-		constexpr ImGuiTreeNodeFlags header_flags =
-		ImGuiTreeNodeFlags_DefaultOpen
-		| ImGuiTreeNodeFlags_OpenOnDoubleClick;
-	};
-
-} // anonymous namespace
-
-////////////////////////////////////////////////////////////////////////////////
 
 void UIState::draw_viewer_window() {
 
@@ -607,7 +604,7 @@ void UIState::draw_points_menu() {
 	ImGui::PopItemWidth();
 
 	//if (ImGui::Button("Detection", ImVec2((w - p), 0))) {
-	wait_window("wait_detect", "Detecting vertices", 
+	wait_window("wait_detect", "Detecting vertices", ICON_FA_COOKIE,
 		[&]() {return ImGui::Button("Detection", ImVec2((w - p), 0));},
 		[&]() {detect_vertices();});
 	
@@ -752,7 +749,9 @@ void UIState::draw_points_menu() {
 			push_disabled();
 		}
 
-		if (button_right(icon_font))
+		wait_window("wait_meshing", "Meshing", ICON_FA_FIGHTER_JET,
+			[&]() {return button_right(icon_font);},
+			[&]() 
 		{
 			add_vertex = false;
 			move_vertex = false;
@@ -764,7 +763,7 @@ void UIState::draw_points_menu() {
 			phase_2();
 			//state.phase_enumeration = 2;
 			viewer_control();
-		}
+		});
 		if (nothing_detected == 0) {
 			pop_disabled();
 		}
@@ -858,14 +857,26 @@ void UIState::draw_mesh_menu() {
 		push_disabled();
 	}
 
-	if (ImGui::Button("solve regions", ImVec2((w - p), 0))) {
+	//if (ImGui::Button("solve regions", ImVec2((w - p), 0))) {
+	//	state.resolve_regions();
+	//	selected_region = -1;
+	//	current_region_status = "";
+	//	create_region_label();
+
+	//	viewer_control();
+	//}
+	wait_window("wait_gurobi", "Solving regions", ICON_FA_CHECK_DOUBLE,
+		[&]() {return ImGui::Button("solve regions", ImVec2((w - p), 0));},
+		[&]()
+	{
 		state.resolve_regions();
 		selected_region = -1;
 		current_region_status = "";
 		create_region_label();
 
 		viewer_control();
-	}
+	});
+
 	ShowTooltip("Solve difficult to mesh regions");
 	if (disable_region) {
 		pop_disabled();
@@ -889,7 +900,7 @@ void UIState::draw_mesh_menu() {
 			state.phase_enumeration = 1;
 			phase_1();
 			// add here also the clean up of this stage
-			state.mesh.triangles.resize(0,0);
+			state.mesh.triangles.resize(0, 0);
 			state.mesh.added_by_untangler.resize(0);
 			state.mesh.deleted_by_untangler.resize(0, 0);
 
@@ -897,13 +908,15 @@ void UIState::draw_mesh_menu() {
 		}
 		ImGui::SameLine(0.0f, spacing);
 
-		if (button_right(icon_font))
+
+		wait_window("wait_relax", "Relaxing mesh", ICON_FA_UMBRELLA_BEACH,
+			[&]() {return button_right(icon_font);},
+			[&]() 
 		{
 			state.final_relax();
-			//state.phase_enumeration = 3;
 			phase_3();
 			viewer_control();
-		}
+		});
 	}
 
 }
@@ -920,13 +933,13 @@ void UIState::draw_analysis_menu() {
 
 	ImGui::Checkbox("Pillars", &state.image_from_pillars);
 
-	auto reset_view_3d = [&]() {
-		analysis_mode = true;
-		show_mesh = false;
-		show_image = false;
-		show_mesh_fill = false;
-		view_mode_3d = Mesh3DAttribute::NONE;
-	};
+	//auto reset_view_3d = [&]() {
+	//	analysis_mode = true;
+	//	show_mesh = false;
+	//	show_image = false;
+	//	show_mesh_fill = false;
+	//	view_mode_3d = Mesh3DAttribute::NONE;
+	//};
 
 	if (state.image_from_pillars) {
 		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.40f);
@@ -942,7 +955,7 @@ void UIState::draw_analysis_menu() {
 			state.analyze_3d_mesh();
 			state.phase_enumeration = 4;
 			phase_4();
-			reset_view_3d();
+			//reset_view_3d();
 			view_mode_3d = Mesh3DAttribute::NORM_DISP;
 			viewer_control();
 		}
@@ -985,51 +998,53 @@ void UIState::draw_analysis_menu() {
 		float w = ImGui::GetContentRegionAvailWidth();
 		float p = ImGui::GetStyle().FramePadding.x;
 
-		if (ImGui::Button("Mesh 2D adaptive", ImVec2(-1.0, 0))) {
-			state.mesh_2d_adaptive();
-			reset_view_3d();
-			viewer_control();
-			// Eigen::MatrixXd V;
-			// Eigen::MatrixXi F;
-			// Eigen::VectorXd S;
-			// state.mesh.get_background_mesh(state.scaling, V, F, S, state.padding_size);
-			// igl::colormap(cm, state.mesh.sizing, true, mesh_color);
-			// V /= state.scaling;
-			// points_data().clear();
-			// points_data().show_faces = true;
-			// points_data().set_mesh(V, F);
-			// points_data().set_colors(mesh_color);
-			// std::cout << state.mesh.sizing << std::endl;
-			// physical_data().clear();
-		}
-		// ImGui::SameLine(0, p);
-		// if (ImGui::Button("Extrude", ImVec2(1.5f*(w-p)/4.f, 0))) {
-		// 	state.extrude_2d_mesh();
-		// 	reset_view_3d();
-		// 	viewer_control();
-		// }
-		// ShowTooltip("Extrude the 2D mesh into a 3D volume mesh.");
+		//if (ImGui::Button("Mesh 2D adaptive", ImVec2(-1.0, 0))) {
+		//	state.mesh_2d_adaptive();
+		//	reset_view_3d();
+		//	viewer_control();
+		//	// Eigen::MatrixXd V;
+		//	// Eigen::MatrixXi F;
+		//	// Eigen::VectorXd S;
+		//	// state.mesh.get_background_mesh(state.scaling, V, F, S, state.padding_size);
+		//	// igl::colormap(cm, state.mesh.sizing, true, mesh_color);
+		//	// V /= state.scaling;
+		//	// points_data().clear();
+		//	// points_data().show_faces = true;
+		//	// points_data().set_mesh(V, F);
+		//	// points_data().set_colors(mesh_color);
+		//	// std::cout << state.mesh.sizing << std::endl;
+		//	// physical_data().clear();
+		//}
 
-		bool mesh_2d_empty = state.mesh3d.empty();
-		if (mesh_2d_empty) {
-			push_disabled();
-		}
-		if (ImGui::Button("Mesh 3D volume", ImVec2(-1.0, 0))) {
+		//bool mesh_2d_empty = state.mesh3d.empty();
+		//if (mesh_2d_empty) {
+		//	push_disabled();
+		//}
+		//if (ImGui::Button("Mesh 3D volume", ImVec2(-1.0, 0))) {
+		//	state.mesh_3d_volume();
+		//	state.remesh_3d_adaptive();
+		//	reset_view_3d();
+		//	viewer_control();
+		//}
+		wait_window("wait_3d_mesh", "Generating 3D mesh for FE", ICON_FA_PRAYING_HANDS,
+			[&]() {return ImGui::Button("Mesh 3D volume", ImVec2(-1.0, 0));},
+			[&]()
+		{
+			state.mesh_2d_adaptive();
 			state.mesh_3d_volume();
 			state.remesh_3d_adaptive();
-			reset_view_3d();
+			
+			analysis_mode = true;
+			show_mesh = false;
+			show_image = false;
+			show_mesh_fill = false;
+			view_mode_3d = Mesh3DAttribute::NONE;
+
 			viewer_control();
-		}
-		if (mesh_2d_empty) {
-			pop_disabled();
-		}
-		// ImGui::SameLine(0, p);
-		// if (ImGui::Button("Remesh", ImVec2(1.5f*(w-p)/4.f, 0))) {
-		// 	state.remesh_3d_adaptive();
-		// 	reset_view_3d();
-		// 	viewer_control();
-		// }
-		// ShowTooltip("Remesh the current 3D volume mesh adaptively using mmg3d.");
+		});
+		//if (mesh_2d_empty) {
+		//	pop_disabled();
+		//}
 
 		// Arrow buttons
 		ImGui::Spacing();
@@ -1038,7 +1053,7 @@ void UIState::draw_analysis_menu() {
 
 		{
 			float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
-			if (button_left(icon_font)) // replace icon with constant name // write function with button and alignment
+			if (button_left(icon_font))
 			{
 				state.phase_enumeration = 2;
 				phase_2();
@@ -1052,15 +1067,28 @@ void UIState::draw_analysis_menu() {
 
 			ImGui::SameLine(0.0f, spacing);
 
-			if (button_right(icon_font))
+			//if (button_right(icon_font))
+			//{
+			//	state.analyze_3d_mesh();
+			//	//state.phase_enumeration = 4;
+			//	phase_4();
+			//	//reset_view_3d();
+			//	view_mode_3d = Mesh3DAttribute::NORM_DISP;
+			//	viewer_control();
+			//}
+			wait_window("wait_analysis", "Running FEA", ICON_FA_COGS,
+				[&]() {return button_right(icon_font);},
+				[&]()
 			{
 				state.analyze_3d_mesh();
 				//state.phase_enumeration = 4;
 				phase_4();
-				reset_view_3d();
+				//reset_view_3d();
 				view_mode_3d = Mesh3DAttribute::NORM_DISP;
 				viewer_control();
-			}
+
+				// TODO: add also the pillar calculation
+			});
 			if (mesh_3d_empty) {
 				pop_disabled();
 			}

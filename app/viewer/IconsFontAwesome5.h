@@ -143,6 +143,7 @@
 #define ICON_FA_SUBWAY u8"\uf239"
 #define ICON_FA_BOOK_READER u8"\uf5da"
 #define ICON_FA_COOKIE u8"\uf563"
+#define ICON_FA_MESH u8"\uf20e"
 #define ICON_FA_MONEY_BILL u8"\uf0d6"
 #define ICON_FA_CHEVRON_DOWN u8"\uf078"
 #define ICON_FA_CAR_SIDE u8"\uf5e4"
