@@ -119,7 +119,7 @@ namespace cellogram {
 		}
 
 		void ShowTooltip(const std::string &desc) {
-			
+
 			if ((ImGui::IsItemActive() || ImGui::IsItemHovered())  && GImGui->HoveredIdTimer > AppLayout::TIME_THRESHOLD) {
 				ImGui::SetTooltip("%s", desc.c_str());
 			}
@@ -607,69 +607,14 @@ void UIState::draw_points_menu() {
 	wait_window("wait_detect", "Detecting vertices", ICON_FA_COOKIE,
 		[&]() {return ImGui::Button("Detection", ImVec2((w - p), 0));},
 		[&]() {detect_vertices();});
-	
+
 		//viewer_control();
 		//detect_vertices();
 	//}
 	// Histogram is only relevant for detection so should go here
 	{
 		ImGui::Separator();
-		if (hist.size() == 0) {
-			compute_histogram();
-		}
-
-		const float hist_w = ImGui::GetWindowWidth() * 0.75f - 2;
-		ImGui::PushItemWidth(hist_w + 2);
-
-		static float min_img = 0;
-		static float max_img = 1;
-
-		auto pos = ImGui::GetWindowPos();
-		int startX = pos.x + 10;
-		int startY = pos.y + 102 * menu_scaling();
-
-		ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-		ImGui::PlotHistogram("", hist.data(), hist.size(), 0, NULL, 0.0f, hist.maxCoeff(), ImVec2(0, 80));
-
-		ImDrawList *draw_list = ImGui::GetWindowDrawList();
-		draw_list->PushClipRectFullScreen();
-		draw_list->AddLine(ImVec2(startX + hist_w * min_img, startY), ImVec2(startX + hist_w * min_img, startY + 75),
-			IM_COL32(0, 255, 0, 255), 2.0f);
-		draw_list->AddLine(ImVec2(startX + hist_w * max_img, startY), ImVec2(startX + hist_w * max_img, startY + 75),
-			IM_COL32(0, 255, 0, 255), 2.0f);
-		draw_list->PopClipRect();
-
-		ImGui::PopItemFlag();
-
-		static const auto clamping = [](const double x) {
-			if (x > 0) {
-				if (x < 1)
-					return x;
-				else
-					return 1.;
-			}
-			else {
-				return 0.0;
-			}
-		};
-
-		if (ImGui::SliderFloat("min", &min_img, 0.f, 1.f)) {
-			Eigen::MatrixXd tmp = (state.img.array() - min_img) / (max_img - min_img);
-			tmp = tmp.unaryExpr(clamping);
-
-			texture = (tmp.array() * 255).cast<unsigned char>();
-
-			viewer_control();
-		}
-		if (ImGui::SliderFloat("max", &max_img, 0.f, 1.f)) {
-			Eigen::MatrixXd tmp = (state.img.array() - min_img) / (max_img - min_img);
-			tmp = tmp.unaryExpr(clamping);
-			texture = (tmp.array() * 255).cast<unsigned char>();
-
-			viewer_control();
-		}
-
-		ImGui::PopItemWidth();
+		draw_histogram_menu();
 	}
 
 
@@ -739,7 +684,7 @@ void UIState::draw_points_menu() {
 
 			viewer_control();
 		}
-		
+
 		ImGui::SameLine(0.0f, spacing);
 
 		// disable if points are not detected
@@ -750,7 +695,7 @@ void UIState::draw_points_menu() {
 
 		wait_window("wait_meshing", "Meshing", ICON_FA_PRAYING_HANDS,
 			[&]() {return button_right(icon_font);},
-			[&]() 
+			[&]()
 		{
 			add_vertex = false;
 			move_vertex = false;
@@ -908,7 +853,7 @@ void UIState::draw_mesh_menu() {
 
 		wait_window("wait_relax", "Relaxing mesh", ICON_FA_UMBRELLA_BEACH,
 			[&]() {return button_right(icon_font);},
-			[&]() 
+			[&]()
 		{
 			state.final_relax();
 			phase_3();
@@ -1067,7 +1012,7 @@ void UIState::draw_analysis_menu() {
 			state.mesh_2d_adaptive();
 			state.mesh_3d_volume();
 			state.remesh_3d_adaptive();
-			
+
 			analysis_mode = true;
 			show_mesh = false;
 			show_image = false;
@@ -1142,7 +1087,7 @@ void UIState::draw_results_menu()
 		if (view_current == 0){
 			show_traction_forces = false;
 			const char* sub_views[] = { "Mag", "Ux", "Uy", "Uz" };
-			if (ImGui::Combo("Uview##View", &sub_view_current, sub_views, IM_ARRAYSIZE(sub_views))) 
+			if (ImGui::Combo("Uview##View", &sub_view_current, sub_views, IM_ARRAYSIZE(sub_views)))
 			{
 				switch (sub_view_current)
 				{
@@ -1252,23 +1197,25 @@ void UIState::draw_histogram_menu() {
 	}
 
 	const float hist_w = ImGui::GetWindowWidth() * 0.75f - 2;
+	const float hist_h = 80 * menu_scaling();
 	ImGui::PushItemWidth(hist_w + 2);
 
 	static float min_img = 0;
 	static float max_img = 1;
 
-	auto pos = ImGui::GetWindowPos();
-	int startX = pos.x + 10;
-	int startY = pos.y + 52 * menu_scaling();
-
+	auto before = ImGui::GetCursorScreenPos();
 	ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-	ImGui::PlotHistogram("", hist.data(), hist.size(), 0, NULL, 0.0f, hist.maxCoeff(), ImVec2(0, 80));
+	ImGui::PlotHistogram("", hist.data(), hist.size(), 0, NULL, 0.0f, hist.maxCoeff(), ImVec2(0, hist_h));
+	auto after = ImGui::GetCursorScreenPos();
+	after.y -= ImGui::GetStyle().ItemSpacing.y;
 
 	ImDrawList *draw_list = ImGui::GetWindowDrawList();
 	draw_list->PushClipRectFullScreen();
-	draw_list->AddLine(ImVec2(startX + hist_w * min_img, startY), ImVec2(startX + hist_w * min_img, startY + 75),
+	draw_list->AddLine(ImVec2(before.x + hist_w * min_img, before.y),
+		ImVec2(before.x + hist_w * min_img, after.y),
 		IM_COL32(0, 255, 0, 255), 2.0f);
-	draw_list->AddLine(ImVec2(startX + hist_w * max_img, startY), ImVec2(startX + hist_w * max_img, startY + 75),
+	draw_list->AddLine(ImVec2(before.x + hist_w * max_img, before.y),
+		ImVec2(before.x + hist_w * max_img, after.y),
 		IM_COL32(0, 255, 0, 255), 2.0f);
 	draw_list->PopClipRect();
 
