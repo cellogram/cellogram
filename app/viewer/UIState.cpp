@@ -197,6 +197,7 @@ bool UIState::mouse_down(int button, int modifier) {
 
 		// add_vertex = false;
 		if (add_vertex) {
+			phase_1();
 			state.add_vertex(Eigen::Vector3d(xNew, yNew, zNew));
 
 			state.reset_state();
@@ -204,6 +205,7 @@ bool UIState::mouse_down(int button, int modifier) {
 			viewer_control();
 			return true;
 		} else if (delete_vertex) {
+			phase_1();
 			// find vertex in V closest to xNew,yNew
 			state.delete_vertex(vid);
 
@@ -1083,6 +1085,7 @@ void UIState::build_region_edges(const Eigen::MatrixXd &pts, Eigen::MatrixXd &ba
 
 void UIState::phase_0()
 {
+	state.phase_enumeration = 0;
 	show_mesh = false;
 	show_hull = false;
 	show_points = false;
@@ -1097,6 +1100,7 @@ void UIState::phase_0()
 }
 void UIState::phase_1()
 {
+	state.phase_enumeration = 1;
 	show_mesh = false;
 	show_hull = false;
 	show_points = true;
@@ -1111,6 +1115,7 @@ void UIState::phase_1()
 }
 void UIState::phase_2()
 {
+	state.phase_enumeration = 2;
 	t = 0;
 	show_mesh = true;
 	show_hull = false;
@@ -1126,6 +1131,7 @@ void UIState::phase_2()
 }
 void UIState::phase_3()
 {
+	state.phase_enumeration = 3;
 	show_mesh = true;
 	show_hull = false;
 	show_points = false;
@@ -1140,6 +1146,7 @@ void UIState::phase_3()
 }
 void UIState::phase_4()
 {
+	state.phase_enumeration = 4;
 	show_matching = false;
 	show_traction_forces = true;
 }

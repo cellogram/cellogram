@@ -68,7 +68,7 @@ public:
 	bool show_selected_region = true;
 	bool analysis_mode = false;
 	bool show_traction_forces = true;
-
+	bool show_smoothed_results = false;
 	// 3d visualizer
 	enum class Mesh3DAttribute : int {
 		NONE,
@@ -217,7 +217,7 @@ public:
 			has_next_callback = true;
 		}
 		ImGui::SetNextWindowSize(ImVec2(0.0f, 0.0f), ImGuiSetCond_Always);
-		ImGui::SetNextWindowSizeConstraints(ImVec2(200, 70), ImVec2(200, 70));
+		ImGui::SetNextWindowSizeConstraints(ImVec2(200, 60), ImVec2(200, 60));
 		if (ImGui::BeginPopupModal(title.c_str(), NULL, ImGuiWindowFlags_AlwaysAutoResize))
 		{
 			ImGui::Spacing();

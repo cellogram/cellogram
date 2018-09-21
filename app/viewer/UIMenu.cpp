@@ -34,10 +34,13 @@ namespace cellogram {
 		namespace AppLayout {
 			constexpr float left_panel_width = 180;
 			constexpr float right_panel_width = 180;
-			constexpr float vertical_padding = 1;
+			constexpr float vertical_padding = 0;
 			constexpr int height_colorbar = 20;
 			constexpr int header_hue = 205;
 			constexpr int button_height = 25;
+
+			constexpr int arrow_button_size = 40;
+			constexpr int icon_button_size = 28;
 
 			static const float TIME_THRESHOLD = 1; //In secs
 
@@ -144,14 +147,11 @@ namespace cellogram {
 			return value_changed;
 		}
 
-		constexpr int arrow_button_size = 40;
-		constexpr int icon_button_size = 28;
-
 		bool button_right(ImFont *icon_font)
 		{
 			ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, ImVec2(0.5f, 0.6f));
 			ImGui::PushFont(icon_font);
-			bool ok = ImGui::Button(ICON_FA_CHEVRON_RIGHT, ImVec2(arrow_button_size, arrow_button_size));
+			bool ok = ImGui::Button(ICON_FA_CHEVRON_RIGHT, ImVec2(AppLayout::arrow_button_size, AppLayout::arrow_button_size));
 			ImGui::PopFont();
 			ImGui::PopStyleVar();
 			ShowTooltip("Next");
@@ -161,7 +161,7 @@ namespace cellogram {
 		{
 			ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, ImVec2(0.5f, 0.6f));
 			ImGui::PushFont(icon_font);
-			bool ok = ImGui::Button(ICON_FA_CHEVRON_LEFT, ImVec2(arrow_button_size, arrow_button_size));
+			bool ok = ImGui::Button(ICON_FA_CHEVRON_LEFT, ImVec2(AppLayout::arrow_button_size, AppLayout::arrow_button_size));
 			ImGui::PopFont();
 			ImGui::PopStyleVar();
 			ShowTooltip("Back");
@@ -171,7 +171,7 @@ namespace cellogram {
 		{
 			ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, ImVec2(0.5f, 0.6f));
 			ImGui::PushFont(icon_font);
-			bool ok = ImGui::Button(button_name, ImVec2(icon_button_size, icon_button_size));
+			bool ok = ImGui::Button(button_name, ImVec2(AppLayout::icon_button_size, AppLayout::icon_button_size));
 			ImGui::PopFont();
 			ImGui::PopStyleVar();
 			return ok;
@@ -552,7 +552,7 @@ float UIState::draw_file_menu() {
 	}
 
 	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.70f);
-	if (ImGui::Button("Load Image", ImVec2(0, icon_button_size))) {
+	if (ImGui::Button("Load Image", ImVec2(0, AppLayout::icon_button_size))) {
 		std::string fname = FileDialog::openFileName(DATA_DIR, { "*.png", "*.tif", "*.tiff" });
 		if (!fname.empty()) {
 			load_image(fname);
@@ -729,7 +729,6 @@ void UIState::draw_points_menu() {
 		float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
 		if (button_left(icon_font))
 		{
-			state.phase_enumeration = 0;
 			add_vertex = false;
 			move_vertex = false;
 			delete_vertex = false;
@@ -749,7 +748,7 @@ void UIState::draw_points_menu() {
 			push_disabled();
 		}
 
-		wait_window("wait_meshing", "Meshing", ICON_FA_FIGHTER_JET,
+		wait_window("wait_meshing", "Meshing", ICON_FA_PRAYING_HANDS,
 			[&]() {return button_right(icon_font);},
 			[&]() 
 		{
@@ -761,7 +760,6 @@ void UIState::draw_points_menu() {
 			/*state.detect_bad_regions();
 			state.check_regions();*/
 			phase_2();
-			//state.phase_enumeration = 2;
 			viewer_control();
 		});
 		if (nothing_detected == 0) {
@@ -831,7 +829,7 @@ void UIState::draw_mesh_menu() {
 		}
 	}
 
-	if (ImGui::Button("build regions", ImVec2((w - p), 0))) {
+	if (ImGui::Button("Build regions", ImVec2((w - p), 0))) {
 		selected_region = -1;
 
 		state.detect_bad_regions();
@@ -866,7 +864,7 @@ void UIState::draw_mesh_menu() {
 	//	viewer_control();
 	//}
 	wait_window("wait_gurobi", "Solving regions", ICON_FA_CHECK_DOUBLE,
-		[&]() {return ImGui::Button("solve regions", ImVec2((w - p), 0));},
+		[&]() {return ImGui::Button("Solve regions", ImVec2((w - p), 0));},
 		[&]()
 	{
 		state.resolve_regions();
@@ -897,7 +895,6 @@ void UIState::draw_mesh_menu() {
 		float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
 		if (button_left(icon_font))
 		{
-			state.phase_enumeration = 1;
 			phase_1();
 			// add here also the clean up of this stage
 			state.mesh.triangles.resize(0, 0);
@@ -933,13 +930,9 @@ void UIState::draw_analysis_menu() {
 
 	ImGui::Checkbox("Pillars", &state.image_from_pillars);
 
-	//auto reset_view_3d = [&]() {
-	//	analysis_mode = true;
-	//	show_mesh = false;
-	//	show_image = false;
-	//	show_mesh_fill = false;
-	//	view_mode_3d = Mesh3DAttribute::NONE;
-	//};
+	ImGui::Spacing();
+	ImGui::Separator();
+	ImGui::Spacing();
 
 	if (state.image_from_pillars) {
 		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.40f);
@@ -947,19 +940,60 @@ void UIState::draw_analysis_menu() {
 		ShowTooltip("Young's modulus of pillars [MPa]");
 		ImGui::InputFloat("I", &state.I, 0.1, 0.01, 3);
 		ShowTooltip("Area moment of inertia [µm^4]");
-		ImGui::InputFloat("L [µm]", &state.L, 0.1, 0.01, 3);
-		ShowTooltip("Length of pillars");
+		ImGui::InputFloat("L", &state.L, 0.1, 0.01, 3);
+		ShowTooltip("Length of pillars [µm]");
 		ImGui::PopItemWidth(); //---> the resulting force is in micro-newtons (if displacements or in micrometers)
 
-		if (ImGui::Button("Analyze data", ImVec2(-1, 0))) {
-			state.analyze_3d_mesh();
-			state.phase_enumeration = 4;
-			phase_4();
-			//reset_view_3d();
-			view_mode_3d = Mesh3DAttribute::NORM_DISP;
-			viewer_control();
+
+		// Arrow buttons
+		ImGui::Spacing();
+		ImGui::Separator();
+		ImGui::Spacing();
+
+		{
+			float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
+			if (button_left(icon_font))
+			{
+				phase_2();
+				viewer_control();
+			}
+
+			ImGui::SameLine(0.0f, spacing);
+
+			wait_window("wait_analysis_pillars", "Calculating bending forces", ICON_FA_COGS,
+				[&]() {return button_right(icon_font);},
+				[&]()
+			{
+				state.analyze_3d_mesh();
+				phase_4();
+				//reset_view_3d();
+				view_mode_3d = Mesh3DAttribute::NORM_DISP;
+				viewer_control();
+			});
 		}
+
 	} else {
+
+		// Material Model selection
+		static int model_selection = 0;
+		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.4f);
+		const char* material_models[] = { "Linear Elasticity", "Neo Hooke" };
+		if (ImGui::Combo("Material Model", &model_selection, material_models, IM_ARRAYSIZE(material_models)))
+		{
+			switch (model_selection)
+			{
+			case 0: {
+				state.formulation = "LinearElasticity";
+				break;
+			}
+			case 1:
+			{
+				state.formulation = "NeoHookean";
+				break;
+			}
+			default: std::cout << "invalid material model" << std::endl;
+			}
+		}
 
 		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.50f);
 		ImGui::InputFloat("Scaling", &state.scaling, 0.01, 0.001, 3);
@@ -1026,7 +1060,7 @@ void UIState::draw_analysis_menu() {
 		//	reset_view_3d();
 		//	viewer_control();
 		//}
-		wait_window("wait_3d_mesh", "Generating 3D mesh for FE", ICON_FA_PRAYING_HANDS,
+		wait_window("wait_3d_mesh", "Generating 3D mesh for FE", ICON_FA_FIGHTER_JET,
 			[&]() {return ImGui::Button("Mesh 3D volume", ImVec2(-1.0, 0));},
 			[&]()
 		{
@@ -1055,7 +1089,6 @@ void UIState::draw_analysis_menu() {
 			float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
 			if (button_left(icon_font))
 			{
-				state.phase_enumeration = 2;
 				phase_2();
 				viewer_control();
 			}
@@ -1081,7 +1114,6 @@ void UIState::draw_analysis_menu() {
 				[&]()
 			{
 				state.analyze_3d_mesh();
-				//state.phase_enumeration = 4;
 				phase_4();
 				//reset_view_3d();
 				view_mode_3d = Mesh3DAttribute::NORM_DISP;
@@ -1135,6 +1167,8 @@ void UIState::draw_results_menu()
 		ImGui::PopItemWidth();
 
 	}
+
+	ImGui::Checkbox("Smooth results", &show_smoothed_results);
 
 	// Colorbar
 	static GLuint color_bar_texture = 0;
@@ -1193,12 +1227,11 @@ void UIState::draw_results_menu()
 	if (button_left(icon_font))
 	{
 		// go back to analysis stage and possibly remove current solution
-		state.phase_enumeration = 3;
 		phase_3();
 		viewer_control();
 	}
 	ImGui::SameLine(0.0f, spacing);
-	if (ImGui::Button(ICON_FA_SAVE, ImVec2(arrow_button_size, arrow_button_size)))
+	if (ImGui::Button(ICON_FA_SAVE, ImVec2(AppLayout::arrow_button_size, AppLayout::arrow_button_size)))
 	{
 		// save solution
 		save();
