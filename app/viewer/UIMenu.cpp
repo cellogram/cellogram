@@ -1080,7 +1080,8 @@ void UIState::draw_results_menu()
 	{
 		static int view_current = 0;
 		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.4f);
-		const char* views[] = { "U", "S", "T"};
+		// const char* views[] = { "U", "S", "T"};
+		const char* views[] = { "U", "T"};
 		ImGui::Combo("View", &view_current, views, IM_ARRAYSIZE(views));
 
 		static int sub_view_current = 0;
@@ -1100,20 +1101,30 @@ void UIState::draw_results_menu()
 				}
 			};
 		}
+		// else if (view_current == 1){
+		// 	const char* sub_views[] = { "Mises", "Sxx", "Syy", "Szz", "Sxy", "Sxz", "Syz" };
+		// 	ImGui::Combo("Sview##View", &sub_view_current, sub_views, IM_ARRAYSIZE(sub_views));
+		// }
 		else if (view_current == 1){
-			const char* sub_views[] = { "Mises", "Sxx", "Syy", "Szz", "Sxy", "Sxz", "Syz" };
-			ImGui::Combo("Sview##View", &sub_view_current, sub_views, IM_ARRAYSIZE(sub_views));
-		}
-		else if (view_current == 2){
 			show_traction_forces = true;
 			const char* sub_views[] = { "Mag", "Tx", "Ty", "Tz" };
-			ImGui::Combo("Tview##View", &sub_view_current, sub_views, IM_ARRAYSIZE(sub_views));
+			if(ImGui::Combo("Tview##View", &sub_view_current, sub_views, IM_ARRAYSIZE(sub_views)));
+			{
+				switch (sub_view_current)
+				{
+				case 0: view_mode_3d = Mesh3DAttribute::NORM_DISP; break;
+				case 1: view_mode_3d = Mesh3DAttribute::X_DISP; break;
+				case 2: view_mode_3d = Mesh3DAttribute::Y_DISP; break;
+				case 3: view_mode_3d = Mesh3DAttribute::Z_DISP; break;
+				default:
+					assert(false);
+				}
+			}
 		}
 		ImGui::PopItemWidth();
 
+		ImGui::Checkbox("Smooth results", &show_smoothed_results);
 	}
-
-	ImGui::Checkbox("Smooth results", &show_smoothed_results);
 
 	// Colorbar
 	static GLuint color_bar_texture = 0;

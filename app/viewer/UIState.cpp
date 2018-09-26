@@ -12,6 +12,8 @@
 #include <igl/colormap.h>
 #include <igl/per_face_normals.h>
 #include <igl/unproject_onto_mesh.h>
+#include <igl/doublearea.h>
+
 #include <GLFW/glfw3.h>
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -954,7 +956,41 @@ void UIState::viewer_control_3d() {
 
 	Eigen::MatrixXd C, disp;
 
-	const auto &fun = show_traction_forces ? state.mesh3d.traction_forces : state.mesh3d.displacement;
+	auto fun = show_traction_forces ? state.mesh3d.traction_forces : state.mesh3d.displacement;
+
+	if(show_smoothed_results)
+	{
+		const auto tmp = fun;
+
+		fun.resize(Vtmp.rows(), tmp.cols());
+		fun.setZero();
+		Eigen::MatrixXd tri_areas, areas(Vtmp.rows(), 1);
+		areas.setZero();
+
+		igl::doublearea(Vtmp, state.mesh3d.F, tri_areas);
+		for(int i = 0; i < state.mesh3d.F.rows(); ++i)
+		{
+			for(int t = 0; t < 3; ++t){
+				const int v_index = state.mesh3d.F(i,t);
+				fun.row(v_index) += tmp.row(i) * tri_areas(i);
+				areas(v_index) += tri_areas(i);
+			}
+		}
+
+		for(int i = 0; i < areas.size(); ++i)
+		{
+			if(fabs(areas(i)) < 1e-12)
+			{
+				areas(i) = 1;
+				for(int j = 0; j < fun.cols(); ++j){
+					assert(fabs(fun(i, j))<1e-12);
+				}
+			}
+		}
+
+		for(int i = 0; i < fun.cols(); ++i)
+			fun.col(i).array() /= areas.array();
+	}
 
 	switch (view_mode_3d) {
 		case Mesh3DAttribute::NONE:
