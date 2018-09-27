@@ -3,6 +3,7 @@
 #include "CLI11.hpp"
 #include <cellogram/State.h>
 #include <cellogram/StringUtils.h>
+#include <cellogram/PNGOutput.h>
 #include <geogram/basic/command_line.h>
 #include <geogram/basic/command_line_args.h>
 ////////////////////////////////////////////////////////////////////////////////
@@ -54,6 +55,7 @@ int main(int argc, char *argv[]) {
 
 	if (args.cmd)
 	{
+		PNGOutput png_output;
 		auto &state = cellogram::State::state();
 		state.load_image(args.input);
 
@@ -62,15 +64,31 @@ int main(int argc, char *argv[]) {
 			std::cout << "Image not loaded" << std::endl;
 			exit(0);
 		}
-		state.load_settings(args.settings);
 
-		if(args.phase > 0)
+
+		const int index = args.input.find_last_of(".");
+		std::string save_dir = args.input.substr(0, index);
+		std::cout<<save_dir<<std::endl;
+		StringUtils::cellogram_mkdir(save_dir);
+
+		state.load_settings(args.settings);
+		png_output.init(save_dir + "/all.png", state.img.rows(), state.img.cols());
+
+		png_output.draw_image();
+
+		if(args.phase > 0){
 			state.detect_vertices();
+			png_output.draw_detection();
+		}
 		if (args.phase > 1)
 		{
 			state.untangle();
 			state.detect_bad_regions();
 			state.resolve_regions();
+
+
+			png_output.draw_untangle();
+
 			state.final_relax();
 		}
 		if (args.phase > 2)
@@ -83,10 +101,9 @@ int main(int argc, char *argv[]) {
 			state.analyze_3d_mesh();
 		}
 		state.phase_enumeration = args.phase;
-		const int index = args.input.find_last_of(".");
-		std::string save_dir = args.input.substr(0, index);
-		StringUtils::cellogram_mkdir(save_dir);
 		state.save(save_dir);
+
+		png_output.save();
 	}
 	else
 	{

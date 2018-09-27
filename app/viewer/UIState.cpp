@@ -265,7 +265,7 @@ void UIState::initialize() {
 	state.resolve_regions();*/
 
 	// Setup viewer parameters
-	viewer.resize(1400, 1280);
+	// viewer.resize(1400, 1280);
 	viewer.core.background_color.setOnes();
 	// viewer.core.set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_TRACKBALL);
 	viewer.core.set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_NO_ROTATION);
@@ -308,6 +308,7 @@ void UIState::init(igl::opengl::glfw::Viewer *_viewer) {
 
 
 	glfwSetWindowTitle(viewer.window, "Cellogram viewer");
+	viewer.resize(1400, 1280);
 }
 
 void UIState::launch() {

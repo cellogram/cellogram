@@ -88,6 +88,10 @@ include(CellogramDownloadExternal)
 cellogram_download_polyfem()
 add_subdirectory(${THIRD_PARTY_DIR}/polyfem/cpp)
 
+
+cellogram_download_pngwriter()
+add_subdirectory(${THIRD_PARTY_DIR}/pngwriter)
+
 # Eigen
 # Uncomment to use the system's version of Eigen (e.g. to use Eigen 3.3)
 # find_package(Eigen3 REQUIRED)

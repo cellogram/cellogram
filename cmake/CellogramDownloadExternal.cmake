@@ -23,6 +23,21 @@ function(cellogram_download_polyfem)
 
     cellogram_download_project(polyfem
         GIT_REPOSITORY ${POLYFEM_URL}
-        GIT_TAG        81e6ef0c822f22259b4985ddc2f6436bb5002434
+        GIT_TAG        4c51ceaef960fe1a3167e10ea3c58c16a92b5754
+    )
+endfunction()
+
+
+## pngwriter
+function(cellogram_download_pngwriter)
+    if(CELLOGRAM_USE_HTTPS)
+        set(PNGWRITER_URL https://github.com/pngwriter/pngwriter.git)
+    else()
+        set(PNGWRITER_URL git@github.com:pngwriter/pngwriter.git)
+    endif()
+
+    cellogram_download_project(pngwriter
+        GIT_REPOSITORY ${PNGWRITER_URL}
+        GIT_TAG        79bb3ef5ebd91996bc4cd02cdc031c5cd560b897
     )
 endfunction()

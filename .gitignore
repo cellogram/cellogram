@@ -45,8 +45,12 @@
 
 # Extra directories
 .idea/
+*.sublime-project
+*.sublime-workspace
 .vscode/
 build/
+bin/
+bin_rel/
 cmake-build-*
 latex.out/
 Win32
@@ -55,6 +59,7 @@ yimg.dir
 
 /3rdparty/.cache
 /3rdparty/polyfem
+/3rdparty/pngwriter
 
 # Mac OS
 .DS_Store

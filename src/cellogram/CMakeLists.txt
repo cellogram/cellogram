@@ -31,6 +31,8 @@ set(source_list
 	MeshUtils.h
 	navigation.cpp
 	navigation.h
+	PNGOutput.cpp
+	PNGOutput.h
 	point_source_detection.cpp
 	point_source_detection.h
 	PolygonUtils.cpp
@@ -62,6 +64,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC ..)
 # Dependencies
 target_link_libraries(${PROJECT_NAME} PUBLIC
 	polyfem
+	PNGwriter
 	mmg::mmg
 	igl::opengl_glfw_imgui # needs to be removed when all ok
 	igl::png
@@ -77,6 +80,9 @@ target_compile_options(${PROJECT_NAME} PRIVATE ${ALL_WARNINGS})
 
 # Use C++14
 target_compile_features(${PROJECT_NAME} PUBLIC ${CXX14_FEATURES})
+
+set(DATA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../data/")
+target_compile_definitions(${PROJECT_NAME} PRIVATE -DDATA_DIR=\"${DATA_DIR}\")
 
 foreach(source IN ITEMS ${source_list})
     get_filename_component(source_path "${source}" PATH)
