@@ -10,8 +10,16 @@ namespace cellogram
 	{
 	}
 
+	void PNGOutput::save()
+	{
+#ifdef CELLOGRAM_WITH_PNG
+		writer_.close();
+#endif
+	}
+
 	void PNGOutput::init(const std::string &name, const int w, const int h)
 	{
+#ifdef CELLOGRAM_WITH_PNG
 		w_ = w;
 		h_ = h;
 		writer_.clear();
@@ -19,10 +27,12 @@ namespace cellogram
 		writer_.resize(w*scale_, h*scale_ + text_offset);
 
 		writer_.filledsquare(0, 0, w*scale_, h*scale_ + text_offset, 1., 1., 1.);
+#endif
 	}
 
 	void PNGOutput::draw_image()
 	{
+#ifdef CELLOGRAM_WITH_PNG
 		const auto &state = cellogram::State::state();
 		const auto &img = state.img;
 
@@ -33,11 +43,13 @@ namespace cellogram
 				writer_.filledsquare(i*scale_, j*scale_, i*scale_ + scale_, j*scale_ + scale_, img(i,j), img(i,j), img(i,j));
 			}
 		}
+#endif
 	}
 
 
 	void PNGOutput::draw_detection()
 	{
+#ifdef CELLOGRAM_WITH_PNG
 		const int circle_radius = 500./std::max(w_, h_)*scale_;
 		static const double red = 1;
 		static const double green = 1;
@@ -52,11 +64,13 @@ namespace cellogram
 		{
 			writer_.filledcircle_blend(pts(i, 0)*scale_, (h_ - pts(i, 1))*scale_, circle_radius, opacity, red, green, blue);
 		}
+#endif
 	}
 
 
 	void PNGOutput::draw_untangle()
 	{
+#ifdef CELLOGRAM_WITH_PNG
 		const int circle_radius = 500./std::max(w_, h_)*scale_;
 		static const double tri_red = 1;
 		static const double tri_green = 1;
@@ -64,7 +78,7 @@ namespace cellogram
 		static const double bad_region_opacity = 0.6;
 
 		static const std::string font_dir = DATA_DIR;
-		static const std::string font = font_dir + "font.ttc";
+		static const std::string font = font_dir + "font.ttf";
 		static const int font_size = 20;
 
 		const auto &state = cellogram::State::state();
@@ -149,6 +163,6 @@ namespace cellogram
 
 		writer_.plot_text(&cfont[0], font_size, 0, h_*scale_ + 115, 0, &cmax_msg[0], 0., 0., 0.);
 		writer_.plot_text(&cfont[0], font_size, 0, h_*scale_ + 145, 0, &cmin_msg[0], 0., 0., 0.);
-
+#endif
 	}
 }

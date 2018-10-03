@@ -73,7 +73,7 @@ option(LIBIGL_WITH_TETGEN                 "Use Tetgen"                   ON)
 option(LIBIGL_WITH_TRIANGLE               "Use Triangle"                 ON)
 option(LIBIGL_WITH_VIEWER                 "Use OpenGL viewer"            ON)
 option(LIBIGL_WITH_XML                    "Use XML"                      OFF)
-# option(CELLOGRAM_WTIH_UNTANGLER           "Use untangler"          		 ON)
+option(CELLOGRAM_WITH_PNG           	  "Use PNG output"				 ON)
 
 ################################################################################
 # Download external dependencies
@@ -89,8 +89,19 @@ cellogram_download_polyfem()
 add_subdirectory(${THIRD_PARTY_DIR}/polyfem/cpp)
 
 
-cellogram_download_pngwriter()
-add_subdirectory(${THIRD_PARTY_DIR}/pngwriter)
+if(CELLOGRAM_WITH_PNG)
+	find_package(PNG 1.2.9)
+	find_package(ZLIB)
+	if(NOT ${ZLIB_FOUND} OR NOT ${PNG_FOUND})
+		set(CELLOGRAM_WITH_PNG OFF)
+		message(WARNING "disabling png output, coudnt find png or zlip")
+	endif()
+endif()
+
+if(CELLOGRAM_WITH_PNG)
+	cellogram_download_pngwriter()
+	add_subdirectory(${THIRD_PARTY_DIR}/pngwriter)
+endif()
 
 # Eigen
 # Uncomment to use the system's version of Eigen (e.g. to use Eigen 3.3)

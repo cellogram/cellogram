@@ -1,7 +1,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
+#ifdef CELLOGRAM_WITH_PNG
 #include <pngwriter.h>
+#endif
 
 #include <string>
 
@@ -19,12 +21,12 @@ namespace cellogram {
         void draw_untangle();
 
 
-        void save() {
-            writer_.close();
-        }
+        void save();
 
     private:
+#ifdef CELLOGRAM_WITH_PNG
         pngwriter writer_;
+#endif
         double scale_;
         int h_;
         int w_;

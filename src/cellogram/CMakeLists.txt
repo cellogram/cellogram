@@ -64,7 +64,6 @@ target_include_directories(${PROJECT_NAME} PUBLIC ..)
 # Dependencies
 target_link_libraries(${PROJECT_NAME} PUBLIC
 	polyfem
-	PNGwriter
 	mmg::mmg
 	igl::opengl_glfw_imgui # needs to be removed when all ok
 	igl::png
@@ -74,6 +73,11 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 	gsl
 	TinyTiff
 )
+
+if(TARGET PNGwriter)
+	target_link_libraries(${PROJECT_NAME} PUBLIC PNGwriter)
+	target_compile_definitions(${PROJECT_NAME} PRIVATE -DCELLOGRAM_WITH_PNG)
+endif()
 
 # Extra warnings
 target_compile_options(${PROJECT_NAME} PRIVATE ${ALL_WARNINGS})
