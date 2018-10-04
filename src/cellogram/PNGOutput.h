@@ -3,6 +3,8 @@
 
 #ifdef CELLOGRAM_WITH_PNG
 #include <pngwriter.h>
+#else
+#include <sstream>
 #endif
 
 #include <string>
@@ -26,7 +28,10 @@ namespace cellogram {
     private:
 #ifdef CELLOGRAM_WITH_PNG
         pngwriter writer_;
+#else
+        std::stringstream writer_;
 #endif
+        std::string name_;
         double scale_;
         int h_;
         int w_;

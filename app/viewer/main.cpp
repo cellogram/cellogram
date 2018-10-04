@@ -72,7 +72,12 @@ int main(int argc, char *argv[]) {
 		StringUtils::cellogram_mkdir(save_dir);
 
 		state.load_settings(args.settings);
-		png_output.init(save_dir + "/all.png", state.img.rows(), state.img.cols());
+#ifdef CELLOGRAM_WITH_PNG
+		std::string image_extension = ".png";
+#else
+		std::string image_extension = ".svg";
+#endif
+		png_output.init(save_dir + "/all" + image_extension, state.img.rows(), state.img.cols());
 
 		png_output.draw_image();
 
