@@ -55,7 +55,7 @@ int main(int argc, char *argv[]) {
 
 	if (args.cmd)
 	{
-		PNGOutput png_output;
+		PNGOutput png_output(2);
 		auto &state = cellogram::State::state();
 		state.load_image(args.input);
 

@@ -67,7 +67,7 @@ namespace cellogram
 				writer_.filledsquare(x, y, w, h, c, c, c);
 #else
 				const int ci = c*255;
-				if(ci < 30)
+				if(ci < 50)
 					continue;
 				writer_ << "<rect x=\""<<x<<"\" y=\""<<y<<"\" ";
 				writer_ << "width=\""<<scale_<<"\" height=\""<<scale_<<"\" ";
