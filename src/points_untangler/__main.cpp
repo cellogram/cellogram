@@ -5,7 +5,7 @@
 #include"grid.h"
 
 
-std::string inputPath = "C:/projects/github/cellogram/data/debug/macro_bad.txt";
+std::string inputPath = "C:/projects/github/cellogram/data/debug/marco_maybe_dupl.txt";
 std::string outputPath = "C:/projects/github/cellogram/data/debug/";
 
 namespace cellogram
@@ -19,6 +19,7 @@ Mesh m;
 void test02(){
     //m.importFVFix(inputPath+"V.vert", inputPath+"F.tri", inputPath+"fixed.txt");
     m.importXYZv3(inputPath);
+    m.removeDuplicates();
     pointsUntangler(m, g, outputPath);
     g.exportPLY(outputPath+"final0.ply");
     g.fillGapsMakingPtsUp();
