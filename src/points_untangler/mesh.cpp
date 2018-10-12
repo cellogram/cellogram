@@ -22,6 +22,24 @@ void Mesh::setFaceRegularity(){
     }
 }*/
 
+void Mesh::removeDuplicates(){
+    std::set< vec2 > unique;
+    for (const Vert &v : V ){
+        unique.insert(v.p);
+    }
+    if (unique.size()!=V.size()) {
+        std::cout<<"Removing "<< (V.size() - unique.size()) <<" duplicate vertices!";
+        V.clear();
+
+        for (vec2 p:unique){
+            Vert v;
+            v.p = p;
+            V.push_back(v);
+        }
+    }
+}
+
+
 void Mesh::smoothDisputed(){
     std::vector<scalar> old(V.size());
     std::vector<int> div(V.size());
