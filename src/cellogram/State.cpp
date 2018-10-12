@@ -204,7 +204,7 @@ namespace cellogram {
 
 
 		// load settings
-		std::ifstream json_in(path + "/all.json");
+		std::ifstream json_in(path);
 
 		json unique;
 		json_in >> unique;
