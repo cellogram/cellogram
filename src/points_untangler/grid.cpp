@@ -69,11 +69,13 @@ bool Grid::importXYZ(const std::string& filename ){
     f.close();
 
     posInGrid.resize( vert.size(),-1);
+    if(verbose)
     std::cout<<"Done reading "<<n<<" verts\n";
     return true;
 }
 
 bool Grid::exportOBJ(const std::string& filename ) const{
+    if(verbose)
     std::cout<<"--> Exporting GRID: "<<filename<<"\n";
 
     std::ofstream f;
@@ -92,6 +94,7 @@ bool Grid::exportOBJ(const std::string& filename ) const{
         if ((i!=-1) && (j!=-1) && (k!=-1)) { f<<"f "<<j+1<<" "<<i+1<<" "<<k+1<<"\n"; nf++;}
     }
     f.close();
+    if(verbose)
     std::cout<<"Done writing OBJ ("<<vert.size()<<" verts, "<<nf<<" faces)\n";
     return true;
 }
@@ -198,7 +201,7 @@ bool Grid::exportPLYtartan(const std::string &filename) const{
 }
 
 bool Grid::exportPLY(const std::string& filename ) const{
-
+    if(verbose)
     std::cout<<"--> Exporting GRID: "<<(filename+".ply")<<"\n";
     int nUnassigned = 0;
     for (uint vi=0; vi<posInGrid.size(); vi++)
@@ -555,6 +558,7 @@ void Grid::trimBorders(){
         if ((nt<2) && (ng<2) ) { unassign(gi); count++;}
 
     }
+    if(verbose)
     std::cout<<"trimmed "<<count<<" verts at boundaries\n";
 }
 
@@ -750,6 +754,7 @@ void Grid::computeMatrices(){
         if (div[vi]) mat[vi] /= div[vi];
     }
 
+    if(verbose)
     std::cout<<"Done computing metrices\n";
 
 }
@@ -932,6 +937,7 @@ int Grid::fillGapsMakingPtsUp(){
         break;
         if (over) break;
     }
+    if(verbose)
     std::cout<<"Filled with "<<count<<" made up points\n";
     return count;
 
@@ -990,7 +996,7 @@ int Grid::tryAllBiSwaps(){
         if (pass==0) break;
         count+=pass;
     }
-    if (count) std::cout<<"Done "<<count<<" greedy swaps;\n";
+    if (verbose && count) std::cout<<"Done "<<count<<" greedy swaps;\n";
     return count;
 }
 
@@ -1007,7 +1013,7 @@ int Grid::tryAllTriSwaps(){
         if (pass==0) break;
         count+=pass;
     }
-    if (count) std::cout<<"Done "<<count<<" greedy three-swaps;\n";
+    if (verbose && count) std::cout<<"Done "<<count<<" greedy three-swaps;\n";
     return count;
 }
 
@@ -1055,7 +1061,7 @@ int Grid::tryAllQuadriSwaps(){
         if (pass==0) break;
         count+=pass;
     }
-    if (count) std::cout<<"Done "<<count<<" greedy quadri-swaps;\n";
+    if (verbose && count) std::cout<<"Done "<<count<<" greedy quadri-swaps;\n";
     return count;
 }
 
@@ -1097,8 +1103,10 @@ void Grid::sanityCheck( int testX, int testY ){
 
     int gj=indexOf(testX,testY);
     vec2 p = vert[ grid[gj] ];
+    if(verbose)
     std::cout << "At ["<<testX<<","<<testY<<"]: vert "<<grid[gj]<<" ("<<p.x<<","<<p.y<<")\n";
     vec2 q = baryAround(gj);
+    if(verbose)
     std::cout << "Baricenter around it: ("<<q.x<<","<<q.y<<")\n";
     /*spatialIndex.init();
     spatialIndex.setTarget(q);
@@ -1232,6 +1240,7 @@ bool Grid::fixEmptySlotDijkstra(int gi){
     int orig = gi;
     int dest = -1;
     if (grid[gi]!=-1) {
+        if(verbose)
         std::cout<<"Fill "<<gi<<": I can't even.\n";
         return false;
     }
@@ -1241,6 +1250,7 @@ bool Grid::fixEmptySlotDijkstra(int gi){
     bool pathFound = false;
     while (!pathFound) {
         if (boundary.empty()) {
+            if(verbose)
             std::cout<<"Fill "<<gi<<": NOT doing it (too expensive).\n";
             return false;
         }
@@ -1274,6 +1284,7 @@ bool Grid::fixEmptySlotDijkstra(int gi){
             }
         }
     }
+    if(verbose)
     std::cout<<"Fill "<<gi<<": path to "<<dest<<" found. Applyting it: ";
 
     gi = dest;
@@ -1290,8 +1301,10 @@ bool Grid::fixEmptySlotDijkstra(int gi){
 
     for (int i = path.size()-1; i>0; i--) {
         swapTwo( path[i], path[i-1] );
+        if(verbose)
         std::cout<<"=";
     }
+    if(verbose)
     std::cout<<"*\n";
 
     for (int gi:path) tryAllSwapsAround(gi);
@@ -1314,6 +1327,7 @@ bool Grid::fixUnassignedVertexDijkstra(int vi){
 
     int gi = vdesired[vi]; //bestPositionFor(vi);
     if (gi==-1) {
+        if(verbose)
         std::cout<<"Assign "<<vi<<": I can't even.\n";
         return false;
     }
@@ -1323,6 +1337,7 @@ bool Grid::fixUnassignedVertexDijkstra(int vi){
     bool pathFound = false;
     while (!pathFound) {
         if (boundary.empty()) {
+            if(verbose)
             std::cout<<"Assign "<<vi<<": NOT doing it (too expensive).\n";
             return false;
         }
@@ -1356,6 +1371,7 @@ bool Grid::fixUnassignedVertexDijkstra(int vi){
             }
         }
     }
+    if(verbose)
     std::cout<<"Assign "<<vi<<": path found. Applyting it: ";
     gi = dest;
 
@@ -1368,11 +1384,14 @@ bool Grid::fixUnassignedVertexDijkstra(int vi){
 
         //std::cout<<gi<<"<--"<<gj<<"  ";
         if (gj<0) {
-            if (isExternal[dest]) std::cout<<"*\n";
-            else std::cout<<"+\n";
+            if(verbose){
+                if (isExternal[dest]) std::cout<<"*\n";
+                else std::cout<<"+\n";
+            }
             break;
         }
 
+        if(verbose)
         std::cout<<"-";
 
         swapTwo( gj, gi );
@@ -1431,6 +1450,7 @@ int Grid::assignUnassignedNiceWay(){
 int Grid::greedyFillEmpty(){
     for (int vi=0; vi<(int)vert.size(); vi++) {
         if (posInGrid[vi]==-1) {
+            if(verbose)
             std::cout << "Unassigned verts still present: aborting fill empty";
             return 0;
         }
@@ -1446,6 +1466,7 @@ int Grid::greedyFillEmpty(){
         }
     }
 
+    if(verbose)
     std::cout<<"Filled "<<count<<" unassigned points ("<<countFail<<" left)\n";
 
     return count;
@@ -1478,6 +1499,7 @@ int Grid::greedyAssignUnassigned(){
 
     updateDistFromBorder();
 
+    if(verbose)
     std::cout << "There are "<<toFix.size()<<" verts to fix!\n";
 
     while (toFix.size()>0) {
@@ -1499,6 +1521,7 @@ int Grid::greedyAssignUnassigned(){
         }
 
     }
+    if(verbose)
     std::cout<<"Fixed "<<countYes<<" unassigned points ("<<toFix.size()<<" left)\n";
     return countYes;
 

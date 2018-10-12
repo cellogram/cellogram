@@ -347,13 +347,15 @@ namespace cellogram
 
 		}
 
-		void meshToGrid(Mesh &m, Grid &g) {
-			std::cout << "MESH TO GRID ... \n";
+		void meshToGrid(Mesh &m, Grid &g, bool verbose) {
+			if(verbose)
+				std::cout << "MESH TO GRID ... \n";
 			floodFill(m, g, 0);
 		}
 
-		void gridToMesh(Grid &g, Mesh &m) {
-			std::cout << "GRID TO MESH... \n";
+		void gridToMesh(Grid &g, Mesh &m, bool verbose) {
+			if(verbose)
+				std::cout << "GRID TO MESH... \n";
 			floodFill(m, g, 1);
 			//m.flipAs(g);
         }

@@ -17,6 +17,8 @@ set(source_list
 	fitGaussian2D.h
 	image_reader.cpp
 	image_reader.h
+	interpolate.cpp
+	interpolate.h
 	laplace_energy.cpp
 	laplace_energy.h
 	load_points.cpp
@@ -29,6 +31,8 @@ set(source_list
 	MeshUtils.h
 	navigation.cpp
 	navigation.h
+	PNGOutput.cpp
+	PNGOutput.h
 	point_source_detection.cpp
 	point_source_detection.h
 	PolygonUtils.cpp
@@ -70,11 +74,19 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 	TinyTiff
 )
 
+if(TARGET PNGwriter)
+	target_link_libraries(${PROJECT_NAME} PUBLIC PNGwriter)
+	target_compile_definitions(${PROJECT_NAME} PRIVATE -DCELLOGRAM_WITH_PNG)
+endif()
+
 # Extra warnings
 target_compile_options(${PROJECT_NAME} PRIVATE ${ALL_WARNINGS})
 
 # Use C++14
 target_compile_features(${PROJECT_NAME} PUBLIC ${CXX14_FEATURES})
+
+set(DATA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../data/")
+target_compile_definitions(${PROJECT_NAME} PRIVATE -DDATA_DIR=\"${DATA_DIR}\")
 
 foreach(source IN ITEMS ${source_list})
     get_filename_component(source_path "${source}" PATH)

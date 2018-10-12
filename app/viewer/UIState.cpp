@@ -1,19 +1,27 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "UIState.h"
 #include "FileDialog.h"
+
+#include "IconsFontAwesome5.h"
+
+
+
 #include <cellogram/PolygonUtils.h>
 #include <cellogram/StringUtils.h>
 #include <igl/colon.h>
 #include <igl/colormap.h>
 #include <igl/per_face_normals.h>
 #include <igl/unproject_onto_mesh.h>
-#include <imgui/imgui.h>
+#include <igl/doublearea.h>
+
 #include <GLFW/glfw3.h>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
 
 	namespace {
+
+		#include "fa-solid-900.hpp"
 
 //	int cellogram_mkdir(const std::string &path) {
 //		int nError;
@@ -111,7 +119,10 @@ bool UIState::mouse_up(int button, int modifier) {
 	// move_vertex = false;
 	dragging_id = -1;
 
-	state.reset_state();
+	if(state.phase_enumeration != 2)
+		state.reset_state();
+	else
+		move_vertex = false;
 	viewer_control();
 
 	return true;
@@ -141,6 +152,9 @@ bool UIState::mouse_down(int button, int modifier) {
 	Eigen::Vector3f bc;
 	double x = viewer.current_mouse_x;
 	double y = viewer.core.viewport(3) - viewer.current_mouse_y;
+
+	std::cout << x << " " << y << std::endl;
+
 	Eigen::MatrixXd V = t * state.mesh.points + (1 - t) * state.mesh.moved;
 
 	if (V.size() <= 0)
@@ -188,6 +202,7 @@ bool UIState::mouse_down(int button, int modifier) {
 
 		// add_vertex = false;
 		if (add_vertex) {
+			phase_1();
 			state.add_vertex(Eigen::Vector3d(xNew, yNew, zNew));
 
 			state.reset_state();
@@ -195,6 +210,7 @@ bool UIState::mouse_down(int button, int modifier) {
 			viewer_control();
 			return true;
 		} else if (delete_vertex) {
+			phase_1();
 			// find vertex in V closest to xNew,yNew
 			state.delete_vertex(vid);
 
@@ -284,7 +300,18 @@ void UIState::init(igl::opengl::glfw::Viewer *_viewer) {
 	ImGuiIO& io = ImGui::GetIO();
 	io.IniFilename = nullptr;
 
+
+    io.Fonts->AddFontDefault();
+
+    // merge in icons from Font Awesome
+    static const ImWchar icons_ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
+    ImFontConfig icons_config; icons_config.MergeMode = true; icons_config.PixelSnapH = true;
+    // icon_font = io.Fonts->AddFontFromFileTTF( FONT_ICON_FILE_NAME_FAS, 16.0f, &icons_config, icons_ranges );
+    icon_font = io.Fonts->AddFontFromMemoryCompressedTTF(fa_solid_compressed_data, fa_solid_compressed_size, 20.0f, &icons_config, icons_ranges);
+
+
 	glfwSetWindowTitle(viewer.window, "Cellogram viewer");
+	//viewer.resize(1400, 1280);
 }
 
 void UIState::launch() {
@@ -333,18 +360,29 @@ bool UIState::load() {
 	if (!state.load(save_dir)) {
 		return false;
 	}
+
 	current_region_status = "";
 	// img.resize(0, 0);
 	// reset flags
 
-	mesh_color.resize(1, 3);
-	mesh_color.row(0) = Eigen::RowVector3d(255, 255, 120) / 255.0;
+	mesh_color.resize(0,0);
+	// mesh_color.row(0) = Eigen::RowVector3d(52, 152, 219) / 255.0;
 	reset_viewer();
-
-	color_code = true;
-
+	
 	selected_region = -1;
 
+	switch (state.phase_enumeration) {
+	case 0: phase_0();
+		break;
+	case 1: phase_1();
+		break;
+	case 2: phase_2();
+		break;
+	case 3: phase_3();
+		break;
+	case 4: phase_4();
+	}
+	
 	viewer_control();
 	return true;
 }
@@ -355,8 +393,8 @@ void UIState::detect_vertices() {
 	if (state.mesh.points.size() == 0)
 		return;
 
-	mesh_color.resize(1, 3);
-	mesh_color.row(0) = Eigen::RowVector3d(255, 255, 120) / 255.0;
+	mesh_color.resize(0,0);
+	// mesh_color.row(0) = Eigen::RowVector3d(52, 152, 219) / 255.0;
 	// reset_viewer();
 	show_points = true;
 
@@ -364,7 +402,7 @@ void UIState::detect_vertices() {
 	// clean_hull();
 	compute_triangulation();
 
-	color_code = true;
+	// color_code = true;
 	selected_region = -1;
 	current_region_status = "";
 	viewer_control();
@@ -399,6 +437,9 @@ bool UIState::mouse_scroll(float delta_y) {
 		float mult = (1.0 + ((delta_y > 0) ? 1. : -1.) * 0.1);
 		const float min_zoom = 0.1f;
 		viewer.core.camera_zoom = (viewer.core.camera_zoom * mult > min_zoom ? viewer.core.camera_zoom * mult : min_zoom);
+
+		points_data().point_size *= mult;
+		physical_data().point_size *= mult;
 	}
 
 	return super::mouse_scroll(delta_y);
@@ -590,7 +631,9 @@ void UIState::export_region() {
 void UIState::reset_viewer() {
 	// Display flags
 	t = 0;
-	vertex_color = Eigen::RowVector3f(44, 62, 80)/255;
+	// vertex_color = Eigen::RowVector3f(44, 62, 80)/255;
+	vertex_color = Eigen::RowVector3f(41, 128, 185)/255;
+
 	selected_region = -1;
 	show_hull = true;
 	show_points = true;
@@ -612,7 +655,7 @@ void UIState::deselect_all_buttons() {
 
 // TODO refactor when more clear
 void UIState::load_image(std::string fname) {
-	state.load_image(fname);
+	bool ok = state.load_image(fname);
 
 	const int index = fname.find_last_of(".");
 	save_dir = fname.substr(0, index);
@@ -637,7 +680,12 @@ void UIState::load_image(std::string fname) {
 	compute_histogram();
 
 	double extent = (V.colwise().maxCoeff() - V.colwise().minCoeff()).maxCoeff();
-	points_data().point_size = std::ceil(float(700. / extent)) + 3;
+	float ui_scaling_factor = viewer.window != NULL ? hidpi_scaling() / pixel_ratio() : 1;
+	// points_data().point_size = std::ceil(ui_scaling_factor) / 5.;
+	points_data().point_size = std::ceil(float(ui_scaling_factor / extent)) * 10;
+	points_data().line_color = Eigen::Vector4f(52, 152, 219, 255) / 255.0;
+
+	physical_data().point_size = std::ceil(float(ui_scaling_factor / extent)) * 10;
 
 	// HIGH dpi
 	// int width, height;
@@ -646,7 +694,18 @@ void UIState::load_image(std::string fname) {
 	// glfwGetWindowSize(viewer.window, &width_window, &height_window);
 	// const int highdpi = width / width_window;
 
-	viewer_control();
+	if(ok)
+	{
+		current_file_name = fname;
+
+		show_image = true;
+
+	// update UI
+		phase_1();
+		state.phase_enumeration = 1;
+
+		viewer_control();
+	}
 }
 
 void UIState::display_image() {
@@ -720,8 +779,9 @@ void UIState::viewer_control_2d() {
 	// points
 	Eigen::MatrixXd V = t * state.mesh.points + (1 - t) * state.mesh.moved;
 
-	if (V.rows() > 2 && show_mesh)
+	if (V.rows() > 2 && show_mesh){
 		points_data().set_mesh(V, state.mesh.triangles);
+	}
 
 	points_data().show_lines = dragging_id < 0;
 
@@ -737,10 +797,9 @@ void UIState::viewer_control_2d() {
 	        points_data().set_colors(Eigen::RowVector3d(1, 1, 1));
 	}*/
 	if (show_points) {
-		if (viewer.window != NULL) {
-			float ui_scaling_factor = hidpi_scaling() / pixel_ratio();
-			points_data().point_size = std::ceil(ui_scaling_factor) + 3;
-		}
+		// if (viewer.window != NULL) {
+		// 	float ui_scaling_factor = hidpi_scaling() / pixel_ratio();
+		// }
 
 		// if (state.regions.empty())
 		//{
@@ -794,9 +853,8 @@ void UIState::viewer_control_2d() {
 			for (int i = 0; i < state.mesh.added_by_untangler.size(); ++i) {
 				C.row(state.mesh.added_by_untangler(i)) = Eigen::RowVector3d(46, 204, 113) / 255;
 			}
-			
+
 			points_data().add_points(state.mesh.deleted_by_untangler, Eigen::RowVector3d(230, 126, 34) / 255);
-			
 		}
 
 		points_data().add_points(V, C);
@@ -809,7 +867,8 @@ void UIState::viewer_control_2d() {
 	// if (show_mesh_fill && !state.regions.empty())
 	if (show_mesh_fill)
 		create_region_label();
-	points_data().set_colors(mesh_color);
+	if(show_mesh && mesh_color.size() > 0) //FIXME
+		points_data().set_colors(mesh_color);
 
 	// bad regions
 	if (show_bad_regions) {
@@ -901,7 +960,41 @@ void UIState::viewer_control_3d() {
 
 	Eigen::MatrixXd C, disp;
 
-	const auto &fun = show_traction_forces ? state.mesh3d.traction_forces : state.mesh3d.displacement;
+	auto fun = show_traction_forces ? state.mesh3d.traction_forces : state.mesh3d.displacement;
+
+	if(show_smoothed_results)
+	{
+		const auto tmp = fun;
+
+		fun.resize(Vtmp.rows(), tmp.cols());
+		fun.setZero();
+		Eigen::MatrixXd tri_areas, areas(Vtmp.rows(), 1);
+		areas.setZero();
+
+		igl::doublearea(Vtmp, state.mesh3d.F, tri_areas);
+		for(int i = 0; i < state.mesh3d.F.rows(); ++i)
+		{
+			for(int t = 0; t < 3; ++t){
+				const int v_index = state.mesh3d.F(i,t);
+				fun.row(v_index) += tmp.row(i) * tri_areas(i);
+				areas(v_index) += tri_areas(i);
+			}
+		}
+
+		for(int i = 0; i < areas.size(); ++i)
+		{
+			if(fabs(areas(i)) < 1e-12)
+			{
+				areas(i) = 1;
+				for(int j = 0; j < fun.cols(); ++j){
+					assert(fabs(fun(i, j))<1e-12);
+				}
+			}
+		}
+
+		for(int i = 0; i < fun.cols(); ++i)
+			fun.col(i).array() /= areas.array();
+	}
 
 	switch (view_mode_3d) {
 		case Mesh3DAttribute::NONE:
@@ -1030,6 +1123,73 @@ void UIState::build_region_edges(const Eigen::MatrixXd &pts, Eigen::MatrixXd &ba
 	bad_P2.conservativeResize(index, 3);
 }
 
+void UIState::phase_0()
+{
+	state.phase_enumeration = 0;
+	show_mesh = false;
+	show_hull = false;
+	show_points = false;
+	show_mesh_fill = false;
+	show_image = false;
+	show_matching = false;
+	show_bad_regions = false;
+	color_code = false;
+	show_selected_region = false;
+	analysis_mode = false;
+	show_traction_forces = false;
+}
+void UIState::phase_1()
+{
+	state.phase_enumeration = 1;
+	show_mesh = false;
+	show_hull = false;
+	show_points = true;
+	show_mesh_fill = false;
+	show_image = true;
+	show_matching = false;
+	show_bad_regions = false;
+	color_code = false;
+	show_selected_region = false;
+	analysis_mode = false;
+	show_traction_forces = false;
+}
+void UIState::phase_2()
+{
+	state.phase_enumeration = 2;
+	t = 0;
+	show_mesh = true;
+	show_hull = false;
+	show_points = true;
+	show_mesh_fill = false;
+	show_image = true;
+	show_matching = false;
+	show_bad_regions = false;
+	color_code = false;
+	show_selected_region = false;
+	analysis_mode = false;
+	show_traction_forces = false;
+}
+void UIState::phase_3()
+{
+	state.phase_enumeration = 3;
+	show_mesh = true;
+	show_hull = false;
+	show_points = false;
+	show_mesh_fill = true;
+	show_image = true;
+	show_matching = true;
+	show_bad_regions = false;
+	color_code = false;
+	show_selected_region = false;
+	analysis_mode = false;
+	show_traction_forces = false;
+}
+void UIState::phase_4()
+{
+	state.phase_enumeration = 4;
+	show_matching = false;
+	show_traction_forces = true;
+}
 // -----------------------------------------------------------------------------
 
 } // namespace cellogram

@@ -6,6 +6,8 @@
 #include <igl/colormap.h>
 #include <igl/opengl/glfw/Viewer.h>
 #include <igl/opengl/glfw/imgui/ImGuiMenu.h>
+
+#include <imgui/imgui.h>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
@@ -66,7 +68,7 @@ public:
 	bool show_selected_region = true;
 	bool analysis_mode = false;
 	bool show_traction_forces = true;
-
+	bool show_smoothed_results = false;
 	// 3d visualizer
 	enum class Mesh3DAttribute : int {
 		NONE,
@@ -125,6 +127,8 @@ public:
 	void reset_viewer();
 	void deselect_all_buttons();
 public:
+	//initial line color: rgb(52, 152, 219)
+	//initial vertex color: rgb(41, 128, 185)
 	igl::opengl::ViewerData & points_data() { return mesh_by_id(points_id); }
 	igl::opengl::ViewerData & hull_data() { return mesh_by_id(hull_id); }
 	igl::opengl::ViewerData & image_data() { return mesh_by_id(image_id); }
@@ -136,6 +140,9 @@ public:
 private:
 	igl::ColorMapType cm = igl::ColorMapType::COLOR_MAP_TYPE_PARULA;
 	double min_val = 0, max_val = 0;
+	std::string current_file_name = "";
+	ImFont *icon_font;
+	ImFont *icon_font_big;
 
 	bool block_mouse_behavior(int button);
 	void viewer_control();
@@ -146,6 +153,11 @@ private:
 	void create_region_label();
 	void build_region_edges(const Eigen::MatrixXd &pts, Eigen::MatrixXd &bad_P1, Eigen::MatrixXd &bad_P2, Eigen::MatrixXd &C);
 
+	void phase_0();
+	void phase_1();
+	void phase_2();
+	void phase_3();
+	void phase_4();
 	///////////////
 	// UI Panels //
 	///////////////
@@ -155,10 +167,11 @@ private:
 
 	// Left panel
 	void draw_left_panel(float ypos, float width);
-	void draw_file_menu();
+	float draw_file_menu();
 	void draw_points_menu();
 	void draw_mesh_menu();
 	void draw_analysis_menu();
+	void draw_results_menu();
 
 	// Right panel
 	void draw_right_panel(float ypos, float width);
@@ -186,6 +199,44 @@ public:
 
 	bool key_pressed(unsigned int unicode_key, int modifiers) override;
 	bool key_up(int key, int modifiers) override;
+
+	std::function<void(void)> next_call_back;
+	bool has_next_callback = false;
+	bool close_next = false;
+	int run_next = 0;
+	template<typename BtnFun, typename CallBackFun>
+	void wait_window(const std::string & id, const std::string & msg, const char* icon, const BtnFun & button, const CallBackFun & call_back)
+	{
+		std::string title = "Please wait##" + id;
+		if (button()) {
+			ImGui::OpenPopup(title.c_str());
+			run_next = 0;
+
+			close_next = false;
+			next_call_back = call_back;
+			has_next_callback = true;
+		}
+		ImGui::SetNextWindowSize(ImVec2(0.0f, 0.0f), ImGuiSetCond_Always);
+		ImGui::SetNextWindowSizeConstraints(ImVec2(200, 60), ImVec2(200, 60));
+		if (ImGui::BeginPopupModal(title.c_str(), NULL, ImGuiWindowFlags_AlwaysAutoResize))
+		{
+			ImGui::Spacing();
+			ImGui::PushFont(icon_font);
+			ImGui::Text(icon);
+			ImGui::PopFont();
+
+			ImGui::SameLine();
+
+			ImGui::Text(msg.c_str());
+
+			if(close_next)
+			{
+				ImGui::CloseCurrentPopup();
+				close_next = false;
+			}
+			ImGui::EndPopup();
+		}
+	}
 };
 
 // -----------------------------------------------------------------------------

@@ -59,6 +59,8 @@ namespace cellogram {
 		void load(const nlohmann::json &data);
 
 		void print();
+
+		inline void clear() { resize(0); }
 	};
 
 	void point_source_detection(const Eigen::MatrixXd &img, const double sigma, const float otsu_multiplier, Eigen::MatrixXd &V, DetectionParams &params);

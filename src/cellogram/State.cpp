@@ -1,8 +1,10 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "State.h"
 #include <cellogram/convex_hull.h>
+#include <cellogram/dijkstra.h>
 #include <cellogram/extrude_mesh.h>
 #include <cellogram/image_reader.h>
+#include <cellogram/interpolate.h>
 #include <cellogram/laplace_energy.h>
 #include <cellogram/MeshUtils.h>
 #include <cellogram/point_source_detection.h>
@@ -19,6 +21,7 @@
 #include <igl/list_to_matrix.h>
 #include <igl/point_in_poly.h>
 #include <igl/remove_duplicate_vertices.h>
+#include <igl/write_triangle_mesh.h>
 #include <igl/slice.h>
 #include <tbb/parallel_for.h>
 #include <tbb/task_scheduler_init.h>
@@ -31,12 +34,16 @@ namespace cellogram {
 	// -----------------------------------------------------------------------------
 
 	namespace {
+		json default_phase = R"({
+			"phase_enumeration": 0
+			})"_json;
+
 		json default_detection_settings = R"({
 			"energy_variation_from_mean": 2.0,
 			"lloyd_iterations": 20,
 			"perm_possibilities": 15,
 			"sigma": 2.0,
-			"otsu_multiplier": 1.0
+			"otsu_multiplier": 0.5
      		})"_json;
 
 		json default_analysis_settings = R"({
@@ -49,12 +56,9 @@ namespace cellogram {
 			"image_from_pillars": false,
 			"nu": 0.49,
 			"padding_size": 25.0,
-			"power": 2.0,
-			"uniform_mesh_size": 0.5,
-			"adaptive_mesh_size": [
-				0.2,
-				1.0
-			],
+			"displacement_threshold": 0.18,
+			"relative_threshold": true,
+			"mesh_size": 0.3,
 			"thickness": 30.0
      		})"_json;
 	}
@@ -138,6 +142,12 @@ namespace cellogram {
 	}
 
 	// -----------------------------------------------------------------------------
+	void State::load_phase(json args) {
+		json phase = default_phase;
+		phase.merge_patch(args);
+		phase_enumeration = phase["phase_enumeration"];
+	}
+
 	void State::load_detection_settings(json args) {
 		json settings = default_detection_settings;
 		settings.merge_patch(args);
@@ -150,14 +160,12 @@ namespace cellogram {
 	void State::load_analysis_settings(json args) {
 		json settings = default_analysis_settings;
 		settings.merge_patch(args);
-		std::vector<float> tmp = settings["adaptive_mesh_size"];
-		adaptive_mesh_size[0] = tmp[0];
-		adaptive_mesh_size[1] = tmp[1];
-		power = settings["power"];
 		scaling = settings["scaling"];
 		padding_size = settings["padding_size"];
 		thickness = settings["thickness"];
-		uniform_mesh_size = settings["uniform_mesh_size"];
+		uniform_mesh_size = settings["mesh_size"];
+		displacement_threshold = settings["displacement_threshold"];
+		relative_threshold = settings["relative_threshold"];
 		E = settings["E"];
 		nu = settings["nu"];
 		eps = settings["eps"];
@@ -168,6 +176,7 @@ namespace cellogram {
 	}
 
 	void State::load_settings(json args) {
+		load_phase(args.value("phase", json::object()));
 		load_detection_settings(args.value("settings", json::object()));
 		load_analysis_settings(args.value("analysis_settings", json::object()));
 	}
@@ -195,7 +204,6 @@ namespace cellogram {
 
 
 		// load settings
-
 		std::ifstream json_in(path + "/all.json");
 
 		json unique;
@@ -226,11 +234,6 @@ namespace cellogram {
 
 	bool State::is_data_available(const std::string &path)
 	{
-// #ifdef WIN32
-// 		std::string save_data = path + "\\cellogram\\moved.vert";
-// #else
-// 		std::string save_data = path + "/cellogram/moved.vert";
-// #endif
 
 #ifdef WIN32
 		std::string save_data = path + "\\all.json";
@@ -245,7 +248,7 @@ namespace cellogram {
 	bool State::load_image(const std::string fname)
 	{
 		bool ok = read_image(fname, img);
-
+		phase_enumeration = 1;
 		//std::cout << std::setprecision(std::numeric_limits<long double>::digits10 + 1) << img << std::endl;
 
 		hull_vertices.resize(0, 0); //needed for lloyd
@@ -258,11 +261,6 @@ namespace cellogram {
 		return ok;
 	}
 
-	//bool State::load_param(const std::string & path)
-	//{
-	//	return mesh.load_params(path);
-	//}
-
 	bool State::save(const std::string & path, const bool full_path)
 	{
 		using json = nlohmann::json;
@@ -270,6 +268,10 @@ namespace cellogram {
 		json unique;
 
 		json json_data;
+		json_data["phase_enumeration"] = phase_enumeration;
+		unique["phase"] = json_data;
+
+		json_data.clear();
 		json_data["lloyd_iterations"] = lloyd_iterations;
 		json_data["energy_variation_from_mean"] = energy_variation_from_mean;
 		json_data["perm_possibilities"] = perm_possibilities;
@@ -293,11 +295,13 @@ namespace cellogram {
 			json_data.clear();
 			json_data["formulation"] = formulation;
 			json_data["image_from_pillars"] = image_from_pillars;
-			json_data["adaptive_mesh_size"] = adaptive_mesh_size;
-			json_data["power"] = power;
+			// json_data["adaptive_mesh_size"] = adaptive_mesh_size;
+			// json_data["power"] = power;
 			json_data["padding_size"] = padding_size;
 			json_data["thickness"] = thickness;
-			json_data["uniform_mesh_size"] = uniform_mesh_size;
+			json_data["mesh_size"] = uniform_mesh_size;
+			json_data["displacement_threshold"] = displacement_threshold;
+			json_data["relative_threshold"] = relative_threshold;
 			json_data["E"] = E;
 			json_data["nu"] = nu;
 			json_data["eps"] = eps;
@@ -414,6 +418,7 @@ namespace cellogram {
 	{
 		regions.clear();
 		mesh.untangle();
+		phase_enumeration = 2;
 	}
 
 
@@ -435,6 +440,8 @@ namespace cellogram {
 		hull_faces.resize(0, 0);
 		hull_polygon.resize(0, 0);
 		regions.clear();
+
+		mesh3d.clear();
 
 		Eigen::MatrixXd V;
 		DetectionParams params;
@@ -542,6 +549,7 @@ namespace cellogram {
 			V.conservativeResize(V.rows(), 3);
 			V.col(2).setConstant(0);
 		}
+		mesh.clear();
 		mesh.detect_vertices(V, params);
 	}
 
@@ -614,7 +622,7 @@ namespace cellogram {
 		for (int i = 0; i < n_regions; ++i)
 		{
 			regions[i].find_points(regions_id, i + 1);
-			regions[i].find_triangles(mesh.triangles, regions_id, i + 1);
+			regions[i].find_triangles(mesh.vertex_to_tri, regions_id, i + 1);
 		}
 
 		int index = 0;
@@ -741,7 +749,7 @@ namespace cellogram {
 
 	void State::grow_region(const int index)
 	{
-		regions[index].grow(mesh.points, mesh.triangles);
+		regions[index].grow(mesh.points, mesh.triangles, mesh.vertex_to_tri);
 	}
 
 	void State::grow_regions()
@@ -775,7 +783,7 @@ namespace cellogram {
 		for (int i = 0; i < n_regions; ++i)
 		{
 			regions[i].find_points(regions_id, i + 1);
-			regions[i].find_triangles(mesh.triangles, regions_id, i + 1);
+			regions[i].find_triangles(mesh.vertex_to_tri, regions_id, i + 1);
 		}
 
 		for (auto & r : regions)
@@ -906,6 +914,7 @@ namespace cellogram {
 		//increase boundary by one row for fixation
 		Eigen::VectorXi boundary = increase_boundary(mesh.boundary);
 		mesh.final_relax(boundary);
+		phase_enumeration = 3;
 	}
 
 	void State::delete_vertex(const int index)
@@ -953,6 +962,48 @@ namespace cellogram {
 	// 		mesh3d.init_nano_dots(mesh, padding_size, thickness, E, nu, formulation);
 	// }
 
+	void State::propagate_sizing_field(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, const Eigen::VectorXd &disp, Eigen::VectorXd &S) {
+		// Propagate a sizing field from the triangle where all vertices are beyond the displacement threshold
+		std::vector<int> sources;
+		double thres = displacement_threshold;
+		if (relative_threshold) {
+			thres *= disp.maxCoeff();
+		}
+		S.resize(V.rows());
+		for (int f = 0; f < F.rows(); ++f) {
+			if (disp(F(f,0)) > thres && disp(F(f,1)) > thres && disp(F(f,2)) > thres) {
+				for (int lv : {0, 1, 2}) {
+					sources.push_back(F(f,lv));
+					S[F(f,lv)] = uniform_mesh_size * median_edge_length(mesh.detected, mesh.triangles) * scaling;
+				}
+			}
+		}
+		dijkstra_grading(V, F, S, mmg_options.hgrad, sources);
+	}
+
+	void State::mesh_2d_adaptive() {
+		// Create background mesh with a scalar field = norm of the displacements of the dots
+		Eigen::MatrixXd V;
+		Eigen::MatrixXi F;
+		Eigen::VectorXd D, S;
+		mesh.get_background_mesh(scaling, V, F, D, padding_size);
+		propagate_sizing_field(V, F, D, S);
+
+		mmg_options.hmin = S.minCoeff();
+		mmg_options.hmax = S.maxCoeff();
+ 		remesh_adaptive_2d(V, F, S, V, F, mmg_options);
+
+		// Set volume mesh based on the current surface
+		mesh3d.V.resize(V.rows(), 3);
+		mesh3d.V.leftCols<2>() = V.leftCols<2>();
+		mesh3d.V.col(2).setZero();
+
+		mesh3d.F = F;
+		mesh3d.T = Eigen::MatrixXi(0, 4);
+	}
+
+#if 0
+	// Old version
 	void State::mesh_2d_adaptive() {
 		// Create background mesh with a scalar field = norm of the displacements of the dots
 		Eigen::MatrixXd V;
@@ -975,7 +1026,7 @@ namespace cellogram {
  		remesh_adaptive_2d(V, F, S, V, F, mmg_options);
 		V = V.array() * std::max(1e-9, vmax - vmin);
 
-		// Mesh volume adaptively based on background mesh
+		// Set volume mesh based on the current surface
 		mesh3d.V.resize(V.rows(), 3);
 		mesh3d.V.leftCols<2>() = V.leftCols<2>();
 		mesh3d.V.col(2).setZero();
@@ -983,6 +1034,7 @@ namespace cellogram {
 		mesh3d.F = F;
 		mesh3d.T = Eigen::MatrixXi(0, 4);
 	}
+#endif
 
 	void State::extrude_2d_mesh() {
 		if (mesh3d.V.size() == 0) { mesh_2d_adaptive(); }
@@ -999,8 +1051,9 @@ namespace cellogram {
 		extrude_mesh(mesh3d.V, mesh3d.F, -thickness, mesh3d.V, mesh3d.F, mesh3d.T);
 	}
 
-	void State::mesh_3d_uniform() {
+	void State::mesh_3d_volume() {
 		extrude_2d_mesh(); // too lazy to recode this
+		return;
 
 		Eigen::MatrixXd BV;
 		Eigen::MatrixXi BF;
@@ -1022,33 +1075,37 @@ namespace cellogram {
 
 	void State::remesh_3d_adaptive() {
 		// Generate background mesh if needed
-		if (mesh3d.V.size() == 0 || mesh3d.T.rows() == 0) { mesh_3d_uniform(); }
+		if (mesh3d.V.size() == 0 || mesh3d.T.rows() == 0) { mesh_3d_volume(); }
 		double zmin = mesh3d.V.col(2).minCoeff();
 		double zmax = mesh3d.V.col(2).maxCoeff();
-		if (std::abs(zmin - zmax) > 1e-6) { mesh_3d_uniform(); }
+		if (std::abs(zmin - zmax) > 1e-6) { mesh_3d_volume(); }
 
 		// Scalar field to interpolate
 		Eigen::MatrixXd V;
-		Eigen::MatrixXi F;
-		Eigen::VectorXd S;
-		mesh.get_background_mesh(scaling, V, F, S, padding_size);
+		Eigen::MatrixXi F, FP(0, 3);
+		Eigen::VectorXd D, S;
+		mesh.get_background_mesh(scaling, V, F, D, padding_size);
+		propagate_sizing_field(V, F, D, S);
+		double smin = S.minCoeff();
+		double smax = S.maxCoeff();
 
-		// Interpolate
+		// Interpolate in 2d, and grade size along Z
 		Eigen::MatrixXd VP = mesh3d.V.leftCols<2>();
-		polyfem::InterpolatedFunction2d aux(S, V, F);
-		S = aux.interpolate(VP);
+		S = interpolate_2d(V, F, S, VP);
+		zmin = mesh3d.V.col(2).minCoeff();
+		zmax = mesh3d.V.col(2).maxCoeff();
+		for (int v = 0; v < mesh3d.V.rows(); ++v) {
+			double t = (mesh3d.V(v,2) - zmin) / (zmax - zmin); // 0 on zmin, 1 on zmax
+			// std::cout << "z: " << t << " " << S(v) << " " << t*S(v) + (1.0-t)*smax << std::endl;
+			S(v) = t*S(v) + (1.0-t)*smax;
+		}
 
-		// Rescale displacement field
-		double vmin = mesh3d.V.minCoeff();
-		double vmax = mesh3d.V.maxCoeff();
-		S = (S.array() - S.minCoeff()) / std::max(1e-9, (S.maxCoeff() - S.minCoeff()));
-		S = (1.0 - S.array()).pow(power) * (adaptive_mesh_size[1] - adaptive_mesh_size[0]) + adaptive_mesh_size[0];
-		S *= median_edge_length(mesh.detected, mesh.triangles) * scaling / std::max(1e-9, vmax - vmin);
+		// std::cout << S << std::endl;
 
 		// Remesh volume mesh
-		mesh3d.V = mesh3d.V.array() / std::max(1e-9, vmax - vmin);
+		mmg_options.hmin = S.minCoeff();
+		mmg_options.hmax = S.maxCoeff();
  		remesh_adaptive_3d(mesh3d.V, mesh3d.T, S, mesh3d.V, mesh3d.F, mesh3d.T, mmg_options);
-		mesh3d.V = mesh3d.V.array() * std::max(1e-9, vmax - vmin);
 	}
 
 	void State::analyze_3d_mesh() {
@@ -1060,6 +1117,7 @@ namespace cellogram {
 		{
 			mesh3d.init_nano_dots(mesh, padding_size, thickness, E, nu, scaling, formulation);
 		}
+		phase_enumeration = 4;
 	}
 
 	void State::reset_state()

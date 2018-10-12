@@ -273,7 +273,7 @@ namespace cellogram {
 		}
 	}
 
-	void Region::grow(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F)
+	void Region::grow(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, const std::vector<std::vector<int>> &vertex_to_tri)
 	{
 		// Turn boundary vertices to internal vertices and recalculate boundary
 		// This function is called on individual regions an will not merge overlapping regions
@@ -292,7 +292,7 @@ namespace cellogram {
 		}
 
 		find_points(regions_id, 1);
-		find_triangles(F, regions_id, 1);
+		find_triangles(vertex_to_tri, regions_id, 1);
 
 		bounding(F, V);
 	}
@@ -319,7 +319,7 @@ namespace cellogram {
 	}
 
 
-	void Region::find_triangles(const Eigen::MatrixXi &F, const Eigen::VectorXi &region_ids, const int id)
+	void Region::find_triangles(const std::vector<std::vector<int>> &vertex_to_tri, const Eigen::VectorXi &region_ids, const int id)
 	{
 		std::vector<int> region_faces;
 		for (int j = 0; j < region_ids.rows(); j++)
@@ -327,16 +327,19 @@ namespace cellogram {
 			// only use vertices with region(j) > 0, because those ==0 are considered good
 			if (region_ids(j) == id)
 			{
+				const auto &tris = vertex_to_tri[j];
+				assert(!tris.empty());
+				region_faces.insert(region_faces.end(), tris.begin(), tris.end());
 				// for this vertex find the all the faces
-				for (int f = 0; f < F.rows(); ++f) {
-					for (int lv = 0; lv < F.cols(); ++lv) {
-						if (j == F(f, lv))
-						{
-							region_faces.push_back(f);
-							break;
-						}
-					}
-				}
+				// for (int f = 0; f < F.rows(); ++f) {
+				// 	for (int lv = 0; lv < F.cols(); ++lv) {
+				// 		if (j == F(f, lv))
+				// 		{
+				// 			region_faces.push_back(f);
+				// 			break;
+				// 		}
+				// 	}
+				// }
 			}
 		}
 
@@ -1248,7 +1251,7 @@ namespace cellogram {
 		b1.segment(p1 + 1, region_boundary.size() - p2) = region_boundary.segment(p2, region_boundary.size() - p2);
 
 		b2.segment(0, p2 - p1 + 1) = region_boundary.segment(p1, p2 - p1 + 1);
-		std::cout << "pinch found:\n" << std::endl;
+		//std::cout << "pinch found:\n" << std::endl;
 		////std::cout << "points\n" << mesh.points.transpose() << std::endl;
 		//std::cout << "boundary\n" << region_boundary.transpose() << std::endl;
 		//std::cout << "b1\n" << b1.transpose() << std::endl;

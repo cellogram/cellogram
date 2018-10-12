@@ -39,6 +39,8 @@ private:
 	State();
 
 public:
+	int phase_enumeration;
+
 	int lloyd_iterations;
 	float energy_variation_from_mean;
 	int perm_possibilities;
@@ -49,10 +51,10 @@ public:
 
 	MmgOptions mmg_options;
 
-	float uniform_mesh_size;
-	float adaptive_mesh_size[2];
-	float power;
 	float padding_size;
+	float uniform_mesh_size;
+	float displacement_threshold;
+	bool relative_threshold;
 	float thickness;
 
 	float scaling; // [um/px]
@@ -89,6 +91,7 @@ public:
 	bool load(const std::string &path);
 	void load_settings(const std::string &path);
 	void load_settings(json args);
+	void load_phase(json args);
 	void load_detection_settings(json args);
 	void load_analysis_settings(json args);
 	bool is_data_available(const std::string &path);
@@ -123,9 +126,10 @@ public:
 	void add_vertex(Eigen::Vector3d new_point);
 
 	// FEM part
+	void propagate_sizing_field(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, const Eigen::VectorXd &disp, Eigen::VectorXd &S);
 	void mesh_2d_adaptive();
 	void extrude_2d_mesh();
-	void mesh_3d_uniform();
+	void mesh_3d_volume();
 	void remesh_3d_adaptive();
 	void analyze_3d_mesh();
 

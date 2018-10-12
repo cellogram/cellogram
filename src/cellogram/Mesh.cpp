@@ -253,7 +253,7 @@ namespace cellogram {
 		if (V.rows() < 3)
 			return;
 
-		//loose_convex_hull(moved, boundary, 6); moved to compute_triangulation 
+		//loose_convex_hull(moved, boundary, 6); moved to compute_triangulation
 		compute_triangulation();
 
 		// automatically load params if available
@@ -279,7 +279,13 @@ namespace cellogram {
 			if (boundary(i) > index)
 				--boundary(i);
 		}
-
+		for (int i = 0; i < added_by_untangler.size(); ++i)
+		{
+			if (added_by_untangler(i) == index)
+				removeRow(added_by_untangler, index);
+			if (added_by_untangler(i) > index)
+				--added_by_untangler(i);
+		}
 		if (recompute_triangulation)
 		{
 			reset();
@@ -438,7 +444,7 @@ namespace cellogram {
 		V *= scaling;
 
 		S.resize(V.rows());
-		S.head(points.rows()) = (detected - points).rowwise().norm();
+		S.head(points.rows()) = (detected - points).rowwise().norm() * scaling;
 		S.tail(BV.rows()).setZero();
 	}
 
@@ -474,7 +480,7 @@ namespace cellogram {
 
 		Eigen::VectorXi neighCount;
 		vertex_degree(neighCount);
-		
+
 		// Determine fixed vertices based on connectivity and bounding box
 		Eigen::VectorXi indFixed = Eigen::VectorXi::Zero(n);
 
@@ -485,7 +491,7 @@ namespace cellogram {
 				indFixed(i) = 1;
 			}
 		}
-		
+
 		// fix vertices on the boundary and the ones connected to the boundary
 		for (size_t i = 0; i < expanded_boundary.rows(); i++)
 		{
@@ -640,22 +646,31 @@ namespace cellogram {
 		for (int f = 0; f < triangles.rows(); ++f) {
 			for (int lv = 0; lv < triangles.cols(); ++lv)
 			{
-				vertex_to_tri[triangles(f, lv)].push_back(f);
+				const int v_index = triangles(f, lv);
+				vertex_to_tri[v_index].push_back(f);
 			}
 		}
 	}
 
-	void Mesh::untangle()
+	bool Mesh::untangle()
 	{
+		bool has_changed_points = false;
+		triangles.resize(0, 0); // triangular mesh
+		adj.clear(); // adjaceny list of triangluar mesh
+		vertex_to_tri.clear();
+
+		added_by_untangler.resize(0);
+		deleted_by_untangler.resize(0, 0);
+
 		Eigen::MatrixXd newPts;
 		std::vector<int> dropped;
 		// std::cout<<points<<std::endl;
 		cellogram::PointsUntangler::pointsUntangler(moved, triangles, dropped, newPts);
 		// assert(moved.rows() - dropped.size() + newPts.rows() == triangles.maxCoeff() - 1);
 
-		if (newPts.rows() > 0)
+		if (newPts.rows() > 0 || !dropped.empty())
 		{
-			//todo: warn user that points have been added
+			has_changed_points = true;
 		}
 
 		int old_size = added_by_untangler.size();
@@ -667,25 +682,36 @@ namespace cellogram {
 			for (int j = 0; j < newPts.cols(); ++j)
 				tmp(j) = newPts(i, j);
 
-			added_by_untangler(old_size + i) = points.rows();
+			added_by_untangler(old_size + i) = detected.rows();
 			add_vertex(tmp, false);
 		}
+		points = moved;
+
+		solved_vertex.setConstant(false);
+		vertex_status_fixed.setZero();
+
+		//Now mesh is valid, but it has to many points....
+		generate_vertex_to_tri();
 
 		old_size = deleted_by_untangler.size();
 		deleted_by_untangler.conservativeResize(old_size + dropped.size(), moved.cols());
-		for (int gid : dropped)
+		std::sort(dropped.begin(), dropped.end());
+
+
+		for (int i = dropped.size() - 1; i >= 0; i--)
 		{
+			const int gid = dropped[i];
 			deleted_by_untangler.row(old_size++) = moved.row(gid);
 			delete_vertex(gid, false);
 		}
 
-		points = moved;
-		solved_vertex.setConstant(false);
-
 		assert(triangles.maxCoeff() < points.rows());
+		assert(triangles.minCoeff() >= 0);
 
 		adjacency_list(triangles, adj);
 		generate_vertex_to_tri();
+
+		return has_changed_points;
 	}
 
 	void Mesh::clear()
@@ -698,6 +724,12 @@ namespace cellogram {
 		vertex_to_tri.clear();
 		boundary.resize(0); // list of vertices on the boundary
 
+		solved_vertex.resize(0);
+		vertex_status_fixed.resize(0);
+		added_by_untangler.resize(0);
+		deleted_by_untangler.resize(0, 0);
+
+		params.clear();
 	}
 
 
@@ -772,7 +804,7 @@ namespace cellogram {
 		//points = detected;
 		points = moved;
 		solved_vertex.setConstant(false);
-		
+
 		//recompute boundary
 
 		compute_triangulation();

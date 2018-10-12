@@ -16,10 +16,11 @@ namespace PointsUntangler
 
 class Grid;
 class Mesh;
-void meshToGrid(Mesh &m, Grid &g);
+void meshToGrid(Mesh &m, Grid &g, bool verbose);
 
 class Grid{
 public:
+    bool verbose = false;
     /* data per grid cell (size: sx*sy) */
     std::vector<int> grid;
     std::vector<bool> isExternal;

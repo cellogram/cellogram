@@ -66,7 +66,7 @@ int main(int argc, char** argv) {
 
 	cellogram::DetectionParams params;
 
-	cellogram::point_source_detection(imgNorm, sigma, V, params);
+	cellogram::point_source_detection(imgNorm, sigma, 0.5, V, params);
 
 	std::cout << V << std::endl;
 	std::cout << params.std_x << std::endl;

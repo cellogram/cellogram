@@ -3,6 +3,7 @@
 #include "CLI11.hpp"
 #include <cellogram/State.h>
 #include <cellogram/StringUtils.h>
+#include <cellogram/PNGOutput.h>
 #include <geogram/basic/command_line.h>
 #include <geogram/basic/command_line_args.h>
 ////////////////////////////////////////////////////////////////////////////////
@@ -35,6 +36,7 @@ int main(int argc, char *argv[]) {
 	struct {
 		std::string input = DATA_DIR "perfects.png";
 		std::string settings = "";
+		int phase = 3;
 		bool cmd = false;
 	} args;
 
@@ -42,7 +44,9 @@ int main(int argc, char *argv[]) {
 	CLI::App app{"cellogram"};
 	app.add_option("input,-i,--input", args.input, "Input image.");
 	app.add_option("-s,--settings", args.settings, "Path to json settings");
+	app.add_option("-p,--phase", args.phase, "Until which phase to run the script");
 	app.add_flag("-c,--cmd", args.cmd, "Run without GUI");
+	
 	try {
 		app.parse(argc, argv);
 	} catch (const CLI::ParseError &e) {
@@ -51,6 +55,7 @@ int main(int argc, char *argv[]) {
 
 	if (args.cmd)
 	{
+		PNGOutput png_output(2);
 		auto &state = cellogram::State::state();
 		state.load_image(args.input);
 
@@ -59,31 +64,57 @@ int main(int argc, char *argv[]) {
 			std::cout << "Image not loaded" << std::endl;
 			exit(0);
 		}
-		state.load_settings(args.settings);
 
-		state.detect_vertices();
-		state.untangle();
-		state.detect_bad_regions();
-		state.resolve_regions();
-		state.final_relax();
-
-		if (!state.image_from_pillars)
-		{
-			state.mesh_3d_uniform();
-			state.remesh_3d_adaptive();
-		}
-		state.analyze_3d_mesh();
 
 		const int index = args.input.find_last_of(".");
 		std::string save_dir = args.input.substr(0, index);
+		std::cout<<save_dir<<std::endl;
 		StringUtils::cellogram_mkdir(save_dir);
+
+		state.load_settings(args.settings);
+#ifdef CELLOGRAM_WITH_PNG
+		std::string image_extension = ".png";
+#else
+		std::string image_extension = ".svg";
+#endif
+		png_output.init(save_dir + "/all" + image_extension, state.img.rows(), state.img.cols());
+
+		png_output.draw_image();
+
+		if(args.phase > 0){
+			state.detect_vertices();
+			png_output.draw_detection();
+		}
+		if (args.phase > 1)
+		{
+			state.untangle();
+			state.detect_bad_regions();
+			state.resolve_regions();
+
+
+			png_output.draw_untangle();
+
+			state.final_relax();
+		}
+		if (args.phase > 2)
+		{
+			if (!state.image_from_pillars)
+			{
+				state.mesh_3d_volume();
+				// state.remesh_3d_adaptive();
+			}
+			state.analyze_3d_mesh();
+		}
+		state.phase_enumeration = args.phase;
 		state.save(save_dir);
+
+		png_output.save();
 	}
 	else
 	{
 		UIState::ui_state().initialize();
-		UIState::ui_state().load_image(args.input);
 		UIState::ui_state().state.load_settings(args.settings);
+		UIState::ui_state().load_image(args.input);
 		UIState::ui_state().launch();
 	}
 	return 0;

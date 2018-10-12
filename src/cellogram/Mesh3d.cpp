@@ -21,7 +21,11 @@ namespace cellogram {
 			float thickness, float E, float nu, const std::string &formulation, double scaling,
 			Eigen::MatrixXd &vals, Eigen::MatrixXd &traction_forces)
 		{
-			// static const bool export_data = true;
+			//TODO
+			const std::string rbf_function = "gaussian";
+			const double eps = 1.5;
+
+			static const bool export_data = false;
 			assert(tets.cols() == 4);
 			assert(vertices.cols() == 3);
 
@@ -43,14 +47,11 @@ namespace cellogram {
 			}
 			M.cells.connect();
 
-			// if(export_data){
-			// 	GEO::mesh_save(M, "mesh.mesh");
-			// 	GEO::mesh_load("mesh.mesh", M);
-			// }
+			if(export_data){
+				GEO::mesh_save(M, "mesh.mesh");
+				GEO::mesh_load("mesh.mesh", M);
+			}
 
-
-			const double lambda = (E * nu) / ((1 + nu) * (1 - 2 * nu));
-			const double mu = E / (2 * (1 + nu));
 
 			json j_args = {
 				{"problem", "PointBasedTensor"},
@@ -58,85 +59,85 @@ namespace cellogram {
 
 				{"tensor_formulation", formulation},
 
-				{"discr_order", 2},
+				{"discr_order", 1},
 
 				{"nl_solver_rhs_steps", 5},
 
 				{"params", {
-					{"lambda", lambda},
-					{"mu", mu},
+					{"E", E},
+					{"nu", nu},
 				}},
 			};
 
 			polyfem::State &state = polyfem::State::state();
 			state.init(j_args);
 
-			state.load_mesh(M, [thickness](const polyfem::RowVectorNd &bary){
+			state.load_mesh(M, [](const polyfem::RowVectorNd &bary){
 				// top, Id = 1
-				if(std::abs(bary(2)) < 1e-8){
+				if(std::abs(bary(2)) < 1e-6){
 					return 1;
 				}
 
-				//Bottom, Id = 3
-				if(std::abs(bary(2)- -thickness) < 1e-8){
-					return 3;
-				}
+				// //Bottom, Id = 3
+				// if(std::abs(bary(2)- -thickness) < 1e-8){
+				// 	return 3;
+				// }
 
 				//any other
-				return 2;
+				return 3;
 			});
 
 			// state.compute_mesh_stats();
 
 			polyfem::PointBasedTensorProblem &problem = *dynamic_cast<polyfem::PointBasedTensorProblem *>(state.problem.get());
 
-			Eigen::MatrixXd disp = (mesh.detected - mesh.points) * scaling;
+			Eigen::MatrixXd disp = (mesh.detected - mesh.points) * scaling /100;
 			Eigen::MatrixXd pts = mesh.points * scaling;
 
-			// if(export_data){
-			// 	GEO::mesh_save(M, "mesh.mesh");
-			// 	{
-			// 		std::ofstream out("problem.json");
-			// 		out.precision(100);
-			// 		out << j_args.dump(4) << std::endl;
-			// 		out.close();
-			// 	}
-			// 	{
-			// 		std::ofstream out("fun.pts");
-			// 		out.precision(100);
-			// 		out << pts << std::endl;
-			// 		out.close();
-			// 	}
+			if(export_data){
+				GEO::mesh_save(M, "mesh.mesh");
+				{
+					std::ofstream out("problem.json");
+					out.precision(100);
+					out << j_args.dump(4) << std::endl;
+					out.close();
+				}
+				{
+					std::ofstream out("fun.pts");
+					out.precision(100);
+					out << pts << std::endl;
+					out.close();
+				}
 
-			// 	{
-			// 		std::ofstream out("fun.tri");
-			// 		out.precision(100);
-			// 		out << mesh.triangles << std::endl;
-			// 		out.close();
-			// 	}
+				{
+					std::ofstream out("fun.tri");
+					out.precision(100);
+					out << mesh.triangles << std::endl;
+					out.close();
+				}
 
-			// 	{
-			// 		std::ofstream out("fun.txt");
-			// 		out.precision(100);
-			// 		out << disp << std::endl;
-			// 		out.close();
-			// 	}
+				{
+					std::ofstream out("fun.txt");
+					out.precision(100);
+					out << disp << std::endl;
+					out.close();
+				}
 
-			// 	{
-			// 		std::ofstream out("tags.txt");
+				{
+					std::ofstream out("tags.txt");
 
-			// 		for(int i = 0; i < state.mesh->n_faces(); ++i)
-			// 			out << state.mesh->get_boundary_id(i) << std::endl;
-			// 		out.close();
-			// 	}
-			// }
+					for(int i = 0; i < state.mesh->n_faces(); ++i)
+						out << state.mesh->get_boundary_id(i) << std::endl;
+					out.close();
+				}
+			}
 
 
 			//Id = 1, func, mesh, coord =2, means skip z for the interpolation
 			Eigen::Matrix<bool, 3, 1> dirichet_dims;
 			dirichet_dims(0) = dirichet_dims(1) = true;
 			dirichet_dims(2) = false; // z is not dirichet
-			problem.add_function(1, disp, pts, mesh.triangles, 2, dirichet_dims);
+			problem.add_function(1, disp, pts, rbf_function, eps, 2, dirichet_dims);
 
 			//Id = 3, zero Dirichelt
 			problem.add_constant(3, Eigen::Vector3d(0,0,0));
@@ -162,32 +163,32 @@ namespace cellogram {
 
 			
 
-			// if(export_data)
-			// {
-			// 	std::ofstream out("sol.txt");
-			// 	out.precision(100);
-			// 	out << state.sol << std::endl;
-			// 	out.close();
-			// }
+			if(export_data)
+			{
+				std::ofstream out("sol.txt");
+				out.precision(100);
+				out << state.sol << std::endl;
+				out.close();
+			}
 
-			// if(export_data)
-			// {
-			// 	Eigen::MatrixXd nodes(state.n_bases, state.mesh->dimension());
-			// 	for(const auto &eb : state.bases)
-			// 	{
-			// 		for(const auto &b : eb.bases)
-			// 		{
-			// 			for(const auto &lg : b.global())
-			// 			{
-			// 				nodes.row(lg.index) = lg.node;
-			// 			}
-			// 		}
-			// 	}
-			// 	std::ofstream out("nodes.txt");
-			// 	out.precision(100);
-			// 	out << nodes;
-			// 	out.close();
-			// }
+			if(export_data)
+			{
+				Eigen::MatrixXd nodes(state.n_bases, state.mesh->dimension());
+				for(const auto &eb : state.bases)
+				{
+					for(const auto &b : eb.bases)
+					{
+						for(const auto &lg : b.global())
+						{
+							nodes.row(lg.index) = lg.node;
+						}
+					}
+				}
+				std::ofstream out("nodes.txt");
+				out.precision(100);
+				out << nodes;
+				out.close();
+			}
 
 
 			// auto &tmp_mesh = *dynamic_cast<polyfem::Mesh3D *>(state.mesh.get());

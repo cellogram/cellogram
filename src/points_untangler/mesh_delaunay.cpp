@@ -53,6 +53,7 @@ void Mesh::initWithDelaunay(){
 
     buildEdgesFromFaces();
     updateValencies();
+    if(verbose)
     std::cout<<"Delaunay done (" << nVal <<" irregulars)\n";
 }
 
