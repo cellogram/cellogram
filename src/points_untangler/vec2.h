@@ -29,6 +29,7 @@ struct vec2{
     bool operator ==(const vec2& b) const { return (x==b.x)&&(y==b.y);}
     void normalize(){ scalar n = norm(); if (n!=0) {x/=n; y/=n;} }
     scalar norm() const{ return sqrt(x*x+y*y);}
+    bool operator < (const vec2& b) const { if (x<b.x) return true; return y<b.y; }
 };
 
 inline static scalar squaredDistance(vec2 a, vec2 b){ return (a.x-b.x)*(a.x-b.x) + (a.y-b.y)*(a.y-b.y);}

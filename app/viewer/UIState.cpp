@@ -357,7 +357,7 @@ igl::opengl::ViewerData &UIState::mesh_by_id(int id) {
 
 bool UIState::load() {
 	// assert(false);
-	if (!state.load(save_dir)) {
+	if (!state.load(save_dir + "\\all.json")) {
 		return false;
 	}
 

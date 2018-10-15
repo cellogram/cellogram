@@ -143,7 +143,10 @@ public:
     void propagateFixedF2E();
     void updateValencies();
 
+    void removeDuplicates(); // just after import
+
     bool verbose = false;
+
 private:
     //vec2 avgEdgeDir;
     float avgEdge;

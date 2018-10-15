@@ -807,7 +807,7 @@ namespace cellogram {
 
 		//recompute boundary
 
-		compute_triangulation();
+		//compute_triangulation();
 	}
 
 	void Mesh::compute_triangulation()

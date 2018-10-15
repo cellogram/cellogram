@@ -36,7 +36,9 @@ int main(int argc, char *argv[]) {
 	struct {
 		std::string input = DATA_DIR "perfects.png";
 		std::string settings = "";
-		int phase = 3;
+		std::string load_data = "";
+		int start_phase = 0;
+		int end_phase = 3;
 		bool cmd = false;
 	} args;
 
@@ -44,7 +46,9 @@ int main(int argc, char *argv[]) {
 	CLI::App app{"cellogram"};
 	app.add_option("input,-i,--input", args.input, "Input image.");
 	app.add_option("-s,--settings", args.settings, "Path to json settings");
-	app.add_option("-p,--phase", args.phase, "Until which phase to run the script");
+	app.add_option("-f,--file", args.load_data, "Path to saved data for scene");
+	app.add_option("-b,--begin", args.start_phase, "From which phase to run the script");
+	app.add_option("-e,--end", args.end_phase, "Until which phase to run the script");
 	app.add_flag("-c,--cmd", args.cmd, "Run without GUI");
 	
 	try {
@@ -65,6 +69,17 @@ int main(int argc, char *argv[]) {
 			exit(0);
 		}
 
+		// load data from path
+		bool ok = true;
+		if (args.load_data.size() > 0)
+			ok = state.load(args.load_data);
+
+		if (!ok)
+		{
+			std::cout << "Data not loaded" << std::endl;
+			exit(0);
+		}
+
 
 		const int index = args.input.find_last_of(".");
 		std::string save_dir = args.input.substr(0, index);
@@ -81,11 +96,12 @@ int main(int argc, char *argv[]) {
 
 		png_output.draw_image();
 
-		if(args.phase > 0){
+		if(args.end_phase > 0 && args.start_phase < 2){
 			state.detect_vertices();
 			png_output.draw_detection();
+			state.phase_enumeration = 1;
 		}
-		if (args.phase > 1)
+		if (args.end_phase > 1 && args.start_phase < 3)
 		{
 			state.untangle();
 			state.detect_bad_regions();
@@ -95,8 +111,9 @@ int main(int argc, char *argv[]) {
 			png_output.draw_untangle();
 
 			state.final_relax();
+			state.phase_enumeration = 3;
 		}
-		if (args.phase > 2)
+		if (args.end_phase > 2 && args.start_phase < 4)
 		{
 			if (!state.image_from_pillars)
 			{
@@ -104,8 +121,9 @@ int main(int argc, char *argv[]) {
 				// state.remesh_3d_adaptive();
 			}
 			state.analyze_3d_mesh();
+			state.phase_enumeration = 4;
 		}
-		state.phase_enumeration = args.phase;
+
 		state.save(save_dir);
 
 		png_output.save();
