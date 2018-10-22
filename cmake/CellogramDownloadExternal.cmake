@@ -23,7 +23,7 @@ function(cellogram_download_polyfem)
 
     cellogram_download_project(polyfem
         GIT_REPOSITORY ${POLYFEM_URL}
-        GIT_TAG        4c51ceaef960fe1a3167e10ea3c58c16a92b5754
+        GIT_TAG        e675de489bb0a69b7a6639b99934e0a94537f4f4
     )
 endfunction()
 

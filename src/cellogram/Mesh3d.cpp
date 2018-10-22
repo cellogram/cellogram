@@ -60,8 +60,12 @@ namespace cellogram {
 				{"tensor_formulation", formulation},
 
 				{"discr_order", 1},
+				{"vismesh_rel_area", 1000},
+
+				{"solver_params", {"conv_tol", 1e-7}},
 
 				{"nl_solver_rhs_steps", 5},
+				{"n_boundary_samples", 3},
 
 				{"params", {
 					{"E", E},

@@ -83,7 +83,7 @@ bool UIState::mouse_move(int button, int modifier) {
 	// (use current zoom to move point accordingly???)
 	int fid;
 	Eigen::Vector3f bc;
-	igl::unproject_onto_mesh(Eigen::Vector2f(x, y), viewer.core.view * viewer.core.model, viewer.core.proj,
+	igl::unproject_onto_mesh(Eigen::Vector2f(x, y), viewer.core.view, viewer.core.proj,
 		viewer.core.viewport, img_V, img_F, fid, bc);
 
 	double xNew = 0, yNew = 0, zNew = 0;
@@ -161,7 +161,7 @@ bool UIState::mouse_down(int button, int modifier) {
 		return block_mouse_behavior(button);
 
 	if (select_region) {
-		if (!igl::unproject_onto_mesh(Eigen::Vector2f(x, y), viewer.core.view * viewer.core.model, viewer.core.proj,
+		if (!igl::unproject_onto_mesh(Eigen::Vector2f(x, y), viewer.core.view, viewer.core.proj,
 			viewer.core.viewport, V, state.mesh.triangles, fid, bc))
 		{
 			return block_mouse_behavior(button);
@@ -181,7 +181,7 @@ bool UIState::mouse_down(int button, int modifier) {
 			}
 		}
 	} else {
-		if (!igl::unproject_onto_mesh(Eigen::Vector2f(x, y), viewer.core.view * viewer.core.model, viewer.core.proj,
+		if (!igl::unproject_onto_mesh(Eigen::Vector2f(x, y), viewer.core.view, viewer.core.proj,
 			viewer.core.viewport, img_V, img_F, fid, bc))
 		{
 			return block_mouse_behavior(button);
