@@ -1009,7 +1009,7 @@ void UIState::draw_analysis_menu() {
 			[&]() {return ImGui::Button("Build volumetric mesh", ImVec2(-1.0, 0));},
 			[&]()
 		{
-			state.mesh_2d_adaptive();
+			//state.mesh_2d_adaptive();
 			state.mesh_3d_volume();
 			state.remesh_3d_adaptive();
 

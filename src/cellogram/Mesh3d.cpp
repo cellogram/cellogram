@@ -91,7 +91,7 @@ namespace cellogram {
 
 			polyfem::PointBasedTensorProblem &problem = *dynamic_cast<polyfem::PointBasedTensorProblem *>(state.problem.get());
 
-			Eigen::MatrixXd disp = (mesh.detected - mesh.points) * scaling /100;
+			Eigen::MatrixXd disp = (mesh.detected - mesh.points) * scaling;
 			Eigen::MatrixXd pts = mesh.points * scaling;
 
 			if(export_data){
