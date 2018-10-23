@@ -2,6 +2,8 @@
 #include "navigation.h"
 ////////////////////////////////////////////////////////////////////////////////
 
+#include <iostream>
+
 namespace cellogram {
 
 // Build the navigation data for a given mesh
