@@ -191,6 +191,7 @@ namespace cellogram
 					latestTime = std::max(latestTime, move.time);
 				}
 
+
 				// enlist new moves
 				addMove(f.ei[w1], f0, move.pos, (move.dir + 5) % 6, move.time + 1);
 				addMove(f.ei[w2], f0, gi, (move.dir + 1) % 6, move.time + 1);
@@ -220,6 +221,7 @@ namespace cellogram
                 // GO STRAIGHT?
 				int vC = m.F[f0].vi[w2];
 				scalar badC = m.parallelogramError(vB, E.vi[0], E.vi[1], vC);
+                if (m.V[vC].val==6) badC/=2;
 				if ((vG != -1) && (vC != vG)) badC += 1000; // some other vert is here already
 				if ((g.posInGrid[vC] != -1) && (g.posInGrid[vC] != gi)) badC += 1000; // this vert is somewhere else already
 
@@ -249,8 +251,6 @@ namespace cellogram
 				if (m.canFlip(eL) && minBad>badL) { choice = 1; minBad = badL; }
 				if (m.canFlip(eR) && minBad>badR) { choice = 2; minBad = badR; }
 
-
-
                 if (choice != 0) {
 
                     int e = (choice == 1) ? eL : eR;
@@ -270,18 +270,18 @@ namespace cellogram
                     }
 				}
 
+                int vi = m.F[f0].oppositeVertOfEdge(move.ei);
+                /*if (g.grid[gi] == -1)*/ m.V[vi].timeReached = std::max( move.time, (int)m.V[vi].timeReached);
                 if (choice == 0) {
 					// conquer!
-					int vi = m.F[f0].oppositeVertOfEdge(move.ei);
 
-					if (g.vdesired[vi] == -1) g.vdesired[vi] = gi;
+                    if (g.vdesired[vi] == -1) g.vdesired[vi] = gi;
 
 					if (visited[move.ei]) return; // been there!
 					visited[move.ei] = true;
 
 					if ((g.posInGrid[vi] != -1) && (g.posInGrid[vi] != gi)) return;
 					if ((g.grid[gi] != -1) && (g.grid[gi] != vi)) return;
-					if (g.grid[gi] == -1) m.V[vi].timeReached = move.time;
 					latestTime = std::max(latestTime, move.time);
 					g.assign(gi, vi);
 					//std::cout<<"placed "<<f[w0]<<","<<f[w1]<<" -> "<<f[w2]<<"\n";
@@ -320,6 +320,11 @@ namespace cellogram
                 fillGrid(g.indexOf(x + 0, y + 0), f[0]);
                 fillGrid(g.indexOf(x + 1, y + 0), f[1]);
                 fillGrid(g.indexOf(x + 1, y + 1), f[2]);
+            } else {
+                m.V[f[0]].timeReached = 0.0;
+                m.V[f[1]].timeReached = 0.0;
+                m.V[f[2]].timeReached = 0.0;
+
             }
 			//m.V[ f[0] ].discrepancy = m.V[ f[1] ].discrepancy = m.V[ f[2] ].discrepancy =  0.0;
 
@@ -359,8 +364,10 @@ namespace cellogram
 		void gridToMesh(Grid &g, Mesh &m, bool verbose) {
 			if(verbose)
 				std::cout << "GRID TO MESH... \n";
+            //m.flipAs(g);
 			floodFill(m, g, 1);
-			//m.flipAs(g);
+            floodFill(m, g, 1);
+
         }
 
 
