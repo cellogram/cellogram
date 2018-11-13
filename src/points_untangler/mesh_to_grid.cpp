@@ -289,16 +289,19 @@ namespace cellogram
 					// enlist new moves
 					addMove(m.F[f0].ei[w1], f0, move.pos, (move.dir + 5) % 6, move.time + 1);
 					addMove(m.F[f0].ei[w2], f0, gi, (move.dir + 1) % 6, move.time + 1);
-				}
+                }
 
 			};
 
 			if (floodfillMode != 1) {
 				g.clear();
-				g.create(200, 200);
+                int gridSide = sqrt(m.V.size())*3.0;
+                g.create(gridSide, gridSide);
+                printf("Created a %dx%d grid\n",gridSide, gridSide);
 				g.createVertices(m.V.size());
 			}
-			int x = 100, y = 100;
+            int x = g.sx/2 ,  y = g.sy/2;
+
 			m.setDistanceToIrr();
 			//m.setFaceRegularity();
 
