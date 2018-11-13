@@ -154,7 +154,7 @@ namespace cellogram {
 			bool ok = ImGui::Button(ICON_FA_CHEVRON_RIGHT, ImVec2(AppLayout::arrow_button_size, AppLayout::arrow_button_size));
 			ImGui::PopFont();
 			ImGui::PopStyleVar();
-			ShowTooltip("Next");
+			ShowTooltip("Proceed to next step");
 			return ok;
 		}
 		bool button_left(ImFont *icon_font)
@@ -164,7 +164,7 @@ namespace cellogram {
 			bool ok = ImGui::Button(ICON_FA_CHEVRON_LEFT, ImVec2(AppLayout::arrow_button_size, AppLayout::arrow_button_size));
 			ImGui::PopFont();
 			ImGui::PopStyleVar();
-			ShowTooltip("Back");
+			ShowTooltip("Go back to previous step");
 			return ok;
 		}
 		bool icon_button(ImFont *icon_font, const char* button_name)
@@ -605,7 +605,7 @@ void UIState::draw_points_menu() {
 
 	//if (ImGui::Button("Detection", ImVec2((w - p), 0))) {
 	wait_window("wait_detect", "Detecting vertices", ICON_FA_COOKIE,
-		[&]() {return ImGui::Button("Detection", ImVec2((w - p), 0));},
+		[&]() {return ImGui::Button("Detect", ImVec2((w - p), 0));},
 		[&]() {detect_vertices();});
 
 		//viewer_control();
@@ -1006,10 +1006,10 @@ void UIState::draw_analysis_menu() {
 		//	viewer_control();
 		//}
 		wait_window("wait_3d_mesh", "Generating 3D mesh for FE", ICON_FA_FIGHTER_JET,
-			[&]() {return ImGui::Button("Mesh 3D volume", ImVec2(-1.0, 0));},
+			[&]() {return ImGui::Button("Build volumetric mesh", ImVec2(-1.0, 0));},
 			[&]()
 		{
-			state.mesh_2d_adaptive();
+			//state.mesh_2d_adaptive();
 			state.mesh_3d_volume();
 			state.remesh_3d_adaptive();
 

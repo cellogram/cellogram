@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
 	CLI::App app{"cellogram"};
 	app.add_option("input,-i,--input", args.input, "Input image.");
 	app.add_option("-s,--settings", args.settings, "Path to json settings");
-	//app.add_option("-f,--file", args.load_data, "Path to saved data for scene");
+	app.add_option("-f,--file", args.load_data, "Path to saved data for scene");
 	app.add_option("-b,--begin", args.start_phase, "From which phase to run the script");
 	app.add_option("-e,--end", args.end_phase, "Until which phase to run the script");
 	app.add_flag("-c,--cmd", args.cmd, "Run without GUI");
@@ -99,6 +99,7 @@ int main(int argc, char *argv[]) {
 		if(args.end_phase > 0 && args.start_phase < 2){
 			state.detect_vertices();
 			png_output.draw_detection();
+			state.phase_enumeration = 1;
 		}
 		if (args.end_phase > 1 && args.start_phase < 3)
 		{
@@ -110,17 +111,19 @@ int main(int argc, char *argv[]) {
 			png_output.draw_untangle();
 
 			state.final_relax();
+			state.phase_enumeration = 3;
 		}
 		if (args.end_phase > 2 && args.start_phase < 4)
 		{
 			if (!state.image_from_pillars)
 			{
 				state.mesh_3d_volume();
-				// state.remesh_3d_adaptive();
+				state.remesh_3d_adaptive();
 			}
 			state.analyze_3d_mesh();
+			state.phase_enumeration = 4;
 		}
-		state.phase_enumeration = args.end_phase;
+
 		state.save(save_dir);
 
 		png_output.save();
