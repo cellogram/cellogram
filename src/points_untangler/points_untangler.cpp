@@ -56,7 +56,7 @@ namespace cellogram
             m.initWithDelaunay();
             if (verbose) m.exportPLY( file_name(outputPath, "mesh",0) , ColMode::BY_VAL);
 
-            for (int i=1; i<=7; i++) {
+            for (int i=1; i<=5; i++) {
 
                 m.greedyFlips(10, g);
 
