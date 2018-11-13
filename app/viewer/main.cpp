@@ -72,15 +72,20 @@ int main(int argc, char *argv[]) {
 		// load data from path
 		bool ok = true;
 		if (args.load_data.size() > 0)
+		{
+			std::cout << "Loading data..." << std::endl;
 			ok = state.load(args.load_data);
-
+		}
 		if (!ok)
 		{
 			std::cout << "Data not loaded" << std::endl;
 			exit(0);
 		}
-
-
+		else
+		{
+			std::cout << "... data loaded" << std::endl;
+		}
+	
 		const int index = args.input.find_last_of(".");
 		std::string save_dir = args.input.substr(0, index);
 		std::cout<<save_dir<<std::endl;
@@ -97,12 +102,14 @@ int main(int argc, char *argv[]) {
 		png_output.draw_image();
 
 		if(args.end_phase > 0 && args.start_phase < 2){
+			std::cout << "Detecting vertices" << std::endl;
 			state.detect_vertices();
 			png_output.draw_detection();
 			state.phase_enumeration = 1;
 		}
 		if (args.end_phase > 1 && args.start_phase < 3)
 		{
+			std::cout << "Untangling" << std::endl;
 			state.untangle();
 			state.detect_bad_regions();
 			state.resolve_regions();
@@ -117,9 +124,12 @@ int main(int argc, char *argv[]) {
 		{
 			if (!state.image_from_pillars)
 			{
+				std::cout << "Meshing volume" << std::endl;
 				state.mesh_3d_volume();
+				std::cout << "Remeshing adaptively" << std::endl;
 				state.remesh_3d_adaptive();
 			}
+			std::cout << "Running analysis" << std::endl;
 			state.analyze_3d_mesh();
 			state.phase_enumeration = 4;
 		}

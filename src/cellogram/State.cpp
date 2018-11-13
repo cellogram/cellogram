@@ -59,7 +59,8 @@ namespace cellogram {
 			"displacement_threshold": 0.18,
 			"relative_threshold": true,
 			"mesh_size": 0.3,
-			"thickness": 30.0
+			"thickness": 30.0,
+			"mesh_gradation": 1.2
      		})"_json;
 	}
 
@@ -171,6 +172,7 @@ namespace cellogram {
 		eps = settings["eps"];
 		I = settings["I"];
 		L = settings["L"];
+		mmg_options.hgrad = settings["mesh_gradation"];
 		formulation = settings["formulation"].get<std::string>();
 		image_from_pillars = settings["image_from_pillars"];
 	}
@@ -308,6 +310,7 @@ namespace cellogram {
 			json_data["I"] = I;
 			json_data["L"] = L;
 			json_data["scaling"] = scaling;
+			json_data["gradation"] = mmg_options.hgrad;
 
 			unique["analysis_settings"] = json_data;
 		}

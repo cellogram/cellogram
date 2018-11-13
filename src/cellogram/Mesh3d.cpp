@@ -64,7 +64,7 @@ namespace cellogram {
 
 				{"solver_params", {"conv_tol", 1e-7}},
 
-				{"nl_solver_rhs_steps", 5},
+				{"nl_solver_rhs_steps", 2},
 				{"n_boundary_samples", 3},
 
 				{"params", {
