@@ -981,7 +981,13 @@ namespace cellogram {
 				}
 			}
 		}
-		dijkstra_grading(V, F, S, mmg_options.hgrad, sources);
+		double smax = median_edge_length(mesh.detected, mesh.triangles) * scaling
+		if (sources.empty()) {
+			S.setConstant(smax);
+		} else {
+			dijkstra_grading(V, F, S, mmg_options.hgrad, sources);
+			S.unaryExpr([&](double x) { return std::min(x, smax); }; // Clamp upper bound by median edge length
+		}
 	}
 
 	void State::mesh_2d_adaptive() {

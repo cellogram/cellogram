@@ -17,8 +17,8 @@ namespace cellogram
                 static int subPhase = 0;
                 if (lastPhase!=phase) subPhase = 0;
                 char str[8];
-                //sprintf(str,"%02d_%c",phase , 'A' + subPhase );
-                sprintf(str,"%c_%02d" , 'A' + subPhase ,phase);
+                sprintf(str,"%02d_%c",phase , 'A' + subPhase );
+                //sprintf(str,"%c_%02d" , 'A' + subPhase ,phase);
                 subPhase++;
                 lastPhase = phase;
                 return outputPath + str + "_" + label;
@@ -64,17 +64,18 @@ namespace cellogram
 
                 meshToGrid(m,g, verbose); // also modifies m
 
-                if (verbose) m.exportPLY( file_name(outputPath, "mesh_grid",i), ColMode::BY_FLOOD);
+                if (verbose) m.exportPLY( file_name(outputPath, "mesh_grid",i), ColMode::BY_VAL);
                 if (verbose) g.exportPLY(file_name(outputPath, "grid_mesh",i) );
 
                 g.greedyOps();
-                m.greedyFlips( 10, g );
+                //m.greedyFlips( 10, g );
 
                 if (verbose) g.exportPLY(file_name(outputPath, "grid_opt",i) );
 
                 gridToMesh(g,m, verbose);
 
-                if (verbose) m.exportPLY( file_name(outputPath, "mesh_gopt",i), ColMode::BY_FLOOD);
+                m.updateValencies();
+                if (verbose) m.exportPLY( file_name(outputPath, "mesh_gopt",i), ColMode::BY_VAL);
 
             }
         }

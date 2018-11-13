@@ -639,12 +639,6 @@ void Mesh::flipAs(const Grid& g){
             //bool improveSimil = (( d01 > dab ) && ( d01 != -1 ) && ( dab != -1 ) );
             //bool equalSimil = (( d01 == dab ) || ( d01 == -1 ) || ( dab == -1 )  );
 
-            /*int valReduction = 0;
-            { if (V[v0].val>6) valReduction++; else valReduction--; }
-            { if (V[v1].val>6) valReduction++; else valReduction--; }
-            { if (V[va].val<6) valReduction++; else valReduction--; }
-            { if (V[vb].val<6) valReduction++; else valReduction--; }
-*/
             if ( (!g.areAdjacient(v0,v1)) && (g.areAdjacient(va,vb)) )
 
             //if  ( dab == 1 && d01!= 1 ) {
