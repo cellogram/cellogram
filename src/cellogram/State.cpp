@@ -968,6 +968,8 @@ namespace cellogram {
 	// }
 
 	void State::propagate_sizing_field(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, const Eigen::VectorXd &disp, Eigen::VectorXd &S) {
+		double smax = median_edge_length(mesh.detected, mesh.triangles) * scaling;
+		
 		// Propagate a sizing field from the triangle where all vertices are beyond the displacement threshold
 		std::vector<int> sources;
 		double thres = displacement_threshold;
@@ -983,23 +985,23 @@ namespace cellogram {
 				}
 			}
 		}
-		double smax = median_edge_length(mesh.detected, mesh.triangles) * scaling;
 		if (sources.empty()) {
-			// Set vertices *not* on the boundary as source, with value smax
-			auto on_border = igl::is_border_vertex(F);
-			for (int v = 0; v < (int) on_border.size(); ++v) {
-				if (!on_border[v]) {
-					sources.push_back(v);
-					S[v] = smax;
-				}
-			}
-		}
-		if (sources.empty()) {
-			// If there are no interior vertices, set target edge length to smax (just in case)
 			S.setConstant(smax);
 		} else {
 			dijkstra_grading(V, F, S, mmg_options.hgrad, sources);
 		}
+
+		// Second pass: clamp interior target edge length by edge-max, and propagate again towards the border
+		sources.clear();
+		// Set vertices *not* on the boundary as source, with value smax
+		auto on_border = igl::is_border_vertex(F);
+		for (int v = 0; v < (int) on_border.size(); ++v) {
+			if (!on_border[v]) {
+				sources.push_back(v);
+				S[v] = std::min(S[v], smax);
+			}
+		}
+		dijkstra_grading(V, F, S, mmg_options.hgrad, sources);
 	}
 
 	void State::mesh_2d_adaptive() {
