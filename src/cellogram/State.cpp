@@ -18,6 +18,7 @@
 #include <igl/bounding_box.h>
 #include <igl/bounding_box_diagonal.h>
 #include <igl/copyleft/tetgen/tetrahedralize.h>
+#include <igl/is_border_vertex.h>
 #include <igl/list_to_matrix.h>
 #include <igl/point_in_poly.h>
 #include <igl/remove_duplicate_vertices.h>
@@ -44,7 +45,7 @@ namespace cellogram {
 			"perm_possibilities": 15,
 			"sigma": 2.0,
 			"otsu_multiplier": 0.5
-     		})"_json;
+		})"_json;
 
 		json default_analysis_settings = R"({
 			"scaling": 0.2,
@@ -62,6 +63,7 @@ namespace cellogram {
 			"thickness": 30.0,
 			"mesh_gradation": 1.2
      		})"_json;
+
 	}
 
 
@@ -983,10 +985,20 @@ namespace cellogram {
 		}
 		double smax = median_edge_length(mesh.detected, mesh.triangles) * scaling;
 		if (sources.empty()) {
+			// Set vertices *not* on the boundary as source, with value smax
+			auto on_border = igl::is_border_vertex(F);
+			for (int v = 0; v < (int) on_border.size(); ++v) {
+				if (!on_border[v]) {
+					sources.push_back(v);
+					S[v] = smax;
+				}
+			}
+		}
+		if (sources.empty()) {
+			// If there are no interior vertices, set target edge length to smax (just in case)
 			S.setConstant(smax);
 		} else {
 			dijkstra_grading(V, F, S, mmg_options.hgrad, sources);
-			S.unaryExpr([&](double x) { return std::min(x, smax); }); // Clamp upper bound by median edge length
 		}
 	}
 
