@@ -17,7 +17,7 @@ namespace cellogram {
 
 	namespace
 	{
-		void compute_analysis(const Eigen::MatrixXd &vertices, const Eigen::MatrixXi &faces, const Eigen::MatrixXi &tets, const Mesh &mesh,
+		std::string compute_analysis(const Eigen::MatrixXd &vertices, const Eigen::MatrixXi &faces, const Eigen::MatrixXi &tets, const Mesh &mesh,
 			float thickness, float E, float nu, const std::string &formulation, double scaling,
 			Eigen::MatrixXd &vals, Eigen::MatrixXd &traction_forces)
 		{
@@ -194,6 +194,10 @@ namespace cellogram {
 				out.close();
 			}
 
+			std::stringstream ss;
+			state.save_json(ss);
+			return ss.str();
+
 
 			// auto &tmp_mesh = *dynamic_cast<polyfem::Mesh3D *>(state.mesh.get());
 			// igl::opengl::glfw::Viewer viewer;
@@ -303,13 +307,15 @@ namespace cellogram {
 // 		F = TF;
 // 		T = TT;
 
-		compute_analysis(V, F, T, mesh, thickness, E, nu, formulation, scaling, displacement, traction_forces);
+		simulation_out = compute_analysis(V, F, T, mesh, thickness, E, nu, formulation, scaling, displacement, traction_forces);
 	}
 
 	void Mesh3d::clear()
 	{
 		F.resize(0, 0);
 		V.resize(0, 0);
+
+		simulation_out = "";
 	}
 
 	bool Mesh3d::load(const nlohmann::json & data)

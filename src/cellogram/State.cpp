@@ -313,6 +313,7 @@ namespace cellogram {
 			json_data["L"] = L;
 			json_data["scaling"] = scaling;
 			json_data["gradation"] = mmg_options.hgrad;
+			json_data["simulation_output"] = mesh3d.simulation_out;
 
 			unique["analysis_settings"] = json_data;
 		}

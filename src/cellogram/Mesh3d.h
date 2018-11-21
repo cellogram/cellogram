@@ -11,6 +11,8 @@ namespace cellogram {
 	public:
 		Mesh3d() { }
 
+		std::string simulation_out = "";
+
 		Eigen::MatrixXd V;
 		Eigen::MatrixXi F;
 		Eigen::MatrixXi T;
