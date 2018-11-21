@@ -11,7 +11,7 @@ namespace cellogram {
 	public:
 		Mesh3d() { }
 
-		std::string simulation_out = "";
+		nlohmann::json simulation_out = nlohmann::json({});
 
 		Eigen::MatrixXd V;
 		Eigen::MatrixXi F;

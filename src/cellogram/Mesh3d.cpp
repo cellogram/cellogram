@@ -17,12 +17,13 @@ namespace cellogram {
 
 	namespace
 	{
-		std::string compute_analysis(const Eigen::MatrixXd &vertices, const Eigen::MatrixXi &faces, const Eigen::MatrixXi &tets, const Mesh &mesh,
+		nlohmann::json compute_analysis(const Eigen::MatrixXd &vertices, const Eigen::MatrixXi &faces, const Eigen::MatrixXi &tets, const Mesh &mesh,
 			float thickness, float E, float nu, const std::string &formulation, double scaling,
 			Eigen::MatrixXd &vals, Eigen::MatrixXd &traction_forces)
 		{
 			//TODO
 			const std::string rbf_function = "gaussian";
+			// const std::string rbf_function = "cubic";
 			const double eps = 1.5;
 
 			static const bool export_data = false;
@@ -62,7 +63,9 @@ namespace cellogram {
 				{"discr_order", 1},
 				{"vismesh_rel_area", 1000},
 
-				{"solver_params", {"conv_tol", 1e-7}},
+				{"solver_params", {"conv_tol", 1e-7, "max_iter", 2000}},
+
+
 
 				{"nl_solver_rhs_steps", 2},
 				{"n_boundary_samples", 3},
@@ -194,9 +197,9 @@ namespace cellogram {
 				out.close();
 			}
 
-			std::stringstream ss;
-			state.save_json(ss);
-			return ss.str();
+			nlohmann::json json;
+			state.save_json(json);
+			return json;
 
 
 			// auto &tmp_mesh = *dynamic_cast<polyfem::Mesh3D *>(state.mesh.get());
@@ -315,7 +318,7 @@ namespace cellogram {
 		F.resize(0, 0);
 		V.resize(0, 0);
 
-		simulation_out = "";
+		simulation_out = nlohmann::json({});
 	}
 
 	bool Mesh3d::load(const nlohmann::json & data)
