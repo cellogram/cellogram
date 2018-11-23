@@ -15,15 +15,11 @@ endfunction()
 
 ## Polyfem
 function(cellogram_download_polyfem)
-    if(CELLOGRAM_USE_HTTPS)
-        set(POLYFEM_URL https://github.com/geometryprocessing/polyfem.git)
-    else()
-        set(POLYFEM_URL git@github.com:geometryprocessing/polyfem.git)
-    endif()
+    set(POLYFEM_URL https://github.com/polyfem/polyfem.git)
 
     cellogram_download_project(polyfem
         GIT_REPOSITORY ${POLYFEM_URL}
-        GIT_TAG        1d9bc4a7b18a889759307e52bcfbb0793366dcdc
+        GIT_TAG        85b6d275b4f7443344dcde4113ab410310ee1786
     )
 endfunction()
 
