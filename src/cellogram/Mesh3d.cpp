@@ -81,7 +81,7 @@ namespace cellogram {
 			bool is_quiet = false;
 			int log_level = 1;
 
-			state.init_logger(log_file, is_quiet, log_level);
+			state.init_logger(log_file, log_level, is_quiet);
 			state.init(j_args);
 
 			state.load_mesh(M, [](const polyfem::RowVectorNd &bary){
@@ -322,6 +322,10 @@ namespace cellogram {
 	{
 		F.resize(0, 0);
 		V.resize(0, 0);
+
+		T.resize(0, 0);
+		displacement.resize(0, 0);
+		traction_forces.resize(0, 0);
 
 		simulation_out = nlohmann::json({});
 	}

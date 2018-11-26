@@ -1175,6 +1175,7 @@ void UIState::draw_results_menu()
 	ImGui::PushFont(icon_font);
 	if (button_left(icon_font))
 	{
+		state.mesh3d.clear();
 		// go back to analysis stage and possibly remove current solution
 		phase_3();
 		viewer_control();
