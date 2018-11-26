@@ -76,7 +76,12 @@ namespace cellogram {
 				}},
 			};
 
-			polyfem::State &state = polyfem::State::state();
+			polyfem::State state;
+			std::string log_file = "";
+			bool is_quiet = false;
+			int log_level = 1;
+
+			state.init_logger(log_file, is_quiet, log_level);
 			state.init(j_args);
 
 			state.load_mesh(M, [](const polyfem::RowVectorNd &bary){
