@@ -67,7 +67,6 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 	mmg::mmg
 	igl::opengl_glfw_imgui # needs to be removed when all ok
 	igl::png
-	cellogram::gurobi
 	cellogram::untangler
 	tcdf
 	gsl

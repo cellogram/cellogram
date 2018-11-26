@@ -145,12 +145,6 @@ add_library(mmg::mmg3d ALIAS libmmg3d_a)
 # add_library(tinyformat INTERFACE)
 # target_include_directories(tinyformat SYSTEM INTERFACE ${THIRD_PARTY_DIR}/tinyformat)
 
-# Gurobi library
-find_package(GUROBI)
-if(NOT GUROBI_FOUND)
-	message(WARNING "Gurobi was not found on this computer, some features will be disabled.")
-endif()
-
 # TIFF
 add_library(TinyTiff
 	${THIRD_PARTY_DIR}/TinyTIFF/tinytiffhighrestimer.cpp

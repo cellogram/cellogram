@@ -4,9 +4,6 @@
 #include <cellogram/common.h>
 #include <cellogram/Mesh.h>
 #include <Eigen/Dense>
-#ifdef CELLOGRAM_WITH_GUROBI
-#include <gurobi_solver/state.h>
-#endif
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
@@ -70,9 +67,5 @@ namespace cellogram {
 		void triangluate_region(const Mesh mesh, Eigen::MatrixXi &new_triangles);
 		bool clean_up_boundary(const Eigen::MatrixXi &tri, const Eigen::MatrixXi & tri_list);
 		Eigen::MatrixXi get_triangulation(const Eigen::MatrixXi &F);
-
-#ifdef CELLOGRAM_WITH_GUROBI
-		gurobi::State s;
-#endif
 	};
 } // namespace cellogram

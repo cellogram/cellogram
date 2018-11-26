@@ -452,104 +452,104 @@ namespace cellogram {
 		Eigen::MatrixXd V;
 		DetectionParams params;
 
-#ifdef asdUSE_TBB
+// #ifdef USE_TBB
 
-		typedef tbb::enumerable_thread_specific< LocalThreadStorage > LocalStorage;
-		LocalStorage storages(LocalThreadStorage(1));
+// 		typedef tbb::enumerable_thread_specific< LocalThreadStorage > LocalStorage;
+// 		LocalStorage storages(LocalThreadStorage(1));
 
-		const int n_threads = tbb::task_scheduler_init::default_num_threads();
-		const float sigma_step = 0.05;
-		const float minimum_fraction = 0.4; // higher than 50% removes duplicates
-		const float minimum_pixel_spacing = 3;
+// 		const int n_threads = tbb::task_scheduler_init::default_num_threads();
+// 		const float sigma_step = 0.05;
+// 		const float minimum_fraction = 0.4; // higher than 50% removes duplicates
+// 		const float minimum_pixel_spacing = 3;
 
-		Eigen::VectorXf sigmas = Eigen::VectorXf::LinSpaced(n_threads, std::max(1.0, sigma - sigma_step*n_threads/2.), sigma + sigma_step * n_threads / 2);
+// 		Eigen::VectorXf sigmas = Eigen::VectorXf::LinSpaced(n_threads, std::max(1.0, sigma - sigma_step*n_threads/2.), sigma + sigma_step * n_threads / 2);
 
-		tbb::parallel_for(tbb::blocked_range<int>(0, n_threads), [&](const tbb::blocked_range<int> &r) {
-			LocalStorage::reference loc_storage = storages.local();
-			for (int e = r.begin(); e != r.end(); ++e) {
-				point_source_detection(img, sigmas(e), loc_storage.V, loc_storage.params);
-			}
-		}
-		);
+// 		tbb::parallel_for(tbb::blocked_range<int>(0, n_threads), [&](const tbb::blocked_range<int> &r) {
+// 			LocalStorage::reference loc_storage = storages.local();
+// 			for (int e = r.begin(); e != r.end(); ++e) {
+// 				point_source_detection(img, sigmas(e), loc_storage.V, loc_storage.params);
+// 			}
+// 		}
+// 		);
 
-		// Concatenate all found points into one vector, and their params into a struct
-		std::vector<std::pair<double, double>> V_all;
-		DetectionParams ptmp;
+// 		// Concatenate all found points into one vector, and their params into a struct
+// 		std::vector<std::pair<double, double>> V_all;
+// 		DetectionParams ptmp;
 
-		for (LocalStorage::iterator it = storages.begin(); it != storages.end(); ++it)
-		{
-			const LocalThreadStorage &storage = *it;
+// 		for (LocalStorage::iterator it = storages.begin(); it != storages.end(); ++it)
+// 		{
+// 			const LocalThreadStorage &storage = *it;
 
-			for (int row = 0; row < it->V.rows(); row++)
-			{
-				double x = storage.V(row, 0);
-				double y = storage.V(row, 1);
+// 			for (int row = 0; row < it->V.rows(); row++)
+// 			{
+// 				double x = storage.V(row, 0);
+// 				double y = storage.V(row, 1);
 
-				V_all.push_back(std::pair<double, double>(x, y));
-				ptmp.push_back_params(it->params.get_index(row));
-			}
-		}
+// 				V_all.push_back(std::pair<double, double>(x, y));
+// 				ptmp.push_back_params(it->params.get_index(row));
+// 			}
+// 		}
 
-		Eigen::MatrixXd tmpV(V_all.size(), 2);
-		for (int i = 0; i < V_all.size(); i++)
-		{
-			tmpV(i, 0) = V_all[i].first;
-			tmpV(i, 1) = V_all[i].second;
-		}
+// 		Eigen::MatrixXd tmpV(V_all.size(), 2);
+// 		for (int i = 0; i < V_all.size(); i++)
+// 		{
+// 			tmpV(i, 0) = V_all[i].first;
+// 			tmpV(i, 1) = V_all[i].second;
+// 		}
 
-		// Vi: indices of selected Vertices, Vj: Index of vertex replacing them
-		Eigen::MatrixXi Vi, Vj;
-		igl::remove_duplicate_vertices(tmpV, 1.0, V, Vi, Vj);
+// 		// Vi: indices of selected Vertices, Vj: Index of vertex replacing them
+// 		Eigen::MatrixXi Vi, Vj;
+// 		igl::remove_duplicate_vertices(tmpV, 1.0, V, Vi, Vj);
 
-		// Average V values and count entries
-		Eigen::VectorXi count(V.rows());
-		V.setZero(V.rows(),2);
-		count.setZero(V.rows());
+// 		// Average V values and count entries
+// 		Eigen::VectorXi count(V.rows());
+// 		V.setZero(V.rows(),2);
+// 		count.setZero(V.rows());
 
-		DetectionParams P_final, P_tmp;
-		P_final.setZero(V.rows());
-		P_tmp.setZero(1);
+// 		DetectionParams P_final, P_tmp;
+// 		P_final.setZero(V.rows());
+// 		P_tmp.setZero(1);
 
-		for (int i = 0; i < Vj.size(); i++)
-		{
-			V(Vj(i), 0) += tmpV(i, 0);
-			V(Vj(i), 1) += tmpV(i, 1);
+// 		for (int i = 0; i < Vj.size(); i++)
+// 		{
+// 			V(Vj(i), 0) += tmpV(i, 0);
+// 			V(Vj(i), 1) += tmpV(i, 1);
 
-			P_tmp = P_final.get_index(Vj(i));
+// 			P_tmp = P_final.get_index(Vj(i));
 
-			P_tmp.sum(ptmp.get_index(i));
-			P_final.set_from(P_tmp, Vj(i));
+// 			P_tmp.sum(ptmp.get_index(i));
+// 			P_final.set_from(P_tmp, Vj(i));
 
-			count(Vj(i))++;
+// 			count(Vj(i))++;
 
-		}
+// 		}
 
-		// Use only vertices that have been detected minimum_fraction * n_threads times
-		Eigen::MatrixXd V_final(V.rows(),2);
-		int index = 0;
-		for (int i = 0; i < V.rows(); i++)
-		{
-			if (count(i) > minimum_fraction*n_threads)
-			{
-				V_final.row(index) = V.row(i)/count(i);
-				P_tmp = P_final.get_index(i);
-				P_tmp.divide(count(i));
+// 		// Use only vertices that have been detected minimum_fraction * n_threads times
+// 		Eigen::MatrixXd V_final(V.rows(),2);
+// 		int index = 0;
+// 		for (int i = 0; i < V.rows(); i++)
+// 		{
+// 			if (count(i) > minimum_fraction*n_threads)
+// 			{
+// 				V_final.row(index) = V.row(i)/count(i);
+// 				P_tmp = P_final.get_index(i);
+// 				P_tmp.divide(count(i));
 
-				P_final.set_from(P_tmp, index);
-				index++;
-			}
-		}
+// 				P_final.set_from(P_tmp, index);
+// 				index++;
+// 			}
+// 		}
 
-		P_final.conservative_resize(index);
-		V_final.conservativeResize(index, 2);
+// 		P_final.conservative_resize(index);
+// 		V_final.conservativeResize(index, 2);
 
-		V = V_final;
-		params = P_final;
-#else
+// 		V = V_final;
+// 		params = P_final;
+// #else
 
 		point_source_detection(img, sigma, otsu_multiplier, V, params);
 
-#endif
+// #endif
 		if (V.cols() != 3)
 		{
 			V.conservativeResize(V.rows(), 3);

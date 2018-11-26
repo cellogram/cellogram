@@ -36,10 +36,4 @@ add_application(tcdf_test.cpp tcdf)
 add_application(tif_test.cpp cellogram)
 add_application(image_test.cpp cellogram)
 add_application(adaptive_test.cpp cellogram)
-
-if(TARGET gurobi::gurobi)
-	add_application(delaunay.cpp tinyfiledialogs::tinyfiledialogs geogram geogram_gfx cellogram::gurobi)
-	add_application(optimizer.cpp cellogram)
-endif()
-
 add_application(pts_untangler.cpp cellogram)
