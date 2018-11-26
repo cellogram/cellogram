@@ -346,6 +346,14 @@ float UIState::draw_menu_bar() {
 			ImGui::MenuItem("Displacements##Bar", nullptr, false);
 			ImGui::MenuItem("Tractions##Bar", nullptr, &show_traction_forces);
 
+			ImGui::Separator();
+			float current_pt_size = points_data().point_size;
+			if(ImGui::SliderFloat("Point size", &current_pt_size, 0, 100))
+			{
+				points_data().point_size = current_pt_size;
+				physical_data().point_size = current_pt_size;
+			}
+
 			ImGui::EndMenu();
 		}
 		if (false && ImGui::BeginMenu("Windows")) {
