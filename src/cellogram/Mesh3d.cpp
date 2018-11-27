@@ -46,7 +46,7 @@ namespace cellogram {
 				}
 			}
 			M.cells.connect();
-
+ 
 			if(export_data){
 				GEO::mesh_save(M, "mesh.mesh");
 				GEO::mesh_load("mesh.mesh", M);
