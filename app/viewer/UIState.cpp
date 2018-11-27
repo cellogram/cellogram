@@ -153,7 +153,7 @@ bool UIState::mouse_down(int button, int modifier) {
 	double x = viewer.current_mouse_x;
 	double y = viewer.core.viewport(3) - viewer.current_mouse_y;
 
-	std::cout << x << " " << y << std::endl;
+	// std::cout << x << " " << y << std::endl;
 
 	Eigen::MatrixXd V = t * state.mesh.points + (1 - t) * state.mesh.moved;
 

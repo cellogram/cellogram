@@ -281,8 +281,14 @@ namespace cellogram {
 		}
 		for (int i = 0; i < added_by_untangler.size(); ++i)
 		{
-			if (added_by_untangler(i) == index)
+			if (added_by_untangler(i) == index){
 				removeRow(added_by_untangler, index);
+				break;
+			}
+		}
+
+		for (int i = 0; i < added_by_untangler.size(); ++i)
+		{
 			if (added_by_untangler(i) > index)
 				--added_by_untangler(i);
 		}

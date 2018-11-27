@@ -17,12 +17,13 @@ namespace cellogram {
 
 	namespace
 	{
-		void compute_analysis(const Eigen::MatrixXd &vertices, const Eigen::MatrixXi &faces, const Eigen::MatrixXi &tets, const Mesh &mesh,
+		nlohmann::json compute_analysis(const Eigen::MatrixXd &vertices, const Eigen::MatrixXi &faces, const Eigen::MatrixXi &tets, const Mesh &mesh,
 			float thickness, float E, float nu, const std::string &formulation, double scaling,
 			Eigen::MatrixXd &vals, Eigen::MatrixXd &traction_forces)
 		{
 			//TODO
 			const std::string rbf_function = "gaussian";
+			// const std::string rbf_function = "cubic";
 			const double eps = 1.5;
 
 			static const bool export_data = false;
@@ -62,7 +63,9 @@ namespace cellogram {
 				{"discr_order", 1},
 				{"vismesh_rel_area", 1000},
 
-				{"solver_params", {"conv_tol", 1e-7}},
+				{"solver_params", {"conv_tol", 1e-7, "max_iter", 2000}},
+
+
 
 				{"nl_solver_rhs_steps", 2},
 				{"n_boundary_samples", 3},
@@ -73,7 +76,12 @@ namespace cellogram {
 				}},
 			};
 
-			polyfem::State &state = polyfem::State::state();
+			polyfem::State state;
+			std::string log_file = "";
+			bool is_quiet = false;
+			int log_level = 1;
+
+			state.init_logger(log_file, log_level, is_quiet);
 			state.init(j_args);
 
 			state.load_mesh(M, [](const polyfem::RowVectorNd &bary){
@@ -194,6 +202,10 @@ namespace cellogram {
 				out.close();
 			}
 
+			nlohmann::json json;
+			state.save_json(json);
+			return json;
+
 
 			// auto &tmp_mesh = *dynamic_cast<polyfem::Mesh3D *>(state.mesh.get());
 			// igl::opengl::glfw::Viewer viewer;
@@ -303,13 +315,19 @@ namespace cellogram {
 // 		F = TF;
 // 		T = TT;
 
-		compute_analysis(V, F, T, mesh, thickness, E, nu, formulation, scaling, displacement, traction_forces);
+		simulation_out = compute_analysis(V, F, T, mesh, thickness, E, nu, formulation, scaling, displacement, traction_forces);
 	}
 
 	void Mesh3d::clear()
 	{
 		F.resize(0, 0);
 		V.resize(0, 0);
+
+		T.resize(0, 0);
+		displacement.resize(0, 0);
+		traction_forces.resize(0, 0);
+
+		simulation_out = nlohmann::json({});
 	}
 
 	bool Mesh3d::load(const nlohmann::json & data)

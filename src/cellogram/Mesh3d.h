@@ -11,12 +11,14 @@ namespace cellogram {
 	public:
 		Mesh3d() { }
 
+		nlohmann::json simulation_out = nlohmann::json({});
+
 		Eigen::MatrixXd V;
 		Eigen::MatrixXi F;
 		Eigen::MatrixXi T;
 		Eigen::MatrixXd displacement;
 		Eigen::MatrixXd traction_forces;
-		Eigen::VectorXd sizing;
+		// Eigen::VectorXd sizing;
 
 		bool empty();
 		bool analysed();

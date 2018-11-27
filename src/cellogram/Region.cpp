@@ -1,6 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "Region.h"
-#include <cellogram/mesh_solver.h>
 #include <cellogram/boundary_loop.h>
 #include <cellogram/convex_hull.h>
 #include <cellogram/delaunay.h>
@@ -12,11 +11,6 @@
 #include <cellogram/State.h>
 #include <cellogram/tri2hex.h>
 #include <cellogram/vertex_degree.h>
-#ifdef CELLOGRAM_WITH_GUROBI
-#include <gurobi_solver/generateQ.h>
-#include <gurobi_solver/gurobiModel.h>
-#include <gurobi_solver/state.h>
-#endif
 #include <igl/dijkstra.h>
 #include <igl/opengl/glfw/imgui/ImGuiHelpers.h>
 #include <igl/opengl/glfw/imgui/ImGuiMenu.h>
@@ -431,111 +425,6 @@ namespace cellogram {
 
 	void Region::check_region_from_local_tris(const Eigen::MatrixXd &V_detected, const Eigen::MatrixXd &V_current, const Eigen::MatrixXi &F2, const std::vector<std::vector<int>> &adj)
 	{
-#ifdef CELLOGRAM_WITH_GUROBI
-		int nPolygon = region_boundary.size(); // length of current edge
-
-
-		// Determine number of connections into the cluster to determine "neigh"
-		Eigen::VectorXi neigh = find_n_neighbor(F2, region_boundary, adj);
-
-		////PLEASE USE ME
-		//igl::opengl::glfw::Viewer viewer;
-		////igl::opengl::glfw::imgui::ImGuiMenu menu;
-		////viewer.plugins.push_back(&menu);
-
-		//viewer.data().set_mesh(V_detected, F2);
-		//for (int i = 0; i < region_boundary.size(); ++i) {
-		//	//viewer.data().add_label(V_detected.row(region_boundary(i)), std::to_string(neigh(i)));
-		//}
-
-		//viewer.launch();
-
-		if (!is_neigh_valid(neigh)) {
-			// this mesh is not properly close
-			status = NOT_PROPERLY_CLOSED;
-			return;
-		}
-
-		// 3 Pepare for Gurobi
-		// vB contains the boundary vertices, vI the internal vertices
-		Eigen::MatrixXd vB(nPolygon, 2);
-		Eigen::MatrixXd v_output(nPolygon, 3);
-		v_output.col(2).setZero();
-		for (int i = 0; i < nPolygon; i++)
-		{
-			vB(i, 0) = V_detected(region_boundary(i), 0);
-			vB(i, 1) = V_detected(region_boundary(i), 1);
-
-			v_output(i, 0) = V_current(region_boundary(i), 0);
-			v_output(i, 1) = V_current(region_boundary(i), 1);
-		}
-		Eigen::MatrixXd vI(region_interior.size(), 2);
-		for (int i = 0; i < region_interior.size(); i++)
-		{
-			vI(i, 0) = V_detected(region_interior[i], 0);
-			vI(i, 1) = V_detected(region_interior[i], 1);
-		}
-
-		// Generate perfect mesh in ROI
-		s.init(vB, vI, neigh);
-		s.fill_hole();
-
-		//// compare sizes
-		//if (s.Vdeformed.rows() == 63)
-		//{
-		//	std::cout << "\n\nregion_triangles: \n" << region_triangles.transpose() << std::endl;
-		//	std::cout << "\n\nregion_boundary: \n" << region_boundary.transpose() << "\n\n#:" << region_boundary.rows() << std::endl;
-		//	std::cout << "\n\nregion_boundary: \n" << region_boundary.transpose() << "\n\n#:" <<region_boundary.rows() << std::endl;
-		//	std::cout << "\n\nregion_interior: \n" << region_interior.transpose() << "\n\n#:" << region_interior.rows() << std::endl;
-		//	std::cout << "\n\ns.Vdeformed: \n" << s.Vdeformed.transpose() << "\n\n#:" << s.Vdeformed.rows() << std::endl;
-		//	std::cout << "\n\ns.Vperfect: \n" << s.Vperfect.transpose() << "\n\n#:" << s.Vperfect.rows() << std::endl;
-		//}
-		////
-
-		// Check whether vertices inside region is equal to the ones expected
-		if (s.Vperfect.rows() > s.Vdeformed.rows()) {
-			points_delta = s.Vdeformed.rows() - s.Vperfect.rows();
-			status = TOO_FEW_VERTICES;
-			return;
-		}
-		else if (s.Vperfect.rows() < s.Vdeformed.rows()) {
-			points_delta = s.Vdeformed.rows() - s.Vperfect.rows();
-			status = TOO_MANY_VERTICES;
-			return;
-		}
-
-		if (region_interior.size() > cellogram::State::max_region_vertices)
-		{
-			status = REGION_TOO_LARGE;
-			return;
-		}
-
-		//// temporary to save vB,vI,neigh for comparing solvers
-		//if (vI.rows() > 10)
-		//{
-		//	int nError;
-		//	std::string path = "C:/Users/Tobias/Dropbox/NY/test_regions_" + std::to_string(std::rand() % 100);
-		//	std::wstring widestr = std::wstring(path.begin(), path.end());
-		//	nError = _wmkdir(widestr.c_str()); // can be used on Windows
-
-		//	{
-		//		std::ofstream vB_path(path + "/vB.vert");
-		//		vB_path << vB << std::endl;
-		//		vB_path.close();
-		//	}
-		//	{
-		//		std::ofstream vI_path(path + "/vI.vert");
-		//		vI_path << vI << std::endl;
-		//		vI_path.close();
-		//	}
-		//	{
-		//		std::ofstream neigh_path(path + "/neigh.txt");
-		//		neigh_path << neigh << std::endl;
-		//		neigh_path.close();
-		//	}
-		//}
-		status = 0;
-#endif
 	}
 
 	void Region::resolve(const Eigen::MatrixXd &V_detected, const Eigen::MatrixXd &V_current, const int perm_possibilities, const double gurobi_time_limit, Eigen::MatrixXd  &new_points, Eigen::MatrixXi &new_triangles, bool force_solve)
@@ -545,89 +434,6 @@ namespace cellogram {
 			if(!force_solve || status != REGION_TOO_LARGE)
 				return;
 		}
-
-#ifdef CELLOGRAM_WITH_GUROBI
-
-		int nPolygon = region_boundary.size(); // length of current edge
-
-		Eigen::MatrixXd v_output(nPolygon, 3);
-		v_output.col(2).setZero();
-		for (int i = 0; i < nPolygon; i++)
-		{
-			v_output(i, 0) = V_current(region_boundary(i), 0);
-			v_output(i, 1) = V_current(region_boundary(i), 1);
-		}
-
-
-		// Generate adjacency matrix and the laplacian
-		generateQ q;
-		gurobiModel g;
-		q.adjacencyMatrix(s.F);
-		q.laplacianMatrix();
-
-
-		// Deriving Q and constraints for optimization
-		int K = std::min(perm_possibilities,q.iNrV);
-		q.QforOptimization(s.Vperfect, s.Vdeformed, K);
-		q.optimizationConstraints(s.V_boundary.rows());
-
-
-		// Generate and solve model for gurobi
-		g.model(q.Q, q.Aeq, gurobi_time_limit);
-		if (g.resultX(0) == -1) {
-			// no solution found
-			status = NO_SOLUTION;
-			return;
-		}
-
-		//std::cout << "\ng.resultX\n" << g.resultX << std::endl;
-		//std::cout << "\nq.IDX\n" << q.IDX << std::endl;
-
-		// Map back to indices of coordinates
-		q.mapBack(g.resultX);
-		//std::cout << g.resultX << std::endl;
-
-		std::vector<Eigen::Triplet<double> > permutation_triplets;
-		const int n_points = s.Vperfect.rows();
-		for (int i = 0; i < n_points; ++i)
-		{
-			const int index = i * K;
-
-			for (int j = 0; j < K; ++j)
-			{
-				if (g.resultX(index + j) == 1)
-				{
-					const int dest_vertex = q.IDX(j, i);
-					permutation_triplets.emplace_back(i, dest_vertex, 1);
-					continue;
-				}
-			}
-		}
-
-		// Replace vertex
-		Eigen::SparseMatrix<double> permutation(n_points, n_points);
-		permutation.setFromTriplets(permutation_triplets.begin(), permutation_triplets.end());
-
-		//std::cout << Eigen::MatrixXd(permutation) << std::endl;
-
-		//std::cout << "\nDef: \n" << s.Vdeformed;
-		//std::cout << "\nPerf: \n" << s.Vperfect;
-		//std::cout << "\Vi: \n" << vI;
-
-		new_points = permutation.transpose() * s.Vperfect;
-
-		const Eigen::Vector3d bary_detected = new_points.block(0, 0, nPolygon, 3).colwise().mean();
-		const Eigen::Vector3d bary_points = v_output.colwise().mean();
-		const Eigen::Vector3d traslation = bary_points - bary_detected;
-
-		for (long i = 0; i < new_points.rows(); ++i) {
-			new_points.row(i) += traslation;
-		}
-
-		new_points.block(0, 0, nPolygon, 3) = v_output;
-
-		new_triangles = q.T;
-#endif
 	}
 
 	bool Region::split_region(Mesh &mesh, const Eigen::Vector2i & split_end_points, Region &r1, Region  &r2)

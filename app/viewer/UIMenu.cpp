@@ -6,7 +6,6 @@
 
 #include <cellogram/convex_hull.h>
 #include <cellogram/laplace_energy.h>
-#include <cellogram/mesh_solver.h>
 #include <cellogram/region_grow.h>
 #include <cellogram/remesh_adaptive.h>
 #include <cellogram/tri2hex.h>
@@ -346,6 +345,14 @@ float UIState::draw_menu_bar() {
 			// Analysis
 			ImGui::MenuItem("Displacements##Bar", nullptr, false);
 			ImGui::MenuItem("Tractions##Bar", nullptr, &show_traction_forces);
+
+			ImGui::Separator();
+			float current_pt_size = points_data().point_size;
+			if(ImGui::SliderFloat("Point size", &current_pt_size, 0, 100))
+			{
+				points_data().point_size = current_pt_size;
+				physical_data().point_size = current_pt_size;
+			}
 
 			ImGui::EndMenu();
 		}
@@ -752,18 +759,18 @@ void UIState::draw_mesh_menu() {
 
 	//ImGui::Checkbox("Fix", &state.fix_regular_regions);
 
-	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.50f);
-	if (ImGui::SliderFloat("Energy", &state.energy_variation_from_mean, 0, 5)) {
-		selected_region = -1;
-		state.detect_bad_regions();
-		state.check_regions();
+	// ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.50f);
+	// if (ImGui::SliderFloat("Energy", &state.energy_variation_from_mean, 0, 5)) {
+	// 	selected_region = -1;
+	// 	state.detect_bad_regions();
+	// 	state.check_regions();
 
-		create_region_label();
+	// 	create_region_label();
 
-		viewer_control();
-	}
-	ImGui::PopItemWidth();
-	ShowTooltip("Set energy threshold for difficult to mesh regions");
+	// 	viewer_control();
+	// }
+	// ImGui::PopItemWidth();
+	// ShowTooltip("Set energy threshold for difficult to mesh regions");
 
 	if(state.mesh.added_by_untangler.size() > 0)
 	{
@@ -774,62 +781,51 @@ void UIState::draw_mesh_menu() {
 		}
 	}
 
-	if (ImGui::Button("Build regions", ImVec2((w - p), 0))) {
-		selected_region = -1;
+	// if (ImGui::Button("Build regions", ImVec2((w - p), 0))) {
+	// 	selected_region = -1;
 
-		state.detect_bad_regions();
-		state.check_regions();
-		// state.fix_regions();
+	// 	state.detect_bad_regions();
+	// 	state.check_regions();
+	// 	// state.fix_regions();
 
-		show_bad_regions = true;
-		show_mesh_fill = true;
+	// 	show_bad_regions = true;
+	// 	show_mesh_fill = true;
 
-		create_region_label();
+	// 	create_region_label();
 
-		viewer_control();
-	}
-	ShowTooltip("Detect difficult to mesh regions");
+	// 	viewer_control();
+	// }
+	// ShowTooltip("Detect difficult to mesh regions");
 
 	//if (state.mesh.points.size() == 0) {
 	//	pop_disabled();
 	//}
 
 	// disable if regions are not availabe
-	bool disable_region = state.regions.size() == 0;
-	if (disable_region) {
-		push_disabled();
-	}
+	// bool disable_region = state.regions.size() == 0;
+	// if (disable_region) {
+	// 	push_disabled();
+	// }
 
-	//if (ImGui::Button("solve regions", ImVec2((w - p), 0))) {
-	//	state.resolve_regions();
-	//	selected_region = -1;
-	//	current_region_status = "";
-	//	create_region_label();
+	// //if (ImGui::Button("solve regions", ImVec2((w - p), 0))) {
+	// //	state.resolve_regions();
+	// //	selected_region = -1;
+	// //	current_region_status = "";
+	// //	create_region_label();
 
-	//	viewer_control();
-	//}
-	wait_window("wait_gurobi", "Solving regions", ICON_FA_CHECK_DOUBLE,
-		[&]() {return ImGui::Button("Solve regions", ImVec2((w - p), 0));},
-		[&]()
-	{
-		state.resolve_regions();
-		selected_region = -1;
-		current_region_status = "";
-		create_region_label();
+	// //	viewer_control();
+	// //}
 
-		viewer_control();
-	});
+	// ShowTooltip("Solve difficult to mesh regions");
+	// if (disable_region) {
+	// 	pop_disabled();
+	// }
 
-	ShowTooltip("Solve difficult to mesh regions");
-	if (disable_region) {
-		pop_disabled();
-	}
-
-	if (ImGui::TreeNode("Advanced regions options"))
-	{
-		draw_region_menu();
-		ImGui::TreePop();
-	}
+	// if (ImGui::TreeNode("Advanced regions options"))
+	// {
+	// 	draw_region_menu();
+	// 	ImGui::TreePop();
+	// }
 
 	// Arrow buttons
 	ImGui::Spacing();
@@ -910,6 +906,11 @@ void UIState::draw_analysis_menu() {
 				[&]()
 			{
 				state.analyze_3d_mesh();
+				analysis_mode = true;
+				show_mesh = false;
+				show_image = false;
+				show_mesh_fill = false;
+
 				phase_4();
 				//reset_view_3d();
 				view_mode_3d = Mesh3DAttribute::NORM_DISP;
@@ -1076,7 +1077,7 @@ void UIState::draw_analysis_menu() {
 
 void UIState::draw_results_menu()
 {
-	if(!state.image_from_pillars)
+	// if(!state.image_from_pillars)
 	{
 		static int view_current = 0;
 		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.4f);
@@ -1122,8 +1123,8 @@ void UIState::draw_results_menu()
 			}
 		}
 		ImGui::PopItemWidth();
-
-		ImGui::Checkbox("Smooth results", &show_smoothed_results);
+		if(!state.image_from_pillars)
+			ImGui::Checkbox("Smooth results", &show_smoothed_results);
 	}
 
 	// Colorbar
@@ -1182,6 +1183,7 @@ void UIState::draw_results_menu()
 	ImGui::PushFont(icon_font);
 	if (button_left(icon_font))
 	{
+		state.mesh3d.clear();
 		// go back to analysis stage and possibly remove current solution
 		phase_3();
 		viewer_control();

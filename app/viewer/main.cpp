@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "UIState.h"
-#include "CLI11.hpp"
+#include <CLI/CLI.hpp>
 #include <cellogram/State.h>
 #include <cellogram/StringUtils.h>
 #include <cellogram/PNGOutput.h>

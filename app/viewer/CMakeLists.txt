@@ -29,8 +29,8 @@ add_executable(${PROJECT_NAME} ${BUILD_TYPE}
 target_link_libraries(${PROJECT_NAME} PRIVATE
 	igl::opengl_glfw_imgui
 	cellogram
-	tinyfiledialogs
-	cli11
+	tinyfiledialogs::tinyfiledialogs
+	CLI11::CLI11
 )
 
 # Extra warnings
