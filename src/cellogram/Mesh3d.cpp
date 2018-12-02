@@ -90,13 +90,13 @@ namespace cellogram {
 					return 1;
 				}
 
-				// //Bottom, Id = 3
-				// if(std::abs(bary(2)- -thickness) < 1e-8){
-				// 	return 3;
-				// }
+				//Bottom, Id = 3
+				if(std::abs(bary(2)- -thickness) < 1e-8){
+					return 3;
+				}
 
 				//any other
-				return 3;
+				return 2;
 			});
 
 			// state.compute_mesh_stats();
