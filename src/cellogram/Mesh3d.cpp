@@ -84,7 +84,7 @@ namespace cellogram {
 			state.init_logger(log_file, log_level, is_quiet);
 			state.init(j_args);
 
-			state.load_mesh(M, [](const polyfem::RowVectorNd &bary){
+			state.load_mesh(M, [&](const polyfem::RowVectorNd &bary){
 				// top, Id = 1
 				if(std::abs(bary(2)) < 1e-6){
 					return 1;

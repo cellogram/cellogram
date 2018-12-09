@@ -28,6 +28,7 @@
 #include <tbb/task_scheduler_init.h>
 #include <tbb/enumerable_thread_specific.h>
 #include <fstream>
+#include <chrono>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
@@ -43,8 +44,8 @@ namespace cellogram {
 			"energy_variation_from_mean": 2.0,
 			"lloyd_iterations": 20,
 			"perm_possibilities": 15,
-			"sigma": 2.0,
-			"otsu_multiplier": 0.5
+			"sigma": 1.5,
+			"otsu_multiplier": 0.3
 		})"_json;
 
 		json default_analysis_settings = R"({
@@ -423,7 +424,14 @@ namespace cellogram {
 	void State::untangle()
 	{
 		regions.clear();
+
+		auto t1 = std::chrono::system_clock::now();
 		mesh.untangle();
+
+		auto t2 = std::chrono::system_clock::now();
+		std::chrono::duration<double> delta_t = t2 - t1;
+		std::cout << "Untangling took " << delta_t.count() << "s" << std::endl;
+
 		phase_enumeration = 2;
 	}
 
@@ -546,9 +554,13 @@ namespace cellogram {
 // 		V = V_final;
 // 		params = P_final;
 // #else
-
+		
+		auto t1 = std::chrono::system_clock::now();
 		point_source_detection(img, sigma, otsu_multiplier, V, params);
+		auto t2 = std::chrono::system_clock::now();
+		std::chrono::duration<double> delta_t = t2 - t1;
 
+		std::cout << "Detection took " << delta_t.count() << "s" << std::endl;
 // #endif
 		if (V.cols() != 3)
 		{
@@ -919,7 +931,13 @@ namespace cellogram {
 	{
 		//increase boundary by one row for fixation
 		Eigen::VectorXi boundary = increase_boundary(mesh.boundary);
+		
+		auto t1 = std::chrono::system_clock::now();
 		mesh.final_relax(boundary);
+
+		auto t2 = std::chrono::system_clock::now();
+		std::chrono::duration<double> delta_t = t2 - t1;
+		std::cout << "Relaxation took " << delta_t.count() << "s" << std::endl;
 		phase_enumeration = 3;
 	}
 
@@ -1076,6 +1094,8 @@ namespace cellogram {
 	}
 
 	void State::mesh_3d_volume() {
+		auto t1 = std::chrono::system_clock::now();
+
 		extrude_2d_mesh(); // too lazy to recode this
 		return;
 
@@ -1095,9 +1115,16 @@ namespace cellogram {
 		// Mesh volume
 		igl::copyleft::tetgen::tetrahedralize(BV, BF, buf.str(), mesh3d.V, mesh3d.T, mesh3d.F);
 		polyfem::orient_closed_surface(mesh3d.V, mesh3d.F);
+
+		auto t2 = std::chrono::system_clock::now();
+		std::chrono::duration<double> delta_t = t2 - t1;
+		std::cout << "Meshing 3d took " << delta_t.count() << "s" << std::endl;
 	}
 
 	void State::remesh_3d_adaptive() {
+
+		auto t1 = std::chrono::system_clock::now();
+
 		// Generate background mesh if needed
 		if (mesh3d.V.size() == 0 || mesh3d.T.rows() == 0) { mesh_3d_volume(); }
 		double zmin = mesh3d.V.col(2).minCoeff();
@@ -1130,9 +1157,14 @@ namespace cellogram {
 		mmg_options.hmin = S.minCoeff();
 		mmg_options.hmax = S.maxCoeff();
  		remesh_adaptive_3d(mesh3d.V, mesh3d.T, S, mesh3d.V, mesh3d.F, mesh3d.T, mmg_options);
+
+		auto t2 = std::chrono::system_clock::now();
+		std::chrono::duration<double> delta_t = t2 - t1;
+		std::cout << "Remeshing adaptively took " << delta_t.count() << "s" << std::endl;
 	}
 
 	void State::analyze_3d_mesh() {
+		auto t1 = std::chrono::system_clock::now();
 		if(image_from_pillars)
 		{
 			mesh3d.init_pillars(mesh, eps, I, L, scaling);
@@ -1141,6 +1173,11 @@ namespace cellogram {
 		{
 			mesh3d.init_nano_dots(mesh, padding_size, thickness, E, nu, scaling, formulation);
 		}
+
+		auto t2 = std::chrono::system_clock::now();
+		std::chrono::duration<double> delta_t = t2 - t1;
+		std::cout << "Analysis took " << delta_t.count() << "s" << std::endl;
+
 		phase_enumeration = 4;
 	}
 
