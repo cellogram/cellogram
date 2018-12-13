@@ -877,6 +877,7 @@ void UIState::draw_analysis_menu() {
 
 	if (state.image_from_pillars) {
 		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.40f);
+		ImGui::InputFloat("Scaling", &state.scaling, 0.01, 0.001, 3);
 		ImGui::InputFloat("E", &state.eps, 0.1, 0.01, 3);
 		ShowTooltip("Young's modulus of pillars [MPa]");
 		ImGui::InputFloat("I", &state.I, 0.1, 0.01, 3);

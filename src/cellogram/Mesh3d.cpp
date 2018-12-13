@@ -166,14 +166,19 @@ namespace cellogram {
 			state.solve_problem();
 
 			//true = compute average insteat of just integral
-			state.interpolate_boundary_function(vertices, faces, state.sol, true, vals);
-			state.interpolate_boundary_tensor_function(vertices, faces, state.sol, true, traction_forces);
+
+			// state.interpolate_boundary_function(vertices, faces, state.sol, true, vals);
+			// state.interpolate_boundary_tensor_function(vertices, faces, state.sol, true, traction_forces);
+
+			state.interpolate_boundary_function_at_vertices(vertices, faces, state.sol, vals);
+			state.interpolate_boundary_tensor_function(vertices, faces, state.sol, vals, true, traction_forces);
+
+
 			// vals = Eigen::Map<Eigen::MatrixXd>(state.sol.data(), 3, vertices.rows());
 			// vals = Eigen::Map<Eigen::MatrixXd>(state.rhs.data(), 3, vertices.rows());
 			// vals = vals.transpose().eval();
 			// std::cout<<vals<<std::endl;
 
-			
 
 			if(export_data)
 			{
