@@ -22,9 +22,10 @@ namespace cellogram {
 			Eigen::MatrixXd &vals, Eigen::MatrixXd &traction_forces)
 		{
 			//TODO
-			const std::string rbf_function = "gaussian";
+			//const std::string rbf_function = "gaussian";
+			const std::string rbf_function = "thin-plate";
 			// const std::string rbf_function = "cubic";
-			const double eps = 1.5;
+			const double eps = 4;
 
 			static const bool export_data = false;
 			assert(tets.cols() == 4);
