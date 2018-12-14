@@ -41,7 +41,7 @@ namespace cellogram {
 			constexpr int arrow_button_size = 40;
 			constexpr int icon_button_size = 28;
 
-			static const float TIME_THRESHOLD = 1; //In secs
+			static const float TIME_THRESHOLD = 0.5; //In secs
 
 			constexpr ImGuiWindowFlags window_flags =
 				ImGuiWindowFlags_NoSavedSettings
@@ -327,7 +327,7 @@ float UIState::draw_menu_bar() {
 			ImGui::Indent();
 			ImGui::ColorEdit4("Color", points_data().line_color.data(),
 				ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueWheel);
-			ImGui::MenuItem("Coded##Bar", nullptr, &show_analysis_menu);
+			//ImGui::MenuItem("Coded##Bar", nullptr, &show_analysis_menu);
 
 			ImGui::Unindent();
 			ImGui::Separator();
@@ -405,7 +405,7 @@ float UIState::draw_menu_bar() {
 		// 	ImGui::EndMenu();
 		// }
 
-		if (ImGui::BeginMenu("Legend")) {
+		if (false && ImGui::BeginMenu("Legend")) {
 			draw_legend_item(46, 204, 113, "Ok");
 			draw_legend_item(155, 89, 182, "Too Many Vertices");
 			draw_legend_item(241, 196, 15, "Too Few Vertices");
@@ -687,11 +687,11 @@ void UIState::draw_points_menu() {
 
 			// add here also the clean up of this stage
 			state.img.resize(0, 0);
-			phase_0();
+			data_available = false;
+			//phase_0();
 
 			viewer_control();
 		}
-
 		ImGui::SameLine(0.0f, spacing);
 
 		// disable if points are not detected
@@ -876,7 +876,9 @@ void UIState::draw_analysis_menu() {
 	ImGui::Spacing();
 
 	if (state.image_from_pillars) {
-		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.40f);
+		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.50f);
+		ImGui::InputFloat("Scaling", &state.scaling, 0.01, 0.001, 3);
+		ShowTooltip("Magnification factor of image [µm/px]");
 		ImGui::InputFloat("E", &state.eps, 0.1, 0.01, 3);
 		ShowTooltip("Young's modulus of pillars [MPa]");
 		ImGui::InputFloat("I", &state.I, 0.1, 0.01, 3);
@@ -922,7 +924,7 @@ void UIState::draw_analysis_menu() {
 
 		// Material Model selection
 		static int model_selection = 0;
-		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.4f);
+		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.50f);
 		const char* material_models[] = { "Linear Elasticity", "Neo Hooke" };
 		if (ImGui::Combo("Material Model", &model_selection, material_models, IM_ARRAYSIZE(material_models)))
 		{
@@ -949,16 +951,16 @@ void UIState::draw_analysis_menu() {
 		ImGui::InputFloat("nu", &state.nu, 0.1, 0.01, 3);
 		ShowTooltip("Poisson's ratio");
 
-		if (ImGui::TreeNode("Advanced vertex options"))
+		if (ImGui::TreeNode("Advanced mesh options"))
 		{
 			ImGui::InputFloat("Padding [µm]", &state.padding_size, 1, 0, 0);
 			ImGui::InputFloat("Thickness [µm]", &state.thickness, 1, 0, 0);
 			const char disp_abs[] = "Displ. Thres. [µm]";
 			const char disp_rel[] = "Displ. Thres. [%]";
-			ImGui::InputFloat(state.relative_threshold ? disp_rel : disp_abs, &state.displacement_threshold, 0, 0, 3);
-			ShowTooltip("Threshold on the displacement to identify regions that will be meshed more finely.");
 			ImGui::Checkbox("Relative Threshold", &state.relative_threshold);
 			ShowTooltip("Set the threshold relative to the maximum displacement of the detected points.");
+			ImGui::InputFloat(state.relative_threshold ? disp_rel : disp_abs, &state.displacement_threshold, 0, 0, 3);
+			ShowTooltip("Threshold on the displacement to identify regions that will be meshed more finely.");
 			ImGui::InputFloat("Edge Length", &state.uniform_mesh_size, 0, 0, 3);
 			ShowTooltip(
 				"Target edge length for the mesh generated for the physical simulation.\n"
