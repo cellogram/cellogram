@@ -751,7 +751,7 @@ namespace cellogram {
 		write_json_mat(points, data["points"]);
 
 		data["displacement"] = json::object();
-		write_json_mat((points-detected).eval(), data["displacement"]);
+		write_json_mat((detected-points).eval(), data["displacement"]);
 
 		data["triangles"] = json::object();
 		write_json_mat(triangles, data["triangles"]);
