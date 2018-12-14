@@ -962,7 +962,7 @@ void UIState::viewer_control_3d() {
 
 	auto fun = show_traction_forces ? state.mesh3d.traction_forces : state.mesh3d.displacement;
 
-	if(show_smoothed_results)
+	if(show_traction_forces && show_smoothed_results)
 	{
 		const auto tmp = fun;
 

@@ -1125,7 +1125,7 @@ void UIState::draw_results_menu()
 			}
 		}
 		ImGui::PopItemWidth();
-		if(!state.image_from_pillars)
+		if(!state.image_from_pillars && show_traction_forces)
 			ImGui::Checkbox("Smooth results", &show_smoothed_results);
 	}
 
