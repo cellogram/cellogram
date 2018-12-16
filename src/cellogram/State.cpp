@@ -60,7 +60,7 @@ namespace cellogram {
 			"padding_size": 25.0,
 			"displacement_threshold": 0.18,
 			"relative_threshold": true,
-			"mesh_size": 0.3,
+			"mesh_size": 0.15,
 			"thickness": 30.0,
 			"mesh_gradation": 1.2
      		})"_json;
