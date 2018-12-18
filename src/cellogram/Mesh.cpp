@@ -326,6 +326,15 @@ namespace cellogram {
 
 	void Mesh::add_vertex(Eigen::Vector3d & new_point, bool must_reset)
 	{
+		// Check if vertex already exists
+		Eigen::MatrixXd tmp = detected.rowwise() - new_point.transpose();
+		Eigen::MatrixXd d = tmp.rowwise().norm();
+		if (d.minCoeff() == 0)
+		{
+			// point is a duplicate
+			return;
+		}
+
 		// Add vertex
 		{
 			Eigen::MatrixXd tmp(detected.rows() + 1, detected.cols());

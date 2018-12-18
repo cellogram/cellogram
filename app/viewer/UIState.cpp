@@ -1055,7 +1055,7 @@ void UIState::viewer_control_3d() {
 	}
 
 	physical_data().show_lines = view_mode_3d == Mesh3DAttribute::NONE;
-	// fix_color(physical_data());
+	fix_color(physical_data());
 }
 
 void UIState::draw_mesh() {

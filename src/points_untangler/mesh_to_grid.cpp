@@ -297,7 +297,7 @@ namespace cellogram
 				g.clear();
                 int gridSide = sqrt(m.V.size())*3.0;
                 g.create(gridSide, gridSide);
-                printf("Created a %dx%d grid\n",gridSide, gridSide);
+                //printf("Created a %dx%d grid\n",gridSide, gridSide);
 				g.createVertices(m.V.size());
 			}
             int x = g.sx/2 ,  y = g.sy/2;
