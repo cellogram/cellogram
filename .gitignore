@@ -51,11 +51,15 @@
 build/
 bin/
 bin_rel/
+bin.nosync
+bin_rel.nosync
 cmake-build-*
 latex.out/
 Win32
 x64
 yimg.dir
+xcode
+xcode.nosync
 
 /3rdparty/.cache
 /3rdparty/polyfem
