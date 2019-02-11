@@ -73,10 +73,10 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 	TinyTiff
 )
 
-if(TARGET PNGwriter)
-	target_link_libraries(${PROJECT_NAME} PUBLIC PNGwriter)
-	target_compile_definitions(${PROJECT_NAME} PRIVATE -DCELLOGRAM_WITH_PNG)
-endif()
+# if(TARGET PNGwriter)
+# 	target_link_libraries(${PROJECT_NAME} PUBLIC PNGwriter)
+# 	target_compile_definitions(${PROJECT_NAME} PRIVATE -DCELLOGRAM_WITH_PNG)
+# endif()
 
 # Extra warnings
 target_compile_options(${PROJECT_NAME} PRIVATE ${ALL_WARNINGS})
@@ -84,7 +84,8 @@ target_compile_options(${PROJECT_NAME} PRIVATE ${ALL_WARNINGS})
 # Use C++14
 target_compile_features(${PROJECT_NAME} PUBLIC ${CXX14_FEATURES})
 
-set(DATA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../data/")
+# set(DATA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../data/")
+set(DATA_DIR ".")
 target_compile_definitions(${PROJECT_NAME} PRIVATE -DDATA_DIR=\"${DATA_DIR}\")
 
 foreach(source IN ITEMS ${source_list})
