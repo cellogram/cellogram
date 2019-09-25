@@ -1,4 +1,4 @@
-project(Cellogram)
+project(CellogramViewer)
 
 # Resource file (icons etc.)
 set(EXTRA_SOURCE "")

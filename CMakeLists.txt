@@ -133,7 +133,6 @@ target_include_directories(TinyTiff SYSTEM INTERFACE ${THIRD_PARTY_DIR}/TinyTIFF
 add_subdirectory(src)
 add_subdirectory(app)
 add_subdirectory(misc)
-add_subdirectory(tests)
 
 ################################################################################
 
