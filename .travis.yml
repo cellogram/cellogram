@@ -36,5 +36,5 @@ install:
 script:
 - mkdir build
 - cd build
-- cmake -DCMAKE_BUILD_TYPE=$CONFIG ..
+- cmake -DCMAKE_BUILD_TYPE=$CONFIG -DCELLOGRAM_USE_HTTPS=ON ..
 - make -j ${NPROC}
