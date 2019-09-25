@@ -15,10 +15,8 @@ endfunction()
 
 ## Polyfem
 function(cellogram_download_polyfem)
-    set(POLYFEM_URL https://github.com/polyfem/polyfem.git)
-
     cellogram_download_project(polyfem
-        GIT_REPOSITORY ${POLYFEM_URL}
+        GIT_REPOSITORY https://github.com/polyfem/polyfem.git
         GIT_TAG        e4c857dbae4d032ffb980255326c3d0177b2223a
     )
 endfunction()
@@ -26,14 +24,8 @@ endfunction()
 
 ## pngwriter
 function(cellogram_download_pngwriter)
-    if(CELLOGRAM_USE_HTTPS)
-        set(PNGWRITER_URL https://github.com/pngwriter/pngwriter.git)
-    else()
-        set(PNGWRITER_URL git@github.com:pngwriter/pngwriter.git)
-    endif()
-
     cellogram_download_project(pngwriter
-        GIT_REPOSITORY ${PNGWRITER_URL}
+        GIT_REPOSITORY https://github.com/pngwriter/pngwriter.git
         GIT_TAG        79bb3ef5ebd91996bc4cd02cdc031c5cd560b897
     )
 endfunction()

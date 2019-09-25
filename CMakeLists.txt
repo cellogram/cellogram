@@ -46,14 +46,6 @@ endif()
 
 ################################################################################
 
-if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-	set(CELLOGRAM_USE_HTTPS_DEFAULT ON)
-else()
-	set(CELLOGRAM_USE_HTTPS_DEFAULT OFF)
-endif()
-
-option(CELLOGRAM_USE_HTTPS "Favor http link for external projects" ${CELLOGRAM_USE_HTTPS_DEFAULT})
-
 # Options for libigl modules
 option(LIBIGL_USE_STATIC_LIBRARY          "Use libigl as static library" ON)
 option(LIBIGL_WITH_ANTTWEAKBAR            "Use AntTweakBar"              OFF)
@@ -88,13 +80,12 @@ include(CellogramDownloadExternal)
 cellogram_download_polyfem()
 add_subdirectory(${THIRD_PARTY_DIR}/polyfem)
 
-
 if(CELLOGRAM_WITH_PNG)
 	find_package(PNG 1.2.9)
 	find_package(ZLIB)
 	if(NOT ${ZLIB_FOUND} OR NOT ${PNG_FOUND})
 		set(CELLOGRAM_WITH_PNG OFF)
-		message(WARNING "disabling png output, coudnt find png or zlip")
+		message(WARNING "disabling png output, coudn't find png or zlip")
 	endif()
 endif()
 
@@ -108,23 +99,6 @@ endif()
 # find_package(Eigen3 REQUIRED)
 # target_link_libraries(polyfem PUBLIC Eigen3::Eigen)
 
-# libigl
-# find_package(LIBIGL REQUIRED)
-
-# Geogram
-# include(geogram)
-
-# CLI11
-# add_library(cli11 INTERFACE)
-# target_include_directories(cli11 SYSTEM INTERFACE ${THIRD_PARTY_DIR}/cli11)
-
-# Clipper
-# add_subdirectory(${THIRD_PARTY_DIR}/clipper)
-
-# Json
-# add_library(json INTERFACE)
-# target_include_directories(json SYSTEM INTERFACE ${THIRD_PARTY_DIR}/json/single_include)
-
 # GSL
 add_subdirectory(${THIRD_PARTY_DIR}/gsl)
 target_include_directories(gsl SYSTEM PUBLIC ${GSL_BINARY_DIR})
@@ -137,13 +111,6 @@ add_library(mmg::mmg ALIAS libmmg_a)
 add_library(mmg::mmgs ALIAS libmmgs_a)
 add_library(mmg::mmg2d ALIAS libmmg2d_a)
 add_library(mmg::mmg3d ALIAS libmmg3d_a)
-
-# Tiny file dialogs library
-# add_subdirectory(${THIRD_PARTY_DIR}/tinyfiledialogs tinyfiledialogs)
-
-# Tiny format library
-# add_library(tinyformat INTERFACE)
-# target_include_directories(tinyformat SYSTEM INTERFACE ${THIRD_PARTY_DIR}/tinyformat)
 
 # TIFF
 add_library(TinyTiff
