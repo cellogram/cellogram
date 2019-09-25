@@ -1,6 +1,4 @@
-project(cellogram)
-
-set(source_list
+add_library(cellogram
 	boundary_loop.cpp
 	boundary_loop.h
 	common.cpp
@@ -57,12 +55,10 @@ set(source_list
 	voronoi.h
 )
 
-add_library(${PROJECT_NAME} ${source_list})
-
-target_include_directories(${PROJECT_NAME} PUBLIC ..)
+target_include_directories(cellogram PUBLIC ..)
 
 # Dependencies
-target_link_libraries(${PROJECT_NAME} PUBLIC
+target_link_libraries(cellogram PUBLIC
 	polyfem
 	mmg::mmg
 	igl::opengl_glfw_imgui # needs to be removed when all ok
@@ -74,19 +70,19 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 )
 
 # if(TARGET PNGwriter)
-# 	target_link_libraries(${PROJECT_NAME} PUBLIC PNGwriter)
-# 	target_compile_definitions(${PROJECT_NAME} PRIVATE -DCELLOGRAM_WITH_PNG)
+# 	target_link_libraries(cellogram PUBLIC PNGwriter)
+# 	target_compile_definitions(cellogram PRIVATE -DCELLOGRAM_WITH_PNG)
 # endif()
 
 # Extra warnings
-target_compile_options(${PROJECT_NAME} PRIVATE ${ALL_WARNINGS})
+target_compile_options(cellogram PRIVATE ${ALL_WARNINGS})
 
 # Use C++14
-target_compile_features(${PROJECT_NAME} PUBLIC ${CXX14_FEATURES})
+target_compile_features(cellogram PUBLIC ${CXX14_FEATURES})
 
 # set(DATA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../data/")
 set(DATA_DIR ".")
-target_compile_definitions(${PROJECT_NAME} PRIVATE -DDATA_DIR=\"${DATA_DIR}\")
+target_compile_definitions(cellogram PRIVATE -DDATA_DIR=\"${DATA_DIR}\")
 
 foreach(source IN ITEMS ${source_list})
     get_filename_component(source_path "${source}" PATH)
