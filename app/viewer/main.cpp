@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////
-#include "UIState.h"
 #include <CLI/CLI.hpp>
+#include "UIState.h"
 #include <cellogram/State.h>
 #include <cellogram/StringUtils.h>
 #include <cellogram/PNGOutput.h>
@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
 	app.add_option("-b,--begin", args.start_phase, "From which phase to run the script");
 	app.add_option("-e,--end", args.end_phase, "Until which phase to run the script");
 	app.add_flag("-c,--cmd", args.cmd, "Run without GUI");
-	
+
 	try {
 		app.parse(argc, argv);
 	} catch (const CLI::ParseError &e) {
@@ -85,7 +85,7 @@ int main(int argc, char *argv[]) {
 		{
 			std::cout << "... data loaded" << std::endl;
 		}
-	
+
 		const int index = args.input.find_last_of(".");
 		std::string save_dir = args.input.substr(0, index);
 		std::cout<<save_dir<<std::endl;

@@ -47,6 +47,7 @@
 .idea/
 *.sublime-project
 *.sublime-workspace
+*.code-workspace
 .vscode/
 build/
 bin/
@@ -61,7 +62,7 @@ yimg.dir
 xcode
 xcode.nosync
 
-/3rdparty
+/3rdparty*
 
 # Mac OS
 .DS_Store
