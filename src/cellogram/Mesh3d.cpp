@@ -48,7 +48,7 @@ namespace cellogram {
 				}
 			}
 			M.cells.connect();
- 
+
 			if(export_data){
 				GEO::mesh_save(M, "mesh.mesh");
 				GEO::mesh_load("mesh.mesh", M);
@@ -158,7 +158,7 @@ namespace cellogram {
 			// state.compute_mesh_stats();
 
 			state.build_basis();
-			state.build_polygonal_basis();
+			// state.build_polygonal_basis();
 
 
 			state.assemble_rhs();

@@ -63,6 +63,8 @@ target_link_libraries(cellogram PUBLIC
 	mmg::mmg
 	igl::opengl_glfw_imgui # needs to be removed when all ok
 	igl::png
+	igl::triangle
+	igl::tetgen
 	cellogram::untangler
 	tcdf
 	gsl

@@ -47,7 +47,7 @@ endif()
 ################################################################################
 
 # Options for libigl modules
-option(LIBIGL_USE_STATIC_LIBRARY          "Use libigl as static library" ON)
+option(LIBIGL_USE_STATIC_LIBRARY          "Use libigl as static library" OFF)
 option(LIBIGL_WITH_ANTTWEAKBAR            "Use AntTweakBar"              OFF)
 option(LIBIGL_WITH_CGAL                   "Use CGAL"                     OFF)
 option(LIBIGL_WITH_COMISO                 "Use CoMiso"                   OFF)
@@ -66,6 +66,7 @@ option(LIBIGL_WITH_TRIANGLE               "Use Triangle"                 ON)
 option(LIBIGL_WITH_VIEWER                 "Use OpenGL viewer"            ON)
 option(LIBIGL_WITH_XML                    "Use XML"                      OFF)
 option(CELLOGRAM_WITH_PNG           	  "Use PNG output"				 ON)
+option(CELLOGRAM_WITH_MISC           	  "Use build misc targets"		 OFF)
 
 ################################################################################
 # Download external dependencies
@@ -128,11 +129,29 @@ add_library(TinyTiff
 )
 target_include_directories(TinyTiff SYSTEM INTERFACE ${THIRD_PARTY_DIR}/TinyTIFF)
 
+
+if(NOT TARGET tinyfiledialogs::tinyfiledialogs)
+	cellogram_download_tinyfiledialogs()
+	set(TINYFILEDIALOGS_DIR "${THIRD_PARTY_DIR}/tinyfiledialogs")
+	add_library(tinyfiledialogs_tinyfiledialogs ${TINYFILEDIALOGS_DIR}/tinyfiledialogs.c)
+	add_library(tinyfiledialogs::tinyfiledialogs ALIAS tinyfiledialogs_tinyfiledialogs)
+	target_include_directories(tinyfiledialogs_tinyfiledialogs SYSTEM INTERFACE ${TINYFILEDIALOGS_DIR})
+	set_target_properties(tinyfiledialogs_tinyfiledialogs PROPERTIES POSITION_INDEPENDENT_CODE ON)
+endif()
+
 ################################################################################
 
 add_subdirectory(src)
+
+
+if(NOT TARGET CLI11::CLI11)
+    cellogram_download_cli11()
+    add_subdirectory(${THIRD_PARTY_DIR}/cli11)
+endif()
 add_subdirectory(app)
-add_subdirectory(misc)
+if(CELLOGRAM_WITH_MISC)
+	add_subdirectory(misc)
+endif()
 
 ################################################################################
 
@@ -202,7 +221,7 @@ set_target_properties(statistics_test PROPERTIES FOLDER 3rdparty/not_used)
 set_target_properties(sum_test PROPERTIES FOLDER 3rdparty/not_used)
 set_target_properties(sys_test PROPERTIES FOLDER 3rdparty/not_used)
 # set_target_properties(tetgen PROPERTIES FOLDER 3rdparty/not_used)
-# set_target_properties(tinyfiledialogs PROPERTIES FOLDER 3rdparty)
+set_target_properties(tinyfiledialogs_tinyfiledialogs PROPERTIES FOLDER 3rdparty)
 # set_target_properties(triangle PROPERTIES FOLDER 3rdparty)
 set_target_properties(vector_test PROPERTIES FOLDER 3rdparty/not_used)
 set_target_properties(vector_test_static PROPERTIES FOLDER 3rdparty/not_used)

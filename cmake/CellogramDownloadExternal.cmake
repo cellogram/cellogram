@@ -17,7 +17,7 @@ endfunction()
 function(cellogram_download_polyfem)
     cellogram_download_project(polyfem
         GIT_REPOSITORY https://github.com/polyfem/polyfem.git
-        GIT_TAG        e4c857dbae4d032ffb980255326c3d0177b2223a
+        GIT_TAG        f5434f37161286e7dd1b0c6f5b0bb63789d8a329
     )
 endfunction()
 
@@ -50,5 +50,22 @@ function(cellogram_download_mmg)
     cellogram_download_project(mmg
         GIT_REPOSITORY https://github.com/MmgTools/mmg.git
         GIT_TAG        88e2dd6cc773c43141b137fd0972c0eb2f4bbd2a
+    )
+endfunction()
+
+
+## tinyfiledialogs
+function(cellogram_download_tinyfiledialogs)
+    cellogram_download_project(tinyfiledialogs
+        GIT_REPOSITORY https://git.code.sf.net/p/tinyfiledialogs/code
+        GIT_TAG        511e6500fa9184923d4859e06ee9a6a4e70820c4
+    )
+endfunction()
+
+## CLI11 3-Clause BSD license optional
+function(cellogram_download_cli11)
+    cellogram_download_project(cli11
+        URL     https://github.com/CLIUtils/CLI11/archive/v1.8.0.tar.gz
+        URL_MD5 5e5470abcb76422360409297bfc446ac
     )
 endfunction()
