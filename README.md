@@ -3,13 +3,11 @@
 
 Automatic registration of deformed cell arrays.
 
-
 ## Building Cellogram
 
 After cloning this git repository, do the following (on macOS/Linux):
 
 ```
-git submodule update --init --recursive
 mkdir build
 cd build
 cmake ..
