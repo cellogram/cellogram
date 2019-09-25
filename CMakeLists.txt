@@ -100,10 +100,12 @@ endif()
 # target_link_libraries(polyfem PUBLIC Eigen3::Eigen)
 
 # GSL
+cellogram_download_gsl()
 add_subdirectory(${THIRD_PARTY_DIR}/gsl)
 target_include_directories(gsl SYSTEM PUBLIC ${GSL_BINARY_DIR})
 
 # MMG
+cellogram_download_mmg()
 option(BUILD_TESTING "Enable/Disable continuous integration" OFF)
 set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
 add_subdirectory(${THIRD_PARTY_DIR}/mmg)
@@ -113,6 +115,7 @@ add_library(mmg::mmg2d ALIAS libmmg2d_a)
 add_library(mmg::mmg3d ALIAS libmmg3d_a)
 
 # TIFF
+cellogram_download_tinytiff()
 add_library(TinyTiff
 	${THIRD_PARTY_DIR}/TinyTIFF/tinytiffhighrestimer.cpp
 	${THIRD_PARTY_DIR}/TinyTIFF/tinytiffhighrestimer.h

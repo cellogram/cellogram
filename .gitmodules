@@ -1,9 +1,0 @@
-[submodule "3rdparty/gsl"]
-	path = 3rdparty/gsl
-	url = https://github.com/jdumas/gsl.git
-[submodule "3rdparty/TinyTIFF"]
-	path = 3rdparty/TinyTIFF
-	url = https://github.com/jkriege2/TinyTIFF.git
-[submodule "3rdparty/mmg"]
-	path = 3rdparty/mmg
-	url = https://github.com/MmgTools/mmg.git
