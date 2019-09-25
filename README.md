@@ -1,5 +1,8 @@
-# cellogram
+# Cellogram
+
 [![Build Status](https://travis-ci.com/cellogram/cellogram.svg?branch=master)](https://travis-ci.com/cellogram/cellogram)
+[![Build status](https://ci.appveyor.com/api/projects/status/fqn2d54ksckw2p8i?svg=true)](https://ci.appveyor.com/project/jdumas/cellogram)
+
 
 Automatic registration of deformed cell arrays.
 
