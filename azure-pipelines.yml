@@ -31,6 +31,7 @@ jobs:
       repositoryName: 'cellogram/cellogram.github.io'
       action: 'create'
       target: '$(Build.SourceVersion)'
-      tagSource: 'gitTag'
+      tagSource: 'userSpecifiedTag'
+      tag: '$(Build.BuildNumber)'
       assets: '$(Build.ArtifactStagingDirectory)/*.exe'
       addChangeLog: false
