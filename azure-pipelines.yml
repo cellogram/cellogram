@@ -19,7 +19,7 @@ jobs:
       repositoryName: 'cellogram/cellogram'
       action: 'create'
       tagSource: 'userSpecifiedTag'
-      tag: 'v$(MajorVersion).$(MinorVersion)'
+      tag: 'v$(MajorVersion).$(MinorVersion).$(IncrementReleaseTagNumber)'
       releaseNotesSource: 'inline'
       releaseNotesInline: 'bla'
       addChangeLog: false
