@@ -30,9 +30,8 @@ jobs:
       gitHubConnection: 'teseoch'
       repositoryName: 'cellogram/cellogram'
       action: 'create'
+      target: '$(Build.SourceVersion)'
       tagSource: 'userSpecifiedTag'
       tag: 'v$(MajorVersion).$(MinorVersion).b$(IncrementReleaseTagNumber)'
       assets: '$(Build.ArtifactStagingDirectory)/*.exe'
-      releaseNotesSource: 'inline'
-      releaseNotesInline: 'bla'
       addChangeLog: false
