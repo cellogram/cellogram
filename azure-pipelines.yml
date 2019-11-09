@@ -18,8 +18,8 @@ jobs:
       gitHubConnection: 'teseoch'
       repositoryName: 'cellogram/cellogram'
       action: 'create'
-      target: '$(Build.SourceVersion)'
-      tagSource: 'gitTag'
+      tagSource: 'userSpecifiedTag'
+      tag: 'v$(MajorVersion).$(MinorVersion)'
       releaseNotesSource: 'inline'
       releaseNotesInline: 'bla'
       addChangeLog: false
