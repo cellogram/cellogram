@@ -58,7 +58,7 @@ jobs:
     inputs:
       script: |
         cd build
-        make
+        make -j
   
   - task: CmdLine@2
     inputs:
