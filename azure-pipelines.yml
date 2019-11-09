@@ -2,7 +2,7 @@ trigger:
 - master
 
 jobs:
-- job: Main
+- job: MainWindows
   timeoutInMinutes: 0
   strategy:
     matrix:
@@ -32,6 +32,45 @@ jobs:
       action: 'create'
       target: '$(Build.SourceVersion)'
       tagSource: 'userSpecifiedTag'
-      tag: 'v$(MajorVersion).$(MinorVersion).b$(IncrementReleaseTagNumber)'
+      tag: 'v$(MajorVersion).$(MinorVersion).b$(IncrementReleaseTagNumber) windows'
       assets: '$(Build.ArtifactStagingDirectory)/*.exe'
+      addChangeLog: false
+
+################Macos
+- job: MainMac
+  timeoutInMinutes: 0
+  strategy:
+    matrix:
+      windows:
+        imageName: 'macos-10.13'
+
+  pool:
+    vmImage: $(imageName)
+
+  steps:
+  - task: CMake@1
+    inputs:
+      cmakeArgs: '-DCMAKE_BUILD_TYPE=Release ..'
+
+  - task: Build@1
+    inputs:
+      script: |
+        cd build
+        make
+  
+  - task: Package@1
+    inputs:
+      script: |
+        cd build
+        cpack
+
+  - task: GitHubRelease@1
+    inputs:
+      gitHubConnection: 'teseoch'
+      repositoryName: 'cellogram/cellogram'
+      action: 'create'
+      target: '$(Build.SourceVersion)'
+      tagSource: 'userSpecifiedTag'
+      tag: 'v$(MajorVersion).$(MinorVersion).b$(IncrementReleaseTagNumber) macos'
+      assets: '$(Build.ArtifactStagingDirectory)/*.dmg'
       addChangeLog: false
