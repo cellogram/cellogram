@@ -15,7 +15,7 @@ jobs:
   steps:
   - task: CMake@1
     inputs:
-      cmakeArgs: '-DCMAKE_BUILD_TYPE=Release -G "Visual Studio 15 2017 Win64"'
+      cmakeArgs: '-DCMAKE_BUILD_TYPE=Release -G "Visual Studio 15 2017 Win64" ..'
 
   - task: VSBuild@1
     inputs:
