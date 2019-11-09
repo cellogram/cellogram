@@ -52,13 +52,13 @@ jobs:
     inputs:
       cmakeArgs: '-DCMAKE_BUILD_TYPE=Release ..'
 
-  - task: Build@1
+  - task: CmdLine@2
     inputs:
       script: |
         cd build
         make
   
-  - task: Package@1
+  - task: CmdLine@2
     inputs:
       script: |
         cd build
