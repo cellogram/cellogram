@@ -33,7 +33,9 @@ jobs:
       target: '$(Build.SourceVersion)'
       tagSource: 'userSpecifiedTag'
       tag: 'v$(MajorVersion).$(MinorVersion).b$(IncrementReleaseTagNumber) windows'
-      assets: '$(Build.ArtifactStagingDirectory)/*.exe'
+      assets: |
+        $(Build.ArtifactStagingDirectory)/*.exe
+        $(System.DefaultWorkingDirectory)/*.exe
       addChangeLog: false
 
 ################Macos
@@ -72,5 +74,7 @@ jobs:
       target: '$(Build.SourceVersion)'
       tagSource: 'userSpecifiedTag'
       tag: 'v$(MajorVersion).$(MinorVersion).b$(IncrementReleaseTagNumber) macos'
-      assets: '$(Build.ArtifactStagingDirectory)/*.dmg'
+      assets: |
+        $(Build.ArtifactStagingDirectory)/*.dmg
+        $(System.DefaultWorkingDirectory)/*.dmg
       addChangeLog: false
