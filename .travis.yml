@@ -27,8 +27,6 @@ matrix:
     - MATRIX_EVAL="export CONFIG=Debug && NPROC=2"
 
 install:
-- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install suite-sparse ccache; fi
-- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then export PATH="/usr/local/opt/ccache/libexec:$PATH"; fi
 - eval "${MATRIX_EVAL}"
 
 script:
