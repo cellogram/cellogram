@@ -15,12 +15,12 @@ jobs:
   steps:
   - task: CMake@1
     inputs:
-      workingDirectory: 'build' # Optional
-      cmakeArgs: 
+      cmakeArgs: '-DCMAKE_BUILD_TYPE=Release -G "Visual Studio 15 2017 Win64"'
 
   - task: VSBuild@1
     inputs:
       solution: 'build/Cellogram.sln'
+      vsVersion: '15.0'
       platform: 'x64'
       maximumCpuCount: true
       msbuildArchitecture: 'x64'
