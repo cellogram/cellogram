@@ -19,7 +19,7 @@ jobs:
       cmakeArgs: -DCMAKE_BUILD_TYPE=Release
 
   - task: MSBuild@1
-      inputs:
-        solution: 'build.common/ALL_BUILD.vcxproj'
-        maximumCpuCount: true
-        platform: 'x64'
+    inputs:
+      solution: 'build.common/ALL_BUILD.vcxproj'
+      maximumCpuCount: true
+      platform: 'x64'
