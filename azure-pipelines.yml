@@ -43,7 +43,7 @@ jobs:
   timeoutInMinutes: 0
   strategy:
     matrix:
-      windows:
+      macos:
         imageName: 'macos-10.13'
 
   pool:
