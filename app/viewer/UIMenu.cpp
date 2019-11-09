@@ -916,6 +916,7 @@ void UIState::draw_analysis_menu() {
 				phase_4();
 				//reset_view_3d();
 				view_mode_3d = Mesh3DAttribute::NORM_DISP;
+				override_ranges = false;
 				viewer_control();
 			});
 		}
@@ -1021,6 +1022,7 @@ void UIState::draw_analysis_menu() {
 			show_image = false;
 			show_mesh_fill = false;
 			view_mode_3d = Mesh3DAttribute::NONE;
+			override_ranges = false;
 
 			viewer_control();
 		});
@@ -1065,6 +1067,7 @@ void UIState::draw_analysis_menu() {
 				phase_4();
 				//reset_view_3d();
 				view_mode_3d = Mesh3DAttribute::NORM_DISP;
+				override_ranges = false;
 				viewer_control();
 
 				// TODO: add also the pillar calculation
@@ -1089,19 +1092,26 @@ void UIState::draw_results_menu()
 
 		static int sub_view_current = 0;
 		if (view_current == 0){
+			if(show_traction_forces)
+				override_ranges = false;
 			show_traction_forces = false;
 			const char* sub_views[] = { "Mag", "Ux", "Uy", "Uz" };
 			if (ImGui::Combo("Uview##View", &sub_view_current, sub_views, IM_ARRAYSIZE(sub_views)))
 			{
+				Mesh3DAttribute new_view = Mesh3DAttribute::NONE;
+
 				switch (sub_view_current)
 				{
-				case 0: view_mode_3d = Mesh3DAttribute::NORM_DISP; break;
-				case 1: view_mode_3d = Mesh3DAttribute::X_DISP; break;
-				case 2: view_mode_3d = Mesh3DAttribute::Y_DISP; break;
-				case 3: view_mode_3d = Mesh3DAttribute::Z_DISP; break;
+				case 0: new_view = Mesh3DAttribute::NORM_DISP; break;
+				case 1: new_view = Mesh3DAttribute::X_DISP; break;
+				case 2: new_view = Mesh3DAttribute::Y_DISP; break;
+				case 3: new_view = Mesh3DAttribute::Z_DISP; break;
 				default:
 					assert(false);
 				}
+				if(view_mode_3d != new_view)
+					override_ranges = false;
+				view_mode_3d = new_view;
 			};
 		}
 		// else if (view_current == 1){
@@ -1109,19 +1119,27 @@ void UIState::draw_results_menu()
 		// 	ImGui::Combo("Sview##View", &sub_view_current, sub_views, IM_ARRAYSIZE(sub_views));
 		// }
 		else if (view_current == 1){
+			if (!show_traction_forces)
+				override_ranges = false;
 			show_traction_forces = true;
 			const char* sub_views[] = { "Mag", "Tx", "Ty", "Tz" };
 			if(ImGui::Combo("Tview##View", &sub_view_current, sub_views, IM_ARRAYSIZE(sub_views)));
 			{
+				Mesh3DAttribute new_view = Mesh3DAttribute::NONE;
+
 				switch (sub_view_current)
 				{
-				case 0: view_mode_3d = Mesh3DAttribute::NORM_DISP; break;
-				case 1: view_mode_3d = Mesh3DAttribute::X_DISP; break;
-				case 2: view_mode_3d = Mesh3DAttribute::Y_DISP; break;
-				case 3: view_mode_3d = Mesh3DAttribute::Z_DISP; break;
+				case 0: new_view = Mesh3DAttribute::NORM_DISP; break;
+				case 1: new_view = Mesh3DAttribute::X_DISP; break;
+				case 2: new_view = Mesh3DAttribute::Y_DISP; break;
+				case 3: new_view = Mesh3DAttribute::Z_DISP; break;
 				default:
 					assert(false);
 				}
+
+				if (view_mode_3d != new_view)
+					override_ranges = false;
+				view_mode_3d = new_view;
 			}
 		}
 		ImGui::PopItemWidth();
@@ -1175,6 +1193,24 @@ void UIState::draw_results_menu()
 		const int max_power = floor(log10(std::abs(max_val)));
 		ImGui::Text("%ge%d", round(max_val * pow(10, -max_power) * 100) / 100., max_power);
 	}
+
+	ImGui::PushItemWidth(ImGui::GetWindowWidth()*0.75);
+
+	float tmpmin = min_val;
+	if (ImGui::SliderFloat("min##Color", &tmpmin, real_min_val, real_max_val))
+	{
+		override_ranges=true;
+		min_val = tmpmin;
+		viewer_control();
+	}
+	float tmpmax = max_val;
+	if (ImGui::SliderFloat("max##Color", &tmpmax, real_min_val, real_max_val))
+	{
+		override_ranges = true;
+		max_val = tmpmax;
+		viewer_control();
+	}
+	ImGui::PopItemWidth();
 
 	// Arrow buttons
 	ImGui::Spacing();
@@ -1379,6 +1415,7 @@ ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.30f);
 	auto labels = {"--", "X", "Y", "Z", "Norm"};
 	auto tips = {"", "Displacement along X", "Displacement along Y", "Displacement along Z", "Norm of the displacement"};
 	if (ComboWithTooltips("Show attribute", (int *)(&view_mode_3d), labels, tips)) {
+		override_ranges = false;
 		viewer_control();
 	}
 }

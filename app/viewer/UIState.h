@@ -140,6 +140,8 @@ public:
 private:
 	igl::ColorMapType cm = igl::ColorMapType::COLOR_MAP_TYPE_PARULA;
 	double min_val = 0, max_val = 0;
+	double real_min_val = 0, real_max_val = 0;
+	bool override_ranges = false;
 	std::string current_file_name = "";
 	ImFont *icon_font;
 	ImFont *icon_font_big;

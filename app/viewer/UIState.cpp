@@ -368,7 +368,7 @@ bool UIState::load() {
 	mesh_color.resize(0,0);
 	// mesh_color.row(0) = Eigen::RowVector3d(52, 152, 219) / 255.0;
 	reset_viewer();
-	
+
 	selected_region = -1;
 
 	switch (state.phase_enumeration) {
@@ -382,7 +382,7 @@ bool UIState::load() {
 		break;
 	case 4: phase_4();
 	}
-	
+
 	viewer_control();
 	return true;
 }
@@ -1001,38 +1001,55 @@ void UIState::viewer_control_3d() {
 		{
 			C = Eigen::RowVector3d(129. / 255, 236. / 255, 236. / 255);
 			min_val = max_val = 0;
+			real_min_val = min_val; real_max_val = max_val;
 			break;
 		}
 	 	case Mesh3DAttribute::X_DISP:
 		{
 			const auto v_fun = fun.col(0).eval();
-			min_val = v_fun.minCoeff();
-			max_val = v_fun.maxCoeff();
-			igl::colormap(cm, v_fun, true, C);
+			if (!override_ranges){
+				min_val = v_fun.minCoeff();
+				max_val = v_fun.maxCoeff();
+				real_min_val = min_val;
+				real_max_val = max_val;
+			}
+			igl::colormap(cm, v_fun, min_val, max_val, C);
 			break;
 		}
 		case Mesh3DAttribute::Y_DISP:
 		{
 			const auto v_fun = fun.col(1).eval();
+			if (!override_ranges){
 			min_val = v_fun.minCoeff();
 			max_val = v_fun.maxCoeff();
-			igl::colormap(cm, v_fun, true, C);
+			real_min_val = min_val;
+			real_max_val = max_val;
+			}
+			igl::colormap(cm, v_fun, min_val, max_val, C);
 			break;
 		}
 		case Mesh3DAttribute::Z_DISP:
 		{
 			const auto v_fun = fun.col(2).eval();
+			if (!override_ranges){
 			min_val = v_fun.minCoeff();
 			max_val = v_fun.maxCoeff();
-			igl::colormap(cm, v_fun, true, C);
+			real_min_val = min_val;
+			real_max_val = max_val;
+			}
+			igl::colormap(cm, v_fun, min_val, max_val, C);
 			break;
 		}
 		case Mesh3DAttribute::NORM_DISP:
 		{
 			const auto v_fun = fun.rowwise().norm().eval();
+			if (!override_ranges){
 			min_val = v_fun.minCoeff();
 			max_val = v_fun.maxCoeff();
-			igl::colormap(cm, v_fun, true, C);
+			real_min_val = min_val;
+			real_max_val = max_val;
+			}
+			igl::colormap(cm, v_fun, min_val, max_val, C);
 			break;
 		}
 	}
@@ -1055,6 +1072,7 @@ void UIState::viewer_control_3d() {
 	}
 
 	physical_data().show_lines = view_mode_3d == Mesh3DAttribute::NONE;
+
 	fix_color(physical_data());
 }
 
