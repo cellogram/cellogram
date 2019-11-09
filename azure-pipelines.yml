@@ -2,7 +2,6 @@ trigger:
 - master
 
 jobs:
-jobs:
 - job: Main
   timeoutInMinutes: 0
 
