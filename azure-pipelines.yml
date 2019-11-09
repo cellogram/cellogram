@@ -1,6 +1,10 @@
 trigger:
 - master
 
+variables:
+  MajorVersion: 0 
+  MinorVersion: 1
+
 jobs:
 - job: MainWindows
   timeoutInMinutes: 0
@@ -30,10 +34,9 @@ jobs:
     inputs:
       gitHubConnection: 'teseoch'
       repositoryName: 'cellogram/cellogram'
-      action: 'create'
+      action: 'edit'
       target: '$(Build.SourceVersion)'
-      tagSource: 'userSpecifiedTag'
-      tag: 'v$(MajorVersion).$(MinorVersion).b$(IncrementReleaseTagNumber)-windows'
+      tag: 'v$(MajorVersion).$(MinorVersion)'
       assets: |
         $(Build.ArtifactStagingDirectory)/*.exe
         $(System.DefaultWorkingDirectory)/*.exe
@@ -74,10 +77,9 @@ jobs:
     inputs:
       gitHubConnection: 'teseoch'
       repositoryName: 'cellogram/cellogram'
-      action: 'create'
+      action: 'edit'
       target: '$(Build.SourceVersion)'
-      tagSource: 'userSpecifiedTag'
-      tag: 'v$(MajorVersion).$(MinorVersion).b$(IncrementReleaseTagNumber)-macos'
+      tag: 'v$(MajorVersion).$(MinorVersion)'
       assets: |
         $(Build.ArtifactStagingDirectory)/*.dmg
         $(System.DefaultWorkingDirectory)/*.dmg
