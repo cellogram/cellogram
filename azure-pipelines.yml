@@ -1,0 +1,25 @@
+trigger:
+- master
+
+jobs:
+- job: Main
+  timeoutInMinutes: 0
+  strategy:
+    matrix:
+      windows:
+        imageName: 'vs2017-win2016'
+
+  pool:
+    vmImage: $(imageName)
+
+  steps:
+  - task: CMake@1
+    inputs:
+      workingDirectory: 'build' # Optional
+      cmakeArgs: -DCMAKE_BUILD_TYPE=Release
+
+  - task: MSBuild@1
+      inputs:
+        solution: 'build.common/ALL_BUILD.vcxproj'
+        maximumCpuCount: true
+        platform: 'x64'
