@@ -16,10 +16,11 @@ jobs:
   - task: CMake@1
     inputs:
       workingDirectory: 'build' # Optional
-      cmakeArgs: '-DCMAKE_BUILD_TYPE=Release ..'
+      cmakeArgs: 
 
-  - task: MSBuild@1
+  - task: VSBuild@1
     inputs:
-      solution: 'build/ALL_BUILD.vcxproj'
-      maximumCpuCount: true
+      solution: 'build/Cellogram.sln'
       platform: 'x64'
+      maximumCpuCount: true
+      msbuildArchitecture: 'x64'
