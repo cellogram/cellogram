@@ -1,8 +1,12 @@
 trigger:
 - master
 
+variables:
+  MajorVersion: 0 
+  MinorVersion: 1
+
 jobs:
-- job: Main
+- job: MainWindows
   timeoutInMinutes: 0
   strategy:
     matrix:
@@ -22,15 +26,62 @@ jobs:
       solution: 'build/Cellogram.sln'
       vsVersion: '15.0'
       platform: 'x64'
+      configuration: 'release'
       maximumCpuCount: true
       msbuildArchitecture: 'x64'
 
   - task: GitHubRelease@1
     inputs:
       gitHubConnection: 'teseoch'
-      repositoryName: 'cellogram/cellogram.github.io'
-      action: 'create'
+      repositoryName: 'cellogram/cellogram'
+      action: 'edit'
       target: '$(Build.SourceVersion)'
-      tagSource: 'gitTag'
-      assets: '$(Build.ArtifactStagingDirectory)/*.exe'
+      tag: 'v$(MajorVersion).$(MinorVersion)'
+      assets: |
+        $(Build.ArtifactStagingDirectory)/*.exe
+        $(System.DefaultWorkingDirectory)/*.exe
+        build/*.exe
+        build/Debug/*.exe
+        build/Release/*.exe
+      addChangeLog: false
+
+################Macos
+- job: MainMac
+  timeoutInMinutes: 0
+  strategy:
+    matrix:
+      macos:
+        imageName: 'macos-10.13'
+
+  pool:
+    vmImage: $(imageName)
+
+  steps:
+  - task: CMake@1
+    inputs:
+      cmakeArgs: '-DCMAKE_BUILD_TYPE=Release ..'
+
+  - task: CmdLine@2
+    inputs:
+      script: |
+        cd build
+        make -j
+  
+  - task: CmdLine@2
+    inputs:
+      script: |
+        cd build
+        cpack
+
+  - task: GitHubRelease@1
+    inputs:
+      gitHubConnection: 'teseoch'
+      repositoryName: 'cellogram/cellogram'
+      action: 'edit'
+      target: '$(Build.SourceVersion)'
+      tag: 'v$(MajorVersion).$(MinorVersion)'
+      assets: |
+        $(Build.ArtifactStagingDirectory)/*.dmg
+        $(System.DefaultWorkingDirectory)/*.dmg
+        build/*.dmg
       addChangeLog: false
