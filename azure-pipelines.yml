@@ -2,11 +2,16 @@ trigger:
 - master
 
 variables:
-  MajorVersion: 0 
+  MajorVersion: 0
   MinorVersion: 1
 
 jobs:
-- job: MainWindows
+
+####################
+# MSVC
+####################
+
+- job: WindowsMSVC
   timeoutInMinutes: 0
   strategy:
     matrix:
@@ -47,8 +52,53 @@ jobs:
         build/Release/*.exe
       addChangeLog: false
 
-################Macos
-- job: MainMac
+####################
+# Ninja
+####################
+
+- job: WindowsNinja
+  timeoutInMinutes: 0
+  strategy:
+    matrix:
+      windows:
+        imageName: 'vs2017-win2016'
+
+  pool:
+    vmImage: $(imageName)
+
+  steps:
+  - script: choco install ninja
+    displayName: Install Ninja
+
+  - task: CMake@1
+    inputs:
+      cmakeArgs: '-DCMAKE_BUILD_TYPE=Release -G "Ninja" ..'
+
+  - task: CMake@1
+    inputs:
+      cmakeArgs: '--build .'
+
+  - task: GitHubRelease@1
+    inputs:
+      gitHubConnection: 'teseoch'
+      repositoryName: 'cellogram/cellogram'
+      action: 'create'
+      target: '$(Build.SourceVersion)'
+      tagSource: 'userSpecifiedTag'
+      tag: 'v$(MajorVersion).$(MinorVersion).b$(IncrementReleaseTagNumber)-windows'
+      assets: |
+        $(Build.ArtifactStagingDirectory)/*.exe
+        $(System.DefaultWorkingDirectory)/*.exe
+        build/*.exe
+        build/Debug/*.exe
+        build/Release/*.exe
+      addChangeLog: false
+
+####################
+# macOS
+####################
+
+- job: macOS
   timeoutInMinutes: 0
   strategy:
     matrix:
@@ -68,7 +118,7 @@ jobs:
       script: |
         cd build
         make -j
-  
+
   - task: CmdLine@2
     inputs:
       script: |
