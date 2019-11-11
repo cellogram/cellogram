@@ -4,7 +4,7 @@ param(
     $ForceMSVC,
     # Remove the build directory
     [switch]
-    $Clean,
+    $Clean
 )
 
 $ErrorActionPreference = "Stop"

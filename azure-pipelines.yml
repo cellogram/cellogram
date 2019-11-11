@@ -73,7 +73,7 @@ jobs:
   - script: >
       call "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Enterprise\\Common7\\Tools\\vsdevcmd" -arch=x64 &&
       powershell ./ci.ps1 -ForceMSVC
-    displayName: CMake && Ninja
+    displayName: CMake & Ninja
 
   - task: GitHubRelease@1
     inputs:
