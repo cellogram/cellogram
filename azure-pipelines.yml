@@ -77,7 +77,7 @@ jobs:
 
   - task: GitHubRelease@1
     inputs:
-      gitHubConnection: 'teseoch'
+      gitHubConnection: 'gabuzome'
       repositoryName: 'cellogram/cellogram'
       action: 'create'
       target: '$(Build.SourceVersion)'
@@ -124,7 +124,7 @@ jobs:
 
   - task: GitHubRelease@1
     inputs:
-      gitHubConnection: 'teseoch'
+      gitHubConnection: 'gabuzome'
       repositoryName: 'cellogram/cellogram'
       action: 'create'
       target: '$(Build.SourceVersion)'
