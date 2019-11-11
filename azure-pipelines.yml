@@ -11,46 +11,46 @@ jobs:
 # MSVC
 ####################
 
-- job: MSVC
-  timeoutInMinutes: 0
-  strategy:
-    matrix:
-      windows:
-        imageName: 'vs2017-win2016'
+# - job: MSVC
+#   timeoutInMinutes: 0
+#   strategy:
+#     matrix:
+#       windows:
+#         imageName: 'vs2017-win2016'
 
-  pool:
-    vmImage: $(imageName)
+#   pool:
+#     vmImage: $(imageName)
 
-  steps:
-  - task: CMake@1
-    inputs:
-      cmakeArgs: '-DCMAKE_BUILD_TYPE=Release -G "Visual Studio 15 2017 Win64" ..'
+#   steps:
+#   - task: CMake@1
+#     inputs:
+#       cmakeArgs: '-DCMAKE_BUILD_TYPE=Release -G "Visual Studio 15 2017 Win64" ..'
 
-  - task: VSBuild@1
-    inputs:
-      solution: 'build/Cellogram.sln'
-      vsVersion: '15.0'
-      platform: 'x64'
-      configuration: 'release'
-      maximumCpuCount: true
-      msbuildArgs: '/p:CL_MPCount=8 /p:BuildInParallel=true'
-      msbuildArchitecture: 'x64'
+#   - task: VSBuild@1
+#     inputs:
+#       solution: 'build/Cellogram.sln'
+#       vsVersion: '15.0'
+#       platform: 'x64'
+#       configuration: 'release'
+#       maximumCpuCount: true
+#       msbuildArgs: '/p:CL_MPCount=8 /p:BuildInParallel=true'
+#       msbuildArchitecture: 'x64'
 
-  - task: GitHubRelease@1
-    inputs:
-      gitHubConnection: 'teseoch'
-      repositoryName: 'cellogram/cellogram'
-      action: 'create'
-      target: '$(Build.SourceVersion)'
-      tagSource: 'userSpecifiedTag'
-      tag: 'v$(MajorVersion).$(MinorVersion).b$(IncrementReleaseTagNumber)-windows'
-      assets: |
-        $(Build.ArtifactStagingDirectory)/*.exe
-        $(System.DefaultWorkingDirectory)/*.exe
-        build/*.exe
-        build/Debug/*.exe
-        build/Release/*.exe
-      addChangeLog: false
+#   - task: GitHubRelease@1
+#     inputs:
+#       gitHubConnection: 'teseoch'
+#       repositoryName: 'cellogram/cellogram'
+#       action: 'create'
+#       target: '$(Build.SourceVersion)'
+#       tagSource: 'userSpecifiedTag'
+#       tag: 'v$(MajorVersion).$(MinorVersion).b$(IncrementReleaseTagNumber)-windows'
+#       assets: |
+#         $(Build.ArtifactStagingDirectory)/*.exe
+#         $(System.DefaultWorkingDirectory)/*.exe
+#         build/*.exe
+#         build/Debug/*.exe
+#         build/Release/*.exe
+#       addChangeLog: false
 
 ####################
 # Ninja
@@ -70,13 +70,11 @@ jobs:
   - script: choco install ninja
     displayName: Install Ninja
 
-  - task: CMake@1
-    inputs:
-      cmakeArgs: '-DCMAKE_BUILD_TYPE=Release -G "Ninja" -DCMAKE_C_COMPILER="cl.exe" -DCMAKE_CXX_COMPILER="cl.exe" -DMSVC_TOOLSET_VERSION=141 ..'
-
-  - task: CMake@1
-    inputs:
-      cmakeArgs: '--build .'
+  - script: |
+      call "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Enterprise\\Common7\\Tools\\vsdevcmd" -arch=x64
+      cmake -H $(Build.SourcesDirectory) -B "$(Build.SourcesDirectory)/build" -DCMAKE_BUILD_TYPE=Release -G "Ninja"
+      cmake --build .
+    displayName: CMake
 
   - task: GitHubRelease@1
     inputs:
