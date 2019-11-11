@@ -78,7 +78,7 @@ jobs:
   - task: GitHubRelease@1
     inputs:
       gitHubConnection: 'gabuzome'
-      repositoryName: 'cellogram/cellogram'
+      repositoryName: 'gabuzome/cellogram'
       action: 'create'
       target: '$(Build.SourceVersion)'
       tagSource: 'userSpecifiedTag'
@@ -125,7 +125,7 @@ jobs:
   - task: GitHubRelease@1
     inputs:
       gitHubConnection: 'gabuzome'
-      repositoryName: 'cellogram/cellogram'
+      repositoryName: 'gabuzome/cellogram'
       action: 'create'
       target: '$(Build.SourceVersion)'
       tagSource: 'userSpecifiedTag'
