@@ -34,9 +34,10 @@ jobs:
     inputs:
       gitHubConnection: 'teseoch'
       repositoryName: 'cellogram/cellogram'
-      action: 'edit'
+      action: 'create'
       target: '$(Build.SourceVersion)'
-      tag: 'v$(MajorVersion).$(MinorVersion)'
+      tagSource: 'userSpecifiedTag'
+      tag: 'v$(MajorVersion).$(MinorVersion).b$(IncrementReleaseTagNumber)-windows'
       assets: |
         $(Build.ArtifactStagingDirectory)/*.exe
         $(System.DefaultWorkingDirectory)/*.exe
@@ -77,11 +78,12 @@ jobs:
     inputs:
       gitHubConnection: 'teseoch'
       repositoryName: 'cellogram/cellogram'
-      action: 'edit'
+      action: 'create'
       target: '$(Build.SourceVersion)'
-      tag: 'v$(MajorVersion).$(MinorVersion)'
+      tagSource: 'userSpecifiedTag'
+      tag: 'v$(MajorVersion).$(MinorVersion).b$(IncrementReleaseTagNumber)-macos'
       assets: |
         $(Build.ArtifactStagingDirectory)/*.dmg
         $(System.DefaultWorkingDirectory)/*.dmg
         build/*.dmg
-      addChangeLog: false
+      addChangeLog: true
