@@ -17,7 +17,7 @@ endfunction()
 function(cellogram_download_polyfem)
     cellogram_download_project(polyfem
         GIT_REPOSITORY https://github.com/polyfem/polyfem.git
-        GIT_TAG        f5434f37161286e7dd1b0c6f5b0bb63789d8a329
+        GIT_TAG        0dc1e7e536432ab2192b4ce55201a8df0662dadd
     )
 endfunction()
 
