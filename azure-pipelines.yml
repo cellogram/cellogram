@@ -28,7 +28,7 @@ jobs:
       platform: 'x64'
       configuration: 'release'
       maximumCpuCount: true
-      msbuildArgs: '/p:CL_MPCount=true /p:BuildInParallel=true'
+      msbuildArgs: '/p:CL_MPCount=8 /p:BuildInParallel=true'
       msbuildArchitecture: 'x64'
 
   - task: GitHubRelease@1
