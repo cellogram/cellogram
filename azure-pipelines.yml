@@ -72,7 +72,7 @@ jobs:
 
   - task: CMake@1
     inputs:
-      cmakeArgs: '-DCMAKE_BUILD_TYPE=Release -G "Ninja" ..'
+      cmakeArgs: '-DCMAKE_BUILD_TYPE=Release -G "Ninja"3 -DCMAKE_C_COMPILER="cl.exe" -DCMAKE_CXX_COMPILER="cl.exe" -DMSVC_TOOLSET_VERSION=141 ..'
 
   - task: CMake@1
     inputs:
