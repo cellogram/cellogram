@@ -26,7 +26,7 @@ jobs:
 
   - script: |
       $(initVsShell)
-      cmake -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -G Ninja -H . -B build
+      cmake -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -G Ninja -S . -B build
     displayName: CMake
 
   - script: cmake --build build
