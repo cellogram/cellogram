@@ -7,6 +7,35 @@ variables:
 jobs:
 
 ####################
+# MSVC
+####################
+
+- job: MSVCBuild
+  timeoutInMinutes: 0
+  strategy:
+    matrix:
+      windows:
+        imageName: 'vs2017-win2016'
+
+  pool:
+    vmImage: $(imageName)
+
+  steps:
+  - task: CMake@1
+    inputs:
+      cmakeArgs: '-G "Visual Studio 15 2017 Win64" ..'
+
+  - task: VSBuild@1
+    inputs:
+      solution: 'build/Cellogram.sln'
+      vsVersion: '15.0'
+      platform: 'x64'
+      configuration: 'debug'
+      maximumCpuCount: true
+      msbuildArgs: '/p:CL_MPCount=8 /p:BuildInParallel=true'
+      msbuildArchitecture: 'x64'
+
+####################
 # Ninja
 ####################
 
@@ -19,13 +48,12 @@ jobs:
   - script: choco install ninja
     displayName: Install Ninja
 
-  - script: >
-      $(initVsShell) &&
-      powershell -command "$env:CC = \"cl\"; $env:CXX = \"cl\"; & cmake -G Ninja -S . -B build"
+  - script: |
+      $(initVsShell)
+      cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -G Ninja -S . -B build
     displayName: CMake
 
-  - script: >
-      $(initVsShell) && powershell -command "& cmake --build build"
+  - script: $(initVsShell) && cmake --build build
     displayName: Build
 
   - publish: build/CellogramViewer.exe
