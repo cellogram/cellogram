@@ -68,16 +68,17 @@ jobs:
     vmImage: 'Ubuntu-16.04'
   environment: 'deploy'
   strategy:
-    # default deployment strategy, more coming...
     runOnce:
       deploy:
         steps:
           - task: DownloadPipelineArtifact@2
+            displayName: Download macOS Binary
             inputs:
               buildType: current
               artifact: MacOSBinary
               targetPath: '$(Build.ArtifactStagingDirectory)'
           - task: DownloadPipelineArtifact@2
+            displayName: Download Windows Binary
             inputs:
               buildType: current
               artifact: WindowsBinary
