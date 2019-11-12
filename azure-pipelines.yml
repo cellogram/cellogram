@@ -85,6 +85,6 @@ jobs:
               targetPath: '$(Build.ArtifactStagingDirectory)'
           - task: GitHubRelease@1
             inputs:
-              gitHubConnection: jdumas
+              gitHubConnection: teseoch
               assets: $(Build.ArtifactStagingDirectory)/*
               addChangeLog: false
