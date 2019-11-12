@@ -22,7 +22,8 @@ stages:
       displayName: Install Ninja
 
     - script: >
-        $(initVsShell) && powershell -command "& cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -G Ninja -S . -B build"
+        $(initVsShell) &&
+        powershell -command "$env:CC = "cl"; $env:CXX = "cl"; & cmake -DCMAKE_BUILD_TYPE=Release -G Ninja -S . -B build"
       displayName: CMake
 
     - script: >
