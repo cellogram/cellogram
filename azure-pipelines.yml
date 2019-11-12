@@ -2,136 +2,89 @@ trigger:
 - master
 
 variables:
-  MajorVersion: 0
-  MinorVersion: 1
+  initVsShell: 'call "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Enterprise\\Common7\\Tools\\vsdevcmd" -arch=x64'
 
 jobs:
-
-####################
-# MSVC
-####################
-
-# - job: MSVC
-#   timeoutInMinutes: 0
-#   strategy:
-#     matrix:
-#       windows:
-#         imageName: 'vs2017-win2016'
-
-#   pool:
-#     vmImage: $(imageName)
-
-#   steps:
-#   - task: CMake@1
-#     inputs:
-#       cmakeArgs: '-DCMAKE_BUILD_TYPE=Release -G "Visual Studio 15 2017 Win64" ..'
-
-#   - task: VSBuild@1
-#     inputs:
-#       solution: 'build/Cellogram.sln'
-#       vsVersion: '15.0'
-#       platform: 'x64'
-#       configuration: 'release'
-#       maximumCpuCount: true
-#       msbuildArgs: '/p:CL_MPCount=8 /p:BuildInParallel=true'
-#       msbuildArchitecture: 'x64'
-
-#   - task: GitHubRelease@1
-#     inputs:
-#       gitHubConnection: 'teseoch'
-#       repositoryName: 'cellogram/cellogram'
-#       action: 'create'
-#       target: '$(Build.SourceVersion)'
-#       tagSource: 'userSpecifiedTag'
-#       tag: 'v$(MajorVersion).$(MinorVersion).b$(IncrementReleaseTagNumber)-windows'
-#       assets: |
-#         $(Build.ArtifactStagingDirectory)/*.exe
-#         $(System.DefaultWorkingDirectory)/*.exe
-#         build/*.exe
-#         build/Debug/*.exe
-#         build/Release/*.exe
-#       addChangeLog: false
 
 ####################
 # Ninja
 ####################
 
-- job: Ninja
+- job: NinjaBuild
   timeoutInMinutes: 0
-  strategy:
-    matrix:
-      windows:
-        imageName: 'vs2017-win2016'
-
   pool:
-    vmImage: $(imageName)
+    vmImage: 'vs2017-win2016'
 
   steps:
   - script: choco install ninja
     displayName: Install Ninja
 
-  - script: >
-      call "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Enterprise\\Common7\\Tools\\vsdevcmd" -arch=x64 &&
-      powershell ./ci.ps1 -ForceMSVC
-    displayName: CMake & Ninja
+  - script: |
+      $(initVsShell)
+      cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -G Ninja -S . -B build
+    displayName: CMake
 
-  - task: GitHubRelease@1
-    inputs:
-      gitHubConnection: 'teseoch'
-      repositoryName: 'cellogram/cellogram'
-      action: 'create'
-      target: '$(Build.SourceVersion)'
-      tagSource: 'userSpecifiedTag'
-      tag: 'v$(MajorVersion).$(MinorVersion).b$(IncrementReleaseTagNumber)-windows'
-      assets: |
-        $(Build.ArtifactStagingDirectory)/*.exe
-        $(System.DefaultWorkingDirectory)/*.exe
-        build/*.exe
-        build/Debug/*.exe
-        build/Release/*.exe
-      addChangeLog: false
+  - script: $(initVsShell) && cmake --build build
+    displayName: Build
+
+  - publish: build/CellogramViewer.exe
+    artifact: WindowsBinary
 
 ####################
 # macOS
 ####################
 
-- job: Clang
+- job: ClangBuild
   timeoutInMinutes: 0
-  strategy:
-    matrix:
-      macos:
-        imageName: 'macos-10.13'
-
   pool:
-    vmImage: $(imageName)
+    vmImage: 'macos-10.13'
 
   steps:
   - task: CMake@1
     inputs:
       cmakeArgs: '-DCMAKE_BUILD_TYPE=Release ..'
 
-  - task: CmdLine@2
-    inputs:
-      script: |
-        cd build
-        make -j
+  - script: make -j
+    workingDirectory: build
+    displayName: Build
 
-  - task: CmdLine@2
-    inputs:
-      script: |
-        cd build
-        cpack
+  - script: cpack
+    workingDirectory: build
+    displayName: Packaging
 
-  - task: GitHubRelease@1
-    inputs:
-      gitHubConnection: 'teseoch'
-      repositoryName: 'cellogram/cellogram'
-      action: 'create'
-      target: '$(Build.SourceVersion)'
-      tagSource: 'userSpecifiedTag'
-      tag: 'v$(MajorVersion).$(MinorVersion).b$(IncrementReleaseTagNumber)-macos'
-      assets: |
-        $(Build.ArtifactStagingDirectory)/*.dmg
-        $(System.DefaultWorkingDirectory)/*.dmg
-        build/*.dmg
-      addChangeLog: true
+  - publish: build/CellogramViewer.dmg
+    artifact: MacOSBinary
+
+####################
+# Deploy
+####################
+
+# Create a new release when the commit contains a tag number
+- deployment: GitHubRelease
+  dependsOn:
+    - NinjaBuild
+    - ClangBuild
+  pool:
+    vmImage: 'Ubuntu-16.04'
+  environment: 'deploy'
+  strategy:
+    runOnce:
+      deploy:
+        steps:
+          - task: DownloadPipelineArtifact@2
+            displayName: Download macOS Binary
+            inputs:
+              buildType: current
+              artifact: MacOSBinary
+              targetPath: '$(Build.ArtifactStagingDirectory)'
+          - task: DownloadPipelineArtifact@2
+            displayName: Download Windows Binary
+            inputs:
+              buildType: current
+              artifact: WindowsBinary
+              targetPath: '$(Build.ArtifactStagingDirectory)'
+          - task: GitHubRelease@1
+            inputs:
+              gitHubConnection: teseoch
+              assets: $(Build.ArtifactStagingDirectory)/*
+              addChangeLog: false
