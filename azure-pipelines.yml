@@ -23,10 +23,10 @@ stages:
 
     - script: |
         $(initVsShell)
-        cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -G Ninja -S . -B build
+        powershell -command "cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -G Ninja -S . -B build"
       displayName: CMake
 
-    - script: $(initVsShell) && cmake --build build
+    - script: $(initVsShell) && powershell -command "cmake --build build"
       displayName: Build
 
     - publish: build/CellogramViewer.exe
