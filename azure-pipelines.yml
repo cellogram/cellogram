@@ -68,7 +68,9 @@ stages:
   - deployment: GitHubRelease
     pool:
       vmImage: 'Ubuntu-16.04'
+    environment: 'deploy'
     strategy:
+      # default deployment strategy, more coming...
       runOnce:
         deploy:
           steps:
