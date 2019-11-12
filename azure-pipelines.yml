@@ -2,55 +2,9 @@ trigger:
 - master
 
 variables:
-  MajorVersion: 0
-  MinorVersion: 1
+  initVsShell: 'call "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Enterprise\\Common7\\Tools\\vsdevcmd" -arch=x64'
 
 jobs:
-
-####################
-# MSVC
-####################
-
-# - job: MSVC
-#   timeoutInMinutes: 0
-#   strategy:
-#     matrix:
-#       windows:
-#         imageName: 'vs2017-win2016'
-
-#   pool:
-#     vmImage: $(imageName)
-
-#   steps:
-#   - task: CMake@1
-#     inputs:
-#       cmakeArgs: '-DCMAKE_BUILD_TYPE=Release -G "Visual Studio 15 2017 Win64" ..'
-
-#   - task: VSBuild@1
-#     inputs:
-#       solution: 'build/Cellogram.sln'
-#       vsVersion: '15.0'
-#       platform: 'x64'
-#       configuration: 'release'
-#       maximumCpuCount: true
-#       msbuildArgs: '/p:CL_MPCount=8 /p:BuildInParallel=true'
-#       msbuildArchitecture: 'x64'
-
-#   - task: GitHubRelease@1
-#     inputs:
-#       gitHubConnection: 'teseoch'
-#       repositoryName: 'cellogram/cellogram'
-#       action: 'create'
-#       target: '$(Build.SourceVersion)'
-#       tagSource: 'userSpecifiedTag'
-#       tag: 'v$(MajorVersion).$(MinorVersion).b$(IncrementReleaseTagNumber)-windows'
-#       assets: |
-#         $(Build.ArtifactStagingDirectory)/*.exe
-#         $(System.DefaultWorkingDirectory)/*.exe
-#         build/*.exe
-#         build/Debug/*.exe
-#         build/Release/*.exe
-#       addChangeLog: false
 
 ####################
 # Ninja
@@ -70,26 +24,29 @@ jobs:
   - script: choco install ninja
     displayName: Install Ninja
 
-  - script: >
-      call "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Enterprise\\Common7\\Tools\\vsdevcmd" -arch=x64 &&
-      powershell ./ci.ps1 -ForceMSVC
-    displayName: CMake & Ninja
+  - script: |
+      $(initVsShell)
+      cmake -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -G Ninja -H . -B build
+    displayName: CMake
 
-  - task: GitHubRelease@1
-    inputs:
-      gitHubConnection: 'jdumas'
-      repositoryName: 'gabuzome/cellogram'
-      action: 'create'
-      target: '$(Build.SourceVersion)'
-      tagSource: 'userSpecifiedTag'
-      tag: 'v$(MajorVersion).$(MinorVersion).b$(IncrementReleaseTagNumber)-windows'
-      assets: |
-        $(Build.ArtifactStagingDirectory)/*.exe
-        $(System.DefaultWorkingDirectory)/*.exe
-        build/*.exe
-        build/Debug/*.exe
-        build/Release/*.exe
-      addChangeLog: false
+  - script: cmake --build build
+    displayName: Build
+
+  # - task: GitHubRelease@1
+  #   inputs:
+  #     gitHubConnection: 'jdumas'
+  #     repositoryName: 'gabuzome/cellogram'
+  #     action: 'create'
+  #     target: '$(Build.SourceVersion)'
+  #     tagSource: 'userSpecifiedTag'
+  #     tag: 'v$(MajorVersion).$(MinorVersion).b$(IncrementReleaseTagNumber)-windows'
+  #     assets: |
+  #       $(Build.ArtifactStagingDirectory)/*.exe
+  #       $(System.DefaultWorkingDirectory)/*.exe
+  #       build/*.exe
+  #       build/Debug/*.exe
+  #       build/Release/*.exe
+  #     addChangeLog: false
 
 ####################
 # macOS
@@ -110,28 +67,24 @@ jobs:
     inputs:
       cmakeArgs: '-DCMAKE_BUILD_TYPE=Release ..'
 
-  - task: CmdLine@2
-    inputs:
-      script: |
-        cd build
-        make -j
+  - script: make -j
+    workingDirectory: build
+    displayName: Build
 
-  - task: CmdLine@2
-    inputs:
-      script: |
-        cd build
-        cpack
+  - script: cpack
+    workingDirectory: build
+    displayName: Packaging
 
-  - task: GitHubRelease@1
-    inputs:
-      gitHubConnection: 'jdumas'
-      repositoryName: 'gabuzome/cellogram'
-      action: 'create'
-      target: '$(Build.SourceVersion)'
-      tagSource: 'userSpecifiedTag'
-      tag: 'v$(MajorVersion).$(MinorVersion).b$(IncrementReleaseTagNumber)-macos'
-      assets: |
-        $(Build.ArtifactStagingDirectory)/*.dmg
-        $(System.DefaultWorkingDirectory)/*.dmg
-        build/*.dmg
-      addChangeLog: true
+  # - task: GitHubRelease@1
+  #   inputs:
+  #     gitHubConnection: 'jdumas'
+  #     repositoryName: 'gabuzome/cellogram'
+  #     action: 'create'
+  #     target: '$(Build.SourceVersion)'
+  #     tagSource: 'userSpecifiedTag'
+  #     tag: 'v$(MajorVersion).$(MinorVersion).b$(IncrementReleaseTagNumber)-macos'
+  #     assets: |
+  #       $(Build.ArtifactStagingDirectory)/*.dmg
+  #       $(System.DefaultWorkingDirectory)/*.dmg
+  #       build/*.dmg
+  #     addChangeLog: true
