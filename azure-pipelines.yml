@@ -7,35 +7,6 @@ variables:
 jobs:
 
 ####################
-# MSVC
-####################
-
-- job: MSVCBuild
-  timeoutInMinutes: 0
-  strategy:
-    matrix:
-      windows:
-        imageName: 'vs2017-win2016'
-
-  pool:
-    vmImage: $(imageName)
-
-  steps:
-  - task: CMake@1
-    inputs:
-      cmakeArgs: '-G "Visual Studio 15 2017 Win64" ..'
-
-  - task: VSBuild@1
-    inputs:
-      solution: 'build/Cellogram.sln'
-      vsVersion: '15.0'
-      platform: 'x64'
-      configuration: 'debug'
-      maximumCpuCount: true
-      msbuildArgs: '/p:CL_MPCount=8 /p:BuildInParallel=true'
-      msbuildArchitecture: 'x64'
-
-####################
 # Ninja
 ####################
 
@@ -101,10 +72,14 @@ jobs:
     runOnce:
       deploy:
         steps:
+          - download: current
+            artifact: MacOSBinary
+            targetPath: '$(Build.ArtifactStagingDirectory)'
+          - download: current
+            artifact: WindowsBinary
+            targetPath: '$(Build.ArtifactStagingDirectory)'
           - task: GitHubRelease@1
             inputs:
               gitHubConnection: jdumas
               assets: $(Build.ArtifactStagingDirectory)/*
               addChangeLog: false
-          - script: dir $(Build.ArtifactStagingDirectory)
-          - script: ls $(Build.ArtifactStagingDirectory)
