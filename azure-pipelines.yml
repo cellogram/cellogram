@@ -72,12 +72,16 @@ jobs:
     runOnce:
       deploy:
         steps:
-          - download: current
-            artifact: MacOSBinary
-            targetPath: '$(Build.ArtifactStagingDirectory)'
-          - download: current
-            artifact: WindowsBinary
-            targetPath: '$(Build.ArtifactStagingDirectory)'
+          - task: DownloadPipelineArtifact@2
+            inputs:
+              buildType: current
+              artifact: MacOSBinary
+              targetPath: '$(Build.ArtifactStagingDirectory)'
+          - task: DownloadPipelineArtifact@2
+            inputs:
+              buildType: current
+              artifact: WindowsBinary
+              targetPath: '$(Build.ArtifactStagingDirectory)'
           - task: GitHubRelease@1
             inputs:
               gitHubConnection: jdumas
