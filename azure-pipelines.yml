@@ -61,18 +61,18 @@ stages:
 # Deploy
 ####################
 
-# - stage: Deploy
-#   jobs:
+- stage: Deploy
+  jobs:
 
-#   # Create a new release when the commit contains a tag number
-#   - deployment: Github Release
-#     pool:
-#       vmImage: 'vs2017-win2016'
-#     strategy:
-#       runOnce:
-#         deploy:
-#           steps:
-#           - task: GitHubRelease@1
-#             inputs:
-#               gitHubConnection: jdumas
-#               addChangeLog: false
+  # Create a new release when the commit contains a tag number
+  - deployment: GitHubRelease
+    pool:
+      vmImage: 'Ubuntu-16.04'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - task: GitHubRelease@1
+              inputs:
+                gitHubConnection: jdumas
+                addChangeLog: false
