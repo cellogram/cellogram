@@ -32,7 +32,7 @@ jobs:
   - script: $(initVsShell) && cmake --build build
     displayName: Build
 
-  - publish: build/*.exe
+  - publish: build/CellogramViewer.exe
     artifact: WindowsBinary
 
   # - task: GitHubRelease@1
@@ -78,7 +78,7 @@ jobs:
     workingDirectory: build
     displayName: Packaging
 
-  - publish: build/*.dmg
+  - publish: build/CellogramViewer.dmg
     artifact: MacOSBinary
 
   # - task: GitHubRelease@1
