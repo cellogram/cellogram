@@ -4,93 +4,76 @@ trigger:
 variables:
   initVsShell: 'call "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Enterprise\\Common7\\Tools\\vsdevcmd" -arch=x64'
 
+
+stages:
+- stage: Build
+
+  ####################
+  # Ninja
+  ####################
+
 jobs:
+  - job: Ninja
+    timeoutInMinutes: 0
+    pool:
+      vmImage: 'vs2017-win2016'
+
+    steps:
+    - script: choco install ninja
+      displayName: Install Ninja
+
+    - script: |
+        $(initVsShell)
+        cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -G Ninja -S . -B build
+      displayName: CMake
+
+    - script: $(initVsShell) && cmake --build build
+      displayName: Build
+
+    - publish: build/CellogramViewer.exe
+      artifact: WindowsBinary
+
+  ####################
+  # macOS
+  ####################
+
+  - job: AppleClang
+    timeoutInMinutes: 0
+    pool:
+      vmImage: 'macos-10.13'
+
+    steps:
+    - task: CMake@1
+      inputs:
+        cmakeArgs: '-DCMAKE_BUILD_TYPE=Release ..'
+
+    - script: make -j
+      workingDirectory: build
+      displayName: Build
+
+    - script: cpack
+      workingDirectory: build
+      displayName: Packaging
+
+    - publish: build/CellogramViewer.dmg
+      artifact: MacOSBinary
 
 ####################
-# Ninja
+# Deploy
 ####################
 
-- job: Ninja
-  timeoutInMinutes: 0
-  strategy:
-    matrix:
-      windows:
-        imageName: 'vs2017-win2016'
+- stage: Deploy
+  jobs:
 
-  pool:
-    vmImage: $(imageName)
-
-  steps:
-  - script: choco install ninja
-    displayName: Install Ninja
-
-  - script: |
-      $(initVsShell)
-      cmake -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -G Ninja -S . -B build
-    displayName: CMake
-
-  - script: $(initVsShell) && cmake --build build
-    displayName: Build
-
-  - publish: build/CellogramViewer.exe
-    artifact: WindowsBinary
-
-  # - task: GitHubRelease@1
-  #   inputs:
-  #     gitHubConnection: 'jdumas'
-  #     repositoryName: 'gabuzome/cellogram'
-  #     action: 'create'
-  #     target: '$(Build.SourceVersion)'
-  #     tagSource: 'userSpecifiedTag'
-  #     tag: 'v$(MajorVersion).$(MinorVersion).b$(IncrementReleaseTagNumber)-windows'
-  #     assets: |
-  #       $(Build.ArtifactStagingDirectory)/*.exe
-  #       $(System.DefaultWorkingDirectory)/*.exe
-  #       build/*.exe
-  #       build/Debug/*.exe
-  #       build/Release/*.exe
-  #     addChangeLog: false
-
-####################
-# macOS
-####################
-
-- job: Clang
-  timeoutInMinutes: 0
-  strategy:
-    matrix:
-      macos:
-        imageName: 'macos-10.13'
-
-  pool:
-    vmImage: $(imageName)
-
-  steps:
-  - task: CMake@1
-    inputs:
-      cmakeArgs: '-DCMAKE_BUILD_TYPE=Release ..'
-
-  - script: make -j
-    workingDirectory: build
-    displayName: Build
-
-  - script: cpack
-    workingDirectory: build
-    displayName: Packaging
-
-  - publish: build/CellogramViewer.dmg
-    artifact: MacOSBinary
-
-  # - task: GitHubRelease@1
-  #   inputs:
-  #     gitHubConnection: 'jdumas'
-  #     repositoryName: 'gabuzome/cellogram'
-  #     action: 'create'
-  #     target: '$(Build.SourceVersion)'
-  #     tagSource: 'userSpecifiedTag'
-  #     tag: 'v$(MajorVersion).$(MinorVersion).b$(IncrementReleaseTagNumber)-macos'
-  #     assets: |
-  #       $(Build.ArtifactStagingDirectory)/*.dmg
-  #       $(System.DefaultWorkingDirectory)/*.dmg
-  #       build/*.dmg
-  #     addChangeLog: true
+  # Create a new release when the commit contains a tag number
+  - deployment: Github Release
+    pool:
+      vmImage: 'vs2017-win2016'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: GitHubRelease@1
+            inputs:
+              gitHubConnection: jdumas
+              addChangeLog: false
