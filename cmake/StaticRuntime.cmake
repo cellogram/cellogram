@@ -1,0 +1,12 @@
+if(POLICY CMP0091)
+    cmake_policy(SET CMP0091 NEW)
+elseif(WIN32)
+    message(FATAL_ERROR "Please upgrade your CMake version to >= 3.15.")
+endif()
+
+get_directory_property(hasParent PARENT_DIRECTORY)
+if(hasParent)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" PARENT_SCOPE)
+else()
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()

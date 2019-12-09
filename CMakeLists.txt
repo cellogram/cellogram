@@ -1,6 +1,7 @@
 ################################################################################
 
 cmake_minimum_required(VERSION 3.3)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/StaticRuntime.cmake NO_POLICY_SCOPE)
 project(cellogram)
 
 ################################################################################
@@ -33,16 +34,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
 # Generate position independent code
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-
-################################################################################
-
-if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-	foreach(config ${CMAKE_CONFIGURATION_TYPES})
-		string(TOUPPER ${config} config)
-		string(REPLACE /MD /MT CMAKE_C_FLAGS_${config} "${CMAKE_C_FLAGS_${config}}")
-		string(REPLACE /MD /MT CMAKE_CXX_FLAGS_${config} "${CMAKE_CXX_FLAGS_${config}}")
-	endforeach()
-endif()
 
 ################################################################################
 
