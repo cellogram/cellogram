@@ -15,3 +15,12 @@ cd build
 cmake ..
 make -j 8
 ```
+
+## License
+
+The code of Cellogram itself is licensed under [MIT License](LICENSE). However, please be mindful of third-party libraries which are used by Cellogram, and may be available under a different license. In particular, the `src/tcdf` module follows the Academic License (see header). The files in the following folders are available under MIT:
+```
+app/
+src/cellogram/
+src/points_untangler/
+```
