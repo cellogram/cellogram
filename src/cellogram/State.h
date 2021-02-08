@@ -5,6 +5,7 @@
 #include <cellogram/Mesh3d.h>
 #include <cellogram/Region.h>
 #include <cellogram/remesh_adaptive.h>
+#include <zebrafish/Cylinder.h>
 #include <Eigen/Dense>
 #include <vector>
 #include <string>
@@ -85,6 +86,7 @@ public:
 	Eigen::MatrixXd hull_polygon;
 
 	Eigen::MatrixXd img;
+	/// TODO: add 3d image
 
 	std::vector<Region> regions;
 
