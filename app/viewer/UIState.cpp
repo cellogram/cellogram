@@ -77,14 +77,14 @@ bool UIState::mouse_move(int button, int modifier) {
 		return false;
 
 	double x = viewer.current_mouse_x;
-	double y = viewer.core.viewport(3) - viewer.current_mouse_y;
+	double y = viewer.core().viewport(3) - viewer.current_mouse_y;
 
 	// reset update position with x and y, store prevx and y to compute delatax,
 	// (use current zoom to move point accordingly???)
 	int fid;
 	Eigen::Vector3f bc;
-	igl::unproject_onto_mesh(Eigen::Vector2f(x, y), viewer.core.view, viewer.core.proj,
-		viewer.core.viewport, img_V, img_F, fid, bc);
+	igl::unproject_onto_mesh(Eigen::Vector2f(x, y), viewer.core().view, viewer.core().proj,
+		viewer.core().viewport, img_V, img_F, fid, bc);
 
 	double xNew = 0, yNew = 0, zNew = 0;
 	for (int i = 0; i < 3; i++) {
@@ -151,7 +151,7 @@ bool UIState::mouse_down(int button, int modifier) {
 	int fid;
 	Eigen::Vector3f bc;
 	double x = viewer.current_mouse_x;
-	double y = viewer.core.viewport(3) - viewer.current_mouse_y;
+	double y = viewer.core().viewport(3) - viewer.current_mouse_y;
 
 	// std::cout << x << " " << y << std::endl;
 
@@ -161,8 +161,8 @@ bool UIState::mouse_down(int button, int modifier) {
 		return block_mouse_behavior(button);
 
 	if (select_region) {
-		if (!igl::unproject_onto_mesh(Eigen::Vector2f(x, y), viewer.core.view, viewer.core.proj,
-			viewer.core.viewport, V, state.mesh.triangles, fid, bc))
+		if (!igl::unproject_onto_mesh(Eigen::Vector2f(x, y), viewer.core().view, viewer.core().proj,
+			viewer.core().viewport, V, state.mesh.triangles, fid, bc))
 		{
 			return block_mouse_behavior(button);
 		}
@@ -181,8 +181,8 @@ bool UIState::mouse_down(int button, int modifier) {
 			}
 		}
 	} else {
-		if (!igl::unproject_onto_mesh(Eigen::Vector2f(x, y), viewer.core.view, viewer.core.proj,
-			viewer.core.viewport, img_V, img_F, fid, bc))
+		if (!igl::unproject_onto_mesh(Eigen::Vector2f(x, y), viewer.core().view, viewer.core().proj,
+			viewer.core().viewport, img_V, img_F, fid, bc))
 		{
 			return block_mouse_behavior(button);
 		}
@@ -269,12 +269,12 @@ void UIState::initialize() {
 
 	// Setup viewer parameters
 	viewer.resize(1400, 1280);
-	viewer.core.background_color.setOnes();
-	// viewer.core.set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_TRACKBALL);
-	viewer.core.set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_NO_ROTATION);
-	viewer.core.orthographic = true;
-	viewer.core.is_animating = true;
-	viewer.core.is_animating = true;
+	viewer.core().background_color.setOnes();
+	// viewer.core().set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_TRACKBALL);
+	viewer.core().set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_NO_ROTATION);
+	viewer.core().orthographic = true;
+	viewer.core().is_animating = true;
+	viewer.core().is_animating = true;
 
 	// Setup viewer data
 	viewer.append_mesh();
@@ -342,7 +342,7 @@ igl::opengl::ViewerData &UIState::mesh_by_id(int id) {
 //	// Show points and align camera
 //	points_data().clear();
 //	points_data().set_points(state.mesh.points, Eigen::RowVector3d(1, 0,
-// 0)); 	viewer.core.align_camera_center(state.mesh.points); 	double
+// 0)); 	viewer.core().align_camera_center(state.mesh.points); 	double
 // extent = (state.mesh.points.colwise().maxCoeff() -
 // state.mesh.points.colwise().minCoeff()).maxCoeff(); points_data().point_size
 // = float(0.008 * extent); 	fix_color(points_data());
@@ -436,7 +436,7 @@ bool UIState::mouse_scroll(float delta_y) {
 	if (delta_y != 0) {
 		float mult = (1.0 + ((delta_y > 0) ? 1. : -1.) * 0.1);
 		const float min_zoom = 0.1f;
-		viewer.core.camera_zoom = (viewer.core.camera_zoom * mult > min_zoom ? viewer.core.camera_zoom * mult : min_zoom);
+		viewer.core().camera_zoom = (viewer.core().camera_zoom * mult > min_zoom ? viewer.core().camera_zoom * mult : min_zoom);
 
 		points_data().point_size *= mult;
 		physical_data().point_size *= mult;
@@ -676,7 +676,7 @@ void UIState::load_image(std::string fname) {
 	Eigen::MatrixXd V(4, 3);
 	V << 0, 0, 0, yMax, 0, 0, yMax, xMax, 0, 0, xMax, 0;
 
-	viewer.core.align_camera_center(V);
+	viewer.core().align_camera_center(V);
 	compute_histogram();
 
 	double extent = (V.colwise().maxCoeff() - V.colwise().minCoeff()).maxCoeff();
@@ -735,16 +735,16 @@ void UIState::display_image() {
 void UIState::viewer_control() {
 	if (analysis_mode) {
 		viewer_control_3d();
-		viewer.core.orthographic = false;
+		viewer.core().orthographic = false;
 	} else {
 		viewer_control_2d();
-		viewer.core.trackball_angle = Eigen::Quaternionf::Identity();
-		viewer.core.orthographic = true;
+		viewer.core().trackball_angle = Eigen::Quaternionf::Identity();
+		viewer.core().orthographic = true;
 	}
 }
 
 void UIState::viewer_control_2d() {
-	viewer.core.set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_NO_ROTATION);
+	viewer.core().set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_NO_ROTATION);
 
 	hull_data().clear();
 	points_data().clear();
@@ -947,7 +947,7 @@ void UIState::viewer_control_3d() {
 
 	// ROTATION_TYPE_TRACKBALL
 	// ROTATION_TYPE_TWO_AXIS_VALUATOR_FIXED_UP
-	viewer.core.set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_TRACKBALL);
+	viewer.core().set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_TRACKBALL);
 
 	if (state.mesh3d.V.size() == 0)
 		return;

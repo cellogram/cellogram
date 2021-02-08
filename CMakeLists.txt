@@ -132,6 +132,10 @@ if(NOT TARGET tinyfiledialogs::tinyfiledialogs)
 	set_target_properties(tinyfiledialogs_tinyfiledialogs PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
 
+# Zebrafish
+#cellogram_download_zebrafish()
+#add_subdirectory(${THIRD_PARTY_DIR}/zebrafish)
+
 ################################################################################
 
 add_subdirectory(src)

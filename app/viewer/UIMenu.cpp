@@ -253,7 +253,7 @@ void UIState::draw_viewer_window() {
 	// Mess up with the mouse cursor
 	if (delete_vertex || add_vertex) {
 		// Cross hair
-		ImGui::SetNextWindowPos(ImVec2(-100, -100), ImGuiSetCond_Always);
+		ImGui::SetNextWindowPos(ImVec2(-100, -100), ImGuiCond_Always);
 		ImGui::Begin("mouse_layer");
 		ImVec2 p = ImGui::GetIO().MousePos;
 		ImDrawList *draw_list = ImGui::GetWindowDrawList();
@@ -437,8 +437,8 @@ void UIState::draw_left_panel(float ypos, float width) {
 	ypos += vpad;
 	float height = canvas.y - ypos - vpad;
 
-	ImGui::SetNextWindowPos(ImVec2(0.0f, ypos), ImGuiSetCond_Always);
-	ImGui::SetNextWindowSize(ImVec2(0.0f, 0.0f), ImGuiSetCond_Always);
+	ImGui::SetNextWindowPos(ImVec2(0.0f, ypos), ImGuiCond_Always);
+	ImGui::SetNextWindowSize(ImVec2(0.0f, 0.0f), ImGuiCond_Always);
 	ImGui::SetNextWindowSizeConstraints(ImVec2(width, 0.0f), ImVec2(width, height));
 
 	if (true)
@@ -449,8 +449,8 @@ void UIState::draw_left_panel(float ypos, float width) {
 	}
 
 	ypos += vpad;
-	ImGui::SetNextWindowPos(ImVec2(0.0f, ypos), ImGuiSetCond_Always);
-	ImGui::SetNextWindowSize(ImVec2(0.0f, 0.0f), ImGuiSetCond_Always);
+	ImGui::SetNextWindowPos(ImVec2(0.0f, ypos), ImGuiCond_Always);
+	ImGui::SetNextWindowSize(ImVec2(0.0f, 0.0f), ImGuiCond_Always);
 	ImGui::SetNextWindowSizeConstraints(ImVec2(width, 0.0f), ImVec2(width, height));
 
 	if (state.phase_enumeration == 1)
@@ -507,8 +507,8 @@ void UIState::draw_right_panel(float ypos, float width) {
 	ypos += vpad;
 	float height = canvas.y - ypos - vpad;
 
-	ImGui::SetNextWindowPos(ImVec2(xpos, ypos), ImGuiSetCond_Always);
-	ImGui::SetNextWindowSize(ImVec2(0.0f, 0.0f), ImGuiSetCond_FirstUseEver);
+	ImGui::SetNextWindowPos(ImVec2(xpos, ypos), ImGuiCond_Always);
+	ImGui::SetNextWindowSize(ImVec2(0.0f, 0.0f), ImGuiCond_FirstUseEver);
 	ImGui::SetNextWindowSizeConstraints(ImVec2(width, 0.0f), ImVec2(width, height));
 
 	ImGui::Begin("Viewer", &show_right_panel, AppLayout::window_flags);
@@ -1404,7 +1404,7 @@ if (ImGui::Checkbox("Selected region", &show_selected_region)) {
 
 if (ImGui::Checkbox("Enable 3D view", &analysis_mode)) {
 	if (!analysis_mode) {
-		viewer.core.trackball_angle = Eigen::Quaternionf::Identity();
+		viewer.core().trackball_angle = Eigen::Quaternionf::Identity();
 	}
 	viewer_control();
 }

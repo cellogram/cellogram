@@ -502,7 +502,7 @@ namespace cellogram {
 		//	mmax, mmax, 0,
 		//	0, mmax, 0;
 
-		//viewer.core.align_camera_center(V);
+		//viewer.core().align_camera_center(V);
 		//viewer.data().show_overlay_depth = false;
 
 		//Eigen::MatrixXd asd1, asd2;

@@ -17,7 +17,7 @@ endfunction()
 function(cellogram_download_polyfem)
     cellogram_download_project(polyfem
         GIT_REPOSITORY https://github.com/polyfem/polyfem.git
-        GIT_TAG        0dc1e7e536432ab2192b4ce55201a8df0662dadd
+        GIT_TAG        a45263c44cfb867f04fe54f26bb4fb623cdff51b
     )
 endfunction()
 
@@ -69,3 +69,11 @@ function(cellogram_download_cli11)
         URL_MD5 5e5470abcb76422360409297bfc446ac
     )
 endfunction()
+
+## zebrafish
+#function(cellogram_download_zebrafish)
+#    cellogram_download_project(zebrafish
+#        GIT_REPOSITORY https://github.com/ziyi-zhang/Zebrafish.git
+#        GIT_TAG        1f0b1854d7596dcdd4579d775e5f7ec573dd6d53
+#    )
+#endfunction()

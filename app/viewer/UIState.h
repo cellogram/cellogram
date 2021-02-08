@@ -218,7 +218,7 @@ public:
 			next_call_back = call_back;
 			has_next_callback = true;
 		}
-		ImGui::SetNextWindowSize(ImVec2(0.0f, 0.0f), ImGuiSetCond_Always);
+		ImGui::SetNextWindowSize(ImVec2(0.0f, 0.0f), ImGuiCond_Always);
 		ImGui::SetNextWindowSizeConstraints(ImVec2(200, 60), ImVec2(200, 60));
 		if (ImGui::BeginPopupModal(title.c_str(), NULL, ImGuiWindowFlags_AlwaysAutoResize))
 		{

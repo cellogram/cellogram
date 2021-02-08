@@ -526,9 +526,9 @@ namespace cellogram {
 		//}
 		//viewer.data().set_points(points, cc);
 		//viewer.data().point_size = float(8);
-		//viewer.core.set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_NO_ROTATION);
-		//viewer.core.orthographic = true;
-		//viewer.core.is_animating = true;
+		//viewer.core().set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_NO_ROTATION);
+		//viewer.core().orthographic = true;
+		//viewer.core().is_animating = true;
 		//viewer.launch();
 
 
