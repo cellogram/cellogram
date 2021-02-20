@@ -268,8 +268,8 @@ void UIState::initialize() {
 	state.resolve_regions();*/
 
 	// Setup viewer parameters
-	viewer.resize(1400, 1280);
-	viewer.core().background_color.setOnes();
+	viewer.resize(1600, 900);
+	viewer.core().background_color << 0.7f, 0.7f, 0.75f, 1.0f;
 	// viewer.core().set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_TRACKBALL);
 	viewer.core().set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_NO_ROTATION);
 	viewer.core().orthographic = true;
@@ -662,6 +662,7 @@ void UIState::load_image(std::string fname) {
 	data_available = state.is_data_available(save_dir);
 
 	texture = (state.img.array() * 255).cast<unsigned char>();
+	// texture.transposeInPlace();
 
 	selected_region = -1;
 	current_region_status = "";
@@ -682,10 +683,10 @@ void UIState::load_image(std::string fname) {
 	double extent = (V.colwise().maxCoeff() - V.colwise().minCoeff()).maxCoeff();
 	float ui_scaling_factor = viewer.window != NULL ? hidpi_scaling() / pixel_ratio() : 1;
 	// points_data().point_size = std::ceil(ui_scaling_factor) / 5.;
-	points_data().point_size = std::ceil(float(ui_scaling_factor / extent)) * 10;
+	points_data().point_size = std::ceil(float(ui_scaling_factor / extent)) * 5;
 	points_data().line_color = Eigen::Vector4f(52, 152, 219, 255) / 255.0;
 
-	physical_data().point_size = std::ceil(float(ui_scaling_factor / extent)) * 10;
+	physical_data().point_size = std::ceil(float(ui_scaling_factor / extent)) * 5;
 
 	// HIGH dpi
 	// int width, height;
@@ -773,7 +774,7 @@ void UIState::viewer_control_2d() {
 		hull_data().show_faces = false;
 		hull_data().show_lines = false;
 		hull_data().shininess = 0;
-		hull_data().line_width = 3.0;
+		hull_data().line_width = 2.0;
 	}
 
 	// points

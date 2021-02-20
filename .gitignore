@@ -50,6 +50,7 @@
 *.code-workspace
 .vscode/
 build/
+debug/
 release/
 bin/
 bin_rel/

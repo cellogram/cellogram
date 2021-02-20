@@ -252,8 +252,20 @@ namespace cellogram {
 
 	bool State::load_image(const std::string fname)
 	{
-		// TODO: load 3d and project to 2d
-		bool ok = read_image(fname, img);
+		bool ok = read_image(fname, img3D);
+		if (ok) {
+			// project (MAX) to 2D
+			const int imgRows = img3D[0].rows();
+			const int imgCols = img3D[0].cols();
+			img = Eigen::MatrixXd::Zero(imgRows, imgCols);
+			for (int i=0; i<img3D.size(); i++) {
+				img = img.cwiseMax(img3D[i]);
+			}
+			img.transposeInPlace();
+			// do not cast to 255 unsigned char
+			// this is done when converting to "texture"
+		}
+
 		phase_enumeration = 1;
 		//std::cout << std::setprecision(std::numeric_limits<long double>::digits10 + 1) << img << std::endl;
 

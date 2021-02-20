@@ -291,7 +291,7 @@ float UIState::draw_menu_bar() {
 	if (ImGui::BeginMainMenuBar()) {
 		if (ImGui::BeginMenu("File")) {
 			if (ImGui::MenuItem("Load image", "Ctrl+O")) {
-				std::string fname = FileDialog::openFileName("./", {"*.png", "*.tif", "*.tiff"});
+				std::string fname = FileDialog::openFileName("./", {"*.tif", "*.tiff"});
 				if (!fname.empty()) {
 					load_image(fname);
 					show_image = true;
@@ -560,7 +560,7 @@ float UIState::draw_file_menu() {
 
 	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.70f);
 	if (ImGui::Button("Load Image", ImVec2(0, AppLayout::icon_button_size))) {
-		std::string fname = FileDialog::openFileName("./", { "*.png", "*.tif", "*.tiff" });
+		std::string fname = FileDialog::openFileName("./", {"*.tif", "*.tiff" });
 		if (!fname.empty()) {
 			load_image(fname);
 		}

@@ -5,7 +5,6 @@
 #include <cellogram/Mesh3d.h>
 #include <cellogram/Region.h>
 #include <cellogram/remesh_adaptive.h>
-#include <zebrafish/Cylinder.h>
 #include <Eigen/Dense>
 #include <vector>
 #include <string>
@@ -81,12 +80,12 @@ public:
 	Mesh mesh;
 	Mesh3d mesh3d;
 
-	Eigen::MatrixXd hull_vertices; //needed for lloyd
+	Eigen::MatrixXd hull_vertices;  // needed for lloyd
 	Eigen::MatrixXi hull_faces;
 	Eigen::MatrixXd hull_polygon;
 
-	Eigen::MatrixXd img;
-	/// TODO: add 3d image
+	Eigen::MatrixXd img;  // max projection
+	std::vector<Eigen::MatrixXd> img3D;
 
 	std::vector<Region> regions;
 
