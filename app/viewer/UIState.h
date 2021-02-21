@@ -69,6 +69,8 @@ public:
 	bool analysis_mode = false;
 	bool show_traction_forces = true;
 	bool show_smoothed_results = false;
+
+	// bool ... ADD VIEWER TYPE
 	// 3d visualizer
 	enum class Mesh3DAttribute : int {
 		NONE,
@@ -160,6 +162,7 @@ private:
 	void phase_2();
 	void phase_3();
 	void phase_4();
+	void phase_5();
 	///////////////
 	// UI Panels //
 	///////////////
@@ -172,6 +175,7 @@ private:
 	float draw_file_menu();
 	void draw_points_menu();
 	void draw_mesh_menu();
+	void draw_depth_menu();
 	void draw_analysis_menu();
 	void draw_results_menu();
 

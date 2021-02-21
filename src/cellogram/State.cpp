@@ -1191,7 +1191,7 @@ namespace cellogram {
 		std::chrono::duration<double> delta_t = t2 - t1;
 		std::cout << "Analysis took " << delta_t.count() << "s" << std::endl;
 
-		phase_enumeration = 4;
+		phase_enumeration = 5;
 	}
 
 	void State::reset_state()
@@ -1203,6 +1203,4 @@ namespace cellogram {
 	}
 
 
-}// namespace cellogram
-
-
+}  // namespace cellogram

@@ -120,7 +120,10 @@ int main(int argc, char *argv[]) {
 			state.final_relax();
 			state.phase_enumeration = 3;
 		}
-		if (args.end_phase > 2 && args.start_phase < 4)
+		if (args.end_phase > 2 && args.start_phase < 4) {
+			state.phase_enumeration = 4;
+		}
+		if (args.end_phase > 3 && args.start_phase < 5)
 		{
 			if (!state.image_from_pillars)
 			{
@@ -131,7 +134,7 @@ int main(int argc, char *argv[]) {
 			}
 			std::cout << "Running analysis" << std::endl;
 			state.analyze_3d_mesh();
-			state.phase_enumeration = 4;
+			state.phase_enumeration = 5;
 		}
 
 		state.save(save_dir);

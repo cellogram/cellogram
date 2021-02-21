@@ -467,11 +467,17 @@ void UIState::draw_left_panel(float ypos, float width) {
 	}
 	if (state.phase_enumeration == 3)
 	{
-		ImGui::Begin("Stage 3 - Analysis", &show_left_panel, AppLayout::window_flags);
-		draw_analysis_menu();
+		ImGui::Begin("Stage 3 - Depth", &show_left_panel, AppLayout::window_flags);
+		draw_depth_menu();
 		ImGui::End();
 	}
 	if (state.phase_enumeration == 4)
+	{
+		ImGui::Begin("Stage 4 - Analysis", &show_left_panel, AppLayout::window_flags);
+		draw_analysis_menu();
+		ImGui::End();
+	}
+	if (state.phase_enumeration == 5)
 	{
 		ImGui::Begin("Results", &show_left_panel, AppLayout::window_flags);
 		draw_results_menu();
@@ -861,6 +867,14 @@ void UIState::draw_mesh_menu() {
 
 // -----------------------------------------------------------------------------
 
+void UIState::draw_depth_menu() {
+
+	if (ImGui::Button("To Next"))
+		phase_4();
+}
+
+// -----------------------------------------------------------------------------
+
 void UIState::draw_analysis_menu() {
 
 	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.40f);
@@ -897,7 +911,7 @@ void UIState::draw_analysis_menu() {
 			float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
 			if (button_left(icon_font))
 			{
-				phase_2();
+				phase_3();
 				viewer_control();
 			}
 
@@ -913,7 +927,7 @@ void UIState::draw_analysis_menu() {
 				show_image = false;
 				show_mesh_fill = false;
 
-				phase_4();
+				phase_5();
 				//reset_view_3d();
 				view_mode_3d = Mesh3DAttribute::NORM_DISP;
 				override_ranges = false;
@@ -1039,7 +1053,7 @@ void UIState::draw_analysis_menu() {
 			float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
 			if (button_left(icon_font))
 			{
-				phase_2();
+				phase_3();
 				viewer_control();
 			}
 
@@ -1064,7 +1078,7 @@ void UIState::draw_analysis_menu() {
 				[&]()
 			{
 				state.analyze_3d_mesh();
-				phase_4();
+				phase_5();
 				//reset_view_3d();
 				view_mode_3d = Mesh3DAttribute::NORM_DISP;
 				override_ranges = false;
@@ -1223,7 +1237,7 @@ void UIState::draw_results_menu()
 	{
 		state.mesh3d.clear();
 		// go back to analysis stage and possibly remove current solution
-		phase_3();
+		phase_4();
 		viewer_control();
 	}
 	ImGui::SameLine(0.0f, spacing);

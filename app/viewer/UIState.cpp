@@ -381,6 +381,8 @@ bool UIState::load() {
 	case 3: phase_3();
 		break;
 	case 4: phase_4();
+		break;
+	case 5: phase_5();
 	}
 
 	viewer_control();
@@ -632,7 +634,7 @@ void UIState::reset_viewer() {
 	// Display flags
 	t = 0;
 	// vertex_color = Eigen::RowVector3f(44, 62, 80)/255;
-	vertex_color = Eigen::RowVector3f(41, 128, 185)/255;
+	vertex_color = Eigen::RowVector3f(104, 175, 245)/255;
 
 	selected_region = -1;
 	show_hull = true;
@@ -684,7 +686,7 @@ void UIState::load_image(std::string fname) {
 	float ui_scaling_factor = viewer.window != NULL ? hidpi_scaling() / pixel_ratio() : 1;
 	// points_data().point_size = std::ceil(ui_scaling_factor) / 5.;
 	points_data().point_size = std::ceil(float(ui_scaling_factor / extent)) * 5;
-	points_data().line_color = Eigen::Vector4f(52, 152, 219, 255) / 255.0;
+	points_data().line_color = Eigen::Vector4f(82, 189, 222, 204) / 255.0;
 
 	physical_data().point_size = std::ceil(float(ui_scaling_factor / extent)) * 5;
 
@@ -770,7 +772,7 @@ void UIState::viewer_control_2d() {
 		hull_data().add_edges(state.hull_polygon, P2, Eigen::RowVector3d(0, 0, 0));
 
 		hull_data().set_mesh(state.hull_vertices, state.hull_faces);
-		hull_data().set_colors(Eigen::RowVector3d(52, 152, 219) / 255.0);
+		hull_data().set_colors(Eigen::RowVector3d(243, 129, 122) / 255.0);
 		hull_data().show_faces = false;
 		hull_data().show_lines = false;
 		hull_data().shininess = 0;
@@ -1193,6 +1195,21 @@ void UIState::phase_3()
 	state.phase_enumeration = 3;
 	show_mesh = true;
 	show_hull = false;
+	show_points = true;
+	show_mesh_fill = false;
+	show_image = true;
+	show_matching = false;
+	show_bad_regions = false;
+	color_code = false;
+	show_selected_region = false;
+	analysis_mode = false;
+	show_traction_forces = false;
+}
+void UIState::phase_4()
+{
+	state.phase_enumeration = 4;
+	show_mesh = true;
+	show_hull = false;
 	show_points = false;
 	show_mesh_fill = true;
 	show_image = true;
@@ -1203,9 +1220,9 @@ void UIState::phase_3()
 	analysis_mode = false;
 	show_traction_forces = false;
 }
-void UIState::phase_4()
+void UIState::phase_5()
 {
-	state.phase_enumeration = 4;
+	state.phase_enumeration = 5;
 	show_matching = false;
 	show_traction_forces = true;
 }
