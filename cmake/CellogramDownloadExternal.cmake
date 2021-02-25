@@ -71,9 +71,9 @@ function(cellogram_download_cli11)
 endfunction()
 
 ## zebrafish
-function(cellogram_download_zebrafish)
-    cellogram_download_project(zebrafish
-        GIT_REPOSITORY https://github.com/ziyi-zhang/Zebrafish.git
-        GIT_TAG        1f0b1854d7596dcdd4579d775e5f7ec573dd6d53
-    )
-endfunction()
+#function(cellogram_download_zebrafish)
+#    cellogram_download_project(zebrafish
+#        GIT_REPOSITORY https://github.com/ziyi-zhang/Zebrafish.git
+#        GIT_TAG        1b2d9f3093f75355ed9bdba5460d313021ed919b
+#    )
+#endfunction()

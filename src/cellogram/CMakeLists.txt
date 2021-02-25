@@ -69,7 +69,7 @@ target_link_libraries(cellogram PUBLIC
 	tcdf
 	gsl
 	TinyTiff
-	ZebraFish
+	#ZebraFish
 )
 
 # if(TARGET PNGwriter)

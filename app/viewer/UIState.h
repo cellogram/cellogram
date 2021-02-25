@@ -31,6 +31,9 @@ public:
 	// Scene
 	State &state;
 
+	// logger
+	std::ostringstream oss;
+
 	// Multiple meshes ids
 	int hull_id;
 	int points_id;

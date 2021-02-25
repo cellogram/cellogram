@@ -69,8 +69,8 @@ include(CellogramDownloadExternal)
 # Required libraries
 ################################################################################
 
-# cellogram_download_polyfem()
-# add_subdirectory(${THIRD_PARTY_DIR}/polyfem)
+cellogram_download_polyfem()
+add_subdirectory(${THIRD_PARTY_DIR}/polyfem)
 
 if(CELLOGRAM_WITH_PNG)
 	find_package(PNG 1.2.9)
@@ -133,8 +133,8 @@ if(NOT TARGET tinyfiledialogs::tinyfiledialogs)
 endif()
 
 # Zebrafish
-cellogram_download_zebrafish()
-add_subdirectory(${THIRD_PARTY_DIR}/zebrafish)
+#cellogram_download_zebrafish()
+#add_subdirectory(${THIRD_PARTY_DIR}/zebrafish)
 
 ################################################################################
 
