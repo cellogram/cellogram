@@ -249,6 +249,7 @@ void bspline::SolveLeastSquare(const Eigen::SparseMatrix<double, Eigen::RowMajor
     switch (leastSquareMethod) {
     case 1: {
         logger().info("Least square using method 1: Normal Function + Hypre Solver");
+        logger().error("This method has been disabled");
         // calculate control points based on least square
             logger().info("Calculating A'*A and A'*y...");
         AtransposeA = (Atranspose * A).pruned();  // A' * A

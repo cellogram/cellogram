@@ -136,6 +136,39 @@ endif()
 #cellogram_download_zebrafish()
 #add_subdirectory(${THIRD_PARTY_DIR}/zebrafish)
 
+
+# catch2
+#cellogram_download_catch2()
+#add_subdirectory(${THIRD_PARTY_DIR}/catch2)
+
+# LBFGS
+if (NOT TARGET LBFGS)
+	cellogram_download_LBFGS()
+	add_library(LBFGS INTERFACE)
+	target_include_directories(LBFGS INTERFACE ${THIRD_PARTY_DIR}/LBFGS/include)
+endif()
+
+# tbb
+if (NOT TARGET tbb_static)
+	cellogram_download_tbb()
+  	set(TBB_BUILD_STATIC ON CACHE BOOL " " FORCE)
+	set(TBB_BUILD_SHARED OFF CACHE BOOL " " FORCE)
+	set(TBB_BUILD_TBBMALLOC OFF CACHE BOOL " " FORCE)
+	set(TBB_BUILD_TBBMALLOC_PROXY OFF CACHE BOOL " " FORCE)
+	set(TBB_BUILD_TESTS OFF CACHE BOOL " " FORCE)
+
+	add_subdirectory(${THIRD_PARTY_DIR}/tbb tbb)
+	set_property(TARGET tbb_static tbb_def_files PROPERTY FOLDER "dependencies")
+
+	target_include_directories(tbb_static SYSTEM PUBLIC ${THIRD_PARTY_DIR}/tbb/include)
+endif()
+
+# spdlog
+if (NOT TARGET spdlog::spdlog)
+	cellogram_download_spdlog()
+	add_subdirectory(${THIRD_PARTY_DIR}/spdlog)
+endif()
+
 ################################################################################
 
 add_subdirectory(src)

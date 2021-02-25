@@ -77,3 +77,35 @@ endfunction()
 #        GIT_TAG        1b2d9f3093f75355ed9bdba5460d313021ed919b
 #    )
 #endfunction()
+
+# Catch2 for testing
+function(cellogram_download_catch2)
+    cellogram_download_project(Catch2
+        GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+        GIT_TAG        v2.13.4
+    )
+endfunction()
+
+## LBFGS MIT
+function(cellogram_download_LBFGS)
+    cellogram_download_project(LBFGS
+        GIT_REPOSITORY     https://github.com/yixuan/LBFGSpp.git
+        GIT_TAG            f047ef4586869855f00e72312e7b4d78d11694b1
+    )
+endfunction()
+
+## tbb Apache-2.0
+function(cellogram_download_tbb)
+    cellogram_download_project(tbb
+        GIT_REPOSITORY https://github.com/nTopology/tbb.git
+        GIT_TAG        41adc7a7fbe4e6d37fe57186bd85dde99fa61e66
+    )
+endfunction()
+
+## spdlog MIT
+function(cellogram_download_spdlog)
+    cellogram_download_project(spdlog
+        GIT_REPOSITORY https://github.com/gabime/spdlog.git
+        GIT_TAG         v1.3.1
+    )
+endfunction()

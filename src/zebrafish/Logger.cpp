@@ -14,21 +14,21 @@ namespace zebrafish
 
 	// See https://github.com/gabime/spdlog#asynchronous-logger-with-multi-sinks
 	void Logger::init(std::vector<spdlog::sink_ptr> &sinks) {
-		auto l = spdlog::get("zebrafish");
+		auto l = spdlog::get("cellogram2");
 		bool had_zebra_logger = l != nullptr;
 		if (had_zebra_logger)
-			spdlog::drop("zebrafish");
+			spdlog::drop("cellogram2");
 
 		spdlog::init_thread_pool(8192, 1);
 		Logger::logger_ =
 			std::make_shared<spdlog::async_logger>(
-				"zebrafish",
+				"cellogram2",
 				sinks.begin(), sinks.end(),
 				spdlog::thread_pool(), spdlog::async_overflow_policy::block);
 		spdlog::register_logger(logger_);
 
 		if (had_zebra_logger)
-			logger().warn("Removed another zebrafish logger");
+			logger().warn("Removed another cellogram logger");
 	}
 
 	void Logger::init(bool use_cout, const std::string &filename, bool truncate) {
@@ -55,7 +55,7 @@ namespace zebrafish
 		time(&rawTime);
 		timeInfo = localtime(&rawTime);
 		strftime(buffer, 80, "%m_%dT%H_%M", timeInfo);
-		std::string filename = "./Zebrafish-log-";
+		std::string filename = "./Cellogram2-log-";
 		sinks.emplace_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>(filename + buffer + ".log", true));
 
 		// init(sinks);
@@ -69,7 +69,7 @@ namespace zebrafish
 			registry_inst.set_tp(tp);
 		}
 
-		logger_ = std::make_shared<spdlog::async_logger>("zebrafish", sinks.begin(), sinks.end(), std::move(tp), spdlog::async_overflow_policy::block);
+		logger_ = std::make_shared<spdlog::async_logger>("cellogram2", sinks.begin(), sinks.end(), std::move(tp), spdlog::async_overflow_policy::block);
 		spdlog::register_logger(logger_);
 	}
 

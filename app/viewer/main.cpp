@@ -4,6 +4,7 @@
 #include <cellogram/State.h>
 #include <cellogram/StringUtils.h>
 #include <cellogram/PNGOutput.h>
+#include <zebrafish/Logger.hpp>
 
 #include <geogram/basic/command_line.h>
 #include <geogram/basic/command_line_args.h>
@@ -145,14 +146,12 @@ int main(int argc, char *argv[]) {
 	else
 	{
 		// logger
-		/*
 		int log_level = 0;
 		zebrafish::Logger::init(UIState::ui_state().oss);
 		log_level = std::max(0, std::min(6, log_level));
 		spdlog::set_level(static_cast<spdlog::level::level_enum>(log_level));
 		spdlog::flush_every(std::chrono::seconds(3));
 		zebrafish::logger().info("Cellogram2_gui logger initialized.");
-		*/
 
 		UIState::ui_state().initialize();
 		UIState::ui_state().state.load_settings(args.settings);

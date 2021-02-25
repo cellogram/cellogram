@@ -3,6 +3,7 @@ set(source_list
 	autodiff.h
 	Bspline.cpp
 	Bspline.h
+	Common.h
 	Cylinder.cpp
 	Cylinder.h
 	Logger.cpp
@@ -20,6 +21,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC ..)
 # Dependencies
 target_link_libraries(${PROJECT_NAME} PUBLIC
 	igl::core
+	polyfem
 )
 
 # Extra warnings
