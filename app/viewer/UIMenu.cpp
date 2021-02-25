@@ -869,6 +869,28 @@ void UIState::draw_mesh_menu() {
 
 void UIState::draw_depth_menu() {
 
+	// Select rotation type
+	int rotation_type = static_cast<int>(viewer.core().rotation_type);
+	static Eigen::Quaternionf trackball_angle = Eigen::Quaternionf::Identity();
+	static bool orthographic = true;
+	if (ImGui::Combo("Camera Type", &rotation_type, "Trackball\0Two Axes\0002D Mode\0\0")) {
+		using RT = igl::opengl::ViewerCore::RotationType;
+		auto new_type = static_cast<RT>(rotation_type);
+		if (new_type != viewer.core().rotation_type) {
+				if (new_type == RT::ROTATION_TYPE_NO_ROTATION) {
+					trackball_angle = viewer.core().trackball_angle;
+					orthographic = viewer.core().orthographic;
+					viewer.core().trackball_angle = Eigen::Quaternionf::Identity();
+					viewer.core().orthographic = true;
+				} else if (viewer.core().rotation_type == RT::ROTATION_TYPE_NO_ROTATION) {
+					viewer.core().trackball_angle = trackball_angle;
+					viewer.core().orthographic = orthographic;
+					viewer_control();
+				}
+				viewer.core().set_rotation_type(new_type);
+		}
+	}
+
 	if (ImGui::Button("To Next"))
 		phase_4();
 }
@@ -1417,9 +1439,11 @@ if (ImGui::Checkbox("Selected region", &show_selected_region)) {
 }
 
 if (ImGui::Checkbox("Enable 3D view", &analysis_mode)) {
+	/*
 	if (!analysis_mode) {
 		viewer.core().trackball_angle = Eigen::Quaternionf::Identity();
 	}
+	*/
 	viewer_control();
 }
 

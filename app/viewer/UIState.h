@@ -70,7 +70,6 @@ public:
 	bool show_traction_forces = true;
 	bool show_smoothed_results = false;
 
-	// bool ... ADD VIEWER TYPE
 	// 3d visualizer
 	enum class Mesh3DAttribute : int {
 		NONE,

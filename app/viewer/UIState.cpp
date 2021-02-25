@@ -102,8 +102,8 @@ bool UIState::mouse_move(int button, int modifier) {
 }
 
 bool UIState::block_mouse_behavior(int button) {
-	if (analysis_mode)
-		return false;
+	// if (analysis_mode)
+	return false;
 
 	if (button == 0) {
 		this->viewer.mouse_mode = igl::opengl::glfw::Viewer::MouseMode::None;
@@ -310,7 +310,7 @@ void UIState::init(igl::opengl::glfw::Viewer *_viewer) {
     icon_font = io.Fonts->AddFontFromMemoryCompressedTTF(fa_solid_compressed_data, fa_solid_compressed_size, 20.0f, &icons_config, icons_ranges);
 
 
-	glfwSetWindowTitle(viewer.window, "Cellogram viewer");
+	glfwSetWindowTitle(viewer.window, "Cellogram2 viewer");
 	//viewer.resize(1400, 1280);
 }
 
@@ -685,10 +685,10 @@ void UIState::load_image(std::string fname) {
 	double extent = (V.colwise().maxCoeff() - V.colwise().minCoeff()).maxCoeff();
 	float ui_scaling_factor = viewer.window != NULL ? hidpi_scaling() / pixel_ratio() : 1;
 	// points_data().point_size = std::ceil(ui_scaling_factor) / 5.;
-	points_data().point_size = std::ceil(float(ui_scaling_factor / extent)) * 5;
-	points_data().line_color = Eigen::Vector4f(82, 189, 222, 204) / 255.0;
+	points_data().point_size = std::ceil(float(ui_scaling_factor / extent)) * 7;
+	points_data().line_color = Eigen::Vector4f(37, 60, 68, 204) / 255.0;
 
-	physical_data().point_size = std::ceil(float(ui_scaling_factor / extent)) * 5;
+	physical_data().point_size = std::ceil(float(ui_scaling_factor / extent)) * 7;
 
 	// HIGH dpi
 	// int width, height;
@@ -736,6 +736,8 @@ void UIState::display_image() {
 }
 
 void UIState::viewer_control() {
+	viewer_control_3d();
+	/*
 	if (analysis_mode) {
 		viewer_control_3d();
 		viewer.core().orthographic = false;
@@ -744,10 +746,11 @@ void UIState::viewer_control() {
 		viewer.core().trackball_angle = Eigen::Quaternionf::Identity();
 		viewer.core().orthographic = true;
 	}
+	*/
 }
 
 void UIState::viewer_control_2d() {
-	viewer.core().set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_NO_ROTATION);
+	// viewer.core().set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_NO_ROTATION);
 
 	hull_data().clear();
 	points_data().clear();
@@ -950,7 +953,7 @@ void UIState::viewer_control_3d() {
 
 	// ROTATION_TYPE_TRACKBALL
 	// ROTATION_TYPE_TWO_AXIS_VALUATOR_FIXED_UP
-	viewer.core().set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_TRACKBALL);
+	// viewer.core().set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_TRACKBALL);
 
 	if (state.mesh3d.V.size() == 0)
 		return;
