@@ -250,6 +250,16 @@ void UIState::draw_viewer_window() {
 		//draw_right_panel(h, menu_scaling() * AppLayout::right_panel_width);
 	}
 
+	// image viewer
+	if (show_imageViewer_menu) {
+		draw_image_viewer_menu();
+	}
+
+	// log window
+	if (show_log_menu) {
+		draw_log_window();
+	}
+
 	// Mess up with the mouse cursor
 	if (delete_vertex || add_vertex) {
 		// Cross hair
@@ -279,6 +289,8 @@ void UIState::draw_viewer_window() {
 	//std::cout << g.ColorModifiers.size() << std::endl;
 	//std::cout << g.StyleModifiers.size() << std::endl;
 	//std::cout << g.FontStack.size() << std::endl;
+
+	UIsize.resize = false;  // after window resize, only redraw once
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -356,7 +368,8 @@ float UIState::draw_menu_bar() {
 
 			ImGui::EndMenu();
 		}
-		if (false && ImGui::BeginMenu("Windows")) {
+		if (ImGui::BeginMenu("Windows")) {
+			/*
 			// Left panel
 			ImGui::MenuItem("Left Panel##Bar", nullptr, &show_left_panel);
 			ImGui::Indent();
@@ -376,6 +389,9 @@ float UIState::draw_menu_bar() {
 			ImGui::MenuItem("Layers", nullptr, &show_layer_menu);
 			ImGui::MenuItem("Regions", nullptr, &show_region_menu);
 			ImGui::Unindent();
+			*/
+			ImGui::MenuItem("Image Viewer", nullptr, &show_imageViewer_menu);
+			ImGui::MenuItem("Log", nullptr, &show_log_menu);
 
 			ImGui::EndMenu();
 		}
@@ -420,6 +436,7 @@ float UIState::draw_menu_bar() {
 		ImGui::SameLine(0, 100);
 		ImGui::Text(current_file_name.c_str());
 		h = ImGui::GetWindowSize().y;
+		UIsize.mainMenuHeight = ImGui::GetWindowHeight();
 		ImGui::EndMainMenuBar();
 
 		viewer_control();
@@ -535,6 +552,108 @@ void UIState::draw_right_panel(float ypos, float width) {
 		draw_region_menu();
 	}
 
+	ImGui::End();
+}
+
+// -----------------------------------------------------------------------------
+
+void UIState::draw_image_viewer_menu() {
+
+	if (UIsize.resize) {
+		ImGui::SetNextWindowPos(ImVec2(UIsize.windowWidth - UIsize.rightWidth, UIsize.windowHeight - UIsize.imageViewerHeight));
+		ImGui::SetNextWindowSize(ImVec2(UIsize.rightWidth, UIsize.imageViewerHeight));
+	}
+
+	if (!ImGui::Begin("Image Viewer", &show_imageViewer_menu)) {
+		ImGui::End();
+		return;
+	}
+
+	if (!current_file_name.empty() && !state.img3D.empty()) {
+		ImGui::Text("Rows = %d  Cols = %d Layers = %d", state.img3D[0].rows(), state.img3D[0].cols(), state.img3D.size());
+
+		ImGui::Separator(); ////////////////////////
+
+		{
+			ImGui::PushItemWidth(UIsize.rightWidth / 2.0);
+			// Select rotation type
+			int rotation_type = static_cast<int>(viewer.core().rotation_type);
+			static Eigen::Quaternionf trackball_angle = Eigen::Quaternionf::Identity();
+			static bool orthographic = true;
+			if (ImGui::Combo("Camera Type", &rotation_type, "Trackball\0Two Axes\0002D Mode\0\0"))
+			{
+				using RT = igl::opengl::ViewerCore::RotationType;
+				auto new_type = static_cast<RT>(rotation_type);
+				if (new_type != viewer.core().rotation_type)
+				{
+					if (new_type == RT::ROTATION_TYPE_NO_ROTATION)
+					{
+						trackball_angle = viewer.core().trackball_angle;
+						orthographic = viewer.core().orthographic;
+						viewer.core().trackball_angle = Eigen::Quaternionf::Identity();
+						viewer.core().orthographic = true;
+					}
+					else if (viewer.core().rotation_type == RT::ROTATION_TYPE_NO_ROTATION)
+					{
+						viewer.core().trackball_angle = trackball_angle;
+						viewer.core().orthographic = orthographic;
+					}
+					viewer.core().set_rotation_type(new_type);
+				}
+			}
+
+			// Orthographic view
+			ImGui::Checkbox("Orthographic projection", &(viewer.core().orthographic));
+			/*
+			ImGui::Checkbox("Show axis points", &show_axisPoints);
+			if (showTooltip && ImGui::IsItemHovered()) {
+				ImGui::SetTooltip("Three array of points indicating the X, Y and Z axis");
+			}
+			*/
+			ImGui::PopItemWidth();
+		}
+
+	} else {
+		ImGui::Text("No 3D image registered.");
+	}
+
+	ImGui::End();
+}
+
+// -----------------------------------------------------------------------------
+
+void UIState::draw_log_window() {
+
+	if (UIsize.resize) {
+		ImGui::SetNextWindowPos(ImVec2(UIsize.leftWidth, UIsize.windowHeight - UIsize.bottomHeight));
+		ImGui::SetNextWindowSize(ImVec2(UIsize.windowWidth - UIsize.leftWidth - UIsize.rightWidth, UIsize.bottomHeight));
+	}
+
+	if (!ImGui::Begin("Log", &show_log_menu))
+	{
+		ImGui::End();
+		return;
+	}
+
+	ImGui::Separator();
+	ImGui::BeginChild("scrolling", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
+
+	static ImGuiTextBuffer buf;
+
+	// std::string log = oss.str();
+	// ImGui::TextUnformatted(log.c_str());
+	std::string log = oss.str();
+	oss.str("");
+	oss.clear();
+	// AddLog(log.c_str(), buf);
+	buf.appendf("%s", log.c_str());
+
+	ImGui::TextUnformatted(buf.begin(), buf.end());
+
+	if (ImGui::GetScrollY() >= ImGui::GetScrollMaxY())
+		ImGui::SetScrollHereY(1.0f);
+
+	ImGui::EndChild();
 	ImGui::End();
 }
 

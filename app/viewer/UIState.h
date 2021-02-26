@@ -12,6 +12,21 @@
 
 namespace cellogram {
 
+typedef struct UIsize_t {
+	bool resize;
+    int windowWidth;
+    int windowHeight;
+    int leftWidth;
+	int rightWidth;
+    int bottomHeight;
+    int imageViewerHeight;
+    double mainMenuHeight;
+
+	UIsize_t() : resize(true), windowWidth(1600), windowHeight(900), 
+				 leftWidth(300), rightWidth(300), bottomHeight(150), 
+				 imageViewerHeight(350) {}
+} UTsize_t;
+
 // -----------------------------------------------------------------------------
 
 class UIState : public igl::opengl::glfw::imgui::ImGuiMenu {
@@ -114,6 +129,7 @@ public:
 	bool save();
 	bool save_as(const std::string & save_as_dir);
 
+	void post_resize(int w, int h) override;
 	virtual bool mouse_down(int button, int modifier) override;
 	virtual bool mouse_move(int button, int modifier) override;
 	virtual bool mouse_up(int button, int modifier) override;
@@ -188,6 +204,11 @@ private:
 	void draw_layer_menu();
 	void draw_region_menu();
 
+	// image viewer
+	void draw_image_viewer_menu();
+	// log window
+	void draw_log_window();
+
 	// Toggle windows
 	bool show_left_panel = true;
 	bool show_file_menu = true;
@@ -200,6 +221,11 @@ private:
 	bool show_legend_menu = true;
 	bool show_layer_menu = true;
 	bool show_region_menu = true;
+
+	bool show_imageViewer_menu = true;
+	bool show_log_menu = true;
+
+	UIsize_t UIsize;
 
 public:
 	// Menu stuff
@@ -230,12 +256,12 @@ public:
 		{
 			ImGui::Spacing();
 			ImGui::PushFont(icon_font);
-			ImGui::Text(icon);
+			ImGui::Text("%s", icon);
 			ImGui::PopFont();
 
 			ImGui::SameLine();
 
-			ImGui::Text(msg.c_str());
+			ImGui::Text("%s", msg.c_str());
 
 			if(close_next)
 			{

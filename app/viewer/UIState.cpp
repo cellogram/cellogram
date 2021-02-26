@@ -72,6 +72,13 @@ UIState &UIState::ui_state() {
 	return instance;
 }
 
+void UIState::post_resize(int w, int h) {
+	const double dpiScale = hidpi_scaling();
+	UIsize.windowWidth = w / dpiScale;
+	UIsize.windowHeight = h / dpiScale;
+	UIsize.resize = true;
+}
+
 bool UIState::mouse_move(int button, int modifier) {
 	if (dragging_id == -1)
 		return false;
@@ -268,7 +275,7 @@ void UIState::initialize() {
 	state.resolve_regions();*/
 
 	// Setup viewer parameters
-	viewer.resize(1600, 900);
+	viewer.resize(UIsize.windowWidth, UIsize.windowHeight);
 	viewer.core().background_color << 0.7f, 0.7f, 0.75f, 1.0f;
 	// viewer.core().set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_TRACKBALL);
 	viewer.core().set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_NO_ROTATION);
