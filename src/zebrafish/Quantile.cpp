@@ -37,4 +37,18 @@ double QuantileImage(const zebrafish::image_t &image, double q, int layerBegin, 
     return heap.top();
 }
 
+
+void NormalizeImage(image_t &image, double thres) {
+    /// This function modifies "image"
+
+    // normalize & trim all layers
+    for (auto it = image.begin(); it != image.end(); it++) {
+        Eigen::MatrixXd &slice = *it;
+        for (int r = 0; r < slice.rows(); r++)
+            for (int c = 0; c < slice.cols(); c++) {
+                slice(r, c) = (slice(r, c) >= thres) ? 1.0f : slice(r, c) / thres;
+            }
+    }
+}
+
 }  // namespace zebrafish

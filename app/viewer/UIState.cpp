@@ -670,7 +670,7 @@ void UIState::load_image(std::string fname) {
 	save_dir = fname.substr(0, index);
 	data_available = state.is_data_available(save_dir);
 
-	texture = (state.img.array() * 255).cast<unsigned char>();
+	texture = (state.img.array() * 255 * imgViewer.darkenScale).cast<unsigned char>();
 	// texture.transposeInPlace();
 
 	selected_region = -1;
@@ -719,27 +719,54 @@ void UIState::load_image(std::string fname) {
 }
 
 void UIState::display_image() {
+
+	if (state.img3D.empty()) return;
+
+	static Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> texture_to_use;
+	static const Eigen::Vector3d ambient = Eigen::Vector3d(146./255., 172./255., 178./255.);
+    static const Eigen::Vector3d diffuse = Eigen::Vector3d(146./255., 172./255., 178./255.);
+    static const Eigen::Vector3d specular = Eigen::Vector3d(0., 0., 0.);
 	int xMax = state.img.cols();
 	int yMax = state.img.rows();
 	const float offset = 0.5;
-	// Replace the mesh with a triangulated square
-	img_V.resize(4, 3);
-	img_V << offset, offset, 0, yMax + offset, offset, 0, yMax + offset, xMax + offset, 0, offset, xMax + offset, 0;
+	static Eigen::MatrixXd UV = [] {
+        Eigen::MatrixXd tmp(4, 2);
+        tmp << 0, 1, 1, 1, 1, 0, 0, 0;
+        return tmp;
+    }();
+	img_F = [] {
+		Eigen::MatrixXi tmp(2, 3);
+		tmp << 0, 1, 2, 2, 3, 0;
+		return tmp;
+	}();
 
-	img_F.resize(2, 3);
-	img_F << 0, 1, 2, 2, 3, 0;
-
-	Eigen::MatrixXd UV(4, 2);
-	UV << 0, 1, 1, 1, 1, 0, 0, 0;
+	if (imgViewer.imageViewerType == 0) {
+		// show compressed
+		img_V.resize(4, 3);
+		img_V << offset, offset, 0, 
+				yMax + offset, offset, 0, 
+				yMax + offset, xMax + offset, 0, 
+				offset, xMax + offset, 0;
+		texture_to_use = texture;
+	} else {
+		// per-slice
+		img_V.resize(4, 3);
+		img_V << offset, offset, imgViewer.sliceToShow, 
+				yMax + offset, offset, imgViewer.sliceToShow, 
+				yMax + offset, xMax + offset, imgViewer.sliceToShow, 
+				offset, xMax + offset, imgViewer.sliceToShow;
+		texture_to_use = (state.img3D[imgViewer.sliceToShow].array() * 255).cast<unsigned char>();
+		texture_to_use.transposeInPlace();
+	}
 
 	image_data().set_mesh(img_V, img_F);
 	image_data().set_uv(UV);
+	image_data().uniform_colors(ambient, diffuse, specular);
 	image_data().show_faces = true;
 	image_data().show_lines = false;
 	image_data().show_texture = true;
 	// Use the image as a texture
-	image_data().set_texture(texture, texture, texture);
-	image_data().set_colors(Eigen::RowVector3d(1, 1, 1));
+	image_data().set_texture(texture_to_use, texture_to_use, texture_to_use);
 }
 
 void UIState::viewer_control() {

@@ -27,6 +27,15 @@ typedef struct UIsize_t {
 				 imageViewerHeight(350) {}
 } UTsize_t;
 
+
+typedef struct ImageViewer_t {
+	int imageViewerType;
+	int sliceToShow;
+	float darkenScale;
+
+	ImageViewer_t() : imageViewerType(0), sliceToShow(0), darkenScale(0.8) {}
+} ImageViewer_t;
+
 // -----------------------------------------------------------------------------
 
 class UIState : public igl::opengl::glfw::imgui::ImGuiMenu {
@@ -226,6 +235,7 @@ private:
 	bool show_log_menu = true;
 
 	UIsize_t UIsize;
+	ImageViewer_t imgViewer;
 
 public:
 	// Menu stuff

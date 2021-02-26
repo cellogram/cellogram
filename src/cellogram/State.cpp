@@ -13,6 +13,9 @@
 #include <cellogram/remesh_adaptive.h>
 #include <cellogram/tri2hex.h>
 #include <cellogram/voronoi.h>
+#include <zebrafish/Logger.hpp>
+#include <zebrafish/Quantile.h>
+
 #include <polyfem/MeshUtils.hpp>
 #include <polyfem/InterpolatedFunction.hpp>
 #include <igl/bounding_box.h>
@@ -32,6 +35,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
+
+using zebrafish::logger;
 
 	// -----------------------------------------------------------------------------
 
@@ -253,7 +258,13 @@ namespace cellogram {
 	bool State::load_image(const std::string fname)
 	{
 		bool ok = read_image(fname, img3D);
+		logger().info("Load image {} (success = {})", fname, ok);
 		if (ok) {
+			// trim image
+			const double quantile = 0.999;
+			double quantileRes = zebrafish::QuantileImage(img3D, quantile);
+			zebrafish::NormalizeImage(img3D, quantileRes);
+			logger().info("Image normalized with max-brightness = {} ({} quantile)", quantileRes, quantile);
 			// project (MAX) to 2D
 			const int imgRows = img3D[0].rows();
 			const int imgCols = img3D[0].cols();

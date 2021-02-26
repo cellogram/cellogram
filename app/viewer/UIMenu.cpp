@@ -570,49 +570,59 @@ void UIState::draw_image_viewer_menu() {
 	}
 
 	if (!current_file_name.empty() && !state.img3D.empty()) {
+		// General Info
 		ImGui::Text("Rows = %d  Cols = %d Layers = %d", state.img3D[0].rows(), state.img3D[0].cols(), state.img3D.size());
 
 		ImGui::Separator(); ////////////////////////
 
-		{
-			ImGui::PushItemWidth(UIsize.rightWidth / 2.0);
-			// Select rotation type
-			int rotation_type = static_cast<int>(viewer.core().rotation_type);
-			static Eigen::Quaternionf trackball_angle = Eigen::Quaternionf::Identity();
-			static bool orthographic = true;
-			if (ImGui::Combo("Camera Type", &rotation_type, "Trackball\0Two Axes\0002D Mode\0\0"))
-			{
-				using RT = igl::opengl::ViewerCore::RotationType;
-				auto new_type = static_cast<RT>(rotation_type);
-				if (new_type != viewer.core().rotation_type)
-				{
-					if (new_type == RT::ROTATION_TYPE_NO_ROTATION)
-					{
-						trackball_angle = viewer.core().trackball_angle;
-						orthographic = viewer.core().orthographic;
-						viewer.core().trackball_angle = Eigen::Quaternionf::Identity();
-						viewer.core().orthographic = true;
-					}
-					else if (viewer.core().rotation_type == RT::ROTATION_TYPE_NO_ROTATION)
-					{
-						viewer.core().trackball_angle = trackball_angle;
-						viewer.core().orthographic = orthographic;
-					}
-					viewer.core().set_rotation_type(new_type);
-				}
-			}
+		ImGui::PushItemWidth(UIsize.rightWidth / 2.0);
+		std::vector<std::string> typeName{"Compressed", "Z-Slice"};
+		ImGui::Combo("3D Image Viewer Type", &imgViewer.imageViewerType, typeName);
+		ImGui::PopItemWidth();
 
-			// Orthographic view
-			ImGui::Checkbox("Orthographic projection", &(viewer.core().orthographic));
-			/*
-			ImGui::Checkbox("Show axis points", &show_axisPoints);
-			if (showTooltip && ImGui::IsItemHovered()) {
-				ImGui::SetTooltip("Three array of points indicating the X, Y and Z axis");
-			}
-			*/
-			ImGui::PopItemWidth();
+		if (imgViewer.imageViewerType == 1) {
+			ImGui::SliderInt("Slice", &imgViewer.sliceToShow, 0, state.img3D.size()-1);
 		}
 
+		ImGui::Spacing();
+
+		ImGui::PushItemWidth(UIsize.rightWidth / 2.0);
+		// Select rotation type
+		int rotation_type = static_cast<int>(viewer.core().rotation_type);
+		static Eigen::Quaternionf trackball_angle = Eigen::Quaternionf::Identity();
+		static bool orthographic = true;
+		if (ImGui::Combo("Camera Type", &rotation_type, "Trackball\0Two Axes\0002D Mode\0\0"))
+		{
+			using RT = igl::opengl::ViewerCore::RotationType;
+			auto new_type = static_cast<RT>(rotation_type);
+			if (new_type != viewer.core().rotation_type)
+			{
+				if (new_type == RT::ROTATION_TYPE_NO_ROTATION)
+				{
+					trackball_angle = viewer.core().trackball_angle;
+					orthographic = viewer.core().orthographic;
+					viewer.core().trackball_angle = Eigen::Quaternionf::Identity();
+					viewer.core().orthographic = true;
+				}
+				else if (viewer.core().rotation_type == RT::ROTATION_TYPE_NO_ROTATION)
+				{
+					viewer.core().trackball_angle = trackball_angle;
+					viewer.core().orthographic = orthographic;
+				}
+				viewer.core().set_rotation_type(new_type);
+			}
+		}
+		// Orthographic view
+		ImGui::Checkbox("Orthographic projection", &(viewer.core().orthographic));
+
+
+		/*
+		ImGui::Checkbox("Show axis points", &show_axisPoints);
+		if (showTooltip && ImGui::IsItemHovered()) {
+			ImGui::SetTooltip("Three array of points indicating the X, Y and Z axis");
+		}
+		*/
+		ImGui::PopItemWidth();
 	} else {
 		ImGui::Text("No 3D image registered.");
 	}
@@ -1441,18 +1451,27 @@ void UIState::draw_histogram_menu() {
 	if (ImGui::SliderFloat("min", &min_img, 0.f, 1.f)) {
 		Eigen::MatrixXd tmp = (state.img.array() - min_img) / (max_img - min_img);
 		tmp = tmp.unaryExpr(clamping);
-
-		texture = (tmp.array() * 255).cast<unsigned char>();
+		texture = (tmp.array() * 255 * imgViewer.darkenScale).cast<unsigned char>();
 
 		viewer_control();
 	}
 	if (ImGui::SliderFloat("max", &max_img, 0.f, 1.f)) {
 		Eigen::MatrixXd tmp = (state.img.array() - min_img) / (max_img - min_img);
 		tmp = tmp.unaryExpr(clamping);
-		texture = (tmp.array() * 255).cast<unsigned char>();
+		texture = (tmp.array() * 255 * imgViewer.darkenScale).cast<unsigned char>();
 
 		viewer_control();
 	}
+	if (ImGui::SliderFloat("dark", &imgViewer.darkenScale, 0.2, 1.0)) {
+		Eigen::MatrixXd tmp = (state.img.array() - min_img) / (max_img - min_img);
+		tmp = tmp.unaryExpr(clamping);
+		texture = (tmp.array() * 255 * imgViewer.darkenScale).cast<unsigned char>();
+
+		viewer_control();
+	}
+	if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Reduce the intensity of bright colors.\nNo effect on results, only for visualization purpose.");
+    }
 
 	ImGui::PopItemWidth();
 }
