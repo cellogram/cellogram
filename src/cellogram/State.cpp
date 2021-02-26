@@ -454,7 +454,7 @@ using zebrafish::logger;
 
 		auto t2 = std::chrono::system_clock::now();
 		std::chrono::duration<double> delta_t = t2 - t1;
-		std::cout << "Untangling took " << delta_t.count() << "s" << std::endl;
+		logger().info("Untangling took {}s", delta_t.count());
 
 		phase_enumeration = 2;
 	}
@@ -584,7 +584,7 @@ using zebrafish::logger;
 		auto t2 = std::chrono::system_clock::now();
 		std::chrono::duration<double> delta_t = t2 - t1;
 
-		std::cout << "Detection took " << delta_t.count() << "s" << std::endl;
+		logger().info("Detection took {}s", delta_t.count());
 // #endif
 		if (V.cols() != 3)
 		{
@@ -961,7 +961,7 @@ using zebrafish::logger;
 
 		auto t2 = std::chrono::system_clock::now();
 		std::chrono::duration<double> delta_t = t2 - t1;
-		std::cout << "Relaxation took " << delta_t.count() << "s" << std::endl;
+		logger().info("Relaxation took {}s", delta_t.count());
 		phase_enumeration = 3;
 	}
 
@@ -1142,7 +1142,7 @@ using zebrafish::logger;
 
 		auto t2 = std::chrono::system_clock::now();
 		std::chrono::duration<double> delta_t = t2 - t1;
-		std::cout << "Meshing 3d took " << delta_t.count() << "s" << std::endl;
+		logger().info("Meshing 3d took {}s", delta_t.count());
 	}
 
 	void State::remesh_3d_adaptive() {
@@ -1184,7 +1184,7 @@ using zebrafish::logger;
 
 		auto t2 = std::chrono::system_clock::now();
 		std::chrono::duration<double> delta_t = t2 - t1;
-		std::cout << "Remeshing adaptively took " << delta_t.count() << "s" << std::endl;
+		logger().info("Remeshing adaptively took {}s", delta_t.count());
 	}
 
 	void State::analyze_3d_mesh() {
@@ -1200,7 +1200,7 @@ using zebrafish::logger;
 
 		auto t2 = std::chrono::system_clock::now();
 		std::chrono::duration<double> delta_t = t2 - t1;
-		std::cout << "Analysis took " << delta_t.count() << "s" << std::endl;
+		logger().info("Analysis took {}s", delta_t.count());
 
 		phase_enumeration = 5;
 	}

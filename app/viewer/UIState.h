@@ -33,7 +33,7 @@ typedef struct ImageViewer_t {
 	int sliceToShow;
 	float darkenScale;
 
-	ImageViewer_t() : imageViewerType(0), sliceToShow(0), darkenScale(0.8) {}
+	ImageViewer_t() : imageViewerType(0), sliceToShow(0), darkenScale(0.5) {}
 } ImageViewer_t;
 
 // -----------------------------------------------------------------------------

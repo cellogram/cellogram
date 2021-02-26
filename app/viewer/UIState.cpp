@@ -443,7 +443,7 @@ bool UIState::mouse_scroll(float delta_y) {
 
 	// Only zoom if there's actually a change
 	if (delta_y != 0) {
-		float mult = (1.0 + ((delta_y > 0) ? 1. : -1.) * 0.1);
+		float mult = (1.0 + ((delta_y > 0) ? 1. : -1.) * 0.02);
 		const float min_zoom = 0.1f;
 		viewer.core().camera_zoom = (viewer.core().camera_zoom * mult > min_zoom ? viewer.core().camera_zoom * mult : min_zoom);
 
@@ -692,10 +692,10 @@ void UIState::load_image(std::string fname) {
 	double extent = (V.colwise().maxCoeff() - V.colwise().minCoeff()).maxCoeff();
 	float ui_scaling_factor = viewer.window != NULL ? hidpi_scaling() / pixel_ratio() : 1;
 	// points_data().point_size = std::ceil(ui_scaling_factor) / 5.;
-	points_data().point_size = std::ceil(float(ui_scaling_factor / extent)) * 7;
+	points_data().point_size = std::ceil(float(ui_scaling_factor / extent)) * 9;
 	points_data().line_color = Eigen::Vector4f(37, 60, 68, 204) / 255.0;
 
-	physical_data().point_size = std::ceil(float(ui_scaling_factor / extent)) * 7;
+	physical_data().point_size = std::ceil(float(ui_scaling_factor / extent)) * 9;
 
 	// HIGH dpi
 	// int width, height;
@@ -813,7 +813,7 @@ void UIState::viewer_control_2d() {
 		hull_data().show_faces = false;
 		hull_data().show_lines = false;
 		hull_data().shininess = 0;
-		hull_data().line_width = 2.0;
+		hull_data().line_width = 3.0;
 	}
 
 	// points
@@ -907,7 +907,9 @@ void UIState::viewer_control_2d() {
 	// if (show_mesh_fill && !state.regions.empty())
 	if (show_mesh_fill)
 		create_region_label();
-	if(show_mesh && mesh_color.size() > 0) //FIXME
+	mesh_color.resize(1, 3);
+	mesh_color << 238./255., 247./255., 239./255.;
+	if (show_mesh && mesh_color.size() > 0) //FIXME
 		points_data().set_colors(mesh_color);
 
 	// bad regions

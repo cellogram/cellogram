@@ -572,20 +572,6 @@ void UIState::draw_image_viewer_menu() {
 	if (!current_file_name.empty() && !state.img3D.empty()) {
 		// General Info
 		ImGui::Text("Rows = %d  Cols = %d Layers = %d", state.img3D[0].rows(), state.img3D[0].cols(), state.img3D.size());
-
-		ImGui::Separator(); ////////////////////////
-
-		ImGui::PushItemWidth(UIsize.rightWidth / 2.0);
-		std::vector<std::string> typeName{"Compressed", "Z-Slice"};
-		ImGui::Combo("3D Image Viewer Type", &imgViewer.imageViewerType, typeName);
-		ImGui::PopItemWidth();
-
-		if (imgViewer.imageViewerType == 1) {
-			ImGui::SliderInt("Slice", &imgViewer.sliceToShow, 0, state.img3D.size()-1);
-		}
-
-		ImGui::Spacing();
-
 		ImGui::PushItemWidth(UIsize.rightWidth / 2.0);
 		// Select rotation type
 		int rotation_type = static_cast<int>(viewer.core().rotation_type);
@@ -614,6 +600,21 @@ void UIState::draw_image_viewer_menu() {
 		}
 		// Orthographic view
 		ImGui::Checkbox("Orthographic projection", &(viewer.core().orthographic));
+
+		ImGui::Separator(); ////////////////////////
+
+		ImGui::PushItemWidth(UIsize.rightWidth / 2.0);
+		std::vector<std::string> typeName{"Compressed", "Z-Slice"};
+		ImGui::Combo("3D Image Viewer Type", &imgViewer.imageViewerType, typeName);
+		ImGui::PopItemWidth();
+
+		if (imgViewer.imageViewerType == 1) {
+			ImGui::SliderInt("Slice", &imgViewer.sliceToShow, 0, state.img3D.size()-1);
+		}
+
+		ImGui::Spacing();
+
+		
 
 
 		/*
@@ -907,13 +908,14 @@ void UIState::draw_mesh_menu() {
 	// ImGui::PopItemWidth();
 	// ShowTooltip("Set energy threshold for difficult to mesh regions");
 
-	if(state.mesh.added_by_untangler.size() > 0)
-	{
+	if(state.mesh.added_by_untangler.size() > 0) {
 		if (ImGui::Button("Move vertex", ImVec2((w - p), 0))) {
 		// drag a single vertex to a new starting position
 			move_vertex = !move_vertex;
 			viewer_control();
 		}
+	} else {
+		ImGui::Text("Great. No vertex added.");
 	}
 
 	// if (ImGui::Button("Build regions", ImVec2((w - p), 0))) {
@@ -998,27 +1000,7 @@ void UIState::draw_mesh_menu() {
 
 void UIState::draw_depth_menu() {
 
-	// Select rotation type
-	int rotation_type = static_cast<int>(viewer.core().rotation_type);
-	static Eigen::Quaternionf trackball_angle = Eigen::Quaternionf::Identity();
-	static bool orthographic = true;
-	if (ImGui::Combo("Camera Type", &rotation_type, "Trackball\0Two Axes\0002D Mode\0\0")) {
-		using RT = igl::opengl::ViewerCore::RotationType;
-		auto new_type = static_cast<RT>(rotation_type);
-		if (new_type != viewer.core().rotation_type) {
-				if (new_type == RT::ROTATION_TYPE_NO_ROTATION) {
-					trackball_angle = viewer.core().trackball_angle;
-					orthographic = viewer.core().orthographic;
-					viewer.core().trackball_angle = Eigen::Quaternionf::Identity();
-					viewer.core().orthographic = true;
-				} else if (viewer.core().rotation_type == RT::ROTATION_TYPE_NO_ROTATION) {
-					viewer.core().trackball_angle = trackball_angle;
-					viewer.core().orthographic = orthographic;
-					viewer_control();
-				}
-				viewer.core().set_rotation_type(new_type);
-		}
-	}
+	
 
 	if (ImGui::Button("To Next"))
 		phase_4();
@@ -1462,7 +1444,7 @@ void UIState::draw_histogram_menu() {
 
 		viewer_control();
 	}
-	if (ImGui::SliderFloat("dark", &imgViewer.darkenScale, 0.2, 1.0)) {
+	if (ImGui::SliderFloat("dark", &imgViewer.darkenScale, 0.01, 1.0)) {
 		Eigen::MatrixXd tmp = (state.img.array() - min_img) / (max_img - min_img);
 		tmp = tmp.unaryExpr(clamping);
 		texture = (tmp.array() * 255 * imgViewer.darkenScale).cast<unsigned char>();
