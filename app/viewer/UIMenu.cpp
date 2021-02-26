@@ -603,8 +603,21 @@ void UIState::draw_image_viewer_menu() {
 				viewer.core().set_rotation_type(new_type);
 			}
 		}
-		// Orthographic view
-		ImGui::Checkbox("Orthographic projection", &(viewer.core().orthographic));
+
+		if (ImGui::TreeNode("Advanced visualization")) {
+			
+			// Orthographic view
+			ImGui::Checkbox("Orthographic projection", &(viewer.core().orthographic));
+
+			// z_multiplier
+			ImGui::SliderFloat("Z-mult", &imgViewer.visual_y_mult, 1.0, 6.0, "%.1f");
+			if (ImGui::IsItemHovered()) {
+				ImGui::SetTooltip("Multiplier applied to z-axis for visualization in case the z-stack is too thin.");
+			}
+
+			ImGui::TreePop();
+            ImGui::Separator();
+        }
 
 		ImGui::Separator(); ////////////////////////
 

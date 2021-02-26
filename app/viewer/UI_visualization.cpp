@@ -52,12 +52,22 @@ void UIState::DrawAxisDots() {
     static int nr = std::ceil(double(imgRows) / gapr)+1;
     static int nc = std::ceil(double(imgCols) / gapc)+1;
     static int nz = std::ceil(double(layerPerImg) / gapz)+1;
-    static Eigen::MatrixXd loc_r = ToMat(Eigen::VectorXd::Zero(nr), Linspace(0, imgRows, gapr), Eigen::VectorXd::Zero(nr));
-    static Eigen::MatrixXd label_loc_r = ToMat(Eigen::VectorXd::Ones(nr).array() * (-10.0), Linspace(0, imgRows, gapr).array() + 0.5, Eigen::VectorXd::Zero(nr));
-    static Eigen::MatrixXd loc_c = ToMat(Linspace(0, imgCols, gapc), Eigen::VectorXd::Ones(nc).array() * imgRows, Eigen::VectorXd::Zero(nc));
-    static Eigen::MatrixXd label_loc_c = ToMat(Linspace(0, imgCols, gapc).array() - 0.5, Eigen::VectorXd::Ones(nc).array() * (imgRows+6.0), Eigen::VectorXd::Zero(nc));
-    static Eigen::MatrixXd loc_z = ToMat(Eigen::VectorXd::Ones(nz).array() * imgCols, Eigen::VectorXd::Ones(nz).array() * imgRows, Linspace(0, layerPerImg, gapz));
-    static Eigen::MatrixXd label_loc_z = ToMat(Eigen::VectorXd::Ones(nz).array() * (imgCols+2.0), Eigen::VectorXd::Ones(nz).array() * imgRows, Linspace(0, layerPerImg, gapz).array() + 1.2);
+    static Eigen::MatrixXd loc_r;
+    static Eigen::MatrixXd label_loc_r;
+    static Eigen::MatrixXd loc_c;
+    static Eigen::MatrixXd label_loc_c;
+    static Eigen::MatrixXd loc_z;
+    static Eigen::MatrixXd label_loc_z;
+    static float visual_y_mult_cache = -1;
+    if (visual_y_mult_cache != imgViewer.visual_y_mult) {
+        visual_y_mult_cache = imgViewer.visual_y_mult;
+        loc_r = ToMat(Eigen::VectorXd::Zero(nr), Linspace(0, imgRows, gapr), Eigen::VectorXd::Zero(nr));
+        label_loc_r = ToMat(Eigen::VectorXd::Ones(nr).array() * (-10.0), Linspace(0, imgRows, gapr).array() + 0.5, Eigen::VectorXd::Zero(nr));
+        loc_c = ToMat(Linspace(0, imgCols, gapc), Eigen::VectorXd::Ones(nc).array() * imgRows, Eigen::VectorXd::Zero(nc));
+        label_loc_c = ToMat(Linspace(0, imgCols, gapc).array() - 0.5, Eigen::VectorXd::Ones(nc).array() * (imgRows+6.0), Eigen::VectorXd::Zero(nc));
+        loc_z = ToMat(Eigen::VectorXd::Ones(nz).array() * imgCols, Eigen::VectorXd::Ones(nz).array() * imgRows, Linspace(0, layerPerImg*imgViewer.visual_y_mult, gapz*imgViewer.visual_y_mult));
+        label_loc_z = ToMat(Eigen::VectorXd::Ones(nz).array() * (imgCols+2.0), Eigen::VectorXd::Ones(nz).array() * imgRows, Linspace(0, layerPerImg*imgViewer.visual_y_mult, gapz*imgViewer.visual_y_mult).array() + 1.2);
+    }
 
     static Eigen::MatrixXd referencePointColor = [] {
         Eigen::MatrixXd tmp(1, 3);
@@ -76,7 +86,7 @@ void UIState::DrawAxisDots() {
     for (int i=0; i<nc; i++)
         visual_data().add_label(label_loc_c.row(i), ToStringWithPrecision(loc_c(i, 0)));
     for (int i=0; i<nz; i++)
-        visual_data().add_label(label_loc_z.row(i), ToStringWithPrecision(loc_z(i, 2)));
+        visual_data().add_label(label_loc_z.row(i), ToStringWithPrecision(loc_z(i, 2) / imgViewer.visual_y_mult));
 }
 
 }  // namespace cellogram

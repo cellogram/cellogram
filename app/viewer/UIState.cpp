@@ -753,10 +753,10 @@ void UIState::display_image() {
 	} else {
 		// per-slice
 		img_V.resize(4, 3);
-		img_V << offset, offset, imgViewer.sliceToShow, 
-				yMax + offset, offset, imgViewer.sliceToShow, 
-				yMax + offset, xMax + offset, imgViewer.sliceToShow, 
-				offset, xMax + offset, imgViewer.sliceToShow;
+		img_V << offset, offset, imgViewer.sliceToShow*imgViewer.visual_y_mult, 
+				yMax + offset, offset, imgViewer.sliceToShow*imgViewer.visual_y_mult, 
+				yMax + offset, xMax + offset, imgViewer.sliceToShow*imgViewer.visual_y_mult, 
+				offset, xMax + offset, imgViewer.sliceToShow*imgViewer.visual_y_mult;
 		texture_to_use = (state.img3D[imgViewer.sliceToShow].array() * 255).cast<unsigned char>();
 		texture_to_use.transposeInPlace();
 	}
