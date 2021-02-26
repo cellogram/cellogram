@@ -11,6 +11,8 @@
 #include <cellogram/tri2hex.h>
 #include <cellogram/vertex.h>
 #include <cellogram/vertex_degree.h>
+#include <zebrafish/Logger.hpp>
+
 #include <igl/colormap.h>
 #include <igl/jet.h>
 #include <igl/opengl/gl.h>
@@ -19,6 +21,7 @@
 #include <igl/opengl/glfw/imgui/ImGuiMenu.h>
 #include <igl/parula.h>
 #include <igl/unproject_onto_mesh.h>
+
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
 #include <GLFW/glfw3.h>
@@ -27,6 +30,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
+
+using zebrafish::logger;
 
 	namespace {
 
@@ -614,7 +619,10 @@ void UIState::draw_image_viewer_menu() {
 
 		ImGui::Spacing();
 
-		
+		ImGui::Checkbox("Show axis points", &show_axisPoints);
+		if (ImGui::IsItemHovered()) {
+			ImGui::SetTooltip("Three array of points indicating the X, Y and Z axis");
+		}
 
 
 		/*

@@ -290,6 +290,7 @@ void UIState::initialize() {
 	viewer.append_mesh();
 	viewer.append_mesh();
 	viewer.append_mesh();
+	viewer.append_mesh();
 	viewer.data_list[0].id = hull_id = 0;
 	viewer.data_list[1].id = points_id = 1;
 	viewer.data_list[2].id = image_id = 2;
@@ -297,8 +298,9 @@ void UIState::initialize() {
 	viewer.data_list[4].id = matching_id = 4;
 	viewer.data_list[5].id = selected_id = 5;
 	viewer.data_list[6].id = physical_id = 6;
+	viewer.data_list[7].id = visual_id = 7;
 
-	assert(viewer.data_list.size() == physical_id + 1);
+	assert(viewer.data_list.size() == visual_id + 1);
 }
 
 void UIState::init(igl::opengl::glfw::Viewer *_viewer) {
@@ -770,7 +772,7 @@ void UIState::display_image() {
 }
 
 void UIState::viewer_control() {
-	viewer_control_3d();
+	viewer_control_3d();  // 2d is called in 3d
 	/*
 	if (analysis_mode) {
 		viewer_control_3d();
@@ -793,6 +795,7 @@ void UIState::viewer_control_2d() {
 	bad_region_data().clear();
 	selected_data().clear();
 	physical_data().clear();
+	visual_data().clear();
 
 	// Read all the UIState flags and update display
 	// hull
@@ -974,6 +977,11 @@ void UIState::viewer_control_2d() {
 		selected_data().line_width = 3.0;
 	}
 
+	// visual
+	visual_data().point_size = 6;
+    visual_data().show_labels = true;
+	DrawAxisDots();
+
 	// Fix shininess for all layers
 	fix_color(hull_data());
 	fix_color(points_data());
@@ -981,6 +989,7 @@ void UIState::viewer_control_2d() {
 	fix_color(bad_region_data());
 	fix_color(matching_data());
 	fix_color(selected_data());
+	fix_color(visual_data());
 }
 
 void UIState::viewer_control_3d() {

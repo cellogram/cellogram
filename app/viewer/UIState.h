@@ -66,6 +66,7 @@ public:
 	int matching_id;
 	int selected_id;
 	int physical_id;
+	int visual_id;
 
 	int selected_region = -1;
 	int selected_param = 0;
@@ -165,6 +166,7 @@ public:
 	igl::opengl::ViewerData & matching_data() { return mesh_by_id(matching_id); }
 	igl::opengl::ViewerData & selected_data() { return mesh_by_id(selected_id); }
 	igl::opengl::ViewerData & physical_data() { return mesh_by_id(physical_id); }
+	igl::opengl::ViewerData & visual_data() { return mesh_by_id(visual_id); }
 
 private:
 	igl::ColorMapType cm = igl::ColorMapType::COLOR_MAP_TYPE_PARULA;
@@ -236,6 +238,10 @@ private:
 
 	UIsize_t UIsize;
 	ImageViewer_t imgViewer;
+
+	// visualization
+	bool show_axisPoints = false;
+	void DrawAxisDots();
 
 public:
 	// Menu stuff
