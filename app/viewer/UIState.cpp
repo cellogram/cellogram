@@ -162,7 +162,7 @@ bool UIState::mouse_down(int button, int modifier) {
 
 	// std::cout << x << " " << y << std::endl;
 
-	Eigen::MatrixXd V = t * state.mesh.points + (1 - t) * state.mesh.moved;
+	Eigen::MatrixXd V = imgViewer.deformScale * state.mesh.points + (1 - imgViewer.deformScale) * state.mesh.moved;
 
 	if (V.size() <= 0)
 		return block_mouse_behavior(button);
@@ -177,7 +177,7 @@ bool UIState::mouse_down(int button, int modifier) {
 		select_region = false;
 
 		// set selected_region
-		for (int i = 0; i < state.regions.size(); i++) {
+		for (int i = 0; i < (int)state.regions.size(); i++) {
 			for (int j = 0; j < state.regions[i].region_triangles.rows(); j++) {
 				if (fid == state.regions[i].region_triangles(j)) {
 					selected_region = i;
@@ -641,14 +641,13 @@ void UIState::export_region() {
 
 void UIState::reset_viewer() {
 	// Display flags
-	t = 0;
+	imgViewer.deformScale = 0;
 	// vertex_color = Eigen::RowVector3f(44, 62, 80)/255;
 	vertex_color = Eigen::RowVector3f(104, 175, 245)/255;
 
 	selected_region = -1;
 	show_hull = true;
 	show_points = true;
-	show_mesh_fill = true;
 	show_image = true;
 	show_matching = false;
 	show_bad_regions = false;
@@ -820,7 +819,8 @@ void UIState::viewer_control_2d() {
 	}
 
 	// points
-	Eigen::MatrixXd V = t * state.mesh.points + (1 - t) * state.mesh.moved;
+	Eigen::MatrixXd V = imgViewer.deformScale * state.mesh.points + (1 - imgViewer.deformScale) * state.mesh.moved;
+	V.col(2).array() += 0.1;  // may coincide with the image
 
 	if (V.rows() > 2 && show_mesh){
 		points_data().set_mesh(V, state.mesh.triangles);
@@ -880,8 +880,8 @@ void UIState::viewer_control_2d() {
 					state.mesh.params.std_y(i) * state.mesh.params.std_y(i));
 			}
 
-			igl::ColorMapType cm = igl::ColorMapType::COLOR_MAP_TYPE_INFERNO;
-			igl::colormap(cm, param, true, C);
+			igl::ColorMapType cm_ = igl::ColorMapType::COLOR_MAP_TYPE_INFERNO;
+			igl::colormap(cm_, param, true, C);
 		} else {
 			for (auto &r : state.regions) {
 				for (int i = 0; i < r.region_boundary.size(); ++i) {
@@ -939,9 +939,12 @@ void UIState::viewer_control_2d() {
 
 	// matching
 	if (show_matching) {
-		matching_data().clear();
-		matching_data().add_edges(state.mesh.points, state.mesh.detected, Eigen::RowVector3d(0, 0, 0));
-		matching_data().line_width = 3.0;
+		Eigen::MatrixXd p1 = state.mesh.points;
+		Eigen::MatrixXd p2 = state.mesh.detected;
+		p1.col(2).array() += 0.1;
+		p2.col(2).array() += 0.1;
+		matching_data().add_edges(p1, p2, Eigen::RowVector3d(194./255., 83./255., 57./255.));
+		matching_data().line_width = 4.0;
 	}
 
 	// show selected region
@@ -984,7 +987,7 @@ void UIState::viewer_control_2d() {
 
 	// Fix shininess for all layers
 	fix_color(hull_data());
-	fix_color(points_data());
+	// fix_color(points_data());
 	fix_color(image_data());
 	fix_color(bad_region_data());
 	fix_color(matching_data());
@@ -1149,7 +1152,7 @@ void UIState::create_region_label() {
 	mesh_color.resize(state.mesh.triangles.rows(), 3);
 	mesh_color.setOnes();
 
-	for (int i = 0; i < (int) state.regions.size(); ++i) {
+	for (int i = 0; i < (int)state.regions.size(); ++i) {
 		Eigen::RowVector3d color;
 		get_region_color(state.regions[i].status, color);
 
@@ -1225,7 +1228,7 @@ void UIState::phase_1()
 void UIState::phase_2()
 {
 	state.phase_enumeration = 2;
-	t = 0;
+	imgViewer.deformScale = 0;
 	show_mesh = true;
 	show_hull = false;
 	show_points = true;

@@ -32,9 +32,10 @@ typedef struct ImageViewer_t {
 	int imageViewerType;
 	int sliceToShow;
 	float visual_y_mult;  // y-axis visualization multiplier (z-stack may be too small)
+	float deformScale;  // mesh deformation percent
 	float darkenScale;
 
-	ImageViewer_t() : imageViewerType(0), sliceToShow(0), visual_y_mult(3.0), darkenScale(0.5) {}
+	ImageViewer_t() : imageViewerType(0), sliceToShow(0), visual_y_mult(3.0), deformScale(0.0), darkenScale(0.5) {}
 } ImageViewer_t;
 
 // -----------------------------------------------------------------------------
@@ -80,7 +81,6 @@ public:
 	Eigen::MatrixXf hist;
 
 	// Display flags
-	float t;
 	Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> texture;
 	Eigen::RowVector3f vertex_color;
 	Eigen::MatrixXd mesh_color;

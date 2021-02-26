@@ -1032,7 +1032,7 @@ void UIState::draw_depth_menu() {
 void UIState::draw_analysis_menu() {
 
 	ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.40f);
-	if (ImGui::SliderFloat("Displacement", &t, 0, 1)) {
+	if (ImGui::SliderFloat("Displacement", &imgViewer.deformScale, 0, 1)) {
 		viewer_control();
 	}
 	ImGui::PopItemWidth();
