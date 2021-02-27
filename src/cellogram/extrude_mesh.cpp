@@ -1,15 +1,19 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "extrude_mesh.h"
 #include <polyfem/MeshUtils.hpp>
+#include <zebrafish/Logger.hpp>
 #include <igl/all_edges.h>
 #include <igl/boundary_loop.h>
 #include <igl/bfs_orient.h>
 #include <igl/orient_outward.h>
+#include <igl/write_triangle_mesh.h>
 #include <igl/triangle/triangulate.h>
 #include <igl/copyleft/tetgen/tetrahedralize.h>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
+
+using zebrafish::logger;
 
 // -----------------------------------------------------------------------------
 
@@ -21,7 +25,7 @@ void extrude_mesh(const Eigen::MatrixXd &V1, const Eigen::MatrixXi &F1, double t
 	Eigen::RowVector2d maxV = V1.colwise().maxCoeff().head<2>();
 	Eigen::MatrixXd V2(V1.rows() + 4, 3);
 	V2.topLeftCorner(V1.rows(), V1.cols()) = V1;
-	V2.col(2).setConstant(z0);
+	// V2.col(2).setConstant(z0);  // need 3D now
 	V2.bottomRows(4) <<
 		minV(0), minV(1), z0 + thickness,
 		maxV(0), minV(1), z0 + thickness,
@@ -52,7 +56,6 @@ void extrude_mesh(const Eigen::MatrixXd &V1, const Eigen::MatrixXi &F1, double t
 	}
 
 	// 3. Trivial triangulation of boundary vertices
-	std::cout << "n = " << n << std::endl;
 	for (int d = 0; d < 2; ++d) {
 		for (double coord : {minV(d), maxV(d)}) {
 			std::vector<std::pair<double, int>> top;
@@ -86,8 +89,11 @@ void extrude_mesh(const Eigen::MatrixXd &V1, const Eigen::MatrixXi &F1, double t
 	// 5. Orient facets and tetrahedralize
 	Eigen::VectorXi C;
 	igl::bfs_orient(F2, F2, C);
+	igl::write_triangle_mesh("/Users/ziyizhang/Projects/tmp/debug2.obj", V2, F2);
 	igl::copyleft::tetgen::tetrahedralize(V2, F2, "Qq1.414", VT, TT, FT);
 	polyfem::orient_closed_surface(VT, FT);
+
+	logger().info(" Extrude_mesh: #input_V={}, #input_F={}, thickness={}, #VT={}, #FT={}, #TT={}", n, F1.rows(), thickness, VT.rows(), FT.rows(), TT.rows());
 }
 
 void extrude_mesh_old(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, double thickness, Eigen::MatrixXd &VT, Eigen::MatrixXi &FT, Eigen::MatrixXi &TT) {

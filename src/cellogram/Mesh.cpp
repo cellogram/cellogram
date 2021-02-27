@@ -447,13 +447,13 @@ namespace cellogram {
 	void Mesh::get_background_mesh(double scaling, Eigen::MatrixXd &V, Eigen::MatrixXi &F, Eigen::VectorXd &S, double padding) const {
 		Eigen::MatrixXd BV;
 		Eigen::MatrixXi BF;
-		V = points.leftCols<2>();
+		// V = points.leftCols<2>();
+		V = points;
 		igl::bounding_box(V, padding / scaling, BV, BF);
-		assert(BV.rows() == 4);
+		assert(BV.rows() == 8);  // now in 3D
 
-		V.resize(points.rows() + BV.rows(), 2);
-		V.topRows(points.rows()) = points.leftCols<2>();
-		V.bottomRows(BV.rows()) = BV;
+		V.resize(points.rows() + BV.rows(), 3);
+		V << points, BV;
 
 		delaunay_triangulation(V, F);
 		V *= scaling;

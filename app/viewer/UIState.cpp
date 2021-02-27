@@ -275,12 +275,11 @@ void UIState::initialize() {
 	state.resolve_regions();*/
 
 	// Setup viewer parameters
-	viewer.resize(UIsize.windowWidth, UIsize.windowHeight);
+	// viewer.resize(UIsize.windowWidth, UIsize.windowHeight);
 	viewer.core().background_color << 0.7f, 0.7f, 0.75f, 1.0f;
 	// viewer.core().set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_TRACKBALL);
 	viewer.core().set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_NO_ROTATION);
 	viewer.core().orthographic = true;
-	viewer.core().is_animating = true;
 	viewer.core().is_animating = true;
 
 	// Setup viewer data
@@ -319,13 +318,13 @@ void UIState::init(igl::opengl::glfw::Viewer *_viewer) {
     icon_font = io.Fonts->AddFontFromMemoryCompressedTTF(fa_solid_compressed_data, fa_solid_compressed_size, 20.0f, &icons_config, icons_ranges);
 
 
-	glfwSetWindowTitle(viewer.window, "Cellogram2 viewer");
-	//viewer.resize(1400, 1280);
+	// glfwSetWindowTitle(viewer.window, "Cellogram2 viewer");
+	// viewer.resize(1400, 1280);
 }
 
 void UIState::launch() {
 	// Launch viewer
-	viewer.launch();
+	viewer.launch(true, false, "Cellogram2 GUI", UIsize.windowWidth, UIsize.windowHeight);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -820,9 +819,8 @@ void UIState::viewer_control_2d() {
 
 	// points
 	Eigen::MatrixXd V = imgViewer.deformScale * state.mesh.points + (1 - imgViewer.deformScale) * state.mesh.moved;
-	V.col(2).array() += 0.1;  // may coincide with the image
-
-	if (V.rows() > 2 && show_mesh){
+	if (V.rows() > 2 && show_mesh) {
+		V.col(2).array() += 0.1;  // may coincide with the image
 		points_data().set_mesh(V, state.mesh.triangles);
 	}
 
@@ -985,7 +983,7 @@ void UIState::viewer_control_2d() {
     visual_data().show_labels = true;
 	DrawAxisDots();
 
-	// Fix shininess for all layers
+	// Fix shininess for all layers8
 	fix_color(hull_data());
 	// fix_color(points_data());
 	fix_color(image_data());

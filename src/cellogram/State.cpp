@@ -1055,14 +1055,16 @@ using zebrafish::logger;
 		mesh.get_background_mesh(scaling, V, F, D, padding_size);
 		propagate_sizing_field(V, F, D, S);
 
-		mmg_options.hmin = S.minCoeff();
-		mmg_options.hmax = S.maxCoeff();
- 		remesh_adaptive_2d(V, F, S, V, F, mmg_options);
+		// FIXME: sizing field
+		// mmg_options.hmin = S.minCoeff();
+		// mmg_options.hmax = S.maxCoeff();
+ 		// remesh_adaptive_2d(V, F, S, V, F, mmg_options);
 
 		// Set volume mesh based on the current surface
-		mesh3d.V.resize(V.rows(), 3);
-		mesh3d.V.leftCols<2>() = V.leftCols<2>();
-		mesh3d.V.col(2).setZero();
+		// mesh3d.V.resize(V.rows(), 3);
+		mesh3d.V  = V;  // we want 3d now
+		// mesh3d.V.leftCols<2>() = V.leftCols<2>();
+		// mesh3d.V.col(2).setZero();
 
 		mesh3d.F = F;
 		mesh3d.T = Eigen::MatrixXi(0, 4);
@@ -1103,15 +1105,18 @@ using zebrafish::logger;
 #endif
 
 	void State::extrude_2d_mesh() {
-		if (mesh3d.V.size() == 0) { mesh_2d_adaptive(); }
+		if (mesh3d.V.size() == 0) {
+			mesh_2d_adaptive();
+			igl::write_triangle_mesh("/Users/ziyizhang/Projects/tmp/debug.obj", mesh3d.V, mesh3d.F);
+		}
 
 		double zmin = mesh3d.V.col(2).minCoeff();
 		double zmax = mesh3d.V.col(2).maxCoeff();
 
 		// Remesh 2d surface in repeated calls
-		if (std::abs(zmin - zmax) > 1e-6) {
-			mesh_2d_adaptive();
-		}
+		// if (std::abs(zmin - zmax) > 1e-6) {
+		// 	mesh_2d_adaptive();
+		// }
 
 		// Extrude into a 3d mesh
 		extrude_mesh(mesh3d.V, mesh3d.F, -thickness, mesh3d.V, mesh3d.F, mesh3d.T);
@@ -1145,7 +1150,7 @@ using zebrafish::logger;
 		logger().info("Meshing 3d took {}s", delta_t.count());
 	}
 
-	void State::remesh_3d_adaptive() {
+	void State::remesh_3d_adaptive() {  // after clicking "Build volumetric mesh"
 
 		auto t1 = std::chrono::system_clock::now();
 

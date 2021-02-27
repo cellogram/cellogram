@@ -1181,6 +1181,16 @@ void UIState::draw_analysis_menu() {
 			[&]() {return ImGui::Button("Build volumetric mesh", ImVec2(-1.0, 0));},
 			[&]()
 		{
+			// [NOTE] zebrafish:
+			// mesh_3d_volume():   simply call extrude_2d_mesh()
+			// extrude_2d_mesh():  
+			// 		- mesh_2d_adaptive():
+			//				- get_background_mesh():     use "points" in Mesh to retrieve {mesh3d.V, mesh3d.F} and sizing scalar
+			//				- remesh_adaptive_2d():		 use sizing scalar to re-mesh {mesh3d.V, mesh3d.F}
+			//		- extrude_mesh():			 		 update the {mesh3d.V, mesh3d.F} from 3d surface to 3d tetrahedral mesh (inplace)
+			// remesh_3d_adaptive():
+			
+
 			//state.mesh_2d_adaptive();
 			state.mesh_3d_volume();
 			state.remesh_3d_adaptive();
