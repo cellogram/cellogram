@@ -25,11 +25,15 @@ using namespace Catch::literals;
 
 const auto func_const = [](auto x, auto y, auto z) {return 1;};
 const auto func_quadratic = [](auto x, auto y, auto z) {
-    if ((x-14.5)*(x-14.5) + (y-14.5)*(y-14.5) <= 4*4) {
+    if ((x-14.25)*(x-14.25) + (y-14.75)*(y-14.75) <= 4*4) {
         return 0;
     } else {
         return 1;
     }
+};
+const auto func_cubic = [](auto x, auto y, auto z) {
+    // (x^2 + y^2)^(3/2)
+    return pow((x-14.25)*(x-14.25) + (y-14.75)*(y-14.75), 1.5);
 };
 
 
@@ -96,7 +100,27 @@ TEST_CASE("optim_zone", "[OptimTest]") {
 
     optim::Optim_FixDepth(optimPara, bsplineSolver, CI, CO, EO, IterO, false);
 
+    // log
     const int N = CI.rows();
+    int good=0, bad=0, failure=0;
+    for (int i=0; i<N; i++) {
+        if (IterO(i) >= optimPara.maxIt || EO(i) == 1.0) 
+            failure++;
+        else {
+            if (std::pow(14.25 - CO(i, 0), 2.0) + std::pow(14.75 - CO(i, 1), 2.0) > 0.01*0.01) {  // xy precision require 0.01
+                bad++;
+            } else {
+                good++;
+            }
+        }
+    }
+
+    REQUIRE(good >= 40);
+    REQUIRE(bad == 0);
+    REQUIRE(failure <= 9);  // gradient disappears
+
+    cout << good << endl << bad << endl << failure << endl;
+
     Eigen::MatrixXd output(N, 10);
     output.leftCols(4) = CI;
     output.block(0, 4, N, 4) = CO;
@@ -104,4 +128,34 @@ TEST_CASE("optim_zone", "[OptimTest]") {
     output.col(9) = IterO.cast<double>();
 
     cout << output << endl;
+}
+
+
+TEST_CASE("optim_debug", "[OptimTest]") {
+
+	image_t image; // 30 * 30 * 30
+    GenImage(image, func_quadratic);
+    double thres = QuantileImage(image, 1.0);
+    NormalizeImage(image, thres);
+
+    // prepare B-spline
+    spdlog::set_level(spdlog::level::warn);
+    const int bsplineDegree = 2;
+    bspline bsplineSolver;
+    bsplineSolver.CalcControlPts(image, 0.7, 0.7, 0.7, bsplineDegree);
+
+    // TBB
+    const int num_threads = 1;  // sequential
+    const size_t MB = 1024 * 1024;
+    const size_t stack_size = 64 * MB;
+    tbb::task_scheduler_init scheduler(num_threads, stack_size);
+
+    // optim
+    OptimPara_t optimPara;
+    Eigen::MatrixXd CI(1, 4), CO;
+    Eigen::VectorXd EO;
+    Eigen::VectorXi IterO;
+    CI << 12.5, 13.5, 10, 5;
+
+    optim::Optim_FixDepth(optimPara, bsplineSolver, CI, CO, EO, IterO, false);
 }

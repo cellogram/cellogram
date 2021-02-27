@@ -30,7 +30,7 @@ public:
     static void Optim_FixDepth(const OptimPara_t &optimPara, const bspline &bsp, const Eigen::MatrixXd &CI, Eigen::MatrixXd &CO, Eigen::VectorXd &EO, Eigen::VectorXi &IterO, bool invertColor=false);
     /// Optimize cylinder(s) "CI" using 3D image "bsp"
     /// The depth (z) coordinate is fixed
-    /// []
+    /// [NOTE] Image needs to be normalized to [0, 1]
     ///
     /// @param[in]   bsp         { a B-spline solver with image size registered }
     /// @param[in]   CI          { [#cylinder x 4] matrix of input x, y, z, r }
