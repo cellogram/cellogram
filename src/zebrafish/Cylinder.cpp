@@ -107,7 +107,7 @@ template void cylinder::EnergyHelper(const bspline &bsp, const Eigen::Matrix<dou
 
 
 template <typename T>
-void cylinder::EvaluateCylinder(const bspline &bsp, T x, T y, double z, T r, double h, T &res, bool reverse/*=false*/) {
+void cylinder::EvaluateCylinder(const bspline &bsp, T x, T y, double z, T r, double h, T &res, bool invert/*=false*/) {
 
     // kill the staic, zArray should be an input
     Eigen::Matrix<double, Eigen::Dynamic, 1> zArray;  // store the array of depths
@@ -164,11 +164,11 @@ void cylinder::EvaluateCylinder(const bspline &bsp, T x, T y, double z, T r, dou
     ////////////////////////////////////////////////////
     // double quadrature solution of the energy
     res = 2.0*(resInner - resExt) * weightScalar;
-    if (reverse) res *= -1;
+    if (invert) res *= -1;  // invert color
 }
 // explicit template instantiation
-template void cylinder::EvaluateCylinder(const bspline &bsp, DScalar x, DScalar y, double z, DScalar r, double h, DScalar &res, bool reverse);
-template void cylinder::EvaluateCylinder(const bspline &bsp, double  x, double  y, double z, double  r, double h, double  &res, bool reverse);
+template void cylinder::EvaluateCylinder(const bspline &bsp, DScalar x, DScalar y, double z, DScalar r, double h, DScalar &res, bool invert);
+template void cylinder::EvaluateCylinder(const bspline &bsp, double  x, double  y, double z, double  r, double h, double  &res, bool invert);
 
 
 void cylinder::SubtractionHelper(const Eigen::MatrixXd &points, const Eigen::VectorXd &weight, Eigen::VectorXd &resWeight) {

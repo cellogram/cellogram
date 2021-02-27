@@ -51,7 +51,7 @@ public:
     /// @return      { whether the cylidner is valid }
 
     template <typename T>
-    static void EvaluateCylinder(const bspline &bsp, T x, T y, double z, T r, double h, T &res, bool reverse = false);
+    static void EvaluateCylinder(const bspline &bsp, T x, T y, double z, T r, double h, T &res, bool invert = false);
     /// Calculate sample points for the given cylinder and evaluate the energy.
     /// This function does not check whether the cylinder is valid.
     ///
@@ -60,6 +60,7 @@ public:
     /// @param[in]   r         { cylinder radius. Must be positive }
     /// @param[in]   h         { cylinder height. Must be positive }
     /// @param[out]  res       { evaluated energy }
+    /// @param[in]   invert    { multiply res by -1 (due to inverted color) }
     ///
 
     static void SubtractionHelper(const Eigen::MatrixXd &points, const Eigen::VectorXd &weight, Eigen::VectorXd &resWeight);

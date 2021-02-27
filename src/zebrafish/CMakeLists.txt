@@ -13,6 +13,8 @@ set(source_list
 	Quadrature.h
 	Quantile.cpp
 	Quantile.h
+	Optimization.cpp
+	Optimization.h
 )
 add_library(${PROJECT_NAME} ${source_list})
 
@@ -22,6 +24,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC ..)
 target_link_libraries(${PROJECT_NAME} PUBLIC
 	igl::core
 	polyfem
+	LBFGS
 )
 
 # Extra warnings

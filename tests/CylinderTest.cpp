@@ -53,10 +53,6 @@ auto GenImage = [](image_t &image, auto func){
     }
 };
 
-double cylinder::alpha{0.5};
-double cylinder::K{sqrt(2)};
-double cylinder::H{2.5};
-
 ////////////////////////////////////////////////////////////////////////////
 
 TEST_CASE("cylinder_const", "[CylinderTest]") {

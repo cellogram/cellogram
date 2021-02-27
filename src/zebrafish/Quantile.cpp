@@ -10,7 +10,8 @@ double QuantileImage(const zebrafish::image_t &image, double q, int layerBegin, 
     int i, j, depth;
     int N = image.size();
     int M = image[0].size();  // rows() * cols()
-    int num = floor((1.0-q) * N * M);  // target number for quantile(q)
+    unsigned long num = floor((1.0-q) * N * M);  // target number for quantile(q)
+    if (num == 0) num = 1;
     std::priority_queue<double, std::vector<double>, std::greater<double> > heap;
 
     if (layerBegin == -1 || layerEnd == -1) {
