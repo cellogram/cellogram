@@ -35,6 +35,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 # Generate position independent code
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+# project-options
+option(CELLOGRAM_WITH_UNIT_TESTS "Enable unit test"  ON)
+
 ################################################################################
 
 # Options for libigl modules
@@ -137,10 +140,6 @@ endif()
 #add_subdirectory(${THIRD_PARTY_DIR}/zebrafish)
 
 
-# catch2
-#cellogram_download_catch2()
-#add_subdirectory(${THIRD_PARTY_DIR}/catch2)
-
 # LBFGS
 if (NOT TARGET LBFGS)
 	cellogram_download_LBFGS()
@@ -203,3 +202,22 @@ set_target_properties(gslcblas PROPERTIES FOLDER 3rdparty/not_used)
 # set_target_properties(tetgen PROPERTIES FOLDER 3rdparty/not_used)
 set_target_properties(tinyfiledialogs_tinyfiledialogs PROPERTIES FOLDER 3rdparty)
 # set_target_properties(triangle PROPERTIES FOLDER 3rdparty)
+
+
+################################################################################
+# Tests
+################################################################################
+
+if(CELLOGRAM_WITH_UNIT_TESTS)
+
+	# Catch2
+	if(NOT TARGET Catch2::Catch2)
+		cellogram_download_catch2()
+		add_subdirectory(${THIRD_PARTY_DIR}/Catch2 catch2)
+		list(APPEND CMAKE_MODULE_PATH ${THIRD_PARTY_DIR}/Catch2/contrib)
+	endif()
+
+	include(CTest)
+	enable_testing()
+	add_subdirectory(tests)
+endif()
