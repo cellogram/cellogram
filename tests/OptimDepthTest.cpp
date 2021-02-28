@@ -67,6 +67,7 @@ const auto GenImage = [](image_t &image, auto func) {
 
 TEST_CASE("optimz_ideal", "[OptimTest]") {
 
+    /*
     image_t image; // 30 * 30 * 30
     GenImage(image, func_quadratic);
     double thres = QuantileImage(image, 1.0);
@@ -91,56 +92,27 @@ TEST_CASE("optimz_ideal", "[OptimTest]") {
           15, 15, 10, 5, 
           16, 15, 10, 5;
     optim::Optim_WithDepth(optimPara, bsplineSolver, 3, 1.0, CI, CO);
+    */
 
-    /*
-		// optim
-		OptimPara_t optimPara;
-		Eigen::MatrixXd CI, CO;
-		Eigen::VectorXd EO;
-		Eigen::VectorXi IterO;
-		const auto GridCI = [&CI](int m, double gap) {
-				CI.resize((2*m+1)*(2*m+1), 4);
-				int cnt = 0;
-				for (int i=-m; i<=m; i++)
-						for (int j=-m; j<=m; j++) {
+    Eigen::VectorXd E_raw(15);
+    E_raw << 9, 8, 7, 5, 3, 100, 1, 2, 5, 3, 3, 4, 6, 7, 10;
 
-								CI.row(cnt) << 14.5+i*gap, 14.5+j*gap, 10, 5.0;
-								cnt++;
-						}
-		};
-		GridCI(3, 1.0);
+    cout << E_raw << endl;
+    Eigen::VectorXd energy_smooth(15);
+    energy_smooth = Eigen::VectorXd::NullaryExpr([&E_raw](Eigen::Index i) {
+        const int l = 2;
+        int left = std::max(int(i-l), 0);
+        int right = std::min(int(i+l), int(E_raw.size()-1));
 
-		optim::Optim_FixDepth(optimPara, bsplineSolver, CI, CO, EO, IterO, false);
-
-		// log
-		const int N = CI.rows();
-		int good=0, bad=0, failure=0;
-		for (int i=0; i<N; i++) {
-				if (IterO(i) >= optimPara.maxIt || EO(i) == 1.0)
-						failure++;
-				else {
-						if (std::pow(14.25 - CO(i, 0), 2.0) + std::pow(14.75 - CO(i, 1), 2.0) > 0.01*0.01) {  // xy precision require 0.01
-								bad++;
-						} else {
-								good++;
-						}
-				}
-		}
-
-		REQUIRE(good >= 40);
-		REQUIRE(bad == 0);
-		REQUIRE(failure <= 9);  // due to discontinuity?
-
-		cout << good << endl << bad << endl << failure << endl;
-
-		Eigen::MatrixXd output(N, 10);
-		output.leftCols(4) = CI;
-		output.block(0, 4, N, 4) = CO;
-		output.col(8) = EO;
-		output.col(9) = IterO.cast<double>();
-
-		cout << output << endl;
-		*/
+        printf("%d %d %d\n", i, left, right);
+        Eigen::VectorXd E_raw_segment = E_raw.segment(left, right-left+1);
+        double sum = E_raw_segment.sum();
+        double minE = E_raw_segment.minCoeff();
+        double maxE = E_raw_segment.maxCoeff();
+        return (sum - minE - maxE) / double(right-left-1);
+    });
+    
+    cout << energy_smooth << endl;
 }
 
 TEST_CASE("optimz_debug", "[OptimTest]") {

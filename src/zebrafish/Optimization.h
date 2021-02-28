@@ -13,9 +13,16 @@ namespace zebrafish {
 typedef struct OptimPara_t {
     double epsilon;  // LBFGS stops when (gradient_norm) < max(x_norm, 1.0) * epsilon
     int maxIt;  // LBFGS max iteration
+    // customized linear search method TODO
 
     OptimPara_t() : epsilon(1e-4), maxIt(50) {}
 } OptimPara_t;
+
+typedef struct OptimDepthInfo_t {
+    Eigen::MatrixXd C;  // x, y, z, r
+    Eigen::VectorXd energy;
+    Eigen::VectorXi iter;
+} OptimDepthInfo_t;
 
 ////////////////////////////////////////////////
 // optim [only has static member functions]
@@ -41,8 +48,8 @@ public:
     /// @param[in]   invertColor { [#cylinder] vector of boolean indicating whether treating the color as inverted }
     ///
 
-    static void Optim_WithDepth(const OptimPara_t &optimPara, const bspline &bsp, const int zNum, const double zGap, const Eigen::VectorXd &CI, Eigen::MatrixXd &CO, const bool invertColor=false);
-    static void Optim_WithDepth(const OptimPara_t &optimPara, const bspline &bsp, const int zNum, const double zGap, const Eigen::MatrixXd &CI, std::vector<Eigen::MatrixXd> &CO, const bool invertColor=false);
+    static void Optim_WithDepth(const OptimPara_t &optimPara, const bspline &bsp, const int zNum, const double zGap, const Eigen::VectorXd &CI, OptimDepthInfo_t &C_depth_info, const bool invertColor=false);
+    static void Optim_WithDepth(const OptimPara_t &optimPara, const bspline &bsp, const int zNum, const double zGap, const Eigen::MatrixXd &CI, std::vector<OptimDepthInfo_t> &C_depth_info, const bool invertColor=false);
     /// Optimize cylinder(s) "CI" using 3D image "bsp"
     /// Also find the optimal depth. The search range is [z - zNum*zGap, z + zNum*zGap]
     ///
@@ -53,6 +60,9 @@ public:
     /// @param[out]  CO          { vector{[(2*zNum+1) x 4]} of output x, y, z, r for each row in CI}
     /// @param[in]   invertColor { [#cylinder] vector of boolean indicating whether treating the color as inverted }
     ///
+
+    static void DepthSelection(const Eigen::MatrixXd &CI, const std::vector<OptimDepthInfo_t> &CO_withZ, Eigen::MatrixXd &CO);
+    /// Find the optimal depth based on certain criterion
 };
 
 }  // namespace zebrafish

@@ -128,14 +128,14 @@ void optim::Optim_WithDepth(
     const int zNum, 
     const double zGap, 
     const Eigen::VectorXd &CI, 
-          Eigen::MatrixXd &CO, 
+          OptimDepthInfo_t &C_depth_info,
     const bool invertColor/*=false*/) {
 
     Eigen::MatrixXd CI_mat(1, 4);
     CI_mat.row(0) = CI;
-    std::vector<Eigen::MatrixXd> CO_vec;
-    optim::Optim_WithDepth(optimPara, bsp, zNum, zGap, CI_mat, CO_vec, invertColor);
-    CO = CO_vec.at(0);
+    std::vector<OptimDepthInfo_t> C_depth_info_vec;
+    optim::Optim_WithDepth(optimPara, bsp, zNum, zGap, CI_mat, C_depth_info_vec, invertColor);
+    C_depth_info = C_depth_info_vec.at(0);
 }
 
 
@@ -145,12 +145,12 @@ void optim::Optim_WithDepth(
     const int zNum, 
     const double zGap, 
     const Eigen::MatrixXd &CI, 
-          std::vector<Eigen::MatrixXd> &CO, 
+          std::vector<OptimDepthInfo_t> &C_depth_info,
     const bool invertColor/*=false*/) {
 
     const int N = CI.rows();
     const int M = zNum * 2 + 1;
-    CO.resize(N);
+    C_depth_info.resize(N);
     if (N == 0) return;
 
     // prepare for parallel optimization
@@ -169,7 +169,38 @@ void optim::Optim_WithDepth(
 
     // output
     for (int i=0; i<N; i++) {
-        CO[i] = CO_withZ.middleRows(i*M, M);
+        C_depth_info[i].C = CO_withZ.middleRows(i*M, M);
+        C_depth_info[i].energy = EO.segment(i*M, M);
+        C_depth_info[i].iter = IterO.segment(i*M, M);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void optim::DepthSelection(const Eigen::MatrixXd &CI, const std::vector<OptimDepthInfo_t> &C_depth_info, Eigen::MatrixXd &CO) {
+
+    const int N = CI.rows();
+    CO.resize(N, 4);
+    if (N == 0) return;
+    const int M = C_depth_info[0].C.rows();  // depth trials
+
+    Eigen::VectorXd energy_smooth;
+    for (int i=0; i<N; i++) {
+
+        const Eigen::VectorXd &E_raw = C_depth_info[i].energy;
+        energy_smooth.resize(M);
+        energy_smooth = Eigen::VectorXd::NullaryExpr([&E_raw](Eigen::Index i) {
+            const int l = 2;
+            int left = std::max(int(i-l), 0);
+            int right = std::min(int(i+l), int(E_raw.size()-1));
+
+            Eigen::VectorXd E_raw_segment = E_raw.segment(left, right-left+1);
+            double sum = E_raw_segment.sum();
+            double minE = E_raw_segment.minCoeff();
+            double maxE = E_raw_segment.maxCoeff();
+            return (sum - minE - maxE) / double(right-left-1);
+        });
+
     }
 }
 
