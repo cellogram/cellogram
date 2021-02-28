@@ -20,7 +20,7 @@ namespace {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // class optimization
 
-void optim::Optim_FixDepth(const OptimPara_t &optimPara, const bspline &bsp, const Eigen::MatrixXd &CI, Eigen::MatrixXd &CO, bool invertColor) {
+void optim::Optim_FixDepth(const OptimPara_t &optimPara, const bspline &bsp, const Eigen::MatrixXd &CI, Eigen::MatrixXd &CO, const bool invertColor/*=false*/) {
 
     Eigen::VectorXd EO;
     Eigen::VectorXi IterO;
@@ -29,7 +29,7 @@ void optim::Optim_FixDepth(const OptimPara_t &optimPara, const bspline &bsp, con
 }
 
 
-bool optim::Optim_FixDepth(const OptimPara_t &optimPara, const bspline &bsp, const Eigen::VectorXd &CI, Eigen::VectorXd &CO, double &EO, int &IterO, bool invertColor) {
+bool optim::Optim_FixDepth(const OptimPara_t &optimPara, const bspline &bsp, const Eigen::VectorXd &CI, Eigen::VectorXd &CO, double &EO, int &IterO, const bool invertColor/*=false*/) {
 
     Eigen::MatrixXd CI_mat(1, 4);
     Eigen::MatrixXd CO_mat;
@@ -46,7 +46,14 @@ bool optim::Optim_FixDepth(const OptimPara_t &optimPara, const bspline &bsp, con
 }
 
 
-void optim::Optim_FixDepth(const OptimPara_t &optimPara, const bspline &bsp, const Eigen::MatrixXd &CI, Eigen::MatrixXd &CO, Eigen::VectorXd &EO, Eigen::VectorXi &IterO, bool invertColor) {
+void optim::Optim_FixDepth(
+    const OptimPara_t &optimPara, 
+    const bspline &bsp, 
+    const Eigen::MatrixXd &CI, 
+          Eigen::MatrixXd &CO, 
+          Eigen::VectorXd &EO, 
+          Eigen::VectorXi &IterO, 
+    const bool invertColor/*=false*/) {
 
     // prepare LBFGS
     LBFGSpp::LBFGSParam<double> param;
@@ -113,6 +120,24 @@ void optim::Optim_FixDepth(const OptimPara_t &optimPara, const bspline &bsp, con
     });
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void optim::Optim_WithDepth(
+    const OptimPara_t &optimPara, 
+    const bspline &bsp, 
+    const int zNum, 
+    const double zGap, 
+    const Eigen::VectorXd &CI, 
+          Eigen::MatrixXd &CO, 
+    const bool invertColor/*=false*/) {
+
+    Eigen::MatrixXd CI_mat(1, 4);
+    CI_mat.row(0) = CI;
+    std::vector<Eigen::MatrixXd> CO_vec;
+    optim::Optim_WithDepth(optimPara, bsp, zNum, zGap, CI_mat, CO_vec, invertColor);
+    CO = CO_vec.at(0);
+}
+
 
 void optim::Optim_WithDepth(
     const OptimPara_t &optimPara, 
@@ -120,22 +145,32 @@ void optim::Optim_WithDepth(
     const int zNum, 
     const double zGap, 
     const Eigen::MatrixXd &CI, 
-          Eigen::MatrixXd &CO, 
-          bool invertColor/*=false*/) {
+          std::vector<Eigen::MatrixXd> &CO, 
+    const bool invertColor/*=false*/) {
 
     const int N = CI.rows();
     const int M = zNum * 2 + 1;
+    CO.resize(N);
     if (N == 0) return;
-
-    // prepare LBFGS
-    LBFGSpp::LBFGSParam<double> param;
-    param.epsilon = optimPara.epsilon;
-    param.max_iterations = optimPara.maxIt;
 
     // prepare for parallel optimization
     Eigen::VectorXd zDeltaArray = Eigen::VectorXd::LinSpaced(2*zNum+1, -zNum*zGap, zNum*zGap);
+    Eigen::MatrixXd CI_withZ(N*M, 4);
+    for (int i=0; i<N; i++) {
+        CI_withZ.block(i*M, 0, M, 4) = CI.row(i).replicate(M, 1);
+        CI_withZ.block(i*M, 2, M, 1) += zDeltaArray;
+    }
+    Eigen::MatrixXd CO_withZ;
+    Eigen::VectorXd EO;
+    Eigen::VectorXi IterO;
 
+    // optimization
+    optim::Optim_FixDepth(optimPara, bsp, CI_withZ, CO_withZ, EO, IterO, invertColor);
 
+    // output
+    for (int i=0; i<N; i++) {
+        CO[i] = CO_withZ.middleRows(i*M, M);
+    }
 }
 
 }  // namespace zebrafish

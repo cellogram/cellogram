@@ -5,6 +5,7 @@
 #include <zebrafish/Bspline.h>
 
 #include <Eigen/Dense>
+#include <vector>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace zebrafish {
@@ -25,9 +26,9 @@ private:
 
 
 public:
-    static void Optim_FixDepth(const OptimPara_t &optimPara, const bspline &bsp, const Eigen::MatrixXd &CI, Eigen::MatrixXd &CO, bool invertColor=false);
-    static bool Optim_FixDepth(const OptimPara_t &optimPara, const bspline &bsp, const Eigen::VectorXd &CI, Eigen::VectorXd &CO, double &EO, int &IterO, bool invertColor=false);
-    static void Optim_FixDepth(const OptimPara_t &optimPara, const bspline &bsp, const Eigen::MatrixXd &CI, Eigen::MatrixXd &CO, Eigen::VectorXd &EO, Eigen::VectorXi &IterO, bool invertColor=false);
+    static void Optim_FixDepth(const OptimPara_t &optimPara, const bspline &bsp, const Eigen::MatrixXd &CI, Eigen::MatrixXd &CO, const bool invertColor=false);
+    static bool Optim_FixDepth(const OptimPara_t &optimPara, const bspline &bsp, const Eigen::VectorXd &CI, Eigen::VectorXd &CO, double &EO, int &IterO, const bool invertColor=false);
+    static void Optim_FixDepth(const OptimPara_t &optimPara, const bspline &bsp, const Eigen::MatrixXd &CI, Eigen::MatrixXd &CO, Eigen::VectorXd &EO, Eigen::VectorXi &IterO, const bool invertColor=false);
     /// Optimize cylinder(s) "CI" using 3D image "bsp"
     /// The depth (z) coordinate is fixed
     /// [NOTE] Image needs to be normalized to [0, 1]
@@ -40,9 +41,17 @@ public:
     /// @param[in]   invertColor { [#cylinder] vector of boolean indicating whether treating the color as inverted }
     ///
 
-    static void Optim_WithDepth(const OptimPara_t &optimPara, const bspline &bsp, const int zNum, const double zGap, const Eigen::MatrixXd &CI, Eigen::MatrixXd &CO, bool invertColor=false);
+    static void Optim_WithDepth(const OptimPara_t &optimPara, const bspline &bsp, const int zNum, const double zGap, const Eigen::VectorXd &CI, Eigen::MatrixXd &CO, const bool invertColor=false);
+    static void Optim_WithDepth(const OptimPara_t &optimPara, const bspline &bsp, const int zNum, const double zGap, const Eigen::MatrixXd &CI, std::vector<Eigen::MatrixXd> &CO, const bool invertColor=false);
     /// Optimize cylinder(s) "CI" using 3D image "bsp"
     /// Also find the optimal depth. The search range is [z - zNum*zGap, z + zNum*zGap]
+    ///
+    /// @param[in]   bsp         { a B-spline solver with image size registered }
+    /// @param[in]   zNum        { number of depths to search in each direction (above and below) }
+    /// @param[in]   zGap        { search gap }
+    /// @param[in]   CI          { [#cylinder x 4] matrix of input x, y, z, r }
+    /// @param[out]  CO          { vector{[(2*zNum+1) x 4]} of output x, y, z, r for each row in CI}
+    /// @param[in]   invertColor { [#cylinder] vector of boolean indicating whether treating the color as inverted }
     ///
 };
 
