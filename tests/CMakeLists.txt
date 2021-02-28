@@ -6,6 +6,7 @@ set(test_sources
 	InterpTest.cpp
 	CylinderTest.cpp
 	OptimTest.cpp
+	OptimDepthTest.cpp
 )
 
 

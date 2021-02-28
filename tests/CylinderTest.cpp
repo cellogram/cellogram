@@ -18,21 +18,21 @@ using namespace zebrafish;
 using namespace Catch::literals;
 
 
-auto func_const = [](auto x, auto y, auto z) {return 1;};
-auto func_ideal = [](auto x, auto y, auto z) {
+auto func_const = [](auto x, auto y, auto z) -> double {return 1;};
+auto func_ideal = [](auto x, auto y, auto z) -> double {
     if ((x-14.5)*(x-14.5) + (y-14.5)*(y-14.5) <= 4*4) {
         return 0;
     } else {
         return 1;
     }
 };
-auto func_cubic = [](auto x, auto y, auto z) {
+auto func_cubic = [](auto x, auto y, auto z) -> double {
     return (x-14.5)*(x-14.5)*(x-14.5) + (y-14.5)*(y-14.5)*(y-14.5);
 };
 
 auto GenImage = [](image_t &image, auto func){
 	int sizeX, sizeY, sizeZ, i;
-    double x, y, z;
+    int x, y, z;
 
     sizeX = 30; // 0, 1, ..., 29
     sizeY = 30;

@@ -113,4 +113,29 @@ void optim::Optim_FixDepth(const OptimPara_t &optimPara, const bspline &bsp, con
     });
 }
 
+
+void optim::Optim_WithDepth(
+    const OptimPara_t &optimPara, 
+    const bspline &bsp, 
+    const int zNum, 
+    const double zGap, 
+    const Eigen::MatrixXd &CI, 
+          Eigen::MatrixXd &CO, 
+          bool invertColor/*=false*/) {
+
+    const int N = CI.rows();
+    const int M = zNum * 2 + 1;
+    if (N == 0) return;
+
+    // prepare LBFGS
+    LBFGSpp::LBFGSParam<double> param;
+    param.epsilon = optimPara.epsilon;
+    param.max_iterations = optimPara.maxIt;
+
+    // prepare for parallel optimization
+    Eigen::VectorXd zDeltaArray = Eigen::VectorXd::LinSpaced(2*zNum+1, -zNum*zGap, zNum*zGap);
+
+
+}
+
 }  // namespace zebrafish

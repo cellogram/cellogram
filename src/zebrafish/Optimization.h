@@ -37,7 +37,12 @@ public:
     /// @param[out]  CO          { [#cylinder x 4] matrix of output x, y, z, r }
     /// @param[out]  EO          { [#cylinder] vector of optimized energy }
     /// @param[out]  IterO       { [#cylinder] vector of optimization iteration }
-    /// @param[out]  invertColor { [#cylinder] vector of boolean indicating whether treating the color as inverted }
+    /// @param[in]   invertColor { [#cylinder] vector of boolean indicating whether treating the color as inverted }
+    ///
+
+    static void Optim_WithDepth(const OptimPara_t &optimPara, const bspline &bsp, const int zNum, const double zGap, const Eigen::MatrixXd &CI, Eigen::MatrixXd &CO, bool invertColor=false);
+    /// Optimize cylinder(s) "CI" using 3D image "bsp"
+    /// Also find the optimal depth. The search range is [z - zNum*zGap, z + zNum*zGap]
     ///
 };
 
