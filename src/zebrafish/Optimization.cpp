@@ -238,6 +238,7 @@ void optim::DepthSelection(
         //////////////////////////////////////////////////////////
         double minE = std::numeric_limits<double>::max();  // or simply 1.0
         int minIdx = -1;
+        // find minE & minIdx
         for (int j=0; j<M; j++) {
             // if this valid? (xy does not move to another location)
             Eigen::Vector2d xyDisp;

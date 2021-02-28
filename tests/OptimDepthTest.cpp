@@ -38,6 +38,15 @@ const auto func_cubic = [](auto x, auto y, auto z) -> double {
     // (x^2 + y^2)^(3/2)
     return pow((x - 14.25) * (x - 14.25) + (y - 14.75) * (y - 14.75), 1.5);
 };
+const auto func_depth = [](auto x, auto y, auto z) -> double {
+    // {x, y, z, r} = {14.25, 14.75, 10.2, 4.0}
+    if (z<10.2 || z>12.7) return 1;
+    if ((x - 14.25) * (x - 14.25) + (y - 14.75) * (y - 14.75) <= 4 * 4) {
+        return 0;
+    } else {
+        return 1;
+    }
+};
 
 const auto GenImage = [](image_t &image, auto func) {
     int sizeX, sizeY, sizeZ, i;
@@ -67,9 +76,8 @@ const auto GenImage = [](image_t &image, auto func) {
 
 TEST_CASE("optimz_ideal", "[OptimTest]") {
 
-    /*
     image_t image; // 30 * 30 * 30
-    GenImage(image, func_quadratic);
+    GenImage(image, func_depth);
     double thres = QuantileImage(image, 1.0);
     NormalizeImage(image, thres);
 
@@ -87,30 +95,22 @@ TEST_CASE("optimz_ideal", "[OptimTest]") {
 
     // optim
     OptimPara_t optimPara;
-    Eigen::MatrixXd CI(3, 4), CO;
-    CI << 14, 14, 10, 5, 
-          15, 15, 10, 5, 
-          16, 15, 10, 5;
-    optim::Optim_WithDepth(optimPara, bsplineSolver, 3, 1.0, CI, CO);
-    */
+    Eigen::VectorXd CI(4), CO;
+    CI << 15, 13, 11, 5;
+    OptimDepthInfo_t C_depth_info;
+    DepthSearchFlag_t flag;
+    optim::Optim_WithDepth(optimPara, bsplineSolver, 6, 0.5, CI, C_depth_info);
+    optim::DepthSelection(optimPara, CI, C_depth_info, CO, flag);
 
-    Eigen::VectorXd E_raw(15);
-    E_raw << 9, 8, 7, 5, 3, 100, 1, 2, 5, 3, 3, 4, 6, 7, 10;
+    REQUIRE(flag == 0);
+    REQUIRE(CO(0) == Approx(14.25).margin(1));
+    REQUIRE(CO(1) == Approx(14.75).margin(1));
+    REQUIRE(CO(2) == 10.0);
 
-    Eigen::VectorXd energy_smooth(15);
-    energy_smooth = Eigen::VectorXd::NullaryExpr(15, [&E_raw](Eigen::Index i) {
-        const int l = 2;
-        int left = std::max(int(i-l), 0);
-        int right = std::min(int(i+l), int(E_raw.size()-1));
-
-        Eigen::VectorXd E_raw_segment = E_raw.segment(left, right-left+1);
-        double sum = E_raw_segment.sum();
-        double minE = E_raw_segment.minCoeff();
-        double maxE = E_raw_segment.maxCoeff();
-        return (sum - minE - maxE) / double(right-left-1);
-    });
-    cout << E_raw.transpose() << endl;
-    cout << energy_smooth.transpose() << endl;
+    // log
+    cout << "depthInfo" << endl << C_depth_info.ToMat() << endl << endl;
+    cout << "CO" << endl << CO << endl << endl;
+    cout << "flag" << endl << flag << endl << endl;
 }
 
 TEST_CASE("optimz_debug", "[OptimTest]") {

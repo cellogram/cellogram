@@ -23,6 +23,12 @@ typedef struct OptimDepthInfo_t {
     Eigen::MatrixXd C;  // x, y, z, r
     Eigen::VectorXd energy;
     Eigen::VectorXi iter;
+
+    Eigen::MatrixXd ToMat() {  // debug
+        Eigen::MatrixXd mat(energy.size(), 6);
+        mat << C, energy, iter.cast<double>();
+        return mat;
+    }
 } OptimDepthInfo_t;
 
 typedef enum DepthSearchFlag_t {
@@ -70,7 +76,7 @@ public:
 
     static void DepthSelection(const OptimPara_t &optimPara, const Eigen::VectorXd &CI, const OptimDepthInfo_t &C_depth_info, Eigen::VectorXd &CO, DepthSearchFlag_t &flag);
     static void DepthSelection(const OptimPara_t &optimPara, const Eigen::MatrixXd &CI, const std::vector<OptimDepthInfo_t> &C_depth_info, Eigen::MatrixXd &CO, std::vector<DepthSearchFlag_t> &flag);
-    /// Find the optimal depth based on certain criterion
+    /// Find the optimal depth
     ///
     /// @param[in]   CI          { [#cylinder x 4] matrix of input x, y, z, r }
     /// @param[in]   C_depth_info{ #cylinder vector of depth search results returned from "Optim_WithDepth" }
