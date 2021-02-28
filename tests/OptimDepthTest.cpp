@@ -97,22 +97,20 @@ TEST_CASE("optimz_ideal", "[OptimTest]") {
     Eigen::VectorXd E_raw(15);
     E_raw << 9, 8, 7, 5, 3, 100, 1, 2, 5, 3, 3, 4, 6, 7, 10;
 
-    cout << E_raw << endl;
     Eigen::VectorXd energy_smooth(15);
-    energy_smooth = Eigen::VectorXd::NullaryExpr([&E_raw](Eigen::Index i) {
+    energy_smooth = Eigen::VectorXd::NullaryExpr(15, [&E_raw](Eigen::Index i) {
         const int l = 2;
         int left = std::max(int(i-l), 0);
         int right = std::min(int(i+l), int(E_raw.size()-1));
 
-        printf("%d %d %d\n", i, left, right);
         Eigen::VectorXd E_raw_segment = E_raw.segment(left, right-left+1);
         double sum = E_raw_segment.sum();
         double minE = E_raw_segment.minCoeff();
         double maxE = E_raw_segment.maxCoeff();
         return (sum - minE - maxE) / double(right-left-1);
     });
-    
-    cout << energy_smooth << endl;
+    cout << E_raw.transpose() << endl;
+    cout << energy_smooth.transpose() << endl;
 }
 
 TEST_CASE("optimz_debug", "[OptimTest]") {

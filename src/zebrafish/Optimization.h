@@ -13,9 +13,10 @@ namespace zebrafish {
 typedef struct OptimPara_t {
     double epsilon;  // LBFGS stops when (gradient_norm) < max(x_norm, 1.0) * epsilon
     int maxIt;  // LBFGS max iteration
+    double zSearchMaxXYDisp;  // max displacement in XY during depth search
     // customized linear search method TODO
 
-    OptimPara_t() : epsilon(1e-4), maxIt(50) {}
+    OptimPara_t() : epsilon(1e-4), maxIt(50), zSearchMaxXYDisp(3.0) {}
 } OptimPara_t;
 
 typedef struct OptimDepthInfo_t {
@@ -23,6 +24,12 @@ typedef struct OptimDepthInfo_t {
     Eigen::VectorXd energy;
     Eigen::VectorXi iter;
 } OptimDepthInfo_t;
+
+typedef enum DepthSearchFlag_t {
+    Success = 0, 
+    InvalidEnergy = 1, 
+    SecondDerivative = 2
+} DepthSearchFlag_t;
 
 ////////////////////////////////////////////////
 // optim [only has static member functions]
@@ -61,8 +68,15 @@ public:
     /// @param[in]   invertColor { [#cylinder] vector of boolean indicating whether treating the color as inverted }
     ///
 
-    static void DepthSelection(const Eigen::MatrixXd &CI, const std::vector<OptimDepthInfo_t> &CO_withZ, Eigen::MatrixXd &CO);
+    static void DepthSelection(const OptimPara_t &optimPara, const Eigen::VectorXd &CI, const OptimDepthInfo_t &C_depth_info, Eigen::VectorXd &CO, DepthSearchFlag_t &flag);
+    static void DepthSelection(const OptimPara_t &optimPara, const Eigen::MatrixXd &CI, const std::vector<OptimDepthInfo_t> &C_depth_info, Eigen::MatrixXd &CO, std::vector<DepthSearchFlag_t> &flag);
     /// Find the optimal depth based on certain criterion
+    ///
+    /// @param[in]   CI          { [#cylinder x 4] matrix of input x, y, z, r }
+    /// @param[in]   C_depth_info{ #cylinder vector of depth search results returned from "Optim_WithDepth" }
+    /// @param[out]  CO          { [#cylinder x 4] matrix of resultant x, y, z, r }
+    /// @param[out]  flag        { #cylinder vector of success flags }
+    ///
 };
 
 }  // namespace zebrafish

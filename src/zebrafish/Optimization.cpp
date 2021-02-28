@@ -10,6 +10,7 @@
 
 #include <LBFGS.h>
 #include <cmath>
+#include <limits>
 
 namespace zebrafish {
 
@@ -177,19 +178,46 @@ void optim::Optim_WithDepth(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void optim::DepthSelection(const Eigen::MatrixXd &CI, const std::vector<OptimDepthInfo_t> &C_depth_info, Eigen::MatrixXd &CO) {
+void optim::DepthSelection(
+    const OptimPara_t &optimPara, 
+    const Eigen::VectorXd &CI, 
+    const OptimDepthInfo_t &C_depth_info, 
+          Eigen::VectorXd &CO, 
+          DepthSearchFlag_t &flag) {
+    
+    Eigen::MatrixXd CI_mat(1, 4);
+    CI_mat.row(0) = CI;
+    std::vector<OptimDepthInfo_t> C_depth_info_vec;
+    C_depth_info_vec.push_back(C_depth_info);
+    Eigen::MatrixXd CO_mat;
+    std::vector<DepthSearchFlag_t> flag_vec;
+    optim::DepthSelection(optimPara, CI_mat, C_depth_info_vec, CO_mat, flag_vec);
+    CO = CO_mat.row(0);
+    flag = flag_vec.at(0);
+}
+
+
+void optim::DepthSelection(
+    const OptimPara_t &optimPara, 
+    const Eigen::MatrixXd &CI, 
+    const std::vector<OptimDepthInfo_t> &C_depth_info, 
+          Eigen::MatrixXd &CO, 
+          std::vector<DepthSearchFlag_t> &flag) {
 
     const int N = CI.rows();
     CO.resize(N, 4);
+    flag.resize(N);
     if (N == 0) return;
     const int M = C_depth_info[0].C.rows();  // depth trials
 
     Eigen::VectorXd energy_smooth;
+    Eigen::VectorXd second_derivative;
     for (int i=0; i<N; i++) {
 
         const Eigen::VectorXd &E_raw = C_depth_info[i].energy;
-        energy_smooth.resize(M);
-        energy_smooth = Eigen::VectorXd::NullaryExpr([&E_raw](Eigen::Index i) {
+        // smooth curve
+        // for i-th index, find 5 adjacent numbers, calc mean after discarding the min and max in those 5 numbers
+        energy_smooth = Eigen::VectorXd::NullaryExpr(M, [&E_raw](Eigen::Index i) {
             const int l = 2;
             int left = std::max(int(i-l), 0);
             int right = std::min(int(i+l), int(E_raw.size()-1));
@@ -200,7 +228,61 @@ void optim::DepthSelection(const Eigen::MatrixXd &CI, const std::vector<OptimDep
             double maxE = E_raw_segment.maxCoeff();
             return (sum - minE - maxE) / double(right-left-1);
         });
+        // 1D discrete laplacian operator
+        second_derivative = Eigen::VectorXd::NullaryExpr(M, [&energy_smooth](Eigen::Index i) {
+            if (i == 0 || i == int(energy_smooth.size()-1))
+                return 0.0;
+            return energy_smooth(i-1) - 2 * energy_smooth(i) + energy_smooth(i+1);
+        });
 
+        //////////////////////////////////////////////////////////
+        double minE = std::numeric_limits<double>::max();  // or simply 1.0
+        int minIdx = -1;
+        for (int j=0; j<M; j++) {
+            // if this valid? (xy does not move to another location)
+            Eigen::Vector2d xyDisp;
+            xyDisp << C_depth_info[i].C(j, 0) - CI(i, 0), C_depth_info[i].C(j, 1) - CI(i, 1);
+            if (xyDisp.norm() > optimPara.zSearchMaxXYDisp) {
+                energy_smooth(j) = 1.2;  // a little bit larger than 1.0 to distinguish (for debug)
+                continue;
+            }
+            // smaller energy?
+            if (energy_smooth(j) < minE) {
+                minE = energy_smooth(j);
+                minIdx = j;
+            }
+        }
+
+        // minE == 1.0
+        if (minE == 1.0 || minIdx == -1) {
+            char errorMsg[100];
+            std::sprintf(errorMsg, "> [warning] No valid energy. Too close to the boundary or other failures. Marker index %d at [%.2f, %.2f, %.2f].", i, CI(i, 0), CI(i, 1), CI(i, 2));
+            logger().warn(errorMsg);
+            std::cerr << errorMsg << std::endl;
+            flag[i] = InvalidEnergy;
+            continue;
+        }
+        // minIdx at end point
+        if (M>0 && (minIdx == 0 || minIdx == M-1)) {
+            char warnMsg[100];
+            std::sprintf(warnMsg, "> [warning] Abnormal second derivative. Marker index %d at [%.2f, %.2f, %.2f].", i, CI(i, 0), CI(i, 1), CI(i, 2));
+            logger().debug(warnMsg);
+            std::cerr << warnMsg << std::endl;
+            flag[i] = SecondDerivative;
+
+            // std::cerr << E_raw.transpose() << std::endl;  // DEBUG PURPOSE
+            continue;
+        }
+        // in case the smoothing shifts the actual min index
+        for (int j=std::max(0, minIdx-1); j<=std::min(M-1, minIdx+1); j++) {
+            if (E_raw(j) < minE) {
+                minE = E_raw(j);
+                minIdx = j;
+            }
+        }
+        // save result to CO
+        flag[i] = Success;
+        CO.row(i) << C_depth_info[i].C.row(minIdx);
     }
 }
 
