@@ -342,7 +342,7 @@ float UIState::draw_menu_bar() {
 			// Points
 			ImGui::MenuItem("Points##Bar", nullptr, &show_points);
 			ImGui::Indent();
-			ImGui::ColorEdit3("Color", vertex_color.data(),
+			ImGui::ColorEdit3("Color", colorUI.mesh_vertex_color.data(),
 				ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueWheel);
 			//ImGui::MenuItem("Coded##Bar", nullptr, &show_analysis_menu);
 
@@ -352,7 +352,7 @@ float UIState::draw_menu_bar() {
 			// Mesh
 			ImGui::MenuItem("Mesh##Bar", nullptr, &show_mesh);
 			ImGui::Indent();
-			ImGui::ColorEdit3("Color", mesh_line_color.data(),
+			ImGui::ColorEdit3("Color", colorUI.mesh_line_color.data(),
 				ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_PickerHueWheel);
 			ImGui::MenuItem("Fill##Bar", nullptr, &show_mesh_fill);
 

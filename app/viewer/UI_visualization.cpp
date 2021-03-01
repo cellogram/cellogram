@@ -69,16 +69,10 @@ void UIState::DrawAxisDots() {
         label_loc_z = ToMat(Eigen::VectorXd::Ones(nz).array() * (imgCols+2.0), Eigen::VectorXd::Ones(nz).array() * imgRows, Linspace(0, layerPerImg*imgViewer.visual_z_mult, gapz*imgViewer.visual_z_mult).array() + 1.2);
     }
 
-    static Eigen::MatrixXd referencePointColor = [] {
-        Eigen::MatrixXd tmp(1, 3);
-        tmp << 0.0, 0.0, 0.3;
-        return tmp;
-    } ();
-
     // add points
-    visual_data().add_points(loc_r, referencePointColor);
-    visual_data().add_points(loc_c, referencePointColor);
-    visual_data().add_points(loc_z, referencePointColor);
+    visual_data().add_points(loc_r, colorUI.ref_point_color);
+    visual_data().add_points(loc_c, colorUI.ref_point_color);
+    visual_data().add_points(loc_z, colorUI.ref_point_color);
 
     // add labels
     for (int i=0; i<nr; i++)

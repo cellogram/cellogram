@@ -276,7 +276,7 @@ void UIState::initialize() {
 
 	// Setup viewer parameters
 	// viewer.resize(UIsize.windowWidth, UIsize.windowHeight);
-	viewer.core().background_color << 0.7f, 0.7f, 0.75f, 1.0f;
+	viewer.core().background_color << colorUI.background_color;
 	// viewer.core().set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_TRACKBALL);
 	viewer.core().set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_NO_ROTATION);
 	viewer.core().orthographic = true;
@@ -636,7 +636,6 @@ void UIState::export_region() {
 void UIState::reset_viewer() {
 	// Display flags
 	imgViewer.deformScale = 0;
-	vertex_color = Eigen::RowVector3f(104, 175, 245)/255.;
 
 	selected_region = -1;
 	show_hull = true;
@@ -685,9 +684,11 @@ void UIState::load_image(std::string fname) {
 
 	double extent = (V.colwise().maxCoeff() - V.colwise().minCoeff()).maxCoeff();
 	float ui_scaling_factor = viewer.window != NULL ? hidpi_scaling() / pixel_ratio() : 1;
-	// points_data().point_size = std::ceil(ui_scaling_factor) / 5.;
 	points_data().point_size = std::ceil(float(ui_scaling_factor / extent)) * 9;
-	points_data().line_color = Eigen::Vector4f(37, 60, 68, 204) / 255.0;
+	points_data().line_color(0) = colorUI.mesh_line_color(0);
+    points_data().line_color(1) = colorUI.mesh_line_color(1);
+    points_data().line_color(2) = colorUI.mesh_line_color(2);
+    points_data().line_color(3) = 1.0;
 
 	physical_data().point_size = std::ceil(float(ui_scaling_factor / extent)) * 9;
 
@@ -825,16 +826,13 @@ void UIState::viewer_control_2d() {
 	}
 
 	points_data().show_lines = dragging_id < 0;
-    points_data().line_color(0) = mesh_line_color(0);
-    points_data().line_color(1) = mesh_line_color(1);
-    points_data().line_color(2) = mesh_line_color(2);
+    points_data().line_color(0) = colorUI.mesh_line_color(0);
+    points_data().line_color(1) = colorUI.mesh_line_color(1);
+    points_data().line_color(2) = colorUI.mesh_line_color(2);
     points_data().line_color(3) = 1.0f;
 
 	if (show_points) {
-		Eigen::MatrixXd C(meshV.rows(), 3);
-		C.col(0).setConstant(vertex_color(0));
-		C.col(1).setConstant(vertex_color(1));
-		C.col(2).setConstant(vertex_color(2));
+        Eigen::MatrixXd C = colorUI.mesh_vertex_color.replicate(meshV.rows(), 1).cast<double>();
 		if (color_code) {
 			Eigen::VectorXd param(meshV.rows());
 			for (int i = 0; i < meshV.rows(); i++) {
@@ -863,15 +861,13 @@ void UIState::viewer_control_2d() {
 			points_data().add_points(state.mesh.deleted_by_untangler, Eigen::RowVector3d(230, 126, 34) / 255);
 		}
 
-		points_data().add_points(meshV, C);
+		points_data().add_points(meshV + Eigen::MatrixXd::Constant(meshV.rows(), 3, 0.12), C);
 	}
 
 	// fill
 	points_data().show_faces = show_mesh_fill;
-	mesh_fill_color.resize(1, 3);
-	mesh_fill_color << 238./255., 247./255., 239./255.;
-	if (show_mesh_fill && mesh_fill_color.size() > 0)
-		points_data().set_colors(mesh_fill_color);
+	if (show_mesh_fill)
+		points_data().set_colors(colorUI.mesh_fill_color);
 
 	// bad regions
 	if (show_bad_regions) {
@@ -1101,7 +1097,7 @@ void UIState::fix_color(igl::opengl::ViewerData &data) {
 
 void UIState::create_region_label() {
 	// mesh_color.resize(state.mesh.points.rows(),3);
-	mesh_fill_color.resize(state.mesh.triangles.rows(), 3);
+	Eigen::MatrixXd mesh_fill_color(state.mesh.triangles.rows(), 3);
 	mesh_fill_color.setOnes();
 
 	for (int i = 0; i < (int)state.regions.size(); ++i) {

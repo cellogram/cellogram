@@ -38,6 +38,26 @@ typedef struct ImageViewer_t {
 	ImageViewer_t() : imageViewerType(0), sliceToShow(0), visual_z_mult(3.0), deformScale(0.0), darkenScale(0.5) {}
 } ImageViewer_t;
 
+
+typedef struct ColorUI_t {
+    Eigen::RowVector3f mesh_vertex_color;
+    Eigen::MatrixXd mesh_fill_color;
+    Eigen::RowVector3f mesh_line_color;
+
+    Eigen::MatrixXd ref_point_color;  // reference axis color
+    Eigen::RowVector4f background_color;
+    
+    ColorUI_t() {
+        mesh_vertex_color = Eigen::RowVector3f(92, 214, 218)/255.0;
+        mesh_fill_color.resize(1, 3);
+        mesh_fill_color << 238./255., 240./255., 239./255.;
+        mesh_line_color = Eigen::RowVector3f(3, 21, 20)/255.0;
+        ref_point_color.resize(1, 3);
+        ref_point_color << 0., 0., 0.3;
+        background_color = Eigen::RowVector4f(0.7, 0.7, 0.75, 1.0);
+    }
+} ColorUI_t;
+
 // -----------------------------------------------------------------------------
 
 class UIState : public igl::opengl::glfw::imgui::ImGuiMenu {
@@ -82,9 +102,7 @@ public:
 
 	// Display flags
 	Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> texture;
-	Eigen::RowVector3f vertex_color;
-    Eigen::RowVector3f mesh_line_color;
-	Eigen::MatrixXd mesh_fill_color;
+    ColorUI_t colorUI;
 
 	bool show_mesh = true;
 	bool show_hull = false;
