@@ -5,6 +5,7 @@
 #include <cellogram/Mesh3d.h>
 #include <cellogram/Region.h>
 #include <cellogram/remesh_adaptive.h>
+#include <zebrafish/Bspline.h>
 #include <Eigen/Dense>
 #include <vector>
 #include <string>
@@ -86,6 +87,11 @@ public:
 
 	Eigen::MatrixXd img;  // max projection
 	std::vector<Eigen::MatrixXd> img3D;
+    zebrafish::bspline bsp;
+
+    // Zebrafish depth functions
+    void PrepareBsp();
+    void DepthSearch();
 
 	std::vector<Region> regions;
 

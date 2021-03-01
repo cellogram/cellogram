@@ -95,6 +95,7 @@ TEST_CASE("optimz_ideal", "[OptimTest]") {
 
     // optim
     OptimPara_t optimPara;
+    // optimPara.epsilon = 0.1;
     Eigen::VectorXd CI(4), CO;
     CI << 15, 13, 11, 5;
     OptimDepthInfo_t C_depth_info;

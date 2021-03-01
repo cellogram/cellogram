@@ -69,6 +69,7 @@ target_link_libraries(cellogram PUBLIC
 	tcdf
 	gsl
 	TinyTiff
+    zebrafish
 	#ZebraFish
 )
 

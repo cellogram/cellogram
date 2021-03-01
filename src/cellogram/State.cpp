@@ -1,23 +1,19 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "State.h"
+
+#include <cellogram/MeshUtils.h>
+#include <cellogram/PolygonUtils.h>
 #include <cellogram/convex_hull.h>
 #include <cellogram/dijkstra.h>
 #include <cellogram/extrude_mesh.h>
 #include <cellogram/image_reader.h>
 #include <cellogram/interpolate.h>
 #include <cellogram/laplace_energy.h>
-#include <cellogram/MeshUtils.h>
 #include <cellogram/point_source_detection.h>
-#include <cellogram/PolygonUtils.h>
 #include <cellogram/region_grow.h>
 #include <cellogram/remesh_adaptive.h>
 #include <cellogram/tri2hex.h>
 #include <cellogram/voronoi.h>
-#include <zebrafish/Logger.hpp>
-#include <zebrafish/Quantile.h>
-
-#include <polyfem/MeshUtils.hpp>
-#include <polyfem/InterpolatedFunction.hpp>
 #include <igl/bounding_box.h>
 #include <igl/bounding_box_diagonal.h>
 #include <igl/copyleft/tetgen/tetrahedralize.h>
@@ -25,1198 +21,1208 @@
 #include <igl/list_to_matrix.h>
 #include <igl/point_in_poly.h>
 #include <igl/remove_duplicate_vertices.h>
-#include <igl/write_triangle_mesh.h>
 #include <igl/slice.h>
+#include <igl/write_triangle_mesh.h>
+#include <tbb/enumerable_thread_specific.h>
 #include <tbb/parallel_for.h>
 #include <tbb/task_scheduler_init.h>
-#include <tbb/enumerable_thread_specific.h>
-#include <fstream>
+#include <zebrafish/Cylinder.h>
+#include <zebrafish/Optimization.h>
+#include <zebrafish/Quantile.h>
+
 #include <chrono>
+#include <fstream>
+#include <polyfem/InterpolatedFunction.hpp>
+#include <polyfem/MeshUtils.hpp>
+#include <zebrafish/Logger.hpp>
 ////////////////////////////////////////////////////////////////////////////////
+
+// static class member variables
+double zebrafish::cylinder::alpha{0.5};
+double zebrafish::cylinder::K{sqrt(2)};
+double zebrafish::cylinder::H{2.5};
 
 namespace cellogram {
 
 using zebrafish::logger;
 
-	// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
-	namespace {
-		json default_phase = R"({
-			"phase_enumeration": 0
-			})"_json;
+namespace {
+json default_phase = R"({
+    "phase_enumeration": 0
+    })"_json;
 
-		json default_detection_settings = R"({
-			"energy_variation_from_mean": 2.0,
-			"lloyd_iterations": 20,
-			"perm_possibilities": 15,
-			"sigma": 1.5,
-			"otsu_multiplier": 0.3
-		})"_json;
+json default_detection_settings = R"({
+    "energy_variation_from_mean": 2.0,
+    "lloyd_iterations": 20,
+    "perm_possibilities": 15,
+    "sigma": 1.5,
+    "otsu_multiplier": 0.3
+})"_json;
 
-		json default_analysis_settings = R"({
-			"scaling": 0.2,
-			"E": 13.578,
-			"I": 0.5,
-			"L": 3.0,
-			"eps": 0.32967033982276917,
-			"formulation": "LinearElasticity",
-			"image_from_pillars": false,
-			"nu": 0.49,
-			"padding_size": 25.0,
-			"displacement_threshold": 0.18,
-			"relative_threshold": true,
-			"mesh_size": 0.15,
-			"thickness": 30.0,
-			"mesh_gradation": 1.2
-     		})"_json;
+json default_analysis_settings = R"({
+    "scaling": 0.2,
+    "E": 13.578,
+    "I": 0.5,
+    "L": 3.0,
+    "eps": 0.32967033982276917,
+    "formulation": "LinearElasticity",
+    "image_from_pillars": false,
+    "nu": 0.49,
+    "padding_size": 25.0,
+    "displacement_threshold": 0.18,
+    "relative_threshold": true,
+    "mesh_size": 0.15,
+    "thickness": 30.0,
+    "mesh_gradation": 1.2
+    })"_json;
 
-	}
+} // namespace
 
+State::State() {}
 
-	State::State() {
-	}
+State &State::state() {
+    static State instance;
+    return instance;
+}
 
+////////////////////////////////////////////////////////////////////////////
+// Zebrafish depth related functions
 
-	State &State::state() {
-		static State instance;
-		return instance;
-	}
+void State::PrepareBsp() {
+    const int bsplineDegree = 2;
+    bsp.CalcControlPts(img3D, 0.7, 0.7, 0.7, bsplineDegree);
+}
 
+void State::DepthSearch() {
+    using namespace zebrafish;
+    Eigen::MatrixXd &markers = mesh.detected;
+    const int N = markers.rows();
+    const int z = img3D.size();
+    markers.col(2).setConstant(std::round(z / 2.0));
 
+    OptimPara_t optimPara;
+    optimPara.epsilon = 0.1; // low precision
+    std::vector<OptimDepthInfo_t> C_depth_info_vec;
 
-	int State::find_region_by_interior_vertex(const int index)
-	{
-		for(int i = 0; i < regions.size(); i++)
-		{
-			for (int j = 0; j < regions[i].region_interior.rows(); j++)
-			{
-				if (regions[i].region_interior(j) == index)
-				{
-					int region_index = i;
-					return region_index;
-				}
-			}
-		}
-		return -1;
-	}
+    Eigen::MatrixXd tmp;
+    std::vector<DepthSearchFlag_t> flags;
+    Eigen::MatrixXd marker_withR(N, 4);
+    marker_withR.leftCols(3) = markers;
+    marker_withR.col(3).setConstant(3);
 
-	void State::find_region_by_boundary_vertex(const int index, std::vector<int> & found_regions)
-	{
-		for (int i = 0; i < regions.size(); i++)
-		{
-			for (int j = 0; j < regions[i].region_boundary.rows(); j++)
-			{
-				if (regions[i].region_boundary(j) == index)
-				{
-					found_regions.push_back(i);
-				}
-			}
-		}
-	}
+    optim::Optim_WithDepth(optimPara, bsp, std::round(z / 2.0), 1.0, marker_withR,
+                           C_depth_info_vec, true);
+    std::cerr << "out optim" << std::endl;
+    optim::DepthSelection(optimPara, marker_withR, C_depth_info_vec, tmp, flags);
+    std::cerr << "out depth sel" << std::endl;
 
-	void State::split_region(const Eigen::Vector2i & split_end_points)
-	{
-		// find region that contains for points in boundary and call splitting method of region
-		std::vector<int> regions1, regions2;
-		find_region_by_boundary_vertex(split_end_points(0), regions1);
-		find_region_by_boundary_vertex(split_end_points(1), regions2);
+    for (int i = 0; i < N; i++) {
+        std::cout << "marker #" << i << std::endl;
+        std::cout << C_depth_info_vec[i].ToMat() << std::endl
+                  << std::endl;
+    }
+}
 
-		if (regions1.empty() || regions2.empty())
-			return;
+////////////////////////////////////////////////////////////////////////////
 
-		int index;
-		for (int i = 0; i < regions1.size(); i++)
-		{
-			if (std::find(regions2.begin(), regions2.end(), regions1[i]) != regions2.end())
-			{
-				index = regions1[i];
-				break;
-			}
-		}
+int State::find_region_by_interior_vertex(const int index) {
+    for (int i = 0; i < regions.size(); i++) {
+        for (int j = 0; j < regions[i].region_interior.rows(); j++) {
+            if (regions[i].region_interior(j) == index) {
+                int region_index = i;
+                return region_index;
+            }
+        }
+    }
+    return -1;
+}
 
-		std::cout << "splitting region: " << index << std::endl;
-		Region r1, r2;
-		regions[index].split_region(mesh, split_end_points,r1,r2);
+void State::find_region_by_boundary_vertex(const int index,
+                                           std::vector<int> &found_regions) {
+    for (int i = 0; i < regions.size(); i++) {
+        for (int j = 0; j < regions[i].region_boundary.rows(); j++) {
+            if (regions[i].region_boundary(j) == index) {
+                found_regions.push_back(i);
+            }
+        }
+    }
+}
 
-		regions.erase(regions.begin() + index);
-		if (r1.size() > 0)
-			regions.push_back(r1);
-		if (r2.size() > 0)
-			regions.push_back(r2);
+void State::split_region(const Eigen::Vector2i &split_end_points) {
+    // find region that contains for points in boundary and call splitting
+    // method of region
+    std::vector<int> regions1, regions2;
+    find_region_by_boundary_vertex(split_end_points(0), regions1);
+    find_region_by_boundary_vertex(split_end_points(1), regions2);
 
-		for(int i = 0; i < regions.size();++i)
-		{
-			regions[i].find_triangles(mesh.triangles);
-		}
-	}
+    if (regions1.empty() || regions2.empty())
+        return;
 
-	// -----------------------------------------------------------------------------
-	void State::load_phase(json args) {
-		json phase = default_phase;
-		phase.merge_patch(args);
-		phase_enumeration = phase["phase_enumeration"];
-	}
+    int index;
+    for (int i = 0; i < regions1.size(); i++) {
+        if (std::find(regions2.begin(), regions2.end(), regions1[i]) !=
+            regions2.end()) {
+            index = regions1[i];
+            break;
+        }
+    }
 
-	void State::load_detection_settings(json args) {
-		json settings = default_detection_settings;
-		settings.merge_patch(args);
-		lloyd_iterations = settings["lloyd_iterations"];
-		energy_variation_from_mean = settings["energy_variation_from_mean"];
-		perm_possibilities = settings["perm_possibilities"];
-		sigma = settings["sigma"];
-		otsu_multiplier = settings["otsu_multiplier"];
-	}
-	void State::load_analysis_settings(json args) {
-		json settings = default_analysis_settings;
-		settings.merge_patch(args);
-		scaling = settings["scaling"];
-		padding_size = settings["padding_size"];
-		thickness = settings["thickness"];
-		uniform_mesh_size = settings["mesh_size"];
-		displacement_threshold = settings["displacement_threshold"];
-		relative_threshold = settings["relative_threshold"];
-		E = settings["E"];
-		nu = settings["nu"];
-		eps = settings["eps"];
-		I = settings["I"];
-		L = settings["L"];
-		mmg_options.hgrad = settings["mesh_gradation"];
-		formulation = settings["formulation"].get<std::string>();
-		image_from_pillars = settings["image_from_pillars"];
-	}
+    std::cout << "splitting region: " << index << std::endl;
+    Region r1, r2;
+    regions[index].split_region(mesh, split_end_points, r1, r2);
 
-	void State::load_settings(json args) {
-		load_phase(args.value("phase", json::object()));
-		load_detection_settings(args.value("settings", json::object()));
-		load_analysis_settings(args.value("analysis_settings", json::object()));
-	}
+    regions.erase(regions.begin() + index);
+    if (r1.size() > 0)
+        regions.push_back(r1);
+    if (r2.size() > 0)
+        regions.push_back(r2);
 
-	void State::load_settings(const std::string &path) {
-		json settings = json::object();
-		if (!path.empty()) {
-			std::ifstream in(path);
-			in >> settings;
-		}
-		load_settings(settings);
-	}
+    for (int i = 0; i < regions.size(); ++i) {
+        regions[i].find_triangles(mesh.triangles);
+    }
+}
 
-	bool State::load(const std::string & path)
-	{
-		using json = nlohmann::json;
+// -----------------------------------------------------------------------------
+void State::load_phase(json args) {
+    json phase = default_phase;
+    phase.merge_patch(args);
+    phase_enumeration = phase["phase_enumeration"];
+}
 
-		bool ok = false;
-		// clear previous
-		hull_vertices.resize(0, 0); //needed for lloyd
-		hull_faces.resize(0, 0);
-		hull_polygon.resize(0, 0);
-		regions.clear();
+void State::load_detection_settings(json args) {
+    json settings = default_detection_settings;
+    settings.merge_patch(args);
+    lloyd_iterations = settings["lloyd_iterations"];
+    energy_variation_from_mean = settings["energy_variation_from_mean"];
+    perm_possibilities = settings["perm_possibilities"];
+    sigma = settings["sigma"];
+    otsu_multiplier = settings["otsu_multiplier"];
+}
+void State::load_analysis_settings(json args) {
+    json settings = default_analysis_settings;
+    settings.merge_patch(args);
+    scaling = settings["scaling"];
+    padding_size = settings["padding_size"];
+    thickness = settings["thickness"];
+    uniform_mesh_size = settings["mesh_size"];
+    displacement_threshold = settings["displacement_threshold"];
+    relative_threshold = settings["relative_threshold"];
+    E = settings["E"];
+    nu = settings["nu"];
+    eps = settings["eps"];
+    I = settings["I"];
+    L = settings["L"];
+    mmg_options.hgrad = settings["mesh_gradation"];
+    formulation = settings["formulation"].get<std::string>();
+    image_from_pillars = settings["image_from_pillars"];
+}
 
+void State::load_settings(json args) {
+    load_phase(args.value("phase", json::object()));
+    load_detection_settings(args.value("settings", json::object()));
+    load_analysis_settings(args.value("analysis_settings", json::object()));
+}
 
+void State::load_settings(const std::string &path) {
+    json settings = json::object();
+    if (!path.empty()) {
+        std::ifstream in(path);
+        in >> settings;
+    }
+    load_settings(settings);
+}
 
-		// load settings
-		std::ifstream json_in(path);
+bool State::load(const std::string &path) {
+    using json = nlohmann::json;
 
-		json unique;
-		json_in >> unique;
-		load_settings(unique);
-		/*if (!unique["settings"].empty())
-		{
-			json settings = unique["settings"];
-			load_settings(settings);
-		}*/
-		// Load points
-		// ok = mesh.load(path);
-		ok = mesh.load(unique["mesh"]);
+    bool ok = false;
+    // clear previous
+    hull_vertices.resize(0, 0); // needed for lloyd
+    hull_faces.resize(0, 0);
+    hull_polygon.resize(0, 0);
+    regions.clear();
 
-		if (!unique["analysis"].empty() && !image_from_pillars)
-			ok = mesh3d.load(unique["analysis"]);
+    // load settings
+    std::ifstream json_in(path);
 
-		//if (!unique["analysis_setting"].empty())
-		//{
-		//	json analysis_settings = unique["analysis_settings"];
-		//	load_analysis_settings(analysis_settings);
-		//}
+    json unique;
+    json_in >> unique;
+    load_settings(unique);
+    /*if (!unique["settings"].empty())
+  {
+    json settings = unique["settings"];
+    load_settings(settings);
+  }*/
+    // Load points
+    // ok = mesh.load(path);
+    ok = mesh.load(unique["mesh"]);
 
-		compute_hull();
+    if (!unique["analysis"].empty() && !image_from_pillars)
+        ok = mesh3d.load(unique["analysis"]);
 
-		return ok;
-	}
+    // if (!unique["analysis_setting"].empty())
+    //{
+    //	json analysis_settings = unique["analysis_settings"];
+    //	load_analysis_settings(analysis_settings);
+    //}
 
-	bool State::is_data_available(const std::string &path)
-	{
+    compute_hull();
 
+    return ok;
+}
+
+bool State::is_data_available(const std::string &path) {
 #ifdef WIN32
-		std::string save_data = path + "\\all.json";
+    std::string save_data = path + "\\all.json";
 #else
-		std::string save_data = path + "/all.json";
+    std::string save_data = path + "/all.json";
 #endif
-		std::ifstream f(save_data.c_str());
-		bool ok = f.good();
-		return f.good();
-	}
+    std::ifstream f(save_data.c_str());
+    bool ok = f.good();
+    return f.good();
+}
 
-	bool State::load_image(const std::string fname)
-	{
-		bool ok = read_image(fname, img3D);
-		logger().info("Load image {} (success = {})", fname, ok);
-		if (ok) {
-			// trim image
-			const double quantile = 0.999;
-			double quantileRes = zebrafish::QuantileImage(img3D, quantile);
-			zebrafish::NormalizeImage(img3D, quantileRes);
-			logger().info("Image normalized with max-brightness = {} ({} quantile)", quantileRes, quantile);
-			// project (MAX) to 2D
-			const int imgRows = img3D[0].rows();
-			const int imgCols = img3D[0].cols();
-			img = Eigen::MatrixXd::Zero(imgRows, imgCols);
-			for (int i=0; i<img3D.size(); i++) {
-				img = img.cwiseMax(img3D[i]);
-			}
-			img.transposeInPlace();
-			// do not cast to 255 unsigned char
-			// this is done when converting to "texture"
-		}
+bool State::load_image(const std::string fname) {
+    bool ok = read_image(fname, img3D);
+    logger().info("Load image {} (success = {})", fname, ok);
+    if (ok) {
+        // trim image
+        const double quantile = 0.999;
+        double quantileRes = zebrafish::QuantileImage(img3D, quantile);
+        zebrafish::NormalizeImage(img3D, quantileRes);
+        logger().info("Image normalized with max-brightness = {} ({} quantile)",
+                      quantileRes, quantile);
+        // project (MAX) to 2D
+        const int imgRows = img3D[0].rows();
+        const int imgCols = img3D[0].cols();
+        img = Eigen::MatrixXd::Zero(imgRows, imgCols);
+        for (int i = 0; i < img3D.size(); i++) {
+            img = img.cwiseMax(img3D[i]);
+        }
+        img.transposeInPlace();
+        // do not cast to 255 unsigned char
+        // this is done when converting to "texture"
+    }
 
-		phase_enumeration = 1;
-		//std::cout << std::setprecision(std::numeric_limits<long double>::digits10 + 1) << img << std::endl;
+    phase_enumeration = 1;
+    // std::cout << std::setprecision(std::numeric_limits<long double>::digits10
+    // + 1) << img << std::endl;
 
-		hull_vertices.resize(0, 0); //needed for lloyd
-		hull_faces.resize(0, 0);
-		hull_polygon.resize(0, 0);
-		regions.clear();
-		mesh.clear();
-		mesh3d.clear();
+    hull_vertices.resize(0, 0); // needed for lloyd
+    hull_faces.resize(0, 0);
+    hull_polygon.resize(0, 0);
+    regions.clear();
+    mesh.clear();
+    mesh3d.clear();
 
-		return ok;
-	}
+    return ok;
+}
 
-	bool State::save(const std::string & path, const bool full_path)
-	{
-		using json = nlohmann::json;
+bool State::save(const std::string &path, const bool full_path) {
+    using json = nlohmann::json;
 
-		json unique;
+    json unique;
 
-		json json_data;
-		json_data["phase_enumeration"] = phase_enumeration;
-		unique["phase"] = json_data;
+    json json_data;
+    json_data["phase_enumeration"] = phase_enumeration;
+    unique["phase"] = json_data;
 
-		json_data.clear();
-		json_data["lloyd_iterations"] = lloyd_iterations;
-		json_data["energy_variation_from_mean"] = energy_variation_from_mean;
-		json_data["perm_possibilities"] = perm_possibilities;
-		json_data["sigma"] = sigma;
-		json_data["otsu_multiplier"] = otsu_multiplier;
+    json_data.clear();
+    json_data["lloyd_iterations"] = lloyd_iterations;
+    json_data["energy_variation_from_mean"] = energy_variation_from_mean;
+    json_data["perm_possibilities"] = perm_possibilities;
+    json_data["sigma"] = sigma;
+    json_data["otsu_multiplier"] = otsu_multiplier;
 
-		unique["settings"] = json_data;
+    unique["settings"] = json_data;
 
-		unique["mesh"] = json::object();
-		mesh.save(unique["mesh"]);
+    unique["mesh"] = json::object();
+    mesh.save(unique["mesh"]);
 
-		unique["analysis"] = json::object();
-		if (mesh3d.empty() == false)
-		{
-			mesh3d.save_mesh(unique["analysis"]);
-		}
-		if (mesh3d.analysed())
-		{
-			mesh3d.save_traction(unique["analysis"]);
+    unique["analysis"] = json::object();
+    if (mesh3d.empty() == false) {
+        mesh3d.save_mesh(unique["analysis"]);
+    }
+    if (mesh3d.analysed()) {
+        mesh3d.save_traction(unique["analysis"]);
 
-			json_data.clear();
-			json_data["formulation"] = formulation;
-			json_data["image_from_pillars"] = image_from_pillars;
-			// json_data["adaptive_mesh_size"] = adaptive_mesh_size;
-			// json_data["power"] = power;
-			json_data["padding_size"] = padding_size;
-			json_data["thickness"] = thickness;
-			json_data["mesh_size"] = uniform_mesh_size;
-			json_data["displacement_threshold"] = displacement_threshold;
-			json_data["relative_threshold"] = relative_threshold;
-			json_data["E"] = E;
-			json_data["nu"] = nu;
-			json_data["eps"] = eps;
-			json_data["I"] = I;
-			json_data["L"] = L;
-			json_data["scaling"] = scaling;
-			json_data["gradation"] = mmg_options.hgrad;
-			json_data["simulation_output"] = mesh3d.simulation_out;
+        json_data.clear();
+        json_data["formulation"] = formulation;
+        json_data["image_from_pillars"] = image_from_pillars;
+        // json_data["adaptive_mesh_size"] = adaptive_mesh_size;
+        // json_data["power"] = power;
+        json_data["padding_size"] = padding_size;
+        json_data["thickness"] = thickness;
+        json_data["mesh_size"] = uniform_mesh_size;
+        json_data["displacement_threshold"] = displacement_threshold;
+        json_data["relative_threshold"] = relative_threshold;
+        json_data["E"] = E;
+        json_data["nu"] = nu;
+        json_data["eps"] = eps;
+        json_data["I"] = I;
+        json_data["L"] = L;
+        json_data["scaling"] = scaling;
+        json_data["gradation"] = mmg_options.hgrad;
+        json_data["simulation_output"] = mesh3d.simulation_out;
 
-			unique["analysis_settings"] = json_data;
-		}
+        unique["analysis_settings"] = json_data;
+    }
 
-		json hull;
-		hull["vertices"] = json::object();
-		hull["triangles"] = json::object();
-		write_json_mat(hull_vertices, hull["vertices"]);
-		write_json_mat(hull_faces, hull["triangles"]);
+    json hull;
+    hull["vertices"] = json::object();
+    hull["triangles"] = json::object();
+    write_json_mat(hull_vertices, hull["vertices"]);
+    write_json_mat(hull_faces, hull["triangles"]);
 
-		unique["hull"] = hull;
+    unique["hull"] = hull;
 
-		{
-			if (full_path)
-			{
-				// todo: check if .json is already at end of string
-				std::ofstream json_out(path + ".json");
-				json_out << unique.dump(4) << std::endl;
-				json_out.close();
-			}
-			else
-			{
-				std::ofstream json_out(path + "/all.json");
-				json_out << unique.dump(4) << std::endl;
-				json_out.close();
-			}
-		}
+    {
+        if (full_path) {
+            // todo: check if .json is already at end of string
+            std::ofstream json_out(path + ".json");
+            json_out << unique.dump(4) << std::endl;
+            json_out.close();
+        } else {
+            std::ofstream json_out(path + "/all.json");
+            json_out << unique.dump(4) << std::endl;
+            json_out.close();
+        }
+    }
 
-		return true;
-	}
+    return true;
+}
 
-	void State::compute_hull()
-	{
-		//convex_hull(points, boundary);
-		if (mesh.moved.rows() < 3)
-			return;
+void State::compute_hull() {
+    // convex_hull(points, boundary);
+    if (mesh.moved.rows() < 3)
+        return;
 
-		loose_convex_hull(mesh.moved, mesh.boundary, 6);
-		int dims = (int)mesh.moved.cols();
+    loose_convex_hull(mesh.moved, mesh.boundary, 6);
+    int dims = (int)mesh.moved.cols();
 
-		// Compute polygon of the convex hull
-		Eigen::VectorXi I = mesh.boundary;
-		Eigen::VectorXi J = Eigen::VectorXi::LinSpaced(dims, 0, dims - 1);
+    // Compute polygon of the convex hull
+    Eigen::VectorXi I = mesh.boundary;
+    Eigen::VectorXi J = Eigen::VectorXi::LinSpaced(dims, 0, dims - 1);
 
-		igl::slice(mesh.moved, I, J, hull_polygon);
+    igl::slice(mesh.moved, I, J, hull_polygon);
 
-		// Offset by epsilon
-		// offset_polygon(hull_polygon, hull_polygon, 1);
+    // Offset by epsilon
+    // offset_polygon(hull_polygon, hull_polygon, 1);
 
-		// Draw filled polygon
-		//triangulate_convex_polygon(hull_polygon, hull_vertices, hull_faces);
-		triangulate_polygon(hull_polygon, hull_vertices, hull_faces);
-	}
+    // Draw filled polygon
+    // triangulate_convex_polygon(hull_polygon, hull_vertices, hull_faces);
+    triangulate_polygon(hull_polygon, hull_vertices, hull_faces);
+}
 
-	void State::clean_hull()
-	{
-		// Find and delete the vertices outside of the hull
-		//std::vector<int> ind;
-		//for (int i = 0; i < points.rows(); i++)
-		//{
-		//	//bool is_on_hull = false;
-		//	//for (int j = 0; j < hull_index.rows(); j++)
-		//	//{
-		//	//	if (i == hull_index(j))
-		//	//	{
-		//	//		is_on_hull = true;
-		//	//	}
-		//	//}
-		//	//if (!is_on_hull)
-		//	//{
-		//		if (!is_inside(hull_vertices, mesh.detected(i, 0), mesh.detected(i, 1)))
-		//		{
-		//			std::cout << mesh.detected(i, 0) << " " << mesh.detected(i, 1) << "\n";
-		//			ind.push_back(i);
-		//		}
-		//	//}
-		//}
-		//for (int i = ind.size(); i > 0; i--)
-		//{
-		//	delete_vertex(ind[i-1]);
-		//}
-	}
+void State::clean_hull() {
+    // Find and delete the vertices outside of the hull
+    // std::vector<int> ind;
+    // for (int i = 0; i < points.rows(); i++)
+    //{
+    //	//bool is_on_hull = false;
+    //	//for (int j = 0; j < hull_index.rows(); j++)
+    //	//{
+    //	//	if (i == hull_index(j))
+    //	//	{
+    //	//		is_on_hull = true;
+    //	//	}
+    //	//}
+    //	//if (!is_on_hull)
+    //	//{
+    //		if (!is_inside(hull_vertices, mesh.detected(i, 0),
+    // mesh.detected(i, 1)))
+    //		{
+    //			std::cout << mesh.detected(i, 0) << " " <<
+    //mesh.detected(i, 1)
+    //<< "\n"; 			ind.push_back(i);
+    //		}
+    //	//}
+    //}
+    // for (int i = ind.size(); i > 0; i--)
+    //{
+    //	delete_vertex(ind[i-1]);
+    //}
+}
 
-	Eigen::VectorXi State::increase_boundary(const Eigen::VectorXi &boundary)
-	{
-		std::vector<int> new_boundary;
-		for (int i = 0; i < boundary.size(); i++)
-		{
-			new_boundary.push_back(boundary(i));
-			for (int j = 0; j < mesh.adj[boundary(i)].size(); j++)
-			{
-				new_boundary.push_back(mesh.adj[boundary(i)][j]);
-			}
-		}
+Eigen::VectorXi State::increase_boundary(const Eigen::VectorXi &boundary) {
+    std::vector<int> new_boundary;
+    for (int i = 0; i < boundary.size(); i++) {
+        new_boundary.push_back(boundary(i));
+        for (int j = 0; j < mesh.adj[boundary(i)].size(); j++) {
+            new_boundary.push_back(mesh.adj[boundary(i)][j]);
+        }
+    }
 
-		std::sort(new_boundary.begin(), new_boundary.end());
-		new_boundary.erase(std::unique(new_boundary.begin(), new_boundary.end()), new_boundary.end());
+    std::sort(new_boundary.begin(), new_boundary.end());
+    new_boundary.erase(std::unique(new_boundary.begin(), new_boundary.end()),
+                       new_boundary.end());
 
-		Eigen::VectorXi bboundary(new_boundary.size());
-		for (int i = 0; i < new_boundary.size(); i++)
-		{
-			bboundary(i) = new_boundary[i];
-		}
-		return bboundary;
-	}
+    Eigen::VectorXi bboundary(new_boundary.size());
+    for (int i = 0; i < new_boundary.size(); i++) {
+        bboundary(i) = new_boundary[i];
+    }
+    return bboundary;
+}
 
-	void State::untangle()
-	{
-		regions.clear();
+void State::untangle() {
+    regions.clear();
 
-		auto t1 = std::chrono::system_clock::now();
-		mesh.untangle();
+    auto t1 = std::chrono::system_clock::now();
+    mesh.untangle();
 
-		auto t2 = std::chrono::system_clock::now();
-		std::chrono::duration<double> delta_t = t2 - t1;
-		logger().info("Untangling took {}s", delta_t.count());
+    auto t2 = std::chrono::system_clock::now();
+    std::chrono::duration<double> delta_t = t2 - t1;
+    logger().info("Untangling took {}s", delta_t.count());
 
-		phase_enumeration = 2;
-	}
+    phase_enumeration = 2;
+}
 
+class LocalThreadStorage {
+  public:
+    Eigen::MatrixXd V;
+    DetectionParams params;
 
-	class LocalThreadStorage
-	{
-	public:
-		Eigen::MatrixXd V;
-		DetectionParams params;
+    LocalThreadStorage(int x) {}
+};
 
-		LocalThreadStorage(int x)
-		{ }
-	};
+void State::detect_vertices() {
+    // clear previous
+    hull_vertices.resize(0, 0); // needed for lloyd
+    hull_faces.resize(0, 0);
+    hull_polygon.resize(0, 0);
+    regions.clear();
 
+    mesh3d.clear();
 
-	void State::detect_vertices()
-	{
-		// clear previous
-		hull_vertices.resize(0, 0); //needed for lloyd
-		hull_faces.resize(0, 0);
-		hull_polygon.resize(0, 0);
-		regions.clear();
+    Eigen::MatrixXd V;
+    DetectionParams params;
 
-		mesh3d.clear();
+    // #ifdef USE_TBB
 
-		Eigen::MatrixXd V;
-		DetectionParams params;
+    // 		typedef tbb::enumerable_thread_specific< LocalThreadStorage >
+    // LocalStorage; 		LocalStorage storages(LocalThreadStorage(1));
 
-// #ifdef USE_TBB
+    // 		const int n_threads =
+    // tbb::task_scheduler_init::default_num_threads(); 		const
+    // float
+    // sigma_step = 0.05; 		const float minimum_fraction = 0.4; //
+    // higher than 50% removes
+    // duplicates 		const float minimum_pixel_spacing = 3;
 
-// 		typedef tbb::enumerable_thread_specific< LocalThreadStorage > LocalStorage;
-// 		LocalStorage storages(LocalThreadStorage(1));
+    // 		Eigen::VectorXf sigmas = Eigen::VectorXf::LinSpaced(n_threads,
+    // std::max(1.0, sigma - sigma_step*n_threads/2.), sigma + sigma_step *
+    // n_threads / 2);
 
-// 		const int n_threads = tbb::task_scheduler_init::default_num_threads();
-// 		const float sigma_step = 0.05;
-// 		const float minimum_fraction = 0.4; // higher than 50% removes duplicates
-// 		const float minimum_pixel_spacing = 3;
+    // 		tbb::parallel_for(tbb::blocked_range<int>(0, n_threads),
+    // [&](const
+    // tbb::blocked_range<int> &r) { 			LocalStorage::reference
+    // loc_storage
+    // =
+    // storages.local(); 			for (int e = r.begin(); e != r.end();
+    // ++e) { 				point_source_detection(img, sigmas(e),
+    // loc_storage.V, loc_storage.params);
+    // 			}
+    // 		}
+    // 		);
 
-// 		Eigen::VectorXf sigmas = Eigen::VectorXf::LinSpaced(n_threads, std::max(1.0, sigma - sigma_step*n_threads/2.), sigma + sigma_step * n_threads / 2);
+    // 		// Concatenate all found points into one vector, and their
+    // params
+    // into a struct 		std::vector<std::pair<double, double>> V_all;
+    // DetectionParams ptmp;
 
-// 		tbb::parallel_for(tbb::blocked_range<int>(0, n_threads), [&](const tbb::blocked_range<int> &r) {
-// 			LocalStorage::reference loc_storage = storages.local();
-// 			for (int e = r.begin(); e != r.end(); ++e) {
-// 				point_source_detection(img, sigmas(e), loc_storage.V, loc_storage.params);
-// 			}
-// 		}
-// 		);
+    // 		for (LocalStorage::iterator it = storages.begin(); it !=
+    // storages.end(); ++it)
+    // 		{
+    // 			const LocalThreadStorage &storage = *it;
 
-// 		// Concatenate all found points into one vector, and their params into a struct
-// 		std::vector<std::pair<double, double>> V_all;
-// 		DetectionParams ptmp;
+    // 			for (int row = 0; row < it->V.rows(); row++)
+    // 			{
+    // 				double x = storage.V(row, 0);
+    // 				double y = storage.V(row, 1);
 
-// 		for (LocalStorage::iterator it = storages.begin(); it != storages.end(); ++it)
+    // 				V_all.push_back(std::pair<double, double>(x,
+    // y));
+    // ptmp.push_back_params(it->params.get_index(row));
+    // 			}
+    // 		}
+
+    // 		Eigen::MatrixXd tmpV(V_all.size(), 2);
+    // 		for (int i = 0; i < V_all.size(); i++)
+    // 		{
+    // 			tmpV(i, 0) = V_all[i].first;
+    // 			tmpV(i, 1) = V_all[i].second;
+    // 		}
+
+    // 		// Vi: indices of selected Vertices, Vj: Index of vertex
+    // replacing them 		Eigen::MatrixXi Vi, Vj;
+    // igl::remove_duplicate_vertices(tmpV, 1.0, V, Vi, Vj);
+
+    // 		// Average V values and count entries
+    // 		Eigen::VectorXi count(V.rows());
+    // 		V.setZero(V.rows(),2);
+    // 		count.setZero(V.rows());
+
+    // 		DetectionParams P_final, P_tmp;
+    // 		P_final.setZero(V.rows());
+    // 		P_tmp.setZero(1);
+
+    // 		for (int i = 0; i < Vj.size(); i++)
+    // 		{
+    // 			V(Vj(i), 0) += tmpV(i, 0);
+    // 			V(Vj(i), 1) += tmpV(i, 1);
+
+    // 			P_tmp = P_final.get_index(Vj(i));
+
+    // 			P_tmp.sum(ptmp.get_index(i));
+    // 			P_final.set_from(P_tmp, Vj(i));
+
+    // 			count(Vj(i))++;
+
+    // 		}
+
+    // 		// Use only vertices that have been detected minimum_fraction *
+    // n_threads times 		Eigen::MatrixXd V_final(V.rows(),2); 		int
+    // index = 0; 		for (int i = 0; i < V.rows(); i++)
+    // 		{
+    // 			if (count(i) > minimum_fraction*n_threads)
+    // 			{
+    // 				V_final.row(index) = V.row(i)/count(i);
+    // 				P_tmp = P_final.get_index(i);
+    // 				P_tmp.divide(count(i));
+
+    // 				P_final.set_from(P_tmp, index);
+    // 				index++;
+    // 			}
+    // 		}
+
+    // 		P_final.conservative_resize(index);
+    // 		V_final.conservativeResize(index, 2);
+
+    // 		V = V_final;
+    // 		params = P_final;
+    // #else
+
+    auto t1 = std::chrono::system_clock::now();
+    point_source_detection(img, sigma, otsu_multiplier, V, params);
+    auto t2 = std::chrono::system_clock::now();
+    std::chrono::duration<double> delta_t = t2 - t1;
+
+    logger().info("Detection took {}s", delta_t.count());
+    // #endif
+    if (V.cols() != 3) {
+        V.conservativeResize(V.rows(), 3);
+        V.col(2).setConstant(0);
+    }
+    mesh.clear();
+    mesh.detect_vertices(V, params);
+}
+
+void State::relax_with_lloyd() {
+    regions.clear();
+    mesh.relax_with_lloyd(lloyd_iterations, hull_vertices, hull_faces,
+                          fix_regular_regions);
+}
+
+void State::detect_bad_regions() {
+    // fill the region std::vector, no loop
+
+    regions.clear();
+
+    // Calculate the laplacian energy with respect to the original positions
+    Eigen::VectorXd energy;
+    laplace_energy(mesh.detected, mesh.triangles, energy); // any other energy?
+    // laplace_energy(points, triangles, energy);
+
+    // Find the degree of each vertex
+    Eigen::VectorXi degree;
+    mesh.vertex_degree(degree);
+
+    // Determine whether each vertex passes the criterium for bad mesh
+    double avg = energy.mean();
+    Eigen::Matrix<bool, 1, Eigen::Dynamic> crit_pass(energy.rows());
+    crit_pass.setConstant(false);
+    for (int i = 0; i < energy.rows(); i++) {
+        if (energy(i) > energy_variation_from_mean * avg || degree(i) != 6) {
+            crit_pass(i) = true;
+        }
+    }
+
+    // boundaries of the image must not be considered bad, but instead used to
+    // enclose regions inside the image
+    Eigen::VectorXi boundary = increase_boundary(mesh.boundary);
+    boundary = increase_boundary(boundary);
+
+    for (int i = 0; i < boundary.size(); i++) {
+        crit_pass(boundary(i)) = false;
+    }
+
+    // Don't find regions that have been solved
+    for (int i = 0; i < mesh.solved_vertex.size(); i++) {
+        if (mesh.solved_vertex(i))
+            crit_pass(i) = false;
+    }
+
+    // vertices manually picked as good must be removed from bad
+    for (int i = 0; i < mesh.vertex_status_fixed.size(); i++) {
+        if (mesh.vertex_status_fixed(i) == 1)
+            crit_pass(i) = false;
+        if (mesh.vertex_status_fixed(i) == -1)
+            crit_pass(i) = true;
+    }
+
+    // Find connected regions where the criterium was not passed
+
+    // maybe avoid regions id, fill directly region_vertices and use in the next
+    // method
+    Eigen::VectorXi regions_id;
+    region_grow(mesh.adj, crit_pass, regions_id);
+    int n_regions = regions_id.maxCoeff();
+
+    regions.resize(n_regions);
+    for (int i = 0; i < n_regions; ++i) {
+        regions[i].find_points(regions_id, i + 1);
+        regions[i].find_triangles(mesh.vertex_to_tri, regions_id, i + 1);
+    }
+
+    int index = 0;
+    for (auto &r : regions) {
+        r.bounding(mesh.triangles, mesh.points);
+
+        bool repeat = false;
+        do {
+            repeat = r.fix_missing_points(mesh.triangles);
+        } while (repeat);
+
+        repeat = false;
+        do {
+            repeat = r.add_orphaned_triangles(mesh);
+        } while (repeat);
+
+        // fix pinched regions by closing area at pinch
+        repeat = false;
+        do {
+            repeat = r.fix_pinched_region(mesh);
+        } while (repeat);
+
+        repeat = false;
+        do {
+            repeat = r.fix_missing_points(mesh.triangles);
+        } while (repeat);
+
+        ++index;
+
+        // r.find_triangles(mesh.triangles);
+    }
+
+    erase_small_regions();
+}
+
+void State::erase_small_regions() {
+    counter_small_region = 0;
+    // first remove/grow the ones with too small
+    auto it = regions.begin();
+    while (it != regions.end()) {
+        int nPolygon = it->region_boundary.size(); // length of current edge
+        if (nPolygon < 7) {
+            it = regions.erase(it);
+        } else {
+            ++it;
+        }
+    }
+
+    // grow the ones with wrong valency
+    // split the big ones
+}
+
+void State::check_regions() {
+    for (auto &r : regions) {
+        r.check_region(mesh.detected, mesh.points, mesh.triangles, mesh.adj);
+        // std::cout << r.status << std::endl;
+    }
+}
+
+void State::check_region(const int index) {
+    regions[index].check_region(mesh.detected, mesh.points, mesh.triangles,
+                                mesh.adj);
+}
+
+// void State::fix_regions()
+// {
+// 	bool must_continue = true;
+
+// 	std::vector<int> to_remove;
+// 	// loop through remaining regions and act depending on status
+// 	for (auto & r : regions)
+// 	{
+// 		// If too many vertices are in the region, find the least likely
+// to be correct and remove 		if (r.status ==
+// Region::TOO_MANY_VERTICES)
 // 		{
-// 			const LocalThreadStorage &storage = *it;
-
-// 			for (int row = 0; row < it->V.rows(); row++)
+// 			int n = r.region_interior.rows();
+// 			Eigen::VectorXd x_pstd(n), y_pstd(n), pval_Ar(n);
+// 			for (int i = 0; i < r.region_interior.size(); i++)
 // 			{
-// 				double x = storage.V(row, 0);
-// 				double y = storage.V(row, 1);
-
-// 				V_all.push_back(std::pair<double, double>(x, y));
-// 				ptmp.push_back_params(it->params.get_index(row));
+// 				x_pstd(i) =
+// mesh.params.std_x(r.region_interior(i)); y_pstd(i)
+// =
+// mesh.params.std_y(r.region_interior(i)); pval_Ar(i) =
+// mesh.params.pval_Ar(r.region_interior(i));
 // 			}
-// 		}
+// 			int xMax, yMax, pMax;
+// 			x_pstd.maxCoeff(&xMax);
+// 			y_pstd.maxCoeff(&yMax);
+// 			pval_Ar.maxCoeff(&pMax);
 
-// 		Eigen::MatrixXd tmpV(V_all.size(), 2);
-// 		for (int i = 0; i < V_all.size(); i++)
-// 		{
-// 			tmpV(i, 0) = V_all[i].first;
-// 			tmpV(i, 1) = V_all[i].second;
-// 		}
-
-// 		// Vi: indices of selected Vertices, Vj: Index of vertex replacing them
-// 		Eigen::MatrixXi Vi, Vj;
-// 		igl::remove_duplicate_vertices(tmpV, 1.0, V, Vi, Vj);
-
-// 		// Average V values and count entries
-// 		Eigen::VectorXi count(V.rows());
-// 		V.setZero(V.rows(),2);
-// 		count.setZero(V.rows());
-
-// 		DetectionParams P_final, P_tmp;
-// 		P_final.setZero(V.rows());
-// 		P_tmp.setZero(1);
-
-// 		for (int i = 0; i < Vj.size(); i++)
-// 		{
-// 			V(Vj(i), 0) += tmpV(i, 0);
-// 			V(Vj(i), 1) += tmpV(i, 1);
-
-// 			P_tmp = P_final.get_index(Vj(i));
-
-// 			P_tmp.sum(ptmp.get_index(i));
-// 			P_final.set_from(P_tmp, Vj(i));
-
-// 			count(Vj(i))++;
-
-// 		}
-
-// 		// Use only vertices that have been detected minimum_fraction * n_threads times
-// 		Eigen::MatrixXd V_final(V.rows(),2);
-// 		int index = 0;
-// 		for (int i = 0; i < V.rows(); i++)
-// 		{
-// 			if (count(i) > minimum_fraction*n_threads)
+// 			if (xMax == yMax && xMax == pMax)
 // 			{
-// 				V_final.row(index) = V.row(i)/count(i);
-// 				P_tmp = P_final.get_index(i);
-// 				P_tmp.divide(count(i));
+// 				int ind = r.region_interior(xMax);
+// 				to_remove.push_back(ind);
 
-// 				P_final.set_from(P_tmp, index);
-// 				index++;
+// 				// pop and rebuild current region
+// 				// solve rebuilt region
 // 			}
 // 		}
-
-// 		P_final.conservative_resize(index);
-// 		V_final.conservativeResize(index, 2);
-
-// 		V = V_final;
-// 		params = P_final;
-// #else
-		
-		auto t1 = std::chrono::system_clock::now();
-		point_source_detection(img, sigma, otsu_multiplier, V, params);
-		auto t2 = std::chrono::system_clock::now();
-		std::chrono::duration<double> delta_t = t2 - t1;
-
-		logger().info("Detection took {}s", delta_t.count());
-// #endif
-		if (V.cols() != 3)
-		{
-			V.conservativeResize(V.rows(), 3);
-			V.col(2).setConstant(0);
-		}
-		mesh.clear();
-		mesh.detect_vertices(V, params);
-	}
-
-	void State::relax_with_lloyd()
-	{
-		regions.clear();
-		mesh.relax_with_lloyd(lloyd_iterations, hull_vertices, hull_faces, fix_regular_regions);
-	}
-
-	void State::detect_bad_regions()
-	{
-		//fill the region std::vector, no loop
-
-		regions.clear();
-
-		// Calculate the laplacian energy with respect to the original positions
-		Eigen::VectorXd energy;
-		laplace_energy(mesh.detected, mesh.triangles, energy); //any other energy?
-		//laplace_energy(points, triangles, energy);
-
-		// Find the degree of each vertex
-		Eigen::VectorXi degree;
-		mesh.vertex_degree(degree);
-
-		// Determine whether each vertex passes the criterium for bad mesh
-		double avg = energy.mean();
-		Eigen::Matrix<bool, 1, Eigen::Dynamic> crit_pass(energy.rows());
-		crit_pass.setConstant(false);
-		for (int i = 0; i < energy.rows(); i++)
-		{
-			if (energy(i) > energy_variation_from_mean*avg || degree(i) != 6)
-			{
-				crit_pass(i) = true;
-			}
-		}
-
-		// boundaries of the image must not be considered bad, but instead used to enclose regions inside the image
-		Eigen::VectorXi boundary = increase_boundary(mesh.boundary);
-		boundary = increase_boundary(boundary);
-
-		for (int i = 0; i < boundary.size(); i++)
-		{
-			crit_pass(boundary(i)) = false;
-		}
-
-		// Don't find regions that have been solved
-		for (int i = 0; i < mesh.solved_vertex.size(); i++)
-		{
-			if (mesh.solved_vertex(i))
-				crit_pass(i) = false;
-		}
-
-		// vertices manually picked as good must be removed from bad
-		for (int i = 0; i < mesh.vertex_status_fixed.size(); i++)
-		{
-			if(mesh.vertex_status_fixed(i) == 1)
-				crit_pass(i) = false;
-			if (mesh.vertex_status_fixed(i) == -1)
-				crit_pass(i) = true;
-		}
-
-		// Find connected regions where the criterium was not passed
-
-		//maybe avoid regions id, fill directly region_vertices and use in the next method
-		Eigen::VectorXi regions_id;
-		region_grow(mesh.adj, crit_pass, regions_id);
-		int n_regions = regions_id.maxCoeff();
-
-		regions.resize(n_regions);
-		for (int i = 0; i < n_regions; ++i)
-		{
-			regions[i].find_points(regions_id, i + 1);
-			regions[i].find_triangles(mesh.vertex_to_tri, regions_id, i + 1);
-		}
-
-		int index = 0;
-		for (auto & r : regions)
-		{
-			r.bounding(mesh.triangles, mesh.points);
-
-			bool repeat = false;
-			do {
-				repeat = r.fix_missing_points(mesh.triangles);
-			} while (repeat);
-
-			repeat = false;
-			do {
-				repeat = r.add_orphaned_triangles(mesh);
-			} while (repeat);
-
-			// fix pinched regions by closing area at pinch
-			repeat = false;
-			do {
-				repeat = r.fix_pinched_region(mesh);
-			} while (repeat);
-
-			repeat = false;
-			do {
-				repeat = r.fix_missing_points(mesh.triangles);
-			} while (repeat);
-
-			++index;
-
-			//r.find_triangles(mesh.triangles);
-		}
-
-		erase_small_regions();
-	}
-
-	void State::erase_small_regions()
-	{
-		counter_small_region = 0;
-		//first remove/grow the ones with too small
-		auto it = regions.begin();
-		while (it != regions.end())
-		{
-			int nPolygon = it->region_boundary.size(); // length of current edge
-			if (nPolygon < 7)
-			{
-				it = regions.erase(it);
-			}
-			else
-			{
-				++it;
-			}
-		}
-
-
-		//grow the ones with wrong valency
-		//split the big ones
-	}
-
-	void State::check_regions()
-	{
-		for (auto & r : regions)
-		{
-			r.check_region(mesh.detected, mesh.points, mesh.triangles, mesh.adj);
-			//std::cout << r.status << std::endl;
-		}
-	}
-
-	void State::check_region(const int index)
-	{
-		regions[index].check_region(mesh.detected, mesh.points, mesh.triangles, mesh.adj);
-	}
-
-	// void State::fix_regions()
-	// {
-	// 	bool must_continue = true;
-
-	// 	std::vector<int> to_remove;
-	// 	// loop through remaining regions and act depending on status
-	// 	for (auto & r : regions)
-	// 	{
-	// 		// If too many vertices are in the region, find the least likely to be correct and remove
-	// 		if (r.status == Region::TOO_MANY_VERTICES)
-	// 		{
-	// 			int n = r.region_interior.rows();
-	// 			Eigen::VectorXd x_pstd(n), y_pstd(n), pval_Ar(n);
-	// 			for (int i = 0; i < r.region_interior.size(); i++)
-	// 			{
-	// 				x_pstd(i) = mesh.params.std_x(r.region_interior(i));
-	// 				y_pstd(i) = mesh.params.std_y(r.region_interior(i));
-	// 				pval_Ar(i) = mesh.params.pval_Ar(r.region_interior(i));
-	// 			}
-	// 			int xMax, yMax, pMax;
-	// 			x_pstd.maxCoeff(&xMax);
-	// 			y_pstd.maxCoeff(&yMax);
-	// 			pval_Ar.maxCoeff(&pMax);
-
-	// 			if (xMax == yMax && xMax == pMax)
-	// 			{
-	// 				int ind = r.region_interior(xMax);
-	// 				to_remove.push_back(ind);
-
-	// 				// pop and rebuild current region
-	// 				// solve rebuilt region
-	// 			}
-	// 		}
-	// 	}
-
-
-	// 	std::sort(to_remove.begin(), to_remove.end());
-
-	// 	for (int i = to_remove.size() - 1; i >= 0; --i)
-	// 	{
-	// 		delete_vertex(to_remove[i]);
-	// 	}
-
-	// 	for (auto & r : regions)
-	// 		r.find_triangles(mesh.triangles);
-
-	// 	check_regions();
-	// 	//resolve_regions();
-	// }
-
-
-	void State::grow_region(const int index)
-	{
-		regions[index].grow(mesh.points, mesh.triangles, mesh.vertex_to_tri);
-	}
-
-	void State::grow_regions()
-	{
-		Eigen::Matrix<bool, 1, Eigen::Dynamic> crit_pass(mesh.points.rows());
-		crit_pass.setConstant(false);
-		for (int j = 0; j < regions.size(); j++)
-		{
-			auto &r = regions[j];
-			for (size_t i = 0; i < r.region_interior.size(); i++)
-			{
-				crit_pass(r.region_interior(i)) = true;
-			}
-			if (j > 0)
-			{
-				for (size_t i = 0; i < r.region_boundary.size(); i++)
-				{
-					crit_pass(r.region_boundary(i)) = true;
-				}
-			}
-		}
-
-		// Find connected regions where the criterium was not passed
-
-		//maybe avoid regions id, fill directly region_vertices and use in the next method
-		Eigen::VectorXi regions_id;
-		region_grow(mesh.adj, crit_pass, regions_id);
-		int n_regions = regions_id.maxCoeff();
-
-		regions.resize(n_regions);
-		for (int i = 0; i < n_regions; ++i)
-		{
-			regions[i].find_points(regions_id, i + 1);
-			regions[i].find_triangles(mesh.vertex_to_tri, regions_id, i + 1);
-		}
-
-		for (auto & r : regions)
-		{
-			r.bounding(mesh.triangles, mesh.points);
-		}
-	}
-
-	void State::resolve_region(const int index)
-	{
-		Eigen::MatrixXd new_points;
-		Eigen::MatrixXi new_triangles;
-
-		counter_invalid_neigh = 0;
-		counter_infeasible_region = 0;
-		counter_solved_regions = 0;
-
-		//remove from regions all the solved one
-		//grow the others and regurobi the regions max 4 time
-
-		auto &region = regions[index];
-
-		double gurobi_max_time = gurobi_time_limit_long;
-		region.resolve(mesh.detected, mesh.points, perm_possibilities, gurobi_max_time, new_points, new_triangles, true);
-		//gurobi r
-		if (region.status == Region::NOT_PROPERLY_CLOSED)
-		{
-			counter_invalid_neigh++;
-			return;
-		}
-		else if (region.status == Region::NO_SOLUTION)
-		{
-			counter_infeasible_region++;
-			return;
-		}
-
-		// Map q.T back to global indices
-		assert(region.region_boundary.size() + region.region_interior.size() == new_points.rows());
-
-		//add this into the region
-		Eigen::VectorXi local_to_global;
-		region.local_to_global(local_to_global);
-
-		mesh.local_update(local_to_global, new_points, new_triangles, region.region_triangles);
-
-		counter_solved_regions++;
-
-		// Mark region as good in mesh
-		mesh.mark_vertex_as_solved(region.region_interior);
-
-		regions.erase(regions.begin() + index);
-
-		for (auto &r : regions)
-			r.find_triangles(mesh.triangles);
-	}
-
-	void State::resolve_regions()
-	{
-		Eigen::MatrixXd new_points;
-		Eigen::MatrixXi new_triangles;
-
-		counter_invalid_neigh = 0;
-		counter_infeasible_region = 0;
-		counter_solved_regions = 0;
-
-		// loop through all the boundaries and solve individually. Possibly skip first one, as it's the boundary of the image
-		auto it = regions.begin();
-		while (it != regions.end())
-		{
-			//remove from regions all the solved one
-			//grow the others and regurobi the regions max 4 time
-
-			auto &region = *it;
-			region.find_triangles(mesh.triangles);
-			double gurobi_max_time = gurobi_time_limit_short;
-			region.resolve(mesh.detected, mesh.points, perm_possibilities, gurobi_max_time, new_points, new_triangles);
-			//gurobi r
-			if (region.status == Region::NOT_PROPERLY_CLOSED)
-			{
-				counter_invalid_neigh++;
-				++it;
-				continue;
-			}
-			else if (region.status == Region::NO_SOLUTION)
-			{
-				counter_infeasible_region++;
-				++it;
-				continue;
-			}
-			else if (region.status != 0)
-			{
-				++it;
-				continue;
-			}
-
-			if (region.region_boundary.size() + region.region_interior.size() != new_points.rows())
-			{
-				counter_infeasible_region++; //maybe new name (point missing or too much)
-				++it;
-				continue;
-			}
-
-
-			// Map q.T back to global indices
-			assert(region.region_boundary.size() + region.region_interior.size() == new_points.rows());
-
-
-			Eigen::VectorXi local_to_global;
-			region.local_to_global(local_to_global);
-
-			mesh.local_update(local_to_global, new_points, new_triangles, region.region_triangles);
-
-			// Mark region as good in mesh
-			mesh.mark_vertex_as_solved(region.region_interior);
-
-			it = regions.erase(it);
-			counter_solved_regions++;
-
-		}
-
-		for (auto &r : regions)
-			r.find_triangles(mesh.triangles);
-
-	}
-
-	void State::final_relax()
-	{
-		//increase boundary by one row for fixation
-		Eigen::VectorXi boundary = increase_boundary(mesh.boundary);
-		
-		auto t1 = std::chrono::system_clock::now();
-		mesh.final_relax(boundary);
-
-		auto t2 = std::chrono::system_clock::now();
-		std::chrono::duration<double> delta_t = t2 - t1;
-		logger().info("Relaxation took {}s", delta_t.count());
-		phase_enumeration = 3;
-	}
-
-	void State::delete_vertex(const int index)
-	{
-
-		if (regions.empty())
-		{
-			mesh.delete_vertex(index, true);
-			//maybe recompute the hull
-		}
-		else
-		{
-			//find the region
-			int region_ind = find_region_by_interior_vertex(index);
-			if (region_ind == -1)
-			{
-				regions.clear();
-				delete_vertex(index);
-				return;
-			}
-			//and call region.delete_vertex(index) which calls the new local_update of mesh
-			//the region delete vertex shold get the local id of the vertex compute the local2global without that vertex and retriangulate the region
-			regions[region_ind].delete_vertex(mesh,index);
-
-			detect_bad_regions();
-		}
-
-		for (auto &r : regions)
-			r.find_triangles(mesh.triangles);
-
-		// maybe clear regions and recompute hull
-	}
-
-	void State::add_vertex(Eigen::Vector3d new_point)
-	{
-		mesh.add_vertex(new_point);
-
-	}
-
-	// void State::init_3d_mesh()
-	// {
-	// 	if(image_from_pillars)
-	// 		mesh3d.init_pillars(mesh, eps, I, L);
-	// 	else
-	// 		mesh3d.init_nano_dots(mesh, padding_size, thickness, E, nu, formulation);
-	// }
-
-	void State::propagate_sizing_field(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, const Eigen::VectorXd &disp, Eigen::VectorXd &S) {
-		double smax = median_edge_length(mesh.detected, mesh.triangles) * scaling;
-		
-		// Propagate a sizing field from the triangle where all vertices are beyond the displacement threshold
-		std::vector<int> sources;
-		double thres = displacement_threshold;
-		if (relative_threshold) {
-			thres *= disp.maxCoeff();
-		}
-		S.resize(V.rows());
-		for (int f = 0; f < F.rows(); ++f) {
-			if (disp(F(f,0)) > thres && disp(F(f,1)) > thres && disp(F(f,2)) > thres) {
-				for (int lv : {0, 1, 2}) {
-					sources.push_back(F(f,lv));
-					S[F(f,lv)] = uniform_mesh_size * median_edge_length(mesh.detected, mesh.triangles) * scaling;
-				}
-			}
-		}
-		if (sources.empty()) {
-			S.setConstant(smax);
-		} else {
-			dijkstra_grading(V, F, S, mmg_options.hgrad, sources);
-		}
-
-		// Second pass: clamp interior target edge length by edge-max, and propagate again towards the border
-		sources.clear();
-		// Set vertices *not* on the boundary as source, with value smax
-		auto on_border = igl::is_border_vertex(F);
-		for (int v = 0; v < (int) on_border.size(); ++v) {
-			if (!on_border[v]) {
-				sources.push_back(v);
-				S[v] = std::min(S[v], smax);
-			}
-		}
-		dijkstra_grading(V, F, S, mmg_options.hgrad, sources);
-	}
-
-	void State::mesh_2d_adaptive() {
-		// Create background mesh with a scalar field = norm of the displacements of the dots
-		Eigen::MatrixXd V;
-		Eigen::MatrixXi F;
-		Eigen::VectorXd D, S;
-		mesh.get_background_mesh(scaling, V, F, D, padding_size);
-		propagate_sizing_field(V, F, D, S);
-
-		// FIXME: sizing field
-		// mmg_options.hmin = S.minCoeff();
-		// mmg_options.hmax = S.maxCoeff();
- 		// remesh_adaptive_2d(V, F, S, V, F, mmg_options);
-
-		// Set volume mesh based on the current surface
-		// mesh3d.V.resize(V.rows(), 3);
-		mesh3d.V  = V;  // we want 3d now
-		// mesh3d.V.leftCols<2>() = V.leftCols<2>();
-		// mesh3d.V.col(2).setZero();
-
-		mesh3d.F = F;
-		mesh3d.T = Eigen::MatrixXi(0, 4);
-	}
+// 	}
+
+// 	std::sort(to_remove.begin(), to_remove.end());
+
+// 	for (int i = to_remove.size() - 1; i >= 0; --i)
+// 	{
+// 		delete_vertex(to_remove[i]);
+// 	}
+
+// 	for (auto & r : regions)
+// 		r.find_triangles(mesh.triangles);
+
+// 	check_regions();
+// 	//resolve_regions();
+// }
+
+void State::grow_region(const int index) {
+    regions[index].grow(mesh.points, mesh.triangles, mesh.vertex_to_tri);
+}
+
+void State::grow_regions() {
+    Eigen::Matrix<bool, 1, Eigen::Dynamic> crit_pass(mesh.points.rows());
+    crit_pass.setConstant(false);
+    for (int j = 0; j < regions.size(); j++) {
+        auto &r = regions[j];
+        for (size_t i = 0; i < r.region_interior.size(); i++) {
+            crit_pass(r.region_interior(i)) = true;
+        }
+        if (j > 0) {
+            for (size_t i = 0; i < r.region_boundary.size(); i++) {
+                crit_pass(r.region_boundary(i)) = true;
+            }
+        }
+    }
+
+    // Find connected regions where the criterium was not passed
+
+    // maybe avoid regions id, fill directly region_vertices and use in the next
+    // method
+    Eigen::VectorXi regions_id;
+    region_grow(mesh.adj, crit_pass, regions_id);
+    int n_regions = regions_id.maxCoeff();
+
+    regions.resize(n_regions);
+    for (int i = 0; i < n_regions; ++i) {
+        regions[i].find_points(regions_id, i + 1);
+        regions[i].find_triangles(mesh.vertex_to_tri, regions_id, i + 1);
+    }
+
+    for (auto &r : regions) {
+        r.bounding(mesh.triangles, mesh.points);
+    }
+}
+
+void State::resolve_region(const int index) {
+    Eigen::MatrixXd new_points;
+    Eigen::MatrixXi new_triangles;
+
+    counter_invalid_neigh = 0;
+    counter_infeasible_region = 0;
+    counter_solved_regions = 0;
+
+    // remove from regions all the solved one
+    // grow the others and regurobi the regions max 4 time
+
+    auto &region = regions[index];
+
+    double gurobi_max_time = gurobi_time_limit_long;
+    region.resolve(mesh.detected, mesh.points, perm_possibilities,
+                   gurobi_max_time, new_points, new_triangles, true);
+    // gurobi r
+    if (region.status == Region::NOT_PROPERLY_CLOSED) {
+        counter_invalid_neigh++;
+        return;
+    } else if (region.status == Region::NO_SOLUTION) {
+        counter_infeasible_region++;
+        return;
+    }
+
+    // Map q.T back to global indices
+    assert(region.region_boundary.size() + region.region_interior.size() ==
+           new_points.rows());
+
+    // add this into the region
+    Eigen::VectorXi local_to_global;
+    region.local_to_global(local_to_global);
+
+    mesh.local_update(local_to_global, new_points, new_triangles,
+                      region.region_triangles);
+
+    counter_solved_regions++;
+
+    // Mark region as good in mesh
+    mesh.mark_vertex_as_solved(region.region_interior);
+
+    regions.erase(regions.begin() + index);
+
+    for (auto &r : regions)
+        r.find_triangles(mesh.triangles);
+}
+
+void State::resolve_regions() {
+    Eigen::MatrixXd new_points;
+    Eigen::MatrixXi new_triangles;
+
+    counter_invalid_neigh = 0;
+    counter_infeasible_region = 0;
+    counter_solved_regions = 0;
+
+    // loop through all the boundaries and solve individually. Possibly skip
+    // first one, as it's the boundary of the image
+    auto it = regions.begin();
+    while (it != regions.end()) {
+        // remove from regions all the solved one
+        // grow the others and regurobi the regions max 4 time
+
+        auto &region = *it;
+        region.find_triangles(mesh.triangles);
+        double gurobi_max_time = gurobi_time_limit_short;
+        region.resolve(mesh.detected, mesh.points, perm_possibilities,
+                       gurobi_max_time, new_points, new_triangles);
+        // gurobi r
+        if (region.status == Region::NOT_PROPERLY_CLOSED) {
+            counter_invalid_neigh++;
+            ++it;
+            continue;
+        } else if (region.status == Region::NO_SOLUTION) {
+            counter_infeasible_region++;
+            ++it;
+            continue;
+        } else if (region.status != 0) {
+            ++it;
+            continue;
+        }
+
+        if (region.region_boundary.size() + region.region_interior.size() !=
+            new_points.rows()) {
+            counter_infeasible_region++; // maybe new name (point missing or too
+                                         // much)
+            ++it;
+            continue;
+        }
+
+        // Map q.T back to global indices
+        assert(region.region_boundary.size() + region.region_interior.size() ==
+               new_points.rows());
+
+        Eigen::VectorXi local_to_global;
+        region.local_to_global(local_to_global);
+
+        mesh.local_update(local_to_global, new_points, new_triangles,
+                          region.region_triangles);
+
+        // Mark region as good in mesh
+        mesh.mark_vertex_as_solved(region.region_interior);
+
+        it = regions.erase(it);
+        counter_solved_regions++;
+    }
+
+    for (auto &r : regions)
+        r.find_triangles(mesh.triangles);
+}
+
+void State::final_relax() {
+    // increase boundary by one row for fixation
+    Eigen::VectorXi boundary = increase_boundary(mesh.boundary);
+
+    auto t1 = std::chrono::system_clock::now();
+    mesh.final_relax(boundary);
+
+    auto t2 = std::chrono::system_clock::now();
+    std::chrono::duration<double> delta_t = t2 - t1;
+    logger().info("Relaxation took {}s", delta_t.count());
+    phase_enumeration = 3;
+}
+
+void State::delete_vertex(const int index) {
+    if (regions.empty()) {
+        mesh.delete_vertex(index, true);
+        // maybe recompute the hull
+    } else {
+        // find the region
+        int region_ind = find_region_by_interior_vertex(index);
+        if (region_ind == -1) {
+            regions.clear();
+            delete_vertex(index);
+            return;
+        }
+        // and call region.delete_vertex(index) which calls the new local_update
+        // of mesh the region delete vertex shold get the local id of the vertex
+        // compute the local2global without that vertex and retriangulate the
+        // region
+        regions[region_ind].delete_vertex(mesh, index);
+
+        detect_bad_regions();
+    }
+
+    for (auto &r : regions)
+        r.find_triangles(mesh.triangles);
+
+    // maybe clear regions and recompute hull
+}
+
+void State::add_vertex(Eigen::Vector3d new_point) {
+    mesh.add_vertex(new_point);
+}
+
+// void State::init_3d_mesh()
+// {
+// 	if(image_from_pillars)
+// 		mesh3d.init_pillars(mesh, eps, I, L);
+// 	else
+// 		mesh3d.init_nano_dots(mesh, padding_size, thickness, E, nu,
+// formulation);
+// }
+
+void State::propagate_sizing_field(const Eigen::MatrixXd &V,
+                                   const Eigen::MatrixXi &F,
+                                   const Eigen::VectorXd &disp,
+                                   Eigen::VectorXd &S) {
+    double smax = median_edge_length(mesh.detected, mesh.triangles) * scaling;
+
+    // Propagate a sizing field from the triangle where all vertices are beyond
+    // the displacement threshold
+    std::vector<int> sources;
+    double thres = displacement_threshold;
+    if (relative_threshold) {
+        thres *= disp.maxCoeff();
+    }
+    S.resize(V.rows());
+    for (int f = 0; f < F.rows(); ++f) {
+        if (disp(F(f, 0)) > thres && disp(F(f, 1)) > thres &&
+            disp(F(f, 2)) > thres) {
+            for (int lv : {0, 1, 2}) {
+                sources.push_back(F(f, lv));
+                S[F(f, lv)] =
+                    uniform_mesh_size *
+                    median_edge_length(mesh.detected, mesh.triangles) * scaling;
+            }
+        }
+    }
+    if (sources.empty()) {
+        S.setConstant(smax);
+    } else {
+        dijkstra_grading(V, F, S, mmg_options.hgrad, sources);
+    }
+
+    // Second pass: clamp interior target edge length by edge-max, and propagate
+    // again towards the border
+    sources.clear();
+    // Set vertices *not* on the boundary as source, with value smax
+    auto on_border = igl::is_border_vertex(F);
+    for (int v = 0; v < (int)on_border.size(); ++v) {
+        if (!on_border[v]) {
+            sources.push_back(v);
+            S[v] = std::min(S[v], smax);
+        }
+    }
+    dijkstra_grading(V, F, S, mmg_options.hgrad, sources);
+}
+
+void State::mesh_2d_adaptive() {
+    // Create background mesh with a scalar field = norm of the displacements of
+    // the dots
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    Eigen::VectorXd D, S;
+    mesh.get_background_mesh(scaling, V, F, D, padding_size);
+    propagate_sizing_field(V, F, D, S);
+
+    // FIXME: sizing field
+    // mmg_options.hmin = S.minCoeff();
+    // mmg_options.hmax = S.maxCoeff();
+    // remesh_adaptive_2d(V, F, S, V, F, mmg_options);
+
+    // Set volume mesh based on the current surface
+    // mesh3d.V.resize(V.rows(), 3);
+    mesh3d.V = V; // we want 3d now
+    // mesh3d.V.leftCols<2>() = V.leftCols<2>();
+    // mesh3d.V.col(2).setZero();
+
+    mesh3d.F = F;
+    mesh3d.T = Eigen::MatrixXi(0, 4);
+}
 
 #if 0
-	// Old version
-	void State::mesh_2d_adaptive() {
-		// Create background mesh with a scalar field = norm of the displacements of the dots
-		Eigen::MatrixXd V;
-		Eigen::MatrixXi F;
-		Eigen::VectorXd S;
-		mesh.get_background_mesh(scaling, V, F, S, padding_size);
+// Old version
+void State::mesh_2d_adaptive() {
+// Create background mesh with a scalar field = norm of the displacements of the dots
+Eigen::MatrixXd V;
+Eigen::MatrixXi F;
+Eigen::VectorXd S;
+mesh.get_background_mesh(scaling, V, F, S, padding_size);
 
-		// Rescale displacement field
-		double vmin = V.minCoeff();
-		double vmax = V.maxCoeff();
-		S = (S.array() - S.minCoeff()) / std::max(1e-9, (S.maxCoeff() - S.minCoeff()));
-		S = (1.0 - S.array()).pow(power) * (adaptive_mesh_size[1] - adaptive_mesh_size[0]) + adaptive_mesh_size[0];
-		std::cout << S.transpose() << std::endl;
-		S *= median_edge_length(mesh.detected, mesh.triangles) * scaling / std::max(1e-9, vmax - vmin);
-		std::cout << S.transpose() << std::endl;
-		std::cout << median_edge_length(mesh.detected, mesh.triangles) * scaling / std::max(1e-9, vmax - vmin) << std::endl;
+// Rescale displacement field
+double vmin = V.minCoeff();
+double vmax = V.maxCoeff();
+S = (S.array() - S.minCoeff()) / std::max(1e-9, (S.maxCoeff() - S.minCoeff()));
+S = (1.0 - S.array()).pow(power) * (adaptive_mesh_size[1] - adaptive_mesh_size[0]) + adaptive_mesh_size[0];
+std::cout << S.transpose() << std::endl;
+S *= median_edge_length(mesh.detected, mesh.triangles) * scaling / std::max(1e-9, vmax - vmin);
+std::cout << S.transpose() << std::endl;
+std::cout << median_edge_length(mesh.detected, mesh.triangles) * scaling / std::max(1e-9, vmax - vmin) << std::endl;
 
-		// Remesh triangle mesh
-		V = V.array() / std::max(1e-9, vmax - vmin);
- 		remesh_adaptive_2d(V, F, S, V, F, mmg_options);
-		V = V.array() * std::max(1e-9, vmax - vmin);
+// Remesh triangle mesh
+V = V.array() / std::max(1e-9, vmax - vmin);
+remesh_adaptive_2d(V, F, S, V, F, mmg_options);
+V = V.array() * std::max(1e-9, vmax - vmin);
 
-		// Set volume mesh based on the current surface
-		mesh3d.V.resize(V.rows(), 3);
-		mesh3d.V.leftCols<2>() = V.leftCols<2>();
-		mesh3d.V.col(2).setZero();
+// Set volume mesh based on the current surface
+mesh3d.V.resize(V.rows(), 3);
+mesh3d.V.leftCols<2>() = V.leftCols<2>();
+mesh3d.V.col(2).setZero();
 
-		mesh3d.F = F;
-		mesh3d.T = Eigen::MatrixXi(0, 4);
-	}
+mesh3d.F = F;
+mesh3d.T = Eigen::MatrixXi(0, 4);
+}
 #endif
 
-	void State::extrude_2d_mesh() {
-		if (mesh3d.V.size() == 0) {
-			mesh_2d_adaptive();
-			igl::write_triangle_mesh("/Users/ziyizhang/Projects/tmp/debug.obj", mesh3d.V, mesh3d.F);
-		}
+void State::extrude_2d_mesh() {
+    if (mesh3d.V.size() == 0) {
+        mesh_2d_adaptive();
+        igl::write_triangle_mesh("/Users/ziyizhang/Projects/tmp/debug.obj",
+                                 mesh3d.V, mesh3d.F);
+    }
 
-		double zmin = mesh3d.V.col(2).minCoeff();
-		double zmax = mesh3d.V.col(2).maxCoeff();
+    double zmin = mesh3d.V.col(2).minCoeff();
+    double zmax = mesh3d.V.col(2).maxCoeff();
 
-		// Remesh 2d surface in repeated calls
-		// if (std::abs(zmin - zmax) > 1e-6) {
-		// 	mesh_2d_adaptive();
-		// }
+    // Remesh 2d surface in repeated calls
+    // if (std::abs(zmin - zmax) > 1e-6) {
+    // 	mesh_2d_adaptive();
+    // }
 
-		// Extrude into a 3d mesh
-		extrude_mesh(mesh3d.V, mesh3d.F, -thickness, mesh3d.V, mesh3d.F, mesh3d.T);
-	}
+    // Extrude into a 3d mesh
+    extrude_mesh(mesh3d.V, mesh3d.F, -thickness, mesh3d.V, mesh3d.F, mesh3d.T);
+}
 
-	void State::mesh_3d_volume() {
-		auto t1 = std::chrono::system_clock::now();
+void State::mesh_3d_volume() {
+    auto t1 = std::chrono::system_clock::now();
 
-		extrude_2d_mesh(); // too lazy to recode this
-		return;
+    extrude_2d_mesh(); // too lazy to recode this
+    return;
 
-		Eigen::MatrixXd BV;
-		Eigen::MatrixXi BF;
-		igl::bounding_box(mesh3d.V, BV, BF);
+    Eigen::MatrixXd BV;
+    Eigen::MatrixXi BF;
+    igl::bounding_box(mesh3d.V, BV, BF);
 
-		// Target tetrahedron volume
-		double a = uniform_mesh_size * median_edge_length(mesh.detected, mesh.triangles) * scaling;
-		double target_volume = std::sqrt(2.0) / 12.0 * a * a * a;
+    // Target tetrahedron volume
+    double a = uniform_mesh_size *
+               median_edge_length(mesh.detected, mesh.triangles) * scaling;
+    double target_volume = std::sqrt(2.0) / 12.0 * a * a * a;
 
-		std::stringstream buf;
-		buf.precision(100);
-		buf.setf(std::ios::fixed, std::ios::floatfield);
-		buf << "Qpq1.414a" << target_volume;
+    std::stringstream buf;
+    buf.precision(100);
+    buf.setf(std::ios::fixed, std::ios::floatfield);
+    buf << "Qpq1.414a" << target_volume;
 
-		// Mesh volume
-		igl::copyleft::tetgen::tetrahedralize(BV, BF, buf.str(), mesh3d.V, mesh3d.T, mesh3d.F);
-		polyfem::orient_closed_surface(mesh3d.V, mesh3d.F);
+    // Mesh volume
+    igl::copyleft::tetgen::tetrahedralize(BV, BF, buf.str(), mesh3d.V, mesh3d.T,
+                                          mesh3d.F);
+    polyfem::orient_closed_surface(mesh3d.V, mesh3d.F);
 
-		auto t2 = std::chrono::system_clock::now();
-		std::chrono::duration<double> delta_t = t2 - t1;
-		logger().info("Meshing 3d took {}s", delta_t.count());
-	}
+    auto t2 = std::chrono::system_clock::now();
+    std::chrono::duration<double> delta_t = t2 - t1;
+    logger().info("Meshing 3d took {}s", delta_t.count());
+}
 
-	void State::remesh_3d_adaptive() {  // after clicking "Build volumetric mesh"
+void State::remesh_3d_adaptive() { // after clicking "Build volumetric mesh"
 
-		auto t1 = std::chrono::system_clock::now();
+    auto t1 = std::chrono::system_clock::now();
 
-		// Generate background mesh if needed
-		if (mesh3d.V.size() == 0 || mesh3d.T.rows() == 0) { mesh_3d_volume(); }
-		double zmin = mesh3d.V.col(2).minCoeff();
-		double zmax = mesh3d.V.col(2).maxCoeff();
-		if (std::abs(zmin - zmax) > 1e-6) { mesh_3d_volume(); }
+    // Generate background mesh if needed
+    if (mesh3d.V.size() == 0 || mesh3d.T.rows() == 0) {
+        mesh_3d_volume();
+    }
+    double zmin = mesh3d.V.col(2).minCoeff();
+    double zmax = mesh3d.V.col(2).maxCoeff();
+    if (std::abs(zmin - zmax) > 1e-6) {
+        mesh_3d_volume();
+    }
 
-		// Scalar field to interpolate
-		Eigen::MatrixXd V;
-		Eigen::MatrixXi F, FP(0, 3);
-		Eigen::VectorXd D, S;
-		mesh.get_background_mesh(scaling, V, F, D, padding_size);
-		propagate_sizing_field(V, F, D, S);
-		double smin = S.minCoeff();
-		double smax = S.maxCoeff();
+    // Scalar field to interpolate
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F, FP(0, 3);
+    Eigen::VectorXd D, S;
+    mesh.get_background_mesh(scaling, V, F, D, padding_size);
+    propagate_sizing_field(V, F, D, S);
+    double smin = S.minCoeff();
+    double smax = S.maxCoeff();
 
-		// Interpolate in 2d, and grade size along Z
-		Eigen::MatrixXd VP = mesh3d.V.leftCols<2>();
-		S = interpolate_2d(V, F, S, VP);
-		zmin = mesh3d.V.col(2).minCoeff();
-		zmax = mesh3d.V.col(2).maxCoeff();
-		for (int v = 0; v < mesh3d.V.rows(); ++v) {
-			double t = (mesh3d.V(v,2) - zmin) / (zmax - zmin); // 0 on zmin, 1 on zmax
-			// std::cout << "z: " << t << " " << S(v) << " " << t*S(v) + (1.0-t)*smax << std::endl;
-			S(v) = t*S(v) + (1.0-t)*smax;
-		}
+    // Interpolate in 2d, and grade size along Z
+    Eigen::MatrixXd VP = mesh3d.V.leftCols<2>();
+    S = interpolate_2d(V, F, S, VP);
+    zmin = mesh3d.V.col(2).minCoeff();
+    zmax = mesh3d.V.col(2).maxCoeff();
+    for (int v = 0; v < mesh3d.V.rows(); ++v) {
+        double t =
+            (mesh3d.V(v, 2) - zmin) / (zmax - zmin); // 0 on zmin, 1 on zmax
+        // std::cout << "z: " << t << " " << S(v) << " " << t*S(v) +
+        // (1.0-t)*smax << std::endl;
+        S(v) = t * S(v) + (1.0 - t) * smax;
+    }
 
-		// std::cout << S << std::endl;
+    // std::cout << S << std::endl;
 
-		// Remesh volume mesh
-		mmg_options.hmin = S.minCoeff();
-		mmg_options.hmax = S.maxCoeff();
- 		remesh_adaptive_3d(mesh3d.V, mesh3d.T, S, mesh3d.V, mesh3d.F, mesh3d.T, mmg_options);
+    // Remesh volume mesh
+    mmg_options.hmin = S.minCoeff();
+    mmg_options.hmax = S.maxCoeff();
+    remesh_adaptive_3d(mesh3d.V, mesh3d.T, S, mesh3d.V, mesh3d.F, mesh3d.T,
+                       mmg_options);
 
-		auto t2 = std::chrono::system_clock::now();
-		std::chrono::duration<double> delta_t = t2 - t1;
-		logger().info("Remeshing adaptively took {}s", delta_t.count());
-	}
+    auto t2 = std::chrono::system_clock::now();
+    std::chrono::duration<double> delta_t = t2 - t1;
+    logger().info("Remeshing adaptively took {}s", delta_t.count());
+}
 
-	void State::analyze_3d_mesh() {
-		auto t1 = std::chrono::system_clock::now();
-		if(image_from_pillars)
-		{
-			mesh3d.init_pillars(mesh, eps, I, L, scaling);
-		}
-		else
-		{
-			mesh3d.init_nano_dots(mesh, padding_size, thickness, E, nu, scaling, formulation);
-		}
+void State::analyze_3d_mesh() {
+    auto t1 = std::chrono::system_clock::now();
+    if (image_from_pillars) {
+        mesh3d.init_pillars(mesh, eps, I, L, scaling);
+    } else {
+        mesh3d.init_nano_dots(mesh, padding_size, thickness, E, nu, scaling,
+                              formulation);
+    }
 
-		auto t2 = std::chrono::system_clock::now();
-		std::chrono::duration<double> delta_t = t2 - t1;
-		logger().info("Analysis took {}s", delta_t.count());
+    auto t2 = std::chrono::system_clock::now();
+    std::chrono::duration<double> delta_t = t2 - t1;
+    logger().info("Analysis took {}s", delta_t.count());
 
-		phase_enumeration = 5;
-	}
+    phase_enumeration = 5;
+}
 
-	void State::reset_state()
-	{
-		mesh.reset();
-		mesh3d.clear();
-		regions.clear();
-		compute_hull();
-	}
+void State::reset_state() {
+    mesh.reset();
+    mesh3d.clear();
+    regions.clear();
+    compute_hull();
+}
 
-
-}  // namespace cellogram
+} // namespace cellogram

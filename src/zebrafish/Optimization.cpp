@@ -151,7 +151,7 @@ void optim::Optim_WithDepth(
 
     const int N = CI.rows();
     const int M = zNum * 2 + 1;
-    C_depth_info.resize(N);
+    C_depth_info.clear();
     if (N == 0) return;
 
     // prepare for parallel optimization
@@ -170,9 +170,11 @@ void optim::Optim_WithDepth(
 
     // output
     for (int i=0; i<N; i++) {
-        C_depth_info[i].C = CO_withZ.middleRows(i*M, M);
-        C_depth_info[i].energy = EO.segment(i*M, M);
-        C_depth_info[i].iter = IterO.segment(i*M, M);
+        OptimDepthInfo_t tmp;
+        tmp.C = CO_withZ.middleRows(i*M, M);
+        tmp.energy = EO.segment(i*M, M);
+        tmp.iter = IterO.segment(i*M, M);
+        C_depth_info.push_back(tmp);
     }
 }
 
@@ -206,14 +208,14 @@ void optim::DepthSelection(
 
     const int N = CI.rows();
     CO.resize(N, 4);
-    flag.resize(N);
+    flag.clear();
     if (N == 0) return;
     const int M = C_depth_info[0].C.rows();  // depth trials
 
     Eigen::VectorXd energy_smooth;
     Eigen::VectorXd second_derivative;
     for (int i=0; i<N; i++) {
-
+        std::cerr << i << std::endl;
         const Eigen::VectorXd &E_raw = C_depth_info[i].energy;
         // smooth curve
         // for i-th index, find 5 adjacent numbers, calc mean after discarding the min and max in those 5 numbers
@@ -260,7 +262,7 @@ void optim::DepthSelection(
             std::sprintf(errorMsg, "> [warning] No valid energy. Too close to the boundary or other failures. Marker index %d at [%.2f, %.2f, %.2f].", i, CI(i, 0), CI(i, 1), CI(i, 2));
             logger().warn(errorMsg);
             std::cerr << errorMsg << std::endl;
-            flag[i] = InvalidEnergy;
+            flag.push_back(InvalidEnergy);
             continue;
         }
         // minIdx at end point
@@ -269,7 +271,7 @@ void optim::DepthSelection(
             std::sprintf(warnMsg, "> [warning] Abnormal second derivative. Marker index %d at [%.2f, %.2f, %.2f].", i, CI(i, 0), CI(i, 1), CI(i, 2));
             logger().debug(warnMsg);
             std::cerr << warnMsg << std::endl;
-            flag[i] = SecondDerivative;
+            flag.push_back(SecondDerivative);
 
             // std::cerr << E_raw.transpose() << std::endl;  // DEBUG PURPOSE
             continue;
@@ -282,7 +284,7 @@ void optim::DepthSelection(
             }
         }
         // save result to CO
-        flag[i] = Success;
+        flag.push_back(Success);
         CO.row(i) << C_depth_info[i].C.row(minIdx);
     }
 }

@@ -755,6 +755,7 @@ float UIState::draw_file_menu() {
 }
 
 // -----------------------------------------------------------------------------
+// Stage 1 menu
 
 void UIState::draw_points_menu() {
 	float w = ImGui::GetContentRegionAvailWidth();
@@ -878,6 +879,7 @@ void UIState::draw_points_menu() {
 }
 
 // -----------------------------------------------------------------------------
+// Stage 2 menu
 
 void UIState::draw_mesh_menu() {
 	float w = ImGui::GetContentRegionAvailWidth();
@@ -1018,10 +1020,17 @@ void UIState::draw_mesh_menu() {
 }
 
 // -----------------------------------------------------------------------------
+// Stage 3 menu
 
 void UIState::draw_depth_menu() {
 
-	
+	if (ImGui::Button("Compute BSpline")) {
+        state.PrepareBsp();
+    }
+
+    if (ImGui::Button("Depth Search")) {
+        state.DepthSearch();
+    }
 
 	if (ImGui::Button("To Next"))
 		phase_4();
