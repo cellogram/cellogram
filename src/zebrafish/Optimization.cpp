@@ -207,7 +207,7 @@ void optim::DepthSelection(
           std::vector<DepthSearchFlag_t> &flag) {
 
     const int N = CI.rows();
-    CO.resize(N, 4);
+    CO.conservativeResize(N, 4);
     flag.clear();
     if (N == 0) return;
     const int M = C_depth_info[0].C.rows();  // depth trials

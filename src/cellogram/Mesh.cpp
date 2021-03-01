@@ -99,6 +99,7 @@ namespace cellogram {
 		detected.resize(0, 0); // detected (unmoved) point positions
 		moved.resize(0, 0); // manually moved
 		points.resize(0, 0); // relaxed point positions
+        detected_3D.resize(0, 0);
 		triangles.resize(0, 0); // triangular mesh
 		adj.clear(); // adjaceny list of triangluar mesh
 		vertex_to_tri.clear();
@@ -244,6 +245,7 @@ namespace cellogram {
 
 		moved = detected;
 		points = detected;
+        detected_3D = detected;
 		vertex_status_fixed.resize(points.rows(), 1);
 		vertex_status_fixed.setZero();
 		solved_vertex.resize(points.rows(), 1);

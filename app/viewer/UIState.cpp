@@ -751,10 +751,10 @@ void UIState::display_image() {
 	} else {
 		// per-slice
 		img_V.resize(4, 3);
-		img_V << offset, offset, imgViewer.sliceToShow*imgViewer.visual_y_mult, 
-				yMax + offset, offset, imgViewer.sliceToShow*imgViewer.visual_y_mult, 
-				yMax + offset, xMax + offset, imgViewer.sliceToShow*imgViewer.visual_y_mult, 
-				offset, xMax + offset, imgViewer.sliceToShow*imgViewer.visual_y_mult;
+		img_V << offset, offset, imgViewer.sliceToShow*imgViewer.visual_z_mult, 
+				yMax + offset, offset, imgViewer.sliceToShow*imgViewer.visual_z_mult, 
+				yMax + offset, xMax + offset, imgViewer.sliceToShow*imgViewer.visual_z_mult, 
+				offset, xMax + offset, imgViewer.sliceToShow*imgViewer.visual_z_mult;
 		texture_to_use = (state.img3D[imgViewer.sliceToShow].array() * 255).cast<unsigned char>();
 		texture_to_use.transposeInPlace();
 	}
@@ -817,62 +817,29 @@ void UIState::viewer_control_2d() {
 		hull_data().line_width = 3.0;
 	}
 
-	// points
-	Eigen::MatrixXd V = imgViewer.deformScale * state.mesh.points + (1 - imgViewer.deformScale) * state.mesh.moved;
-	if (V.rows() > 2 && show_mesh) {
-		V.col(2).array() += 0.1;  // may coincide with the image
-		points_data().set_mesh(V, state.mesh.triangles);
+	// mesh
+	Eigen::MatrixXd meshV;
+    if (state.phase_enumeration != 3) {
+        meshV = imgViewer.deformScale * state.mesh.points + (1 - imgViewer.deformScale) * state.mesh.moved;
+    } else {
+        meshV = state.mesh.detected_3D;
+        meshV.col(2) *= imgViewer.visual_z_mult;
+    }
+	if (meshV.rows() > 2 && show_mesh) {
+		meshV.col(2).array() += 0.1;  // may coincide with the image
+		points_data().set_mesh(meshV, state.mesh.triangles);
 	}
 
 	points_data().show_lines = dragging_id < 0;
 
-	/*if (image_loaded)
-	{
-	        Eigen::MatrixXd UV(state.detected.rows(), 2);
-	        UV.col(0) = state.detected.col(0) / img.rows();
-	        UV.col(1) = 1 - state.detected.col(1).array() / img.cols();
-
-	        points_data().show_texture = true;
-	        points_data().set_uv(UV);
-	        points_data().set_texture(img, img, img);
-	        points_data().set_colors(Eigen::RowVector3d(1, 1, 1));
-	}*/
 	if (show_points) {
-		// if (viewer.window != NULL) {
-		// 	float ui_scaling_factor = hidpi_scaling() / pixel_ratio();
-		// }
-
-		// if (state.regions.empty())
-		//{
-		//	Eigen::MatrixXd C(V.rows(), 3);
-		//	C.col(0).setConstant(vertex_color(0));
-		//	C.col(1).setConstant(vertex_color(1));
-		//	C.col(2).setConstant(vertex_color(2));
-
-		//	if (color_code)
-		//	{
-		//		Eigen::VectorXd param(V.rows());
-		//		for (int i = 0; i < V.rows(); i++)
-		//		{
-		//			param(i) = state.mesh.params.std_x(i);
-		//		}
-		//		//igl::parula(param, true, C);
-		//		igl::ColorMapType cm =
-		// igl::ColorMapType::COLOR_MAP_TYPE_INFERNO; 		igl::colormap(cm, param,
-		// true, C);
-		//	}
-
-		//	points_data().set_points(V, C);
-		//}
-		// else
-		//{
-		Eigen::MatrixXd C(V.rows(), 3);
+		Eigen::MatrixXd C(meshV.rows(), 3);
 		C.col(0).setConstant(vertex_color(0));
 		C.col(1).setConstant(vertex_color(1));
 		C.col(2).setConstant(vertex_color(2));
 		if (color_code) {
-			Eigen::VectorXd param(V.rows());
-			for (int i = 0; i < V.rows(); i++) {
+			Eigen::VectorXd param(meshV.rows());
+			for (int i = 0; i < meshV.rows(); i++) {
 				// param(i) = state.mesh.params.pval_Ar(i);
 				param(i) = std::sqrt(state.mesh.params.std_x(i) * state.mesh.params.std_x(i) +
 					state.mesh.params.std_y(i) * state.mesh.params.std_y(i));
@@ -898,14 +865,11 @@ void UIState::viewer_control_2d() {
 			points_data().add_points(state.mesh.deleted_by_untangler, Eigen::RowVector3d(230, 126, 34) / 255);
 		}
 
-		points_data().add_points(V, C);
-
-		//}
+		points_data().add_points(meshV, C);
 	}
 
 	// fill
 	points_data().show_faces = show_mesh_fill;
-	// if (show_mesh_fill && !state.regions.empty())
 	if (show_mesh_fill)
 		create_region_label();
 	mesh_color.resize(1, 3);
@@ -916,7 +880,7 @@ void UIState::viewer_control_2d() {
 	// bad regions
 	if (show_bad_regions) {
 		Eigen::MatrixXd bad_P1, bad_P2, C;
-		build_region_edges(V, bad_P1, bad_P2, C);
+		build_region_edges(meshV, bad_P1, bad_P2, C);
 		if (show_mesh_fill) {
 			bad_region_data().add_edges(bad_P1, bad_P2, Eigen::RowVector3d(0, 0, 0));
 			bad_region_data().line_width = 3.0;
@@ -967,8 +931,8 @@ void UIState::viewer_control_2d() {
 		int nEdgePts = state.regions[selected_region].region_boundary.size();
 		Eigen::MatrixXd region_edge1(nEdgePts, 3), region_edge2(nEdgePts, 3);
 		for (int j = 0; j < nEdgePts; ++j) {
-			region_edge1.row(j) = V.row(state.regions[selected_region].region_boundary(j));
-			region_edge2.row(j) = V.row(state.regions[selected_region].region_boundary((j + 1) % nEdgePts));
+			region_edge1.row(j) = meshV.row(state.regions[selected_region].region_boundary(j));
+			region_edge2.row(j) = meshV.row(state.regions[selected_region].region_boundary((j + 1) % nEdgePts));
 		}
 
 		region_edge1.col(2).array() += 1e-2;

@@ -48,6 +48,9 @@ int main(int argc, char *argv[]) {
         int end_phase = 3;
         bool cmd = false;
     } args;
+    unsigned int num_threads = std::min(32u, std::max(1u, std::thread::hardware_concurrency() - 1));
+        // At least 1 thread, at most 32 threads
+        // prefer (#TTL - 1)
 
     // Parse arguments
     CLI::App app{"cellogram"};
@@ -56,7 +59,9 @@ int main(int argc, char *argv[]) {
     app.add_option("-f,--file", args.load_data, "Path to saved data for scene");
     app.add_option("-b,--begin", args.start_phase, "From which phase to run the script");
     app.add_option("-e,--end", args.end_phase, "Until which phase to run the script");
+    app.add_option("-n", num_threads, "Number of threads");
     app.add_flag("-c,--cmd", args.cmd, "Run without GUI");
+    
 
     try {
         app.parse(argc, argv);
@@ -64,7 +69,6 @@ int main(int argc, char *argv[]) {
         return app.exit(e);
     }
 
-    const int num_threads = 1;
     const size_t MB = 1024 * 1024;
     const size_t stack_size = 64 * MB;
     tbb::task_scheduler_init scheduler(num_threads, stack_size);
