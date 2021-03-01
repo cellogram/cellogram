@@ -686,13 +686,13 @@ void UIState::load_image(std::string fname) {
 
 	double extent = (V.colwise().maxCoeff() - V.colwise().minCoeff()).maxCoeff();
 	float ui_scaling_factor = viewer.window != NULL ? hidpi_scaling() / pixel_ratio() : 1;
-	points_data().point_size = std::ceil(float(ui_scaling_factor / extent)) * 9;
+	points_data().point_size = std::ceil(float(ui_scaling_factor / extent)) * 7;
 	points_data().line_color(0) = colorUI.mesh_line_color(0);
     points_data().line_color(1) = colorUI.mesh_line_color(1);
     points_data().line_color(2) = colorUI.mesh_line_color(2);
     points_data().line_color(3) = 1.0;
 
-	physical_data().point_size = std::ceil(float(ui_scaling_factor / extent)) * 9;
+	physical_data().point_size = std::ceil(float(ui_scaling_factor / extent)) * 7;
 
 	// HIGH dpi
 	// int width, height;
@@ -868,7 +868,7 @@ void UIState::viewer_control_2d() {
 		points_data().set_colors(colorUI.mesh_fill_color);
 
     // warn
-    if (state.phase_enumeration == 3) {
+    if (state.phase_enumeration == 3 && show_points) {
         DrawWarnViewer();
     }
 

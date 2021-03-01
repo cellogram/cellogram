@@ -610,7 +610,7 @@ void UIState::draw_image_viewer_menu() {
 			ImGui::Checkbox("Orthographic projection", &(viewer.core().orthographic));
 
 			// z_multiplier
-			ImGui::SliderFloat("Z-mult", &imgViewer.visual_z_mult, 1.0, 6.0, "%.1f");
+			ImGui::SliderFloat("Z-mult", &imgViewer.visual_z_mult, 1.0, 9.0, "%.1f");
 			if (ImGui::IsItemHovered()) {
 				ImGui::SetTooltip("Multiplier applied to z-axis for visualization in case the z-stack is too thin.");
 			}
