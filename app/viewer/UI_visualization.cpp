@@ -88,12 +88,12 @@ void UIState::DrawAxisDots() {
 void UIState::DrawAllMarkerIdx() {
 
     if (!show_allIndex) return;
-    const int N = state.mesh.detected_3D.rows();
+    const int N = state.mesh.marker_4D.rows();
     if (N == 0) return;
 
     for (int i=0; i<N; i++) {
         Eigen::VectorXd p(3);
-        p << state.mesh.detected_3D(i, 0), state.mesh.detected_3D(i, 1), state.mesh.detected_3D(i, 2) * imgViewer.visual_z_mult + 0.05;
+        p << state.mesh.marker_4D(i, 0), state.mesh.marker_4D(i, 1), state.mesh.marker_4D(i, 2) * imgViewer.visual_z_mult + 0.05;
         visual_data().add_label(p, std::to_string(i));
     }
 }
@@ -103,7 +103,7 @@ void UIState::DrawWarnViewer() {
 
     const auto &dsFlag = state.mesh.dsFlag;
     const int N = dsFlag.size();
-    Eigen::MatrixXd pts = state.mesh.detected_3D;
+    Eigen::MatrixXd pts = state.mesh.marker_4D.leftCols(3);
     pts.col(2) *= imgViewer.visual_z_mult;
     pts.col(2).array() += 0.2;
 

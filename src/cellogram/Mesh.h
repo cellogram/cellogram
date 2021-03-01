@@ -20,9 +20,12 @@ public:
 	Eigen::MatrixXd moved; // manually moved point from detected positions
 	Eigen::MatrixXd points; // relaxed point positions
 	Eigen::VectorXi boundary; // list of vertices on the boundary
-    
-    Eigen::MatrixXd detected_3D;  // detected location with depth corrected
+
+    Eigen::MatrixXd marker_4D;  // detected location with depth corrected
+                                  // four columns x, y, z, r
+    std::vector<zebrafish::OptimDepthInfo_t> C_depth_info_vec;
     std::vector<zebrafish::DepthSearchFlag_t> dsFlag;
+    zebrafish::OptimPara_t optimPara;  // with high precision
 
 	Eigen::MatrixXi triangles; // triangular mesh
 	std::vector<std::vector<int>> adj; // adjacency list of triangular mesh

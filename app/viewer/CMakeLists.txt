@@ -16,6 +16,7 @@ add_executable(${PROJECT_NAME} ${BUILD_TYPE}
 	FileDialog.cpp
 	FileDialog.h
 	UI_visualization.cpp
+    UI_editor.cpp
 	UIMenu.cpp
 	UIState.cpp
 	UIState.h

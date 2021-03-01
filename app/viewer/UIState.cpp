@@ -817,7 +817,7 @@ void UIState::viewer_control_2d() {
     if (state.phase_enumeration != 3) {
         meshV = imgViewer.deformScale * state.mesh.points + (1 - imgViewer.deformScale) * state.mesh.moved;
     } else {
-        meshV = state.mesh.detected_3D;
+        meshV = state.mesh.marker_4D.leftCols(3);
         meshV.col(2) *= imgViewer.visual_z_mult;
     }
 	if (meshV.rows() > 2 && show_mesh) {

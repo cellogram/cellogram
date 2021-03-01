@@ -98,32 +98,31 @@ void State::PrepareBsp() {
 
 void State::DepthSearch() {
     using namespace zebrafish;
-    Eigen::MatrixXd &markers = mesh.moved;
+    Eigen::MatrixXd markers = mesh.moved;  // input mesh is "moved"
     const int N = markers.rows();
     const int z = img3D.size();
     markers.col(2).setConstant(std::round(z / 2.0));
 
-    OptimPara_t optimPara;
-    optimPara.epsilon = 0.01; // low precision
-    std::vector<OptimDepthInfo_t> C_depth_info_vec;
+    OptimPara_t optimPara_lowPrec;
+    optimPara_lowPrec.epsilon = 0.01;  // low precision
 
-    Eigen::MatrixXd moved_3D;
+    Eigen::MatrixXd marker_withR_tmp;
     std::vector<DepthSearchFlag_t> flags;
     Eigen::MatrixXd marker_withR(N, 4);
     marker_withR.leftCols(3) = markers;
-    marker_withR.col(3).setConstant(3);
+    marker_withR.col(3).setConstant(mesh.optimPara.defaultRadius);  // initial radius guess
 
-    moved_3D = markers;
-    optim::Optim_WithDepth(optimPara, bsp, std::round(z / 2.0), 1.0, marker_withR,
-                           C_depth_info_vec, false);
-    optim::DepthSelection(optimPara, marker_withR, C_depth_info_vec, moved_3D, flags);
+    optim::Optim_WithDepth(optimPara_lowPrec, bsp, std::round(z / 2.0), 1.0, marker_withR,
+                           mesh.C_depth_info_vec, false);
+    marker_withR_tmp = marker_withR;
+    optim::DepthSelection(optimPara_lowPrec, marker_withR, mesh.C_depth_info_vec, marker_withR_tmp, flags);
 
-    mesh.detected_3D = moved_3D.leftCols(3);
+    mesh.marker_4D = marker_withR_tmp;  // Nx4
     mesh.dsFlag = flags;
 
     for (int i = 0; i < N; i++) {
         std::cout << "marker #" << i << std::endl;
-        std::cout << C_depth_info_vec[i].ToMat() << std::endl
+        std::cout << mesh.C_depth_info_vec[i].ToMat() << std::endl
                   << std::endl;
     }
 }

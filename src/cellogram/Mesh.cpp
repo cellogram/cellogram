@@ -99,7 +99,7 @@ namespace cellogram {
 		detected.resize(0, 0); // detected (unmoved) point positions
 		moved.resize(0, 0); // manually moved
 		points.resize(0, 0); // relaxed point positions
-        detected_3D.resize(0, 0);
+        marker_4D.resize(0, 0);
 		triangles.resize(0, 0); // triangular mesh
 		adj.clear(); // adjaceny list of triangluar mesh
 		vertex_to_tri.clear();
@@ -245,7 +245,9 @@ namespace cellogram {
 
 		moved = detected;
 		points = detected;
-        detected_3D = detected;
+        marker_4D.resize(detected.rows(), 4);  // this is where "marker_4D" starts to have meaningful data
+        marker_4D.leftCols(3) = detected;  // now it does not have "r"
+        marker_4D.col(3).setConstant(optimPara.defaultRadius);
 		vertex_status_fixed.resize(points.rows(), 1);
 		vertex_status_fixed.setZero();
 		solved_vertex.resize(points.rows(), 1);
