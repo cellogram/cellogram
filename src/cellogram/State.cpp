@@ -41,6 +41,7 @@
 double zebrafish::cylinder::alpha{0.5};
 double zebrafish::cylinder::K{sqrt(2)};
 double zebrafish::cylinder::H{2.5};
+double zebrafish::cylinder::Rmin{2};
 
 namespace cellogram {
 

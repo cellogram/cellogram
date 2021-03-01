@@ -51,11 +51,10 @@ bool cylinder::IsValid(const bspline &bsp, const T &x_, const T &y_, const doubl
 
     // The extended cylinder (union of inner & outer) has radius sqrt(2)*r
     // Also avoid interpolating points lying on the surface of the sample grid
-    const double minRadius = 2.0;
     if (x - 1.5*r < 0 || x + 1.5*r > xmax - 1) return false;  // x-axis
     if (y - 1.5*r < 0 || y + 1.5*r > ymax - 1) return false;  // y-axis
     if (z < 0 || z+h >= zmax - 1) return false;  // depth-axis
-    if (r < minRadius) return false;  // radius
+    if (r < cylinder::Rmin) return false;  // radius
 
     return true;
 }

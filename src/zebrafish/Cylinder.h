@@ -37,6 +37,7 @@ public:
     static double alpha;  // in [0, 1], how severe we should penalize the peripheral area
     static double K;  // extended radius / cylinder radius
     static double H;  // cylinder height (fixed, do not optimize)
+    static double Rmin;  // min radius allowed
 
     template<typename T>
     static bool IsValid(const bspline &bsp, const T &x, const T &y, const double z, const T &r, const double h);

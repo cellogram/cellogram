@@ -103,7 +103,7 @@ TEST_CASE("optimz_ideal", "[OptimTest]") {
     optim::Optim_WithDepth(optimPara, bsplineSolver, 6, 0.5, CI, C_depth_info);
     optim::DepthSelection(optimPara, CI, C_depth_info, CO, flag);
 
-    REQUIRE(flag == 0);
+    REQUIRE(flag == DepthSearchFlag_t::Success);
     REQUIRE(CO(0) == Approx(14.25).margin(1));
     REQUIRE(CO(1) == Approx(14.75).margin(1));
     REQUIRE(CO(2) == 10.0);
