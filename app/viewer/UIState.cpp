@@ -373,8 +373,6 @@ bool UIState::load() {
 	// img.resize(0, 0);
 	// reset flags
 
-	mesh_color.resize(0,0);
-	// mesh_color.row(0) = Eigen::RowVector3d(52, 152, 219) / 255.0;
 	reset_viewer();
 
 	selected_region = -1;
@@ -403,9 +401,6 @@ void UIState::detect_vertices() {
 	if (state.mesh.points.size() == 0)
 		return;
 
-	mesh_color.resize(0,0);
-	// mesh_color.row(0) = Eigen::RowVector3d(52, 152, 219) / 255.0;
-	// reset_viewer();
 	show_points = true;
 
 	compute_hull();
@@ -641,8 +636,7 @@ void UIState::export_region() {
 void UIState::reset_viewer() {
 	// Display flags
 	imgViewer.deformScale = 0;
-	// vertex_color = Eigen::RowVector3f(44, 62, 80)/255;
-	vertex_color = Eigen::RowVector3f(104, 175, 245)/255;
+	vertex_color = Eigen::RowVector3f(104, 175, 245)/255.;
 
 	selected_region = -1;
 	show_hull = true;
@@ -831,6 +825,10 @@ void UIState::viewer_control_2d() {
 	}
 
 	points_data().show_lines = dragging_id < 0;
+    points_data().line_color(0) = mesh_line_color(0);
+    points_data().line_color(1) = mesh_line_color(1);
+    points_data().line_color(2) = mesh_line_color(2);
+    points_data().line_color(3) = 1.0f;
 
 	if (show_points) {
 		Eigen::MatrixXd C(meshV.rows(), 3);
@@ -870,12 +868,10 @@ void UIState::viewer_control_2d() {
 
 	// fill
 	points_data().show_faces = show_mesh_fill;
-	if (show_mesh_fill)
-		create_region_label();
-	mesh_color.resize(1, 3);
-	mesh_color << 238./255., 247./255., 239./255.;
-	if (show_mesh && mesh_color.size() > 0) //FIXME
-		points_data().set_colors(mesh_color);
+	mesh_fill_color.resize(1, 3);
+	mesh_fill_color << 238./255., 247./255., 239./255.;
+	if (show_mesh_fill && mesh_fill_color.size() > 0)
+		points_data().set_colors(mesh_fill_color);
 
 	// bad regions
 	if (show_bad_regions) {
@@ -909,6 +905,7 @@ void UIState::viewer_control_2d() {
 		matching_data().line_width = 4.0;
 	}
 
+#if 0
 	// show selected region
 	if (show_selected_region && selected_region != -1) {
 		// selected_data().clear();
@@ -941,6 +938,7 @@ void UIState::viewer_control_2d() {
 		selected_data().add_edges(region_edge1, region_edge2, color);
 		selected_data().line_width = 3.0;
 	}
+#endif
 
 	// visual
 	visual_data().point_size = 6;
@@ -1092,14 +1090,6 @@ void UIState::viewer_control_3d() {
 	fix_color(physical_data());
 }
 
-void UIState::draw_mesh() {
-	points_data().clear();
-	points_data().set_points(state.mesh.points, Eigen::RowVector3d(1, 0, 0));
-	points_data().set_mesh(state.mesh.points, state.mesh.triangles);
-
-	fix_color(points_data());
-}
-
 void UIState::fix_color(igl::opengl::ViewerData &data) {
 	data.F_material_specular.setZero();
 	data.V_material_specular.setZero();
@@ -1111,8 +1101,8 @@ void UIState::fix_color(igl::opengl::ViewerData &data) {
 
 void UIState::create_region_label() {
 	// mesh_color.resize(state.mesh.points.rows(),3);
-	mesh_color.resize(state.mesh.triangles.rows(), 3);
-	mesh_color.setOnes();
+	mesh_fill_color.resize(state.mesh.triangles.rows(), 3);
+	mesh_fill_color.setOnes();
 
 	for (int i = 0; i < (int)state.regions.size(); ++i) {
 		Eigen::RowVector3d color;
@@ -1120,10 +1110,10 @@ void UIState::create_region_label() {
 
 		// for (int j = 0; j < state.regions[i].region_interior.size(); ++j)
 		//{
-		//	mesh_color.row(state.regions[i].region_interior(j)) = color;
+		//	mesh_fill_color.row(state.regions[i].region_interior(j)) = color;
 		//}
 		for (int j = 0; j < state.regions[i].region_triangles.size(); ++j) {
-			mesh_color.row(state.regions[i].region_triangles(j)) = color;
+			mesh_fill_color.row(state.regions[i].region_triangles(j)) = color;
 		}
 	}
 }

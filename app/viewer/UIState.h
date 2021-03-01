@@ -83,7 +83,8 @@ public:
 	// Display flags
 	Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> texture;
 	Eigen::RowVector3f vertex_color;
-	Eigen::MatrixXd mesh_color;
+    Eigen::RowVector3f mesh_line_color;
+	Eigen::MatrixXd mesh_fill_color;
 
 	bool show_mesh = true;
 	bool show_hull = false;
@@ -158,8 +159,6 @@ public:
 	void reset_viewer();
 	void deselect_all_buttons();
 public:
-	//initial line color: rgb(52, 152, 219)
-	//initial vertex color: rgb(41, 128, 185)
 	igl::opengl::ViewerData & points_data() { return mesh_by_id(points_id); }
 	igl::opengl::ViewerData & hull_data() { return mesh_by_id(hull_id); }
 	igl::opengl::ViewerData & image_data() { return mesh_by_id(image_id); }
@@ -182,7 +181,6 @@ private:
 	void viewer_control();
 	void viewer_control_2d();
 	void viewer_control_3d();
-	void draw_mesh();
 	void fix_color(igl::opengl::ViewerData &data);
 	void create_region_label();
 	void build_region_edges(const Eigen::MatrixXd &pts, Eigen::MatrixXd &bad_P1, Eigen::MatrixXd &bad_P2, Eigen::MatrixXd &C);

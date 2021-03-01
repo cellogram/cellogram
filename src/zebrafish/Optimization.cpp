@@ -278,7 +278,7 @@ void optim::DepthSelection(
         }
         // in case the smoothing shifts the actual min index
         for (int j=std::max(0, minIdx-1); j<=std::min(M-1, minIdx+1); j++) {
-            if (E_raw(j) < minE) {
+            if (E_raw(j) < minE && energy_smooth(j) != 1.2) {
                 minE = E_raw(j);
                 minIdx = j;
             }
