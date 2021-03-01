@@ -114,9 +114,7 @@ void State::DepthSearch() {
 
     optim::Optim_WithDepth(optimPara, bsp, std::round(z / 2.0), 1.0, marker_withR,
                            C_depth_info_vec, true);
-    std::cerr << "out optim" << std::endl;
     optim::DepthSelection(optimPara, marker_withR, C_depth_info_vec, tmp, flags);
-    std::cerr << "out depth sel" << std::endl;
 
     for (int i = 0; i < N; i++) {
         std::cout << "marker #" << i << std::endl;

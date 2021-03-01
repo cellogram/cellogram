@@ -215,7 +215,7 @@ void optim::DepthSelection(
     Eigen::VectorXd energy_smooth;
     Eigen::VectorXd second_derivative;
     for (int i=0; i<N; i++) {
-        std::cerr << i << std::endl;
+
         const Eigen::VectorXd &E_raw = C_depth_info[i].energy;
         // smooth curve
         // for i-th index, find 5 adjacent numbers, calc mean after discarding the min and max in those 5 numbers
@@ -258,7 +258,7 @@ void optim::DepthSelection(
 
         // minE == 1.0
         if (minE == 1.0 || minIdx == -1) {
-            char errorMsg[100];
+            char errorMsg[200];
             std::sprintf(errorMsg, "> [warning] No valid energy. Too close to the boundary or other failures. Marker index %d at [%.2f, %.2f, %.2f].", i, CI(i, 0), CI(i, 1), CI(i, 2));
             logger().warn(errorMsg);
             std::cerr << errorMsg << std::endl;
@@ -267,7 +267,7 @@ void optim::DepthSelection(
         }
         // minIdx at end point
         if (M>0 && (minIdx == 0 || minIdx == M-1)) {
-            char warnMsg[100];
+            char warnMsg[200];
             std::sprintf(warnMsg, "> [warning] Abnormal second derivative. Marker index %d at [%.2f, %.2f, %.2f].", i, CI(i, 0), CI(i, 1), CI(i, 2));
             logger().debug(warnMsg);
             std::cerr << warnMsg << std::endl;
