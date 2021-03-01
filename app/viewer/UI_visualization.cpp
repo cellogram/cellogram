@@ -1,5 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "UIState.h"
+#include <zebrafish/Optimization.h>
 #include <zebrafish/Logger.hpp>
 
 
@@ -81,6 +82,45 @@ void UIState::DrawAxisDots() {
         visual_data().add_label(label_loc_c.row(i), ToStringWithPrecision(loc_c(i, 0)));
     for (int i=0; i<nz; i++)
         visual_data().add_label(label_loc_z.row(i), ToStringWithPrecision(loc_z(i, 2) / imgViewer.visual_z_mult));
+}
+
+
+void UIState::DrawAllMarkerIdx() {
+
+    if (!show_allIndex) return;
+    const int N = state.mesh.detected_3D.rows();
+    if (N == 0) return;
+
+    for (int i=0; i<N; i++) {
+        Eigen::VectorXd p(3);
+        p << state.mesh.detected_3D(i, 0), state.mesh.detected_3D(i, 1), state.mesh.detected_3D(i, 2) * imgViewer.visual_z_mult + 0.05;
+        visual_data().add_label(p, std::to_string(i));
+    }
+}
+
+
+void UIState::DrawWarnViewer() {
+
+    const auto &dsFlag = state.mesh.dsFlag;
+    const int N = dsFlag.size();
+    Eigen::MatrixXd pts = state.mesh.detected_3D;
+    pts.col(2) *= imgViewer.visual_z_mult;
+    pts.col(2).array() += 0.2;
+
+    warn_data().point_size = 10;
+    warn_data().show_faces = false;
+	warn_data().show_lines = false;
+
+    for (int i=0; i<N; i++) {
+        if (dsFlag[i] == zebrafish::DepthSearchFlag_t::SecondDerivative) {
+            warn_data().add_points(pts.row(i), colorUI.warn_snd_derivative);
+            visual_data().add_label(pts.row(i), std::to_string(i));
+        }
+        if (dsFlag[i] == zebrafish::DepthSearchFlag_t::InvalidEnergy) {
+            warn_data().add_points(pts.row(i), colorUI.warn_invalid_energy);
+            visual_data().add_label(pts.row(i), std::to_string(i));
+        }
+    }
 }
 
 }  // namespace cellogram

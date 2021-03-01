@@ -32,9 +32,10 @@ typedef struct OptimDepthInfo_t {
 } OptimDepthInfo_t;
 
 typedef enum DepthSearchFlag_t {
-    Success = 0, 
-    InvalidEnergy = 1, 
-    SecondDerivative = 2
+    SecondDerivative = -2,
+    InvalidEnergy = -1, 
+    Unknown = 0,
+    Success = 1
 } DepthSearchFlag_t;
 
 ////////////////////////////////////////////////

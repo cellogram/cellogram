@@ -439,7 +439,7 @@ float UIState::draw_menu_bar() {
 		}
 
 		ImGui::SameLine(0, 100);
-		ImGui::Text(current_file_name.c_str());
+		ImGui::Text("%s", current_file_name.c_str());
 		h = ImGui::GetWindowSize().y;
 		UIsize.mainMenuHeight = ImGui::GetWindowHeight();
 		ImGui::EndMainMenuBar();
@@ -576,7 +576,7 @@ void UIState::draw_image_viewer_menu() {
 
 	if (!current_file_name.empty() && !state.img3D.empty()) {
 		// General Info
-		ImGui::Text("Rows = %d  Cols = %d Layers = %d", state.img3D[0].rows(), state.img3D[0].cols(), state.img3D.size());
+		ImGui::Text("Rows = %ld  Cols = %ld Layers = %lu", state.img3D[0].rows(), state.img3D[0].cols(), state.img3D.size());
 		ImGui::PushItemWidth(UIsize.rightWidth / 2.0);
 		// Select rotation type
 		int rotation_type = static_cast<int>(viewer.core().rotation_type);
@@ -636,6 +636,7 @@ void UIState::draw_image_viewer_menu() {
 		if (ImGui::IsItemHovered()) {
 			ImGui::SetTooltip("Three array of points indicating the X, Y and Z axis");
 		}
+        ImGui::Checkbox("Show index", &show_allIndex);
 
 
 		/*

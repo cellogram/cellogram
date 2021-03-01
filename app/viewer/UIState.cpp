@@ -290,6 +290,7 @@ void UIState::initialize() {
 	viewer.append_mesh();
 	viewer.append_mesh();
 	viewer.append_mesh();
+    viewer.append_mesh();
 	viewer.data_list[0].id = hull_id = 0;
 	viewer.data_list[1].id = points_id = 1;
 	viewer.data_list[2].id = image_id = 2;
@@ -298,8 +299,9 @@ void UIState::initialize() {
 	viewer.data_list[5].id = selected_id = 5;
 	viewer.data_list[6].id = physical_id = 6;
 	viewer.data_list[7].id = visual_id = 7;
+    viewer.data_list[8].id = warn_id = 8;
 
-	assert(viewer.data_list.size() == visual_id + 1);
+	assert(int(viewer.data_list.size()) == warn_id + 1);
 }
 
 void UIState::init(igl::opengl::glfw::Viewer *_viewer) {
@@ -789,15 +791,13 @@ void UIState::viewer_control_2d() {
 	selected_data().clear();
 	physical_data().clear();
 	visual_data().clear();
+    warn_data().clear();
 
 	// Read all the UIState flags and update display
 	// hull
-
 	int n = (int)state.hull_polygon.rows();
-
 	if (show_hull && n >= 3) {
 		// Draw edges
-
 		Eigen::MatrixXd P2;
 		P2.resizeLike(state.hull_polygon);
 		P2.topRows(n - 1) = state.hull_polygon.bottomRows(n - 1);
@@ -821,7 +821,7 @@ void UIState::viewer_control_2d() {
         meshV.col(2) *= imgViewer.visual_z_mult;
     }
 	if (meshV.rows() > 2 && show_mesh) {
-		meshV.col(2).array() += 0.1;  // may coincide with the image
+		meshV.col(2).array() += 0.05;  // may coincide with the image
 		points_data().set_mesh(meshV, state.mesh.triangles);
 	}
 
@@ -857,17 +857,20 @@ void UIState::viewer_control_2d() {
 			for (int i = 0; i < state.mesh.added_by_untangler.size(); ++i) {
 				C.row(state.mesh.added_by_untangler(i)) = Eigen::RowVector3d(46, 204, 113) / 255;
 			}
-
 			points_data().add_points(state.mesh.deleted_by_untangler, Eigen::RowVector3d(230, 126, 34) / 255);
 		}
-
-		points_data().add_points(meshV + Eigen::MatrixXd::Constant(meshV.rows(), 3, 0.12), C);
+		points_data().add_points(meshV + Eigen::MatrixXd::Constant(meshV.rows(), 3, 0.1), C);
 	}
 
 	// fill
 	points_data().show_faces = show_mesh_fill;
 	if (show_mesh_fill)
 		points_data().set_colors(colorUI.mesh_fill_color);
+
+    // warn
+    if (state.phase_enumeration == 3) {
+        DrawWarnViewer();
+    }
 
 	// bad regions
 	if (show_bad_regions) {
@@ -895,10 +898,10 @@ void UIState::viewer_control_2d() {
 	if (show_matching) {
 		Eigen::MatrixXd p1 = state.mesh.points;
 		Eigen::MatrixXd p2 = state.mesh.detected;
-		p1.col(2).array() += 0.1;
-		p2.col(2).array() += 0.1;
-		matching_data().add_edges(p1, p2, Eigen::RowVector3d(194./255., 83./255., 57./255.));
-		matching_data().line_width = 4.0;
+		p1.col(2).array() += 0.05;
+		p2.col(2).array() += 0.05;
+		matching_data().add_edges(p1, p2, colorUI.match_line_color);
+		matching_data().line_width = 2.0;  // useless under Mac
 	}
 
 #if 0
@@ -940,6 +943,7 @@ void UIState::viewer_control_2d() {
 	visual_data().point_size = 6;
     visual_data().show_labels = true;
 	DrawAxisDots();
+    DrawAllMarkerIdx();
 
 	// Fix shininess for all layers8
 	fix_color(hull_data());

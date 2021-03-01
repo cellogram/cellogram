@@ -43,6 +43,10 @@ typedef struct ColorUI_t {
     Eigen::RowVector3f mesh_vertex_color;
     Eigen::MatrixXd mesh_fill_color;
     Eigen::RowVector3f mesh_line_color;
+    Eigen::RowVector3d match_line_color;
+
+    Eigen::MatrixXd warn_snd_derivative;
+    Eigen::MatrixXd warn_invalid_energy;
 
     Eigen::MatrixXd ref_point_color;  // reference axis color
     Eigen::RowVector4f background_color;
@@ -52,6 +56,13 @@ typedef struct ColorUI_t {
         mesh_fill_color.resize(1, 3);
         mesh_fill_color << 238./255., 240./255., 239./255.;
         mesh_line_color = Eigen::RowVector3f(3, 21, 20)/255.0;
+        match_line_color = Eigen::RowVector3d(194./255., 83./255., 57./255.);
+
+        warn_snd_derivative.resize(1, 3);
+        warn_snd_derivative << 250./255., 195./255., 92./255.;
+        warn_invalid_energy.resize(1, 3);
+        warn_invalid_energy << 250./255., 55./255., 41./255.;
+
         ref_point_color.resize(1, 3);
         ref_point_color << 0., 0., 0.3;
         background_color = Eigen::RowVector4f(0.7, 0.7, 0.75, 1.0);
@@ -89,6 +100,7 @@ public:
 	int selected_id;
 	int physical_id;
 	int visual_id;
+    int warn_id;
 
 	int selected_region = -1;
 	int selected_param = 0;
@@ -185,6 +197,7 @@ public:
 	igl::opengl::ViewerData & selected_data() { return mesh_by_id(selected_id); }
 	igl::opengl::ViewerData & physical_data() { return mesh_by_id(physical_id); }
 	igl::opengl::ViewerData & visual_data() { return mesh_by_id(visual_id); }
+    igl::opengl::ViewerData & warn_data() { return mesh_by_id(warn_id); }
 
 private:
 	igl::ColorMapType cm = igl::ColorMapType::COLOR_MAP_TYPE_PARULA;
@@ -258,7 +271,10 @@ private:
 
 	// visualization
 	bool show_axisPoints = false;
+    bool show_allIndex = false;
 	void DrawAxisDots();
+    void DrawAllMarkerIdx();
+    void DrawWarnViewer();
 
 public:
 	// Menu stuff

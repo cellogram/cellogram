@@ -2,6 +2,8 @@
 #pragma once
 #include <cellogram/common.h>
 #include <cellogram/point_source_detection.h>
+#include <zebrafish/Optimization.h>
+
 #include <Eigen/Dense>
 #include <vector>
 ////////////////////////////////////////////////////////////////////////////////
@@ -18,7 +20,9 @@ public:
 	Eigen::MatrixXd moved; // manually moved point from detected positions
 	Eigen::MatrixXd points; // relaxed point positions
 	Eigen::VectorXi boundary; // list of vertices on the boundary
+    
     Eigen::MatrixXd detected_3D;  // detected location with depth corrected
+    std::vector<zebrafish::DepthSearchFlag_t> dsFlag;
 
 	Eigen::MatrixXi triangles; // triangular mesh
 	std::vector<std::vector<int>> adj; // adjacency list of triangular mesh

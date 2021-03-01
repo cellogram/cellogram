@@ -118,6 +118,8 @@ void State::DepthSearch() {
     optim::DepthSelection(optimPara, marker_withR, C_depth_info_vec, moved_3D, flags);
 
     mesh.detected_3D = moved_3D.leftCols(3);
+    mesh.dsFlag = flags;
+
     for (int i = 0; i < N; i++) {
         std::cout << "marker #" << i << std::endl;
         std::cout << C_depth_info_vec[i].ToMat() << std::endl
