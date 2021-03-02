@@ -78,9 +78,11 @@ static void AppendMarkerRecordItem(
 
 void UIState::draw_editor_window() {
 
-    if (UIsize.resize) {
-		ImGui::SetNextWindowPos(ImVec2(UIsize.windowWidth-UIsize.rightWidth, UIsize.windowHeight-UIsize.mainMenuHeight));
+    static bool firstTimeReachHere = true;
+    if (UIsize.resize || firstTimeReachHere) {
+		ImGui::SetNextWindowPos(ImVec2(UIsize.windowWidth-UIsize.rightWidth, UIsize.mainMenuHeight));
 		ImGui::SetNextWindowSize(ImVec2(UIsize.rightWidth, UIsize.windowHeight-UIsize.mainMenuHeight-UIsize.imageViewerHeight));
+        firstTimeReachHere = false;  // because this is not open by default
 	}
 
 	if (!ImGui::Begin("Property Editor", &show_editor_menu)) {

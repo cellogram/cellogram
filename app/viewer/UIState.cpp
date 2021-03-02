@@ -436,7 +436,9 @@ bool UIState::save_as(const std::string &save_as_dir) {
 	return ok;
 }
 
+/*
 bool UIState::mouse_scroll(float delta_y) {
+// this function has been disabled
 
     viewer.scroll_position += delta_y;
 
@@ -452,6 +454,7 @@ bool UIState::mouse_scroll(float delta_y) {
 
 	return super::mouse_scroll(delta_y);
 }
+*/
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -948,7 +951,7 @@ void UIState::viewer_control_2d() {
 
 	// Fix shininess for all layers8
 	fix_color(hull_data());
-	// fix_color(points_data());
+	fix_color(points_data());
 	fix_color(image_data());
 	fix_color(bad_region_data());
 	fix_color(matching_data());

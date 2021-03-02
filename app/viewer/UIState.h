@@ -54,7 +54,7 @@ typedef struct ColorUI_t {
     ColorUI_t() {
         mesh_vertex_color = Eigen::RowVector3f(92, 214, 218)/255.0;
         mesh_fill_color.resize(1, 3);
-        mesh_fill_color << 238./255., 240./255., 239./255.;
+        mesh_fill_color << 0.8, 0.8, 0.85;
         mesh_line_color = Eigen::RowVector3f(3, 21, 20)/255.0;
         match_line_color = Eigen::RowVector3d(194./255., 83./255., 57./255.);
 
@@ -175,7 +175,7 @@ public:
 	virtual bool mouse_down(int button, int modifier) override;
 	virtual bool mouse_move(int button, int modifier) override;
 	virtual bool mouse_up(int button, int modifier) override;
-	virtual bool mouse_scroll(float delta_y) override;
+	// virtual bool mouse_scroll(float delta_y) override;
 
 	void load_image(std::string name);
 	void detect_vertices();
