@@ -249,6 +249,8 @@ private:
 	void draw_image_viewer_menu();
 	// log window
 	void draw_log_window();
+    // editor
+    void draw_editor_window();
 
 	// Toggle windows
 	bool show_left_panel = true;
@@ -265,6 +267,7 @@ private:
 
 	bool show_imageViewer_menu = true;
 	bool show_log_menu = true;
+    bool show_editor_menu = false;
 
 	UIsize_t UIsize;
 	ImageViewer_t imgViewer;

@@ -265,6 +265,11 @@ void UIState::draw_viewer_window() {
 		draw_log_window();
 	}
 
+    // property editor
+    if (show_editor_menu) {
+        draw_editor_window();
+    }
+
 	// Mess up with the mouse cursor
 	if (delete_vertex || add_vertex) {
 		// Cross hair
@@ -397,6 +402,7 @@ float UIState::draw_menu_bar() {
 			*/
 			ImGui::MenuItem("Image Viewer", nullptr, &show_imageViewer_menu);
 			ImGui::MenuItem("Log", nullptr, &show_log_menu);
+            ImGui::MenuItem("Property Editor", nullptr, &show_editor_menu);
 
 			ImGui::EndMenu();
 		}
@@ -689,6 +695,10 @@ void UIState::draw_log_window() {
 	ImGui::EndChild();
 	ImGui::End();
 }
+
+// -----------------------------------------------------------------------------
+
+// draw_editor_window() moved to UI_editor.cpp because it is too long
 
 ////////////////////////////////////////////////////////////////////////////////
 // Left panel

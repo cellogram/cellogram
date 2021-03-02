@@ -9,67 +9,133 @@ namespace cellogram {
 using zebrafish::logger;
 
 namespace {
-/*
+
 struct PropertyEditorItem {
 
-    static bool AppendMarkerRecordItem(const char *prefix, int uid, markerRecord_t &markerRecord) {
+static void AppendMarkerRecordItem(
+    const char *prefix, 
+    const int uid, 
+          Eigen::MatrixXd &marker_4D, 
+    const zebrafish::OptimDepthInfo_t &depthInfo, 
+    const zebrafish::DepthSearchFlag_t &flag) {
 
-        ImGui::PushID(uid);
-        ImGui::AlignTextToFramePadding();
-        bool nodeOpen = ImGui::TreeNode("Object", "%s %u", prefix, uid);
-        ImGui::NextColumn();
-        ImGui::AlignTextToFramePadding();
-        bool res = false;
+    ImGui::PushID(uid);
+    ImGui::AlignTextToFramePadding();
+    bool nodeOpen = ImGui::TreeNode("Object", "%s %u", prefix, uid);
+    ImGui::NextColumn();
+    ImGui::AlignTextToFramePadding();
 
-        // no text here
+    // no text here
 
-        ImGui::NextColumn();
+    ImGui::NextColumn();
 
-        if (nodeOpen) {
-            static const std::vector<std::string> itemName{"X (row)", "Y (col)", "Z", "R", "energy", "size"};
-            for (int i = 0; i < 4; i++) {
-                ImGui::PushID(i);
-                ImGui::AlignTextToFramePadding();
-                ImGui::TreeNodeEx(itemName[i].c_str(), ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_Bullet);
-                ImGui::NextColumn();
+    if (nodeOpen) {
+        static const std::vector<std::string> itemName{"X (row)", "Y (col)", "Z", "R", "flag"};
+        for (int i = 0; i < 4; i++) {
+            ImGui::PushID(i);
+            ImGui::AlignTextToFramePadding();
+            ImGui::TreeNodeEx(itemName[i].c_str(), ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_Bullet);
+            ImGui::NextColumn();
 
-                // ImGui::Text("%.3f", markerRecord.loc(uid, i));
-                if (ImGui::InputDouble("", &markerRecord.loc(uid, i), 0.0, 0.0, "%.3f")) {
-                    res = true;
-                }
+            // ImGui::Text("%.3f", markerRecord.loc(uid, i));
+            if (ImGui::InputDouble("", &marker_4D(uid, i), 0.0, 0.0, "%.3f")) {
 
-                ImGui::NextColumn();
-                ImGui::PopID();
             }
 
-            ImGui::Separator(); ///////////////////////
-
-            for (int i = 4; i <= 5; i++) {
-                ImGui::PushID(i);
-                ImGui::AlignTextToFramePadding();
-                ImGui::TreeNodeEx(itemName[i].c_str(), ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_Bullet);
-                ImGui::NextColumn();
-                if (i == 4) {
-                    ImGui::Text("%.4f", markerRecord.energy(uid));
-                } else {
-                    ImGui::Text("%d", markerRecord.size(uid));
-                }
-                ImGui::NextColumn();
-                ImGui::PopID();
-            }
-
-            ImGui::Separator(); ///////////////////////
-            ImGui::TreePop();
+            ImGui::NextColumn();
+            ImGui::PopID();
         }
 
+        ImGui::Separator(); ///////////////////////
+
+        ImGui::PushID(4);
+        ImGui::AlignTextToFramePadding();
+        ImGui::TreeNodeEx(itemName[4].c_str(), ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_Bullet);
+        ImGui::NextColumn();
+        if (flag == zebrafish::DepthSearchFlag_t::Success)
+            ImGui::Text("Success");
+        else if (flag == zebrafish::DepthSearchFlag_t::InvalidEnergy)
+            ImGui::Text("Invalid Energy");
+        else if (flag == zebrafish::DepthSearchFlag_t::SecondDerivative)
+            ImGui::Text("Second Derivative");
+        else
+            ImGui::Text("Unknown");
+        ImGui::NextColumn();
         ImGui::PopID();
-        return res; // Whether InputDouble triggered
+
+        ImGui::Separator(); ///////////////////////
+        ImGui::TreePop();
     }
-};
-*/
-} // anonymous namespace
+
+    ImGui::PopID();
+}
+};  // struct PropertyEditorItem
+
+}  // anonymous namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 // Special module about property editor
 
-} // namespace cellogram
+void UIState::draw_editor_window() {
+
+    if (UIsize.resize) {
+		ImGui::SetNextWindowPos(ImVec2(UIsize.windowWidth-UIsize.rightWidth, UIsize.windowHeight-UIsize.mainMenuHeight));
+		ImGui::SetNextWindowSize(ImVec2(UIsize.rightWidth, UIsize.windowHeight-UIsize.mainMenuHeight-UIsize.imageViewerHeight));
+	}
+
+	if (!ImGui::Begin("Property Editor", &show_editor_menu)) {
+		ImGui::End();
+		return;
+	}
+
+    ImGui::PushItemWidth(UIsize.rightWidth / 2.0);
+    std::vector<std::string> typeName{"Marker"};
+    static int propertyListType = 0;
+    ImGui::Combo("Property List Type", &propertyListType, typeName);
+    ImGui::PopItemWidth();
+
+    ImGui::Separator();
+    ImGui::BeginChild("scrolling", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
+
+    switch (propertyListType) {
+    case 0:
+        // markers (finalized clusters)
+        if (state.mesh.C_depth_info_vec.empty()) {
+            ImGui::Text("3D marker list is empty");
+        } else {
+            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
+            ImGui::Columns(2);
+
+            static int maxNumItemDisplayed = 200;
+            const int ttlItem = state.mesh.C_depth_info_vec.size();
+            const int numItemToDisplay = std::min(maxNumItemDisplayed, ttlItem);
+            for (int i = 0; i < numItemToDisplay; i++) {
+                PropertyEditorItem::AppendMarkerRecordItem(
+                    "Marker", 
+                    i, 
+                    state.mesh.marker_4D,
+                    state.mesh.C_depth_info_vec[i], 
+                    state.mesh.dsFlag[i]);
+            }
+
+            ImGui::Columns(1);
+            if (ttlItem >= maxNumItemDisplayed) {
+                ImGui::Text("Only the first %d items will be displayed", maxNumItemDisplayed);
+                if (ImGui::Button("Show more")) {
+                    maxNumItemDisplayed += 100;
+                }
+            }
+            ImGui::PopStyleVar();
+        }
+        break;
+
+    default:
+        assert(false);
+        break;
+    }
+
+    ImGui::EndChild();
+    ImGui::End();
+}
+
+}  // namespace cellogram
