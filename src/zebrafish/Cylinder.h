@@ -74,10 +74,6 @@ public:
     /// @param[in]   weight     { [#points] weights corresponding to the sample points }
     /// @param[out]  resWeight  { [#points] returned weight array }
     ///
-
-    // maintenance methods
-    cylinder();
-    ~cylinder();
 };
 
 }  // namespace zebrafish

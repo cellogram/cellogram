@@ -41,7 +41,7 @@
 double zebrafish::cylinder::alpha{0.5};
 double zebrafish::cylinder::K{sqrt(2)};
 double zebrafish::cylinder::H{2.0};
-double zebrafish::cylinder::Rmin{1.5};
+double zebrafish::cylinder::Rmin{3};
 
 namespace cellogram {
 
@@ -58,7 +58,7 @@ json default_detection_settings = R"({
     "energy_variation_from_mean": 2.0,
     "lloyd_iterations": 20,
     "perm_possibilities": 15,
-    "sigma": 1.5,
+    "sigma": 3.0,
     "otsu_multiplier": 0.3
 })"_json;
 

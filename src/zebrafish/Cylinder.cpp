@@ -49,10 +49,10 @@ bool cylinder::IsValid(const bspline &bsp, const T &x_, const T &y_, const doubl
     const double y = getVal(y_);
     const double r = getVal(r_);
 
-    // The extended cylinder (union of inner & outer) has radius sqrt(2)*r
+    // The extended cylinder (union of inner & outer) has radius K*r
     // Also avoid interpolating points lying on the surface of the sample grid
-    if (x - 1.5*r < 0 || x + 1.5*r > xmax - 1) return false;  // x-axis
-    if (y - 1.5*r < 0 || y + 1.5*r > ymax - 1) return false;  // y-axis
+    if (x - cylinder::K*r - 0.5 < 0 || x + cylinder::K*r + 0.5 > xmax - 1) return false;  // x-axis
+    if (y - cylinder::K*r - 0.5 < 0 || y + cylinder::K*r + 0.5 > ymax - 1) return false;  // y-axis
     if (z < 0 || z+h >= zmax - 1) return false;  // depth-axis
     if (r < cylinder::Rmin) return false;  // radius
 
@@ -150,7 +150,7 @@ void cylinder::EvaluateCylinder(const bspline &bsp, T x, T y, double z, T r, dou
     EnergyHelper<T>(bsp, zArray, r, x, y, resInner);
 
     // Extended area
-    EnergyHelper<T>(bsp, zArray, r * sqrt(2), x, y, resExt);
+    EnergyHelper<T>(bsp, zArray, r * cylinder::K, x, y, resExt);
 
     ////////////////////////////////////////////////////
     /// Notes about enerygy function evaluation:
@@ -162,7 +162,9 @@ void cylinder::EvaluateCylinder(const bspline &bsp, T x, T y, double z, T r, dou
     ///        = 2 * (Inner density - Extended density)
     ////////////////////////////////////////////////////
     // double quadrature solution of the energy
-    res = 2.0*(resInner - resExt) * weightScalar;
+    // res = 2.0*(resInner - resExt) * weightScalar;  // old
+    res = 2.0 * (resInner - 2*cylinder::alpha * resExt) * weightScalar;  // assume K=sqrt(2)
+    res = 2.0 * (res + cylinder::alpha - 0.5);  // scale from [-alpha, 1-alpha] to [-1, 1]
     if (invert) res *= -1;  // invert color
 }
 // explicit template instantiation
@@ -174,18 +176,6 @@ void cylinder::SubtractionHelper(const Eigen::MatrixXd &points, const Eigen::Vec
 
     // this function can be used to implement sigmoid subtraction function
     // [deprecated]
-}
-
-
-cylinder::cylinder() {
-
-    // Autodiff variables
-    DiffScalarBase::setVariableCount(3);  // x, y, r
-}
-
-
-cylinder::~cylinder() {
-
 }
 
 }  // namespace zebrafish

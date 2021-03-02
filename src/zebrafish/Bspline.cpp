@@ -182,7 +182,7 @@ void bspline::CalcControlPts(const image_t &image, const double xratio, const do
         logger().info("Creating control points cache...");
         CreateControlPtsCache();
     }
-        logger().info("Control points calculated...");
+        logger().info("Control points calculated.");
         logger().info("====================================================");
 }
 

@@ -12,6 +12,7 @@
 #include <cellogram/vertex.h>
 #include <cellogram/vertex_degree.h>
 #include <zebrafish/Logger.hpp>
+#include <zebrafish/Cylinder.h>
 
 #include <igl/colormap.h>
 #include <igl/jet.h>
@@ -1034,6 +1035,18 @@ void UIState::draw_mesh_menu() {
 // Stage 3 menu
 
 void UIState::draw_depth_menu() {
+
+const float width = ImGui::GetWindowWidth() * 0.75f;
+ImGui::PushItemWidth(width);
+    static double solverTol = 1e-10;
+    if (ImGui::InputDouble("Solver Tol", &solverTol, 0.0, 0.0, "%.2e")) {
+        state.bsp.Set_solverTol(solverTol);
+    }
+    static float alpha = 0.5;
+    if (ImGui::SliderFloat("Alpha", &alpha, 0.0, 1.0, "%.3f")) {
+        zebrafish::cylinder::H = alpha;
+    }
+ImGui::PopItemWidth();
 
 	if (ImGui::Button("Compute BSpline")) {
         state.PrepareBsp();
