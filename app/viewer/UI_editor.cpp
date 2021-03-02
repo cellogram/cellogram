@@ -19,9 +19,19 @@ static void AppendMarkerRecordItem(
     const zebrafish::OptimDepthInfo_t &depthInfo, 
     const zebrafish::DepthSearchFlag_t &flag) {
 
+    std::string postfix = "";
+    if (flag == zebrafish::DepthSearchFlag_t::Success)
+        postfix = "";
+    else if (flag == zebrafish::DepthSearchFlag_t::InvalidEnergy)
+        postfix = " [Ener]";
+    else if (flag == zebrafish::DepthSearchFlag_t::SecondDerivative)
+        postfix = " [Deri]";
+    else
+        postfix = " [Unkn]";
+
     ImGui::PushID(uid);
     ImGui::AlignTextToFramePadding();
-    bool nodeOpen = ImGui::TreeNode("Object", "%s %u", prefix, uid);
+    bool nodeOpen = ImGui::TreeNode("Object", "%s %u%s", prefix, uid, postfix.c_str());
     ImGui::NextColumn();
     ImGui::AlignTextToFramePadding();
 
@@ -30,7 +40,7 @@ static void AppendMarkerRecordItem(
     ImGui::NextColumn();
 
     if (nodeOpen) {
-        static const std::vector<std::string> itemName{"X (row)", "Y (col)", "Z", "R", "flag"};
+        static const std::vector<std::string> itemName{"X (col)", "Y (row)", "Z", "R", "flag"};
         for (int i = 0; i < 4; i++) {
             ImGui::PushID(i);
             ImGui::AlignTextToFramePadding();

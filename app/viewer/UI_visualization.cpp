@@ -77,7 +77,7 @@ void UIState::DrawAxisDots() {
 
     // add labels
     for (int i=0; i<nr; i++)
-        visual_data().add_label(label_loc_r.row(i), ToStringWithPrecision(imgRows - loc_r(i, 1)));
+        visual_data().add_label(label_loc_r.row(i), ToStringWithPrecision(loc_r(i, 1)));
     for (int i=0; i<nc; i++)
         visual_data().add_label(label_loc_c.row(i), ToStringWithPrecision(loc_c(i, 0)));
     for (int i=0; i<nz; i++)

@@ -106,8 +106,8 @@ void bspline::CalcControlPts(const image_t &image, const double xratio, const do
 
     // dimension of sample points
     Nz = image.size();
-    Nx = image[0].rows();
-    Ny = image[0].cols();
+    Nx = image[0].cols();  // WARNING: Cellogram axis convention (different with Zebrafish)
+    Ny = image[0].rows();  // WARNING: Cellogram axis convention
     N = Nx*Ny*Nz;
         logger().debug("Sample points:  N= {} Nx= {} Ny= {} Nz= {}", N, Nx, Ny, Nz);
 
