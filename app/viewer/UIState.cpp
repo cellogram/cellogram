@@ -437,13 +437,14 @@ bool UIState::save_as(const std::string &save_as_dir) {
 }
 
 bool UIState::mouse_scroll(float delta_y) {
-	viewer.scroll_position += delta_y;
+
+    viewer.scroll_position += delta_y;
 
 	// Only zoom if there's actually a change
 	if (delta_y != 0) {
 		float mult = (1.0 + ((delta_y > 0) ? 1. : -1.) * 0.02);
 		const float min_zoom = 0.1f;
-		viewer.core().camera_zoom = (viewer.core().camera_zoom * mult > min_zoom ? viewer.core().camera_zoom * mult : min_zoom);
+		// viewer.core().camera_zoom = (viewer.core().camera_zoom * mult > min_zoom ? viewer.core().camera_zoom * mult : min_zoom);
 
 		points_data().point_size *= mult;
 		physical_data().point_size *= mult;
