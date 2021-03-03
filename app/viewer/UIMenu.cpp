@@ -11,6 +11,7 @@
 #include <cellogram/tri2hex.h>
 #include <cellogram/vertex.h>
 #include <cellogram/vertex_degree.h>
+#include <cellogram/image_reader.h>
 #include <zebrafish/Logger.hpp>
 #include <zebrafish/Cylinder.h>
 
@@ -1057,7 +1058,28 @@ ImGui::PushItemWidth(width);
     if (ImGui::TreeNode("Advanced BSP")) {
         
         if (ImGui::Button("Interp result")) {
-            
+            // new image
+            std::vector<Eigen::MatrixXd> img;
+            const int zNum = state.img3D.size();
+            const int xNum = state.img3D[0].rows();
+            const int yNum = state.img3D[0].cols();
+            Eigen::VectorXd xArray = Eigen::VectorXd::LinSpaced(yNum-4, 2, yNum-3);
+            Eigen::VectorXd yArray = Eigen::VectorXd::LinSpaced(xNum-4, 2, xNum-3);
+            Eigen::VectorXd zArray = Eigen::VectorXd::LinSpaced(zNum-4, 2, zNum-3);
+
+            const auto InterpImage = [this, &xArray, &yArray, &zArray, &img]() {
+                img.clear();
+                for (int iz=0; iz<zArray.size(); iz++) {
+                    Eigen::MatrixXd slice(xArray.size(), yArray.size());
+                    for (int ix=0; ix<xArray.size(); ix++)
+                        for (int iy=0; iy<yArray.size(); iy++) {
+                            slice(ix, iy) = state.bsp.Interp3D(xArray(ix), yArray(iy), zArray(iz));
+                        }
+                    img.push_back(slice);
+                }
+            };
+            InterpImage();
+            cellogram::WriteTif("/Users/ziyizhang/Projects/tmp/img_interp.tif", img, 0, img.size()-1);
         }
         ImGui::TreePop();
     }

@@ -243,5 +243,5 @@ TEST_CASE("interp_res", "[InterpTest]") {
     };
 
     InterpImage();
-    cellogram::WriteTif("/Users/ziyizhang/Projects/tmp/interp.tif", img, 0, img.size()-1);
+    // cellogram::WriteTif("/Users/ziyizhang/Projects/tmp/interp.tif", img, 0, img.size()-1);
 }
