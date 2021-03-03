@@ -138,7 +138,7 @@ void UIState::DrawRadiusDots() {
     for (int i=0; i<N; i++) {
         const Eigen::MatrixXd &centerPt = pts.row(i);  // 1x4
         Eigen::MatrixXd radiusPt(8, 3);
-        radiusPt = centerPt.leftCols(3).replicate(4, 1);
+        radiusPt = centerPt.leftCols(3).replicate(8, 1);
         // right/left
         radiusPt(0, 0) += pts(i, 3);
         radiusPt(1, 0) -= pts(i, 3);
@@ -146,10 +146,10 @@ void UIState::DrawRadiusDots() {
         radiusPt(2, 1) += pts(i, 3);
         radiusPt(3, 1) -= pts(i, 3);
         // other four directions
-        radiusPt(4, 1) += pts(i, 3)*sq2;  radiusPt(4, 1) += pts(i, 3)*sq2;
-        radiusPt(5, 1) += pts(i, 3)*sq2;  radiusPt(5, 1) -= pts(i, 3)*sq2;
-        radiusPt(6, 1) -= pts(i, 3)*sq2;  radiusPt(6, 1) += pts(i, 3)*sq2;
-        radiusPt(7, 1) -= pts(i, 3)*sq2;  radiusPt(7, 1) -= pts(i, 3)*sq2;
+        radiusPt(4, 0) += pts(i, 3)*sq2;  radiusPt(4, 1) += pts(i, 3)*sq2;
+        radiusPt(5, 0) += pts(i, 3)*sq2;  radiusPt(5, 1) -= pts(i, 3)*sq2;
+        radiusPt(6, 0) -= pts(i, 3)*sq2;  radiusPt(6, 1) += pts(i, 3)*sq2;
+        radiusPt(7, 0) -= pts(i, 3)*sq2;  radiusPt(7, 1) -= pts(i, 3)*sq2;
 
         visual_data().add_points(radiusPt, colorUI.radius_point_color);
     }

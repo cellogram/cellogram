@@ -618,7 +618,7 @@ void UIState::draw_image_viewer_menu() {
 
             // show marker radius
             if (ImGui::Checkbox("Show radius", &show_radiusPoints)) {
-                if (show_radiusPoints) visual_data().point_size = 2;
+                if (show_radiusPoints) visual_data().point_size = 4;
                 else visual_data().point_size = 6;  // shared by axis points
             }
 
@@ -1050,6 +1050,11 @@ ImGui::PushItemWidth(width);
     if (ImGui::InputDouble("BSP Tol", &solverTol, 0.0, 0.0, "%.2e")) {
         state.bsp.Set_solverTol(solverTol);
     }
+
+    if (ImGui::Button("Compute BSpline")) {
+        state.PrepareBsp();
+    }
+
     static float alpha = 0.5;
     if (ImGui::SliderFloat("Alpha", &alpha, 0.0, 1.0, "%.3f")) {
         zebrafish::cylinder::H = alpha;
@@ -1068,10 +1073,6 @@ ImGui::PushItemWidth(width);
     ImGui::InputDouble("DSeps", &DSeps);
 
 ImGui::PopItemWidth();
-
-	if (ImGui::Button("Compute BSpline")) {
-        state.PrepareBsp();
-    }
 
     if (ImGui::Button("Depth Search")) {
         state.DepthSearch(DSnum, DSgap, DSeps);
