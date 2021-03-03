@@ -166,6 +166,10 @@ void cylinder::EvaluateCylinder(const bspline &bsp, T x, T y, double z, T r, dou
     res = (resInner - 2*cylinder::alpha * resExt) * weightScalar;  // assume K=sqrt(2)
     res = 2.0 * (res + cylinder::alpha - 0.5);  // scale from [-alpha, 1-alpha] to [-1, 1]
     if (invert) res *= -1;  // invert color
+
+    // DEBUG ONLY
+    // std::cerr << "resInner = " << resInner * weightScalar << std::endl;
+    // std::cerr << "resExt = " << resExt * weightScalar << std::endl;
 }
 // explicit template instantiation
 template void cylinder::EvaluateCylinder(const bspline &bsp, DScalar x, DScalar y, double z, DScalar r, double h, DScalar &res, bool invert);

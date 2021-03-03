@@ -103,6 +103,7 @@ void UIState::DrawWarnViewer() {
 
     const auto &dsFlag = state.mesh.dsFlag;
     const int N = dsFlag.size();
+    if (N == 0) return;
     Eigen::MatrixXd pts = state.mesh.marker_4D.leftCols(3);
     pts.col(2) *= imgViewer.visual_z_mult;
     pts.col(2).array() += 0.2;
@@ -120,6 +121,30 @@ void UIState::DrawWarnViewer() {
             warn_data().add_points(pts.row(i), colorUI.warn_invalid_energy);
             visual_data().add_label(pts.row(i), std::to_string(i));
         }
+    }
+}
+
+
+void UIState::DrawRadiusDots() {
+
+    const auto &dsFlag = state.mesh.dsFlag;
+    const int N = dsFlag.size();
+    if (N == 0) return;
+    Eigen::MatrixXd pts = state.mesh.marker_4D.leftCols(3);
+    pts.col(2) *= imgViewer.visual_z_mult;
+    pts.col(2).array() += 0.1;
+
+    for (int i=0; i<N; i++) {
+        const Eigen::MatrixXd &centerPt = pts.row(i);
+        Eigen::MatrixXd radiusPt(4, 3);
+        radiusPt = centerPt.leftCols(3).replicate(4, 1);
+        // right/left
+        radiusPt(0, 0) += pts(i, 3);
+        radiusPt(1, 0) -= pts(i, 3);
+        // up/down
+        radiusPt(2, 1) += pts(i, 3);
+        radiusPt(3, 1) -= pts(i, 3);
+        visual_data().add_points(radiusPt, colorUI.radius_point_color);
     }
 }
 

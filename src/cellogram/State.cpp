@@ -112,7 +112,7 @@ void State::DepthSearch() {
     marker_withR.leftCols(3) = markers;
     marker_withR.col(3).setConstant(mesh.optimPara.defaultRadius);  // initial radius guess
 
-    optim::Optim_WithDepth(optimPara_lowPrec, bsp, std::round(z / 4.0), 2.0, marker_withR,
+    optim::Optim_WithDepth(optimPara_lowPrec, bsp, std::round(z / 1.0), 0.5, marker_withR,
                            mesh.C_depth_info_vec, mesh.optimPara.invertColor);
     marker_withR_tmp = marker_withR;
     optim::DepthSelection(optimPara_lowPrec, marker_withR, mesh.C_depth_info_vec, marker_withR_tmp, flags);

@@ -48,8 +48,9 @@ typedef struct ColorUI_t {
     Eigen::MatrixXd warn_snd_derivative;
     Eigen::MatrixXd warn_invalid_energy;
 
+    Eigen::MatrixXd radius_point_color;
     Eigen::MatrixXd ref_point_color;  // reference axis color
-    Eigen::RowVector4f background_color;
+    Eigen::Vector4f background_color;
     
     ColorUI_t() {
         mesh_vertex_color = Eigen::RowVector3f(92, 214, 218)/255.0;
@@ -63,6 +64,8 @@ typedef struct ColorUI_t {
         warn_invalid_energy.resize(1, 3);
         warn_invalid_energy << 250./255., 55./255., 41./255.;
 
+        radius_point_color.resize(1, 3);
+        radius_point_color << 255./255., 133./255., 44./255.;
         ref_point_color.resize(1, 3);
         ref_point_color << 0., 0., 0.3;
         background_color = Eigen::RowVector4f(0.7, 0.7, 0.75, 1.0);
@@ -275,9 +278,11 @@ private:
 	// visualization
 	bool show_axisPoints = false;
     bool show_allIndex = false;
+    bool show_radiusPoints = false;
 	void DrawAxisDots();
     void DrawAllMarkerIdx();
     void DrawWarnViewer();
+    void DrawRadiusDots();
 
 public:
 	// Menu stuff

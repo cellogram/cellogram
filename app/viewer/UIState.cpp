@@ -876,6 +876,11 @@ void UIState::viewer_control_2d() {
         DrawWarnViewer();
     }
 
+    // show cylinder radius
+    if (show_radiusPoints) {
+        DrawRadiusDots();
+    }
+
 	// bad regions
 	if (show_bad_regions) {
 		Eigen::MatrixXd bad_P1, bad_P2, C;

@@ -616,6 +616,9 @@ void UIState::draw_image_viewer_menu() {
 			// Orthographic view
 			ImGui::Checkbox("Orthographic projection", &(viewer.core().orthographic));
 
+            // show marker radius
+            ImGui::Checkbox("Show radius", &show_radiusPoints);
+
 			// z_multiplier
 			ImGui::SliderFloat("Z-mult", &imgViewer.visual_z_mult, 1.0, 9.0, "%.1f");
 			if (ImGui::IsItemHovered()) {
