@@ -70,6 +70,11 @@ static void AppendMarkerRecordItem(
             ImGui::Text("Second Derivative");
         else
             ImGui::Text("Unknown");
+
+        ImGui::SameLine();
+        if (ImGui::Button("Log")) {
+            std::cerr << "Idx = " << uid << std::endl << depthInfo.ToMat() << std::endl << std::endl;
+        }
         ImGui::NextColumn();
         ImGui::PopID();
 

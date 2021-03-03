@@ -134,3 +134,31 @@ TEST_CASE("cylinder_cubic", "[CylinderTest]") {
     // cout << valid << endl;
     // cout << res << endl;
 }
+
+
+TEST_CASE("cylinder_invert", "[CylinderTest]") {
+
+	image_t image; // 30 * 30 * 30
+    GenImage(image, func_ideal);
+
+    // prepare B-spline
+    spdlog::set_level(spdlog::level::warn);
+    const int bsplineDegree = 2;
+    bspline bsplineSolver;
+    bsplineSolver.CalcControlPts(image, 0.7, 0.7, 0.7, bsplineDegree);
+
+	// evaluate cylinder
+    double x = 14.5;
+    double y = 14.5;
+    double z = 12;
+    double r = 4.0;
+    double res;
+	bool valid = cylinder::IsValid(bsplineSolver, x, y, z, r, cylinder::H);
+    cylinder::EvaluateCylinder(bsplineSolver, x, y, z, r, cylinder::H, res, false);
+
+    
+    REQUIRE(valid == true);
+    REQUIRE(res == Approx(-0.89222).margin(0.0001));
+    // cout << valid << endl;
+    // cout << res << endl;
+}

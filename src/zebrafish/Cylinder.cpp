@@ -163,7 +163,7 @@ void cylinder::EvaluateCylinder(const bspline &bsp, T x, T y, double z, T r, dou
     ////////////////////////////////////////////////////
     // double quadrature solution of the energy
     // res = 2.0*(resInner - resExt) * weightScalar;  // old
-    res = 2.0 * (resInner - 2*cylinder::alpha * resExt) * weightScalar;  // assume K=sqrt(2)
+    res = (resInner - 2*cylinder::alpha * resExt) * weightScalar;  // assume K=sqrt(2)
     res = 2.0 * (res + cylinder::alpha - 0.5);  // scale from [-alpha, 1-alpha] to [-1, 1]
     if (invert) res *= -1;  // invert color
 }

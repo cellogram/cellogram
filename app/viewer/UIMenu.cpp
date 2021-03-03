@@ -1036,9 +1036,9 @@ void UIState::draw_mesh_menu() {
 
 void UIState::draw_depth_menu() {
 
-const float width = ImGui::GetWindowWidth() * 0.75f;
+const float width = ImGui::GetWindowWidth() * 0.5f;
 ImGui::PushItemWidth(width);
-    static double solverTol = 1e-10;
+    static double solverTol = 1e-8;
     if (ImGui::InputDouble("Solver Tol", &solverTol, 0.0, 0.0, "%.2e")) {
         state.bsp.Set_solverTol(solverTol);
     }
@@ -1046,6 +1046,11 @@ ImGui::PushItemWidth(width);
     if (ImGui::SliderFloat("Alpha", &alpha, 0.0, 1.0, "%.3f")) {
         zebrafish::cylinder::H = alpha;
     }
+    static float defaultRadius = 4.0;
+    if (ImGui::SliderFloat("Initial R", &defaultRadius, 2.0, 6.0)) {
+        state.mesh.optimPara.defaultRadius = defaultRadius;
+    }
+    ImGui::Checkbox("Invert Color", &state.mesh.optimPara.invertColor);
 ImGui::PopItemWidth();
 
 	if (ImGui::Button("Compute BSpline")) {

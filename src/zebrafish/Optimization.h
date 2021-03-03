@@ -18,7 +18,9 @@ typedef struct OptimPara_t {
     double defaultRadius;  // initial radius to optimize
     // customized linear search method TODO
 
-    OptimPara_t() : epsilon(1e-4), maxIt(50), zSearchMaxXYDisp(3.0), defaultRadius(3.0) {}
+    bool invertColor;
+
+    OptimPara_t() : epsilon(1e-4), maxIt(50), zSearchMaxXYDisp(3.0), defaultRadius(4.0), invertColor(true) {}
 } OptimPara_t;
 
 typedef struct OptimDepthInfo_t {
@@ -26,7 +28,7 @@ typedef struct OptimDepthInfo_t {
     Eigen::VectorXd energy;
     Eigen::VectorXi iter;
 
-    Eigen::MatrixXd ToMat() {  // debug
+    Eigen::MatrixXd ToMat() const {  // debug
         Eigen::MatrixXd mat(energy.size(), 6);
         mat << C, energy, iter.cast<double>();
         return mat;

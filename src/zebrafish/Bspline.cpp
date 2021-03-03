@@ -616,10 +616,10 @@ bspline::bspline() : quad(quad_) {
     numZ = 0;
     // By default use Eigen::LeastSquaresConjugateGradient
     leastSquareMethod = 2;
-    // solver by default very high accuracy
+    // solver by default high accuracy
     solverMaxIt = 10000;    // 1000
-    solverConvTol = 1e-10;  // 1e-10
-    solverTol = 1e-10;      // 1e-10
+    solverConvTol = 1e-8;  // 1e-8
+    solverTol = 1e-8;      // 1e-8
     // whether enable control points cache
     controlPointsCacheFlag = false;
 }

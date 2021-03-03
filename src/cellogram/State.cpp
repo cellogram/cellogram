@@ -41,7 +41,7 @@
 double zebrafish::cylinder::alpha{0.5};
 double zebrafish::cylinder::K{sqrt(2)};
 double zebrafish::cylinder::H{2.0};
-double zebrafish::cylinder::Rmin{3};
+double zebrafish::cylinder::Rmin{1.5};
 
 namespace cellogram {
 
@@ -101,7 +101,7 @@ void State::DepthSearch() {
     Eigen::MatrixXd markers = mesh.moved;  // input mesh is "moved"
     const int N = markers.rows();
     const int z = img3D.size();
-    markers.col(2).setConstant(std::round(z / 2.0));
+    markers.col(2).setConstant(std::round(z / 4.0));
 
     OptimPara_t optimPara_lowPrec;
     optimPara_lowPrec.epsilon = 0.01;  // low precision
@@ -112,8 +112,8 @@ void State::DepthSearch() {
     marker_withR.leftCols(3) = markers;
     marker_withR.col(3).setConstant(mesh.optimPara.defaultRadius);  // initial radius guess
 
-    optim::Optim_WithDepth(optimPara_lowPrec, bsp, std::round(z / 2.0), 1.0, marker_withR,
-                           mesh.C_depth_info_vec, false);
+    optim::Optim_WithDepth(optimPara_lowPrec, bsp, std::round(z / 4.0), 2.0, marker_withR,
+                           mesh.C_depth_info_vec, mesh.optimPara.invertColor);
     marker_withR_tmp = marker_withR;
     optim::DepthSelection(optimPara_lowPrec, marker_withR, mesh.C_depth_info_vec, marker_withR_tmp, flags);
 
