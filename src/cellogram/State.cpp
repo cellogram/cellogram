@@ -96,23 +96,25 @@ void State::PrepareBsp() {
     bsp.CalcControlPts(img3D, 0.7, 0.7, 0.7, bsplineDegree);
 }
 
-void State::DepthSearch() {
+void State::DepthSearch(int DSnum, double DSgap, double DSeps) {
     using namespace zebrafish;
     Eigen::MatrixXd markers = mesh.moved;  // input mesh is "moved"
     const int N = markers.rows();
     const int z = img3D.size();
+    // prepare z
     markers.col(2).setConstant(std::round(z / 4.0));
 
     OptimPara_t optimPara_lowPrec;
-    optimPara_lowPrec.epsilon = 0.01;  // low precision
+    optimPara_lowPrec.epsilon = DSeps;  // low precision
 
     Eigen::MatrixXd marker_withR_tmp;
     std::vector<DepthSearchFlag_t> flags;
+    // prepare radius
     Eigen::MatrixXd marker_withR(N, 4);
     marker_withR.leftCols(3) = markers;
     marker_withR.col(3).setConstant(mesh.optimPara.defaultRadius);  // initial radius guess
 
-    optim::Optim_WithDepth(optimPara_lowPrec, bsp, std::round(z / 1.0), 0.5, marker_withR,
+    optim::Optim_WithDepth(optimPara_lowPrec, bsp, DSnum, DSgap, marker_withR,
                            mesh.C_depth_info_vec, mesh.optimPara.invertColor);
     marker_withR_tmp = marker_withR;
     optim::DepthSelection(optimPara_lowPrec, marker_withR, mesh.C_depth_info_vec, marker_withR_tmp, flags);

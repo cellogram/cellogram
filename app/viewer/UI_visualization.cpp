@@ -130,13 +130,14 @@ void UIState::DrawRadiusDots() {
     const auto &dsFlag = state.mesh.dsFlag;
     const int N = dsFlag.size();
     if (N == 0) return;
-    Eigen::MatrixXd pts = state.mesh.marker_4D.leftCols(3);
+    Eigen::MatrixXd pts = state.mesh.marker_4D;  // Nx4
     pts.col(2) *= imgViewer.visual_z_mult;
     pts.col(2).array() += 0.1;
 
+    static const double sq2 = std::sqrt(2)/2.0;
     for (int i=0; i<N; i++) {
-        const Eigen::MatrixXd &centerPt = pts.row(i);
-        Eigen::MatrixXd radiusPt(4, 3);
+        const Eigen::MatrixXd &centerPt = pts.row(i);  // 1x4
+        Eigen::MatrixXd radiusPt(8, 3);
         radiusPt = centerPt.leftCols(3).replicate(4, 1);
         // right/left
         radiusPt(0, 0) += pts(i, 3);
@@ -144,6 +145,12 @@ void UIState::DrawRadiusDots() {
         // up/down
         radiusPt(2, 1) += pts(i, 3);
         radiusPt(3, 1) -= pts(i, 3);
+        // other four directions
+        radiusPt(4, 1) += pts(i, 3)*sq2;  radiusPt(4, 1) += pts(i, 3)*sq2;
+        radiusPt(5, 1) += pts(i, 3)*sq2;  radiusPt(5, 1) -= pts(i, 3)*sq2;
+        radiusPt(6, 1) -= pts(i, 3)*sq2;  radiusPt(6, 1) += pts(i, 3)*sq2;
+        radiusPt(7, 1) -= pts(i, 3)*sq2;  radiusPt(7, 1) -= pts(i, 3)*sq2;
+
         visual_data().add_points(radiusPt, colorUI.radius_point_color);
     }
 }

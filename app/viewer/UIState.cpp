@@ -863,7 +863,7 @@ void UIState::viewer_control_2d() {
 			}
 			points_data().add_points(state.mesh.deleted_by_untangler, Eigen::RowVector3d(230, 126, 34) / 255);
 		}
-		points_data().add_points(meshV + Eigen::MatrixXd::Constant(meshV.rows(), 3, 0.1), C);
+		points_data().add_points(meshV + Eigen::MatrixXd::Constant(meshV.rows(), meshV.cols(), 0.1), C);
 	}
 
 	// fill
@@ -949,7 +949,6 @@ void UIState::viewer_control_2d() {
 #endif
 
 	// visual
-	visual_data().point_size = 6;
     visual_data().show_labels = true;
 	DrawAxisDots();
     DrawAllMarkerIdx();

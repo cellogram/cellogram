@@ -617,7 +617,10 @@ void UIState::draw_image_viewer_menu() {
 			ImGui::Checkbox("Orthographic projection", &(viewer.core().orthographic));
 
             // show marker radius
-            ImGui::Checkbox("Show radius", &show_radiusPoints);
+            if (ImGui::Checkbox("Show radius", &show_radiusPoints)) {
+                if (show_radiusPoints) visual_data().point_size = 2;
+                else visual_data().point_size = 6;  // shared by axis points
+            }
 
 			// z_multiplier
 			ImGui::SliderFloat("Z-mult", &imgViewer.visual_z_mult, 1.0, 9.0, "%.1f");
@@ -642,7 +645,9 @@ void UIState::draw_image_viewer_menu() {
 
 		ImGui::Spacing();
 
-		ImGui::Checkbox("Show axis points", &show_axisPoints);
+		if (ImGui::Checkbox("Show axis points", &show_axisPoints)) {
+            visual_data().point_size = 6;
+        }
 		if (ImGui::IsItemHovered()) {
 			ImGui::SetTooltip("Three array of points indicating the X, Y and Z axis");
 		}
@@ -1042,7 +1047,7 @@ void UIState::draw_depth_menu() {
 const float width = ImGui::GetWindowWidth() * 0.5f;
 ImGui::PushItemWidth(width);
     static double solverTol = 1e-8;
-    if (ImGui::InputDouble("Solver Tol", &solverTol, 0.0, 0.0, "%.2e")) {
+    if (ImGui::InputDouble("BSP Tol", &solverTol, 0.0, 0.0, "%.2e")) {
         state.bsp.Set_solverTol(solverTol);
     }
     static float alpha = 0.5;
@@ -1054,6 +1059,14 @@ ImGui::PushItemWidth(width);
         state.mesh.optimPara.defaultRadius = defaultRadius;
     }
     ImGui::Checkbox("Invert Color", &state.mesh.optimPara.invertColor);
+
+    static int DSnum = state.img3D.size() / 2;
+    ImGui::InputInt("DSnum", &DSnum);
+    static double DSgap = 1;
+    ImGui::InputDouble("DSgap", &DSgap);
+    static double DSeps = 0.01;
+    ImGui::InputDouble("DSeps", &DSeps);
+
 ImGui::PopItemWidth();
 
 	if (ImGui::Button("Compute BSpline")) {
@@ -1061,7 +1074,7 @@ ImGui::PopItemWidth();
     }
 
     if (ImGui::Button("Depth Search")) {
-        state.DepthSearch();
+        state.DepthSearch(DSnum, DSgap, DSeps);
     }
 
 	if (ImGui::Button("To Next"))

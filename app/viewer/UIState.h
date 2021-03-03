@@ -68,7 +68,7 @@ typedef struct ColorUI_t {
         radius_point_color << 255./255., 133./255., 44./255.;
         ref_point_color.resize(1, 3);
         ref_point_color << 0., 0., 0.3;
-        background_color = Eigen::RowVector4f(0.7, 0.7, 0.75, 1.0);
+        background_color = Eigen::Vector4f(0.7, 0.7, 0.75, 1.0);
     }
 } ColorUI_t;
 
