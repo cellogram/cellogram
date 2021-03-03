@@ -3,6 +3,7 @@
 #include <zebrafish/Common.h>
 #include <zebrafish/Bspline.h>
 #include <zebrafish/Logger.hpp>
+#include <cellogram/image_reader.h>
 
 #include <catch.hpp>
 
@@ -19,7 +20,6 @@ using namespace zebrafish;
 double func_linear(double x, double y, double z) {
     return x + y;
 }
-
 double func_quad(double x, double y, double z) {
 
     // x^2 + y^2
@@ -39,6 +39,37 @@ double func_quad(double x, double y, double z) {
     // (x^2 + y^2)^(5/2)
     // return pow((x-14.5)*(x-14.5) + (y-14.5)*(y-14.5), 2.5);
 }
+auto func_ideal = [](auto x, auto y, auto z) -> double {
+    if (x>16) return 0.5;
+    if ((x-14.5)*(x-14.5) + (y-14.5)*(y-14.5) <= 4*4) {
+        return 0;
+    } else {
+        return 1;
+    }
+};
+
+auto GenImage = [](image_t &image, auto func){
+	int sizeX, sizeY, sizeZ, i;
+    int x, y, z;
+
+    sizeX = 30; // 0, 1, ..., 29
+    sizeY = 30;
+    sizeZ = 30;
+
+    // generate sample grid (3D)
+    double maxPixel = 0;
+    for (z=0; z<sizeZ; z++) {
+        
+        MatrixXd layer(sizeX, sizeY);
+        for (x=0; x<sizeX; x++)
+            for (y=0; y<sizeY; y++) {
+                layer(x, y) = func(x, y, z);
+            }
+
+        image.push_back(layer);
+        if (layer.maxCoeff() > maxPixel) maxPixel = layer.maxCoeff();
+    }
+};
 
 template<typename Func>
 void interpolate(const Func &func, int &degree, double &mean_error, double &median_error, double &min_error, double &max_error) {
@@ -179,4 +210,38 @@ TEST_CASE("quadra_interp", "[InterpTest]") {
     cout << "Min  error = " << min_error << endl;
     cout << "Max  error = " << max_error << endl;
     */
+}
+
+
+TEST_CASE("interp_res", "[InterpTest]") {
+
+    image_t image; // 30 * 30 * 30
+    GenImage(image, func_ideal);
+
+    // prepare B-spline
+    spdlog::set_level(spdlog::level::warn);
+    const int bsplineDegree = 2;
+    bspline bsplineSolver;
+    bsplineSolver.CalcControlPts(image, 1, 1, 1, bsplineDegree);
+
+    // new image
+    std::vector<Eigen::MatrixXd> img;
+    Eigen::VectorXd xArray = Eigen::VectorXd::LinSpaced(28, 1, 28);
+    Eigen::VectorXd yArray = Eigen::VectorXd::LinSpaced(28, 1, 28);
+    Eigen::VectorXd zArray = Eigen::VectorXd::LinSpaced(10, 10, 19);
+
+    const auto InterpImage = [&xArray, &yArray, &zArray, &bsplineSolver, &img]() {
+        img.clear();
+        for (int iz=0; iz<zArray.size(); iz++) {
+            Eigen::MatrixXd slice(xArray.size(), yArray.size());
+            for (int ix=0; ix<xArray.size(); ix++)
+                for (int iy=0; iy<yArray.size(); iy++) {
+                    slice(ix, iy) = bsplineSolver.Interp3D(xArray(ix), yArray(iy), zArray(iz));
+                }
+            img.push_back(slice);
+        }
+    };
+
+    InterpImage();
+    cellogram::WriteTif("/Users/ziyizhang/Projects/tmp/interp.tif", img, 0, img.size()-1);
 }

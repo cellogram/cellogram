@@ -2,139 +2,162 @@
 #include "image_reader.h"
 
 #include "StringUtils.h"
-#include <tinytiffreader.h>
 #include <igl/png/readPNG.h>
 #include <iostream>
+#include <tinytiffreader.h>
+#include <tinytiffwriter.h>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
 
-	namespace
-	{
-		template <typename T>
-		bool read_mem_to_eigen(TinyTIFFReaderFile *tiffr, T *image, Eigen::MatrixXd &img) {
-			uint32_t width = TinyTIFFReader_getWidth(tiffr);
-			uint32_t height = TinyTIFFReader_getHeight(tiffr);
+namespace {
+template <typename T>
+bool read_mem_to_eigen(TinyTIFFReaderFile *tiffr, T *image, Eigen::MatrixXd &img) {
+    uint32_t width = TinyTIFFReader_getWidth(tiffr);
+    uint32_t height = TinyTIFFReader_getHeight(tiffr);
 
-			if(!image)
-				image = (T *)calloc(width * height, sizeof(T));
-			bool ok = TinyTIFFReader_getSampleData(tiffr, image, 0);
+    if (!image)
+        image = (T *)calloc(width * height, sizeof(T));
+    bool ok = TinyTIFFReader_getSampleData(tiffr, image, 0);
 
-			//image in (ROW-MAJOR!)
-			if (ok) {
-				Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> tmp;
-				tmp = Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> >(image, width, height);
+    //image in (ROW-MAJOR!)
+    if (ok) {
+        Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> tmp;
+        tmp = Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>(image, width, height);
 
-				// normalize img
-				// double min = tmp.minCoeff();
-				// double max = tmp.maxCoeff();
+        // normalize img
+        // double min = tmp.minCoeff();
+        // double max = tmp.maxCoeff();
 
-				// img = ((tmp.template cast<double>().array() - min) / (max - min)).rowwise().reverse();
-				tmp.transposeInPlace();
-				img = tmp.template cast<double>();
-			}
+        // img = ((tmp.template cast<double>().array() - min) / (max - min)).rowwise().reverse();
+        tmp.transposeInPlace();
+        img = tmp.template cast<double>();
+    }
 
-			return ok;
-		}
-	}
+    return ok;
+}
+} // namespace
 
+bool read_tif_image(const std::string &path, std::vector<Eigen::MatrixXd> &img3D) {
 
-	bool read_tif_image(const std::string &path, std::vector<Eigen::MatrixXd> & img3D)
-	{
+    bool ok = false;
+    TinyTIFFReaderFile *tiffr = NULL;
+    tiffr = TinyTIFFReader_open(path.c_str());
 
-		bool ok = false;
-		TinyTIFFReaderFile *tiffr = NULL;
-		tiffr = TinyTIFFReader_open(path.c_str());
+    if (!tiffr) {
 
-		if (!tiffr) {
+        std::cerr << "ERROR reading (not existent, not accessible or no TIFF file)" << std::endl;
+    } else {
 
-			std::cerr << "ERROR reading (not existent, not accessible or no TIFF file)" << std::endl;
-		} else {
+        // logger().info(path);
+        // logger().info(TinyTIFFReader_getImageDescription(tiffr));
 
-			// logger().info(path);
-			// logger().info(TinyTIFFReader_getImageDescription(tiffr));
+        img3D.clear();
+        int currentImgCount = 0;
+        uint32_t countSlice = 0;
 
-			img3D.clear();
-			int currentImgCount = 0;
-			uint32_t countSlice = 0;
+        Eigen::MatrixXd sliceMat;
 
-			Eigen::MatrixXd sliceMat;
+        uint8_t *buffer8 = nullptr;
+        uint16_t *buffer16 = nullptr;
+        uint32_t *buffer32 = nullptr;
 
-			uint8_t *buffer8 = nullptr;
-			uint16_t *buffer16 = nullptr;
-			uint32_t *buffer32 = nullptr;
+        do {
+            // prepare to read this slice
+            ok = true;
+            ++countSlice;
 
-			do {
-				// prepare to read this slice
-				ok = true;
-				++countSlice;
+            // read data to "sliceMat"
+            uint16_t samples = TinyTIFFReader_getBitsPerSample(tiffr);
+            if (samples == 8) {
+                ok = read_mem_to_eigen<uint8_t>(tiffr, buffer8, sliceMat);
+                // scale to 0~1 for visualization
+                sliceMat /= double((1 << 8) - 1);
+            } else if (samples == 16) {
+                ok = read_mem_to_eigen<uint16_t>(tiffr, buffer16, sliceMat);
+                // scale to 0~1 for visualization
+                sliceMat /= double((1 << 16) - 1);
+            } else if (samples == 32) {
+                ok = read_mem_to_eigen<uint32_t>(tiffr, buffer32, sliceMat);
+                // scale to 0~1 for visualization
+                sliceMat /= double((1ll << 32) - 1);
+            } else {
+                std::cerr << "ERROR: TinyTIFFReader_getBitsPerSample wrong format" << std::endl;
+                ok = false;
+                break;
+            }
 
-				// read data to "sliceMat"
-				uint16_t samples = TinyTIFFReader_getBitsPerSample(tiffr);
-				if (samples == 8) {
-					ok = read_mem_to_eigen<uint8_t>(tiffr, buffer8, sliceMat);
-					// scale to 0~1 for visualization
-					sliceMat /= double((1 << 8) - 1);
-				}
-				else if (samples == 16) {
-					ok = read_mem_to_eigen<uint16_t>(tiffr, buffer16, sliceMat);
-					// scale to 0~1 for visualization
-					sliceMat /= double((1 << 16) - 1);
-				}
-				else if (samples == 32) {
-					ok = read_mem_to_eigen<uint32_t>(tiffr, buffer32, sliceMat);
-					// scale to 0~1 for visualization
-					sliceMat /= double((1ll << 32) - 1);
-				} 
-				else {
-					std::cerr << "ERROR: TinyTIFFReader_getBitsPerSample wrong format" << std::endl;
-					ok = false;
-					break;
-				}
+            // push a slice to "img"
+            img3D.push_back(sliceMat);
+        } while (TinyTIFFReader_readNext(tiffr));
 
-				// push a slice to "img"
-				img3D.push_back(sliceMat);
-			} while (TinyTIFFReader_readNext(tiffr));
+        free(buffer8);
+        free(buffer16);
+        free(buffer32);
+    }
 
-			free(buffer8);
-			free(buffer16);
-			free(buffer32);
-		}
+    TinyTIFFReader_close(tiffr);
 
-		TinyTIFFReader_close(tiffr);
+    return ok;
+}
 
-		return ok;
-	}
+bool read_png_image(const std::string &path, Eigen::MatrixXd &img) {
+    Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> R, G, B, A; // Image
+    bool ok = igl::png::readPNG(path, R, G, B, A);
 
+    if (ok) {
+        //normalize img
+        double min = R.minCoeff();
+        double max = R.maxCoeff();
 
-	bool read_png_image(const std::string &path, Eigen::MatrixXd &img)
-	{
-		Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> R, G, B, A; // Image
-		bool ok = igl::png::readPNG(path, R, G, B, A);
+        img = (R.cast<double>().array() - min) / (max - min);
+    }
 
-		if(ok)
-		{
-		//normalize img
-			double min = R.minCoeff();
-			double max = R.maxCoeff();
+    return ok;
+}
 
-			img = (R.cast<double>().array() - min) / (max - min);
-		}
+bool read_image(const std::string &path, std::vector<Eigen::MatrixXd> &img3D) {
+    // Only read TIFF
+    // if (StringUtils::endswidth(path, ".png"))
+    //  	return read_png_image(path, img);
+    if (StringUtils::endswidth(path, ".tif") || StringUtils::endswidth(path, ".tiff"))
+        return read_tif_image(path, img3D);
 
-		return ok;
-	}
+    std::cout << "Unsupported image format " << path << std::endl;
+    return false;
+}
 
+bool WriteTif(const std::string &path, const std::vector<Eigen::MatrixXd> &image, int sliceBegin, int sliceEnd) {
 
-	bool read_image(const std::string & path, std::vector<Eigen::MatrixXd> & img3D)
-	{
-		// Only read TIFF
-		// if (StringUtils::endswidth(path, ".png"))
-		//  	return read_png_image(path, img);
-		if (StringUtils::endswidth(path, ".tif") || StringUtils::endswidth(path, ".tiff"))
-			return read_tif_image(path, img3D);
+    bool ok = true;
+    TinyTIFFFile *tiffr = NULL;
+    const uint16_t samples = 8;
+    assert(!image.empty());
+    const int rows = image[0].rows();
+    const int cols = image[0].cols();
+    const int slices = image.size();
 
-		std::cout << "Unsupported image format " << path << std::endl;
-		return false;
-	}
+    assert(sliceBegin >= 0 && sliceBegin < slices);
+    assert(sliceEnd >= 0 && sliceEnd < slices);
+
+    tiffr = TinyTIFFWriter_open(path.c_str(), samples, cols, rows);
+
+    if (!tiffr) {
+        std::cerr << "ERROR writing TIFF: " << path << std::endl;
+        ok = false;
+    } else {
+        for (int slice = sliceBegin; slice <= sliceEnd; slice++) {
+
+            // convert the double image to wanted data type
+            Eigen::MatrixXd tempDouble = (image[slice].array() * 255.0).transpose();
+            Eigen::Matrix<uint8_t, Eigen::Dynamic, Eigen::Dynamic> temp = tempDouble.rowwise().reverse().cast<uint8_t>();
+            uint8_t *data = temp.data();
+            TinyTIFFWriter_writeImage(tiffr, data);
+        }
+    }
+
+    TinyTIFFWriter_close(tiffr);
+    return ok;
+}
 
 } // namespace cellogram

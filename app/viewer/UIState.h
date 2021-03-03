@@ -35,7 +35,7 @@ typedef struct ImageViewer_t {
 	float deformScale;  // mesh deformation percent
 	float darkenScale;
 
-	ImageViewer_t() : imageViewerType(0), sliceToShow(0), visual_z_mult(3.0), deformScale(0.0), darkenScale(0.5) {}
+	ImageViewer_t() : imageViewerType(0), sliceToShow(0), visual_z_mult(5.0), deformScale(0.0), darkenScale(0.5) {}
 } ImageViewer_t;
 
 

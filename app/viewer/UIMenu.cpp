@@ -1051,8 +1051,15 @@ ImGui::PushItemWidth(width);
         state.bsp.Set_solverTol(solverTol);
     }
 
-    if (ImGui::Button("Compute BSpline")) {
+    if (ImGui::Button("Compute bspline")) {
         state.PrepareBsp();
+    }
+    if (ImGui::TreeNode("Advanced BSP")) {
+        
+        if (ImGui::Button("Interp result")) {
+            
+        }
+        ImGui::TreePop();
     }
 
     static float alpha = 0.5;
