@@ -150,6 +150,13 @@ bool WriteTif(const std::string &path, const std::vector<Eigen::MatrixXd> &image
 
             // convert the double image to wanted data type
             Eigen::MatrixXd tempDouble = (image[slice].array() * 255.0).transpose();
+            // if larger than 255
+            tempDouble = tempDouble.unaryExpr([](double x){
+                if (x>255.0)
+                    return 255.0;
+                else
+                    return x;
+            });
             Eigen::Matrix<uint8_t, Eigen::Dynamic, Eigen::Dynamic> temp = tempDouble.rowwise().reverse().cast<uint8_t>();
             uint8_t *data = temp.data();
             TinyTIFFWriter_writeImage(tiffr, data);
