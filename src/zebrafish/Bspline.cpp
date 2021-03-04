@@ -106,8 +106,8 @@ void bspline::CalcControlPts(const image_t &image, const double xratio, const do
 
     // dimension of sample points
     Nz = image.size();
-    Nx = image[0].cols();  // WARNING: Cellogram axis convention (different with Zebrafish)
-    Ny = image[0].rows();  // WARNING: Cellogram axis convention
+    Nx = image[0].rows();
+    Ny = image[0].cols();
     N = Nx*Ny*Nz;
         logger().debug("Sample points:  N= {} Nx= {} Ny= {} Nz= {}", N, Nx, Ny, Nz);
 
@@ -164,8 +164,8 @@ void bspline::CalcControlPts(const image_t &image, const double xratio, const do
     // Calculate & fill the least square matrix A
         logger().info("Calculating & filling least square matrix...");
     CalcLeastSquareMat(A, Atranspose);
-        logger().debug("Least square matrix A size = {} * {}", A.rows(), A.cols());
-        logger().debug("A: # non-zero elements = {}", A.nonZeros());
+        logger().info("Least square matrix A size = {} * {}", A.rows(), A.cols());
+        logger().info("A: # non-zero elements = {}/{}", A.nonZeros(), A.rows()*A.cols());
 
     // Solve the least square problem
     // controlPts = inverse(A'*A) * (A'*inputPts)
@@ -173,8 +173,22 @@ void bspline::CalcControlPts(const image_t &image, const double xratio, const do
 
         /////////////// DEBUG ONLY ///////////
         // std::cout << ">>>>> control points >>>>>" << std::endl;
-        // std::cout << controlPoints << std::endl;
+        // for (int i=0; i<controlPoints.size(); i++)
+        //     printf("%13.10f\n", controlPoints(i));
+        // printf("\n");
+        // // std::cout << controlPoints << std::endl;
         // std::cout << "<<<<< control points <<<<<" << std::endl;
+        // std::cout << ">>>>> input points >>>>>" << std::endl;
+        // std::cout << inputPts << std::endl;
+        // std::cout << "<<<<< input points <<<<<" << std::endl;
+        // std::cout << ">>>>> A >>>>>" << std::endl;
+        // for (int i=0; i<A.rows(); i++) {
+        //     for (int j=0; j<A.cols(); j++) {
+        //         printf("%13.10f  ", A.coeff(i, j));
+        //     }
+        //     printf("\n");
+        // }
+        // std::cout << "<<<<< A <<<<<" << std::endl;
         /////////////// DEBUG ONLY ///////////
 
     if (controlPointsCacheFlag) {
@@ -204,8 +218,8 @@ void bspline::CalcLeastSquareMat(Eigen::SparseMatrix<double, Eigen::RowMajor> &A
                 i = iz * Nx * Ny + iy * Nx + ix;
 
                 // progress bar
-                if (i % int(Nx*Ny*Nz*0.2) == 0)
-                    logger().trace("{} / {}", i, Nx*Ny*Nz);
+                // if (i % int(Nx*Ny*Nz*0.2) == 0)
+                //    logger().trace("{} / {}", i, Nx*Ny*Nz);
 
                 refIdx_x = floor(ix / gapX);
                 refIdx_y = floor(iy / gapY);
@@ -233,7 +247,7 @@ void bspline::CalcLeastSquareMat(Eigen::SparseMatrix<double, Eigen::RowMajor> &A
                         }
                 ///////////// DEBUG ONLY
                 // if (fabs(rowSum-1.0)> 1e-8)  // if (rowSum != 1.0)
-                //    logger().error("RowSum error: ix={}, iy={}, iz={}, rowSum={}", ix, iy, iz, rowSum);
+                //     logger().error("RowSum error: ix={}, iy={}, iz={}, rowSum={}", ix, iy, iz, rowSum);
                 ///////////// DEBUG ONLY
             }
 }
@@ -298,8 +312,8 @@ void bspline::SolveLeastSquare(const Eigen::SparseMatrix<double, Eigen::RowMajor
         initialGuess = (initialGuess - controlPoints).array().abs();
             logger().debug("guess mean_err = {}", initialGuess.mean());
             logger().debug("guess max_err = {}", initialGuess.maxCoeff());
-            logger().debug("LSCG #iteration = {}", lscg.iterations());
-            logger().debug("LSCG error = {}", lscg.error());
+            logger().info("LSCG #iteration = {}", lscg.iterations());
+            logger().info("LSCG error = {}", lscg.error());
         break;
     }
     case 3: {
@@ -399,7 +413,7 @@ void bspline::CalcBasisFunc(Eigen::Matrix< std::function<T (T) >, Eigen::Dynamic
         }
     } else if (degree == 2) {  // quadratic basis
 
-        assert(numT >= 6);
+        assert(numT >= 5);
 
         basisT.resize(3, numT-1-1);
         // first 2 columns
@@ -474,7 +488,7 @@ T bspline::Interp3D(const T &x, const T &y, const T &z) const {
     Eigen::Matrix<T, Eigen::Dynamic, 1> resArr;
     const GetVal<T> getVal;
 
-    InterpDisk(x, y, getVal(z), T(1.0), resArr);
+    InterpDisk(x, y, getVal(z), T(1.0), resArr);  // dummy radius
     return resArr(0);
 }
 // explicit template instantiation

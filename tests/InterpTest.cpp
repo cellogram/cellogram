@@ -39,9 +39,9 @@ double func_quad(double x, double y, double z) {
     // (x^2 + y^2)^(5/2)
     // return pow((x-14.5)*(x-14.5) + (y-14.5)*(y-14.5), 2.5);
 }
-auto func_ideal = [](auto x, auto y, auto z) -> double {
-    if (x>16) return 0.5;
-    if ((x-14.5)*(x-14.5) + (y-14.5)*(y-14.5) <= 4*4) {
+auto func_ideal_interpRes = [](auto x, auto y, auto z) -> double {
+    if (x>7) return 0.5;
+    if ((x-5.5)*(x-5.5) + (y-3.5)*(y-3.5) <= 2.5*2.5) {
         return 0;
     } else {
         return 1;
@@ -215,20 +215,32 @@ TEST_CASE("quadra_interp", "[InterpTest]") {
 
 TEST_CASE("interp_res", "[InterpTest]") {
 
-    image_t image; // 30 * 30 * 30
-    GenImage(image, func_ideal);
+    image_t image; // 10 * 10 * 6
+    int sizeX = 10; // 0, 1, ..., 9
+    int sizeY = 10;
+    int sizeZ = 6;
+    // generate sample grid (3D)
+    double maxPixel = 0;
+    for (int z=0; z<sizeZ; z++) {
+        MatrixXd layer(sizeX, sizeY);
+        for (int x=0; x<sizeX; x++)
+            for (int y=0; y<sizeY; y++) {
+                layer(x, y) = func_ideal_interpRes(x, y, z);
+            }
+        image.push_back(layer);
+    }
 
     // prepare B-spline
     spdlog::set_level(spdlog::level::warn);
     const int bsplineDegree = 2;
     bspline bsplineSolver;
-    bsplineSolver.CalcControlPts(image, 1, 1, 1, bsplineDegree);
+    bsplineSolver.CalcControlPts(image, 0.7, 0.7, 0.7, bsplineDegree);
 
     // new image
     std::vector<Eigen::MatrixXd> img;
-    Eigen::VectorXd xArray = Eigen::VectorXd::LinSpaced(28, 1, 28);
-    Eigen::VectorXd yArray = Eigen::VectorXd::LinSpaced(28, 1, 28);
-    Eigen::VectorXd zArray = Eigen::VectorXd::LinSpaced(10, 10, 19);
+    Eigen::VectorXd xArray = Eigen::VectorXd::LinSpaced(8, 1, 8);
+    Eigen::VectorXd yArray = Eigen::VectorXd::LinSpaced(8, 1, 8);
+    Eigen::VectorXd zArray = Eigen::VectorXd::LinSpaced(2, 2, 3);
 
     const auto InterpImage = [&xArray, &yArray, &zArray, &bsplineSolver, &img]() {
         img.clear();
@@ -243,5 +255,7 @@ TEST_CASE("interp_res", "[InterpTest]") {
     };
 
     InterpImage();
+    cout << "interp res" << endl << img[0] << endl;
     // cellogram::WriteTif("/Users/ziyizhang/Projects/tmp/interp.tif", img, 0, img.size()-1);
+    // std::cerr << "Interp image saved to  interp.tif" << endl;
 }
