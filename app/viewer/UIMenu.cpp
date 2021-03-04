@@ -1056,7 +1056,7 @@ ImGui::PushItemWidth(width);
         state.PrepareBsp();
     }
     if (ImGui::TreeNode("Advanced BSP")) {
-        
+
         if (ImGui::Button("Interp result")) {
             // new image
             std::vector<Eigen::MatrixXd> img;
