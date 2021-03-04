@@ -1057,15 +1057,33 @@ ImGui::PushItemWidth(width);
     }
     if (ImGui::TreeNode("Advanced BSP")) {
 
-        if (ImGui::Button("Interp result")) {
+        const int zN = state.img3D.size();
+        const int xN = state.img3D[0].rows();
+        const int yN = state.img3D[0].cols();
+        static int xMin = 2;
+        static int xMax = xN-3;
+        static int xNum = xN-4;
+        static int yMin = 2;
+        static int yMax = yN-3;
+        static int yNum = yN-4;
+        static int zMin = 2;
+        static int zMax = zN-3;
+        static int zNum = zN-4;
+        ImGui::SliderInt("xMin", &xMin, 2, xMax);
+        ImGui::SliderInt("xMax", &xMax, xMin, xN-3);
+        ImGui::InputInt("xNum", &xNum);
+        ImGui::SliderInt("yMin", &yMin, 2, yMax);
+        ImGui::SliderInt("yMax", &yMax, yMin, yN-3);
+        ImGui::InputInt("yNum", &yNum);
+        ImGui::SliderInt("zMin", &zMin, 2, zMax);
+        ImGui::SliderInt("zMax", &zMax, zMin, zN-3);
+        ImGui::InputInt("zNum", &zNum);
+        if (ImGui::Button("Export interp result")) {  // DEBUG PURPOSE
             // new image
             std::vector<Eigen::MatrixXd> img;
-            const int zNum = state.img3D.size();
-            const int xNum = state.img3D[0].rows();
-            const int yNum = state.img3D[0].cols();
-            Eigen::VectorXd xArray = Eigen::VectorXd::LinSpaced(yNum-4, 2, yNum-3);
-            Eigen::VectorXd yArray = Eigen::VectorXd::LinSpaced(xNum-4, 2, xNum-3);
-            Eigen::VectorXd zArray = Eigen::VectorXd::LinSpaced(zNum-4, 2, zNum-3);
+            Eigen::VectorXd xArray = Eigen::VectorXd::LinSpaced(xNum, xMin, xMax);
+            Eigen::VectorXd yArray = Eigen::VectorXd::LinSpaced(yNum, yMin, yMax);
+            Eigen::VectorXd zArray = Eigen::VectorXd::LinSpaced(zNum, zMin, zMax);
 
             const auto InterpImage = [this, &xArray, &yArray, &zArray, &img]() {
                 img.clear();
@@ -1079,7 +1097,8 @@ ImGui::PushItemWidth(width);
                 }
             };
             InterpImage();
-            cellogram::WriteTif("/Users/ziyizhang/Projects/tmp/interp_cello.tif", img, 0, img.size()-1);
+            bool succ = cellogram::WriteTif("/Users/ziyizhang/Projects/tmp/interp_cello.tif", img, 0, img.size()-1);
+            logger().info("Saving result to interp_cello.tif. Status = {}", succ);
         }
         ImGui::TreePop();
     }
