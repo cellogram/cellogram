@@ -21,16 +21,16 @@ namespace {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // class optimization
 
-void optim::Optim_FixDepth(const OptimPara_t &optimPara, const bspline &bsp, const Eigen::MatrixXd &CI, Eigen::MatrixXd &CO, const bool invertColor/*=false*/) {
+void optim::Optim_FixDepth(const OptimPara_t &optimPara, const bspline &bsp, const Eigen::MatrixXd &CI, Eigen::MatrixXd &CO, const bool invertColor/*=false*/, const bool gl2rc/*=false*/) {
 
     Eigen::VectorXd EO;
     Eigen::VectorXi IterO;
 
-    optim::Optim_FixDepth(optimPara, bsp, CI, CO, EO, IterO, invertColor);
+    optim::Optim_FixDepth(optimPara, bsp, CI, CO, EO, IterO, invertColor, gl2rc);
 }
 
 
-bool optim::Optim_FixDepth(const OptimPara_t &optimPara, const bspline &bsp, const Eigen::VectorXd &CI, Eigen::VectorXd &CO, double &EO, int &IterO, const bool invertColor/*=false*/) {
+bool optim::Optim_FixDepth(const OptimPara_t &optimPara, const bspline &bsp, const Eigen::VectorXd &CI, Eigen::VectorXd &CO, double &EO, int &IterO, const bool invertColor/*=false*/, const bool gl2rc/*=false*/) {
 
     Eigen::MatrixXd CI_mat(1, 4);
     Eigen::MatrixXd CO_mat;
@@ -38,7 +38,7 @@ bool optim::Optim_FixDepth(const OptimPara_t &optimPara, const bspline &bsp, con
     Eigen::VectorXi IterO_vec;
 
     CI_mat.row(0) = CI;
-    optim::Optim_FixDepth(optimPara, bsp, CI_mat, CO_mat, EO_vec, IterO_vec, invertColor);
+    optim::Optim_FixDepth(optimPara, bsp, CI_mat, CO_mat, EO_vec, IterO_vec, invertColor, gl2rc);
     CO = CO_mat.row(0);
     EO = EO_vec(0);
     IterO = IterO_vec(0);
@@ -54,7 +54,8 @@ void optim::Optim_FixDepth(
           Eigen::MatrixXd &CO, 
           Eigen::VectorXd &EO, 
           Eigen::VectorXi &IterO, 
-    const bool invertColor/*=false*/) {
+    const bool invertColor/*=false*/, 
+    const bool gl2rc/*=false*/) {
 
     // prepare LBFGS
     LBFGSpp::LBFGSParam<double> param;
@@ -72,7 +73,7 @@ void optim::Optim_FixDepth(
         //////////////////////////////////////
         // lambda function for parallel_for //
         //////////////////////////////////////
-        [&bsp, &CI, &CO, &EO, &IterO, &param, invertColor]
+        [&bsp, &CI, &CO, &EO, &IterO, &param, invertColor, gl2rc]
         (const tbb::blocked_range<int> &r) {
 
         // NOTE: LBFGSSolver is NOT thread safe. This must be instantiated for every thread
@@ -85,8 +86,13 @@ void optim::Optim_FixDepth(
         for (int ii = r.begin(); ii != r.end(); ++ii) {    
 
                 Eigen::VectorXd vec(3, 1);
-                vec(0) = CI(ii, 0);  // x
-                vec(1) = CI(ii, 1);  // y
+                if (!gl2rc) {
+                    vec(0) = CI(ii, 0);  // x
+                    vec(1) = CI(ii, 1);  // y
+                } else {
+                    vec(0) = (bsp.Get_Nx()-0.5) - CI(ii, 1);  // x
+                    vec(1) = CI(ii, 0) - 0.5;  // y
+                }
                 vec(2) = CI(ii, 3);  // r
                 double res;
 
@@ -111,8 +117,13 @@ void optim::Optim_FixDepth(
                 int it = solver.minimize(func, vec, res);
                 ///////////////////////////////////
 
-                CO(ii, 0) = vec(0);     // x
-                CO(ii, 1) = vec(1);     // y
+                if (!gl2rc) {
+                    CO(ii, 0) = vec(0);     // x
+                    CO(ii, 1) = vec(1);     // y
+                } else {
+                    CO(ii, 0) = vec(1) + 0.5;  // x
+                    CO(ii, 1) = (bsp.Get_Nx()-0.5) - vec(0);  // y
+                }
                 CO(ii, 2) = CI(ii, 2);  // z
                 CO(ii, 3) = vec(2);     // r
                 EO(ii) = res;        // energy
@@ -130,12 +141,13 @@ void optim::Optim_WithDepth(
     const double zGap, 
     const Eigen::VectorXd &CI, 
           OptimDepthInfo_t &C_depth_info,
-    const bool invertColor/*=false*/) {
+    const bool invertColor/*=false*/, 
+    const bool gl2rc/*=false*/) {
 
     Eigen::MatrixXd CI_mat(1, 4);
     CI_mat.row(0) = CI;
     std::vector<OptimDepthInfo_t> C_depth_info_vec;
-    optim::Optim_WithDepth(optimPara, bsp, zNum, zGap, CI_mat, C_depth_info_vec, invertColor);
+    optim::Optim_WithDepth(optimPara, bsp, zNum, zGap, CI_mat, C_depth_info_vec, invertColor, gl2rc);
     C_depth_info = C_depth_info_vec.at(0);
 }
 
@@ -147,7 +159,8 @@ void optim::Optim_WithDepth(
     const double zGap, 
     const Eigen::MatrixXd &CI, 
           std::vector<OptimDepthInfo_t> &C_depth_info,
-    const bool invertColor/*=false*/) {
+    const bool invertColor/*=false*/, 
+    const bool gl2rc/*=false*/) {
 
     const int N = CI.rows();
     const int M = zNum * 2 + 1;
@@ -166,7 +179,7 @@ void optim::Optim_WithDepth(
     Eigen::VectorXi IterO;
 
     // optimization
-    optim::Optim_FixDepth(optimPara, bsp, CI_withZ, CO_withZ, EO, IterO, invertColor);
+    optim::Optim_FixDepth(optimPara, bsp, CI_withZ, CO_withZ, EO, IterO, invertColor, gl2rc);
 
     // output
     for (int i=0; i<N; i++) {

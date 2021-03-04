@@ -51,9 +51,9 @@ private:
 
 
 public:
-    static void Optim_FixDepth(const OptimPara_t &optimPara, const bspline &bsp, const Eigen::MatrixXd &CI, Eigen::MatrixXd &CO, const bool invertColor=false);
-    static bool Optim_FixDepth(const OptimPara_t &optimPara, const bspline &bsp, const Eigen::VectorXd &CI, Eigen::VectorXd &CO, double &EO, int &IterO, const bool invertColor=false);
-    static void Optim_FixDepth(const OptimPara_t &optimPara, const bspline &bsp, const Eigen::MatrixXd &CI, Eigen::MatrixXd &CO, Eigen::VectorXd &EO, Eigen::VectorXi &IterO, const bool invertColor=false);
+    static void Optim_FixDepth(const OptimPara_t &optimPara, const bspline &bsp, const Eigen::MatrixXd &CI, Eigen::MatrixXd &CO, const bool invertColor=false, const bool gl2rc=false);
+    static bool Optim_FixDepth(const OptimPara_t &optimPara, const bspline &bsp, const Eigen::VectorXd &CI, Eigen::VectorXd &CO, double &EO, int &IterO, const bool invertColor=false, const bool gl2rc=false);
+    static void Optim_FixDepth(const OptimPara_t &optimPara, const bspline &bsp, const Eigen::MatrixXd &CI, Eigen::MatrixXd &CO, Eigen::VectorXd &EO, Eigen::VectorXi &IterO, const bool invertColor=false, const bool gl2rc=false);
     /// Optimize cylinder(s) "CI" using 3D image "bsp"
     /// The depth (z) coordinate is fixed
     /// [NOTE] Image needs to be normalized to [0, 1]
@@ -66,8 +66,8 @@ public:
     /// @param[in]   invertColor { [#cylinder] vector of boolean indicating whether treating the color as inverted }
     ///
 
-    static void Optim_WithDepth(const OptimPara_t &optimPara, const bspline &bsp, const int zNum, const double zGap, const Eigen::VectorXd &CI, OptimDepthInfo_t &C_depth_info, const bool invertColor=false);
-    static void Optim_WithDepth(const OptimPara_t &optimPara, const bspline &bsp, const int zNum, const double zGap, const Eigen::MatrixXd &CI, std::vector<OptimDepthInfo_t> &C_depth_info, const bool invertColor=false);
+    static void Optim_WithDepth(const OptimPara_t &optimPara, const bspline &bsp, const int zNum, const double zGap, const Eigen::VectorXd &CI, OptimDepthInfo_t &C_depth_info, const bool invertColor=false, const bool gl2rc=false);
+    static void Optim_WithDepth(const OptimPara_t &optimPara, const bspline &bsp, const int zNum, const double zGap, const Eigen::MatrixXd &CI, std::vector<OptimDepthInfo_t> &C_depth_info, const bool invertColor=false, const bool gl2rc=false);
     /// Optimize cylinder(s) "CI" using 3D image "bsp"
     /// Also find the optimal depth. The search range is [z - zNum*zGap, z + zNum*zGap]
     ///

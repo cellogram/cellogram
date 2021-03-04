@@ -93,6 +93,8 @@ State &State::state() {
 
 void State::PrepareBsp() {
     const int bsplineDegree = 2;
+    // confirm that the z-slice matrix just "look like" the tiff image (when opened by ImageJ)
+    // std::cerr << img3D[0] << std::endl;
     bsp.CalcControlPts(img3D, 0.7, 0.7, 0.7, bsplineDegree);
 }
 
@@ -115,18 +117,19 @@ void State::DepthSearch(int DSnum, double DSgap, double DSeps) {
     marker_withR.col(3).setConstant(mesh.optimPara.defaultRadius);  // initial radius guess
 
     optim::Optim_WithDepth(optimPara_lowPrec, bsp, DSnum, DSgap, marker_withR,
-                           mesh.C_depth_info_vec, mesh.optimPara.invertColor);
+                           mesh.C_depth_info_vec, mesh.optimPara.invertColor, true);
     marker_withR_tmp = marker_withR;
     optim::DepthSelection(optimPara_lowPrec, marker_withR, mesh.C_depth_info_vec, marker_withR_tmp, flags);
 
     mesh.marker_4D = marker_withR_tmp;  // Nx4
     mesh.dsFlag = flags;
 
-    for (int i = 0; i < N; i++) {
-        std::cout << "marker #" << i << std::endl;
-        std::cout << mesh.C_depth_info_vec[i].ToMat() << std::endl
-                  << std::endl;
-    }
+    // DEBUG ONLY
+    // for (int i = 0; i < N; i++) {
+    //     std::cout << "marker #" << i << std::endl;
+    //     std::cout << mesh.C_depth_info_vec[i].ToMat() << std::endl
+    //               << std::endl;
+    // }
 }
 
 ////////////////////////////////////////////////////////////////////////////

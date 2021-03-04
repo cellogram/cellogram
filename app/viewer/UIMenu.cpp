@@ -1079,7 +1079,7 @@ ImGui::PushItemWidth(width);
                 }
             };
             InterpImage();
-            cellogram::WriteTif("/Users/ziyizhang/Projects/tmp/img_interp.tif", img, 0, img.size()-1);
+            cellogram::WriteTif("/Users/ziyizhang/Projects/tmp/interp_cello.tif", img, 0, img.size()-1);
         }
         ImGui::TreePop();
     }
