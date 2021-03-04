@@ -215,6 +215,8 @@ TEST_CASE("quadra_interp", "[InterpTest]") {
 
 TEST_CASE("interp_res", "[InterpTest]") {
 
+    // To visualize interpolation result
+
     image_t image; // 10 * 10 * 6
     int sizeX = 10; // 0, 1, ..., 9
     int sizeY = 10;
@@ -238,8 +240,8 @@ TEST_CASE("interp_res", "[InterpTest]") {
 
     // new image
     std::vector<Eigen::MatrixXd> img;
-    Eigen::VectorXd xArray = Eigen::VectorXd::LinSpaced(8, 1, 8);
-    Eigen::VectorXd yArray = Eigen::VectorXd::LinSpaced(8, 1, 8);
+    Eigen::VectorXd xArray = Eigen::VectorXd::LinSpaced(16, 1, 8);
+    Eigen::VectorXd yArray = Eigen::VectorXd::LinSpaced(16, 1, 8);
     Eigen::VectorXd zArray = Eigen::VectorXd::LinSpaced(2, 2, 3);
 
     const auto InterpImage = [&xArray, &yArray, &zArray, &bsplineSolver, &img]() {
@@ -255,7 +257,13 @@ TEST_CASE("interp_res", "[InterpTest]") {
     };
 
     InterpImage();
-    cout << "interp res" << endl << img[0] << endl;
+    double mean1 = img[0].block(0, 0, 4, 15).mean();
+    double mean2 = img[0].block(9, 4, 4, 4).mean();
+    double mean3 = img[0].row(img[0].rows()-1).mean();
+    REQUIRE(mean1 == Approx(1.01488).margin(0.001));
+    REQUIRE(mean2 == Approx(-0.214815).margin(0.001));
+    REQUIRE(mean3 == Approx(0.479851).margin(0.001));
+    // cout << "interp res" << endl << img[0] << endl;
     // cellogram::WriteTif("/Users/ziyizhang/Projects/tmp/interp.tif", img, 0, img.size()-1);
     // std::cerr << "Interp image saved to  interp.tif" << endl;
 }
