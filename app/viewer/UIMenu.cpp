@@ -1052,9 +1052,12 @@ ImGui::PushItemWidth(width);
         state.bsp.Set_solverTol(solverTol);
     }
 
-    if (ImGui::Button("Compute bspline")) {
+    wait_window("wait_bspline", "Preparing B-spline...", ICON_FA_INFINITY,
+        [&]() {return ImGui::Button("Compute Bspline", ImVec2(-1.0, 0));},
+        [&]() {
         state.PrepareBsp();
-    }
+    });
+
     if (ImGui::TreeNode("Advanced BSP")) {
 
         const int zN = state.img3D.size();
@@ -1104,49 +1107,59 @@ ImGui::PushItemWidth(width);
         ImGui::TreePop();
     }
 
-    static float alpha = 0.5;
-    if (ImGui::SliderFloat("Alpha", &alpha, 0.0, 1.0, "%.3f")) {
-        zebrafish::cylinder::H = alpha;
-    }
-    static float defaultRadius = 4.0;
-    if (ImGui::SliderFloat("Initial R", &defaultRadius, 2.0, 6.0)) {
-        state.mesh.optimPara.defaultRadius = defaultRadius;
-    }
-    ImGui::Checkbox("Invert Color", &state.mesh.optimPara.invertColor);
+    if (state.bsp.Get_Nz() >= 5) {  // make sure bspline has been computed
+        
+        static float alpha = 0.5;
+        static float defaultRadius = 4.0;
+        static int DSnum_round1 = state.img3D.size();
+        static double DSgap_round1 = 0.5;
+        static double DSeps_round1 = 0.1;
+        static int DSnum_round2 = 10;
+        static double DSgap_round2 = 0.1;
+        static double DSeps_round2 = 1e-4;
+        static bool updateInfo = false;
 
-    static int DSnum_round1 = state.img3D.size();
-    ImGui::InputInt("DSnum round1", &DSnum_round1);
-    static double DSgap_round1 = 0.5;
-    ImGui::InputDouble("DSgap round1", &DSgap_round1);
-    static double DSeps_round1 = 0.1;
-    ImGui::InputDouble("DSeps round1", &DSeps_round1, 0.0, 0.0, "%.2e");
-    static int DSnum_round2 = 10;
-    ImGui::InputInt("DSnum round2", &DSnum_round2);
-    static double DSgap_round2 = 0.1;
-    ImGui::InputDouble("DSgap round2", &DSgap_round2);
-    static double DSeps_round2 = 1e-4;
-    ImGui::InputDouble("DSeps round2", &DSeps_round2, 0.0, 0.0, "%.2e");
-    static bool updateInfo = false;
-    ImGui::Checkbox("round 2 update info", &updateInfo);
+        if (ImGui::TreeNode("Advanced depth")) {
+            if (ImGui::SliderFloat("Alpha", &alpha, 0.0, 1.0, "%.3f")) {
+                zebrafish::cylinder::H = alpha;
+            }
+            if (ImGui::SliderFloat("Initial R", &defaultRadius, 2.0, 6.0)) {
+                state.mesh.optimPara.defaultRadius = defaultRadius;
+            }
+            ImGui::Checkbox("Invert Color", &state.mesh.optimPara.invertColor);
+
+            ImGui::InputInt("DSnum round1", &DSnum_round1);
+            ImGui::InputDouble("DSgap round1", &DSgap_round1);
+            ImGui::InputDouble("DSeps round1", &DSeps_round1, 0.0, 0.0, "%.2e");
+            ImGui::InputInt("DSnum round2", &DSnum_round2);
+            ImGui::InputDouble("DSgap round2", &DSgap_round2);
+            ImGui::InputDouble("DSeps round2", &DSeps_round2, 0.0, 0.0, "%.2e");
+            ImGui::Checkbox("round 2 update info", &updateInfo);
+
+            if (ImGui::Button("Depth Search Refine")) {
+                state.DepthSearch_Refine(DSnum_round2, DSgap_round2, DSeps_round2, updateInfo);
+            }
+            ImGui::TreePop();
+        }
+
+        wait_window("wait_DC", "Depth Searching...", ICON_FA_MOON,
+            [&]() {return ImGui::Button("Depth Search", ImVec2(-1.0, 0));},
+            [&]() {
+            state.DepthSearch_FirstCall(DSnum_round1, DSgap_round1, DSeps_round1);
+            state.DepthSearch_Refine(DSnum_round2, DSgap_round2, DSeps_round2, updateInfo);
+        });
+    }
 
 ImGui::PopItemWidth();
 
-    wait_window("wait_DC", "Depth Searching...", ICON_FA_UMBRELLA_BEACH,
-        [&]() {return ImGui::Button("Depth Search", ImVec2(-1.0, 0));},
-        [&]() {
-        state.DepthSearch_FirstCall(DSnum_round1, DSgap_round1, DSeps_round1);
-        state.DepthSearch_Refine(DSnum_round2, DSgap_round2, DSeps_round2, updateInfo);
-    });
-
-    if (ImGui::TreeNode("Advanced DC")) {
-        if (ImGui::Button("Depth Search Refine")) {
-            state.DepthSearch_Refine(DSnum_round2, DSgap_round2, DSeps_round2, updateInfo);
-        }
-        ImGui::TreePop();
+    if (state.mesh.dsFlag.size() < 3) {
+        push_disabled();
     }
-
-	if (ImGui::Button("To Next Stage"))
-		phase_4();
+    if (button_right(icon_font))
+        phase_4();
+    if (state.mesh.dsFlag.size() < 3) {
+        pop_disabled();
+    }
 }
 
 // -----------------------------------------------------------------------------
