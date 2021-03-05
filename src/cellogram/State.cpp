@@ -1077,27 +1077,27 @@ void State::propagate_sizing_field(const Eigen::MatrixXd &V,
 }
 
 void State::mesh_2d_adaptive() {
-    // Create background mesh with a scalar field = norm of the displacements of
-    // the dots
+    // Create background mesh with a scalar field = norm of the displacements of the dots
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     Eigen::VectorXd D, S;
     mesh.get_background_mesh(scaling, V, F, D, padding_size);
+    igl::write_triangle_mesh("/Users/ziyizhang/Projects/tmp/debug_2d_mesh_beforeremesh.obj", V, F);
+    std::cerr << "/Users/ziyizhang/Projects/tmp/debug_2d_mesh_beforeremesh.obj" << std::endl;
     propagate_sizing_field(V, F, D, S);
 
-    // FIXME: sizing field
-    // mmg_options.hmin = S.minCoeff();
-    // mmg_options.hmax = S.maxCoeff();
-    // remesh_adaptive_2d(V, F, S, V, F, mmg_options);
+    mmg_options.hmin = S.minCoeff();
+    mmg_options.hmax = S.maxCoeff();
+    remesh_adaptive_2d(V, F, S, V, F, mmg_options);
 
     // Set volume mesh based on the current surface
-    // mesh3d.V.resize(V.rows(), 3);
-    mesh3d.V = V; // we want 3d now
-    // mesh3d.V.leftCols<2>() = V.leftCols<2>();
-    // mesh3d.V.col(2).setZero();
+    mesh3d.V.resize(V.rows(), 3);
+    mesh3d.V.leftCols<2>() = V.leftCols<2>();
+    mesh3d.V.col(2).setZero();
 
     mesh3d.F = F;
     mesh3d.T = Eigen::MatrixXi(0, 4);
+    // Zebrafish: everything is still in 2d here
 }
 
 #if 0
@@ -1137,8 +1137,9 @@ mesh3d.T = Eigen::MatrixXi(0, 4);
 void State::extrude_2d_mesh() {
     if (mesh3d.V.size() == 0) {
         mesh_2d_adaptive();
-        igl::write_triangle_mesh("/Users/ziyizhang/Projects/tmp/debug.obj",
+        igl::write_triangle_mesh("/Users/ziyizhang/Projects/tmp/debug_2d_mesh.obj",
                                  mesh3d.V, mesh3d.F);
+        std::cerr << "/Users/ziyizhang/Projects/tmp/debug_2d_mesh.obj" << std::endl;
     }
 
     double zmin = mesh3d.V.col(2).minCoeff();
@@ -1183,7 +1184,7 @@ void State::mesh_3d_volume() {
     logger().info("Meshing 3d took {}s", delta_t.count());
 }
 
-void State::remesh_3d_adaptive() { // after clicking "Build volumetric mesh"
+void State::remesh_3d_adaptive() {
 
     auto t1 = std::chrono::system_clock::now();
 
@@ -1193,9 +1194,9 @@ void State::remesh_3d_adaptive() { // after clicking "Build volumetric mesh"
     }
     double zmin = mesh3d.V.col(2).minCoeff();
     double zmax = mesh3d.V.col(2).maxCoeff();
-    if (std::abs(zmin - zmax) > 1e-6) {
-        mesh_3d_volume();
-    }
+    // if (std::abs(zmin - zmax) > 1e-6) {
+    //     mesh_3d_volume();
+    // }
 
     // Scalar field to interpolate
     Eigen::MatrixXd V;
@@ -1206,6 +1207,7 @@ void State::remesh_3d_adaptive() { // after clicking "Build volumetric mesh"
     double smin = S.minCoeff();
     double smax = S.maxCoeff();
 
+    // Zebrafish FIXME: use the sizing field with depth info
     // Interpolate in 2d, and grade size along Z
     Eigen::MatrixXd VP = mesh3d.V.leftCols<2>();
     S = interpolate_2d(V, F, S, VP);
@@ -1214,12 +1216,8 @@ void State::remesh_3d_adaptive() { // after clicking "Build volumetric mesh"
     for (int v = 0; v < mesh3d.V.rows(); ++v) {
         double t =
             (mesh3d.V(v, 2) - zmin) / (zmax - zmin); // 0 on zmin, 1 on zmax
-        // std::cout << "z: " << t << " " << S(v) << " " << t*S(v) +
-        // (1.0-t)*smax << std::endl;
         S(v) = t * S(v) + (1.0 - t) * smax;
     }
-
-    // std::cout << S << std::endl;
 
     // Remesh volume mesh
     mmg_options.hmin = S.minCoeff();
@@ -1229,7 +1227,7 @@ void State::remesh_3d_adaptive() { // after clicking "Build volumetric mesh"
 
     auto t2 = std::chrono::system_clock::now();
     std::chrono::duration<double> delta_t = t2 - t1;
-    logger().info("Remeshing adaptively took {}s", delta_t.count());
+    logger().info("remesh_3d_adaptive() took {}s", delta_t.count());
 }
 
 void State::analyze_3d_mesh() {

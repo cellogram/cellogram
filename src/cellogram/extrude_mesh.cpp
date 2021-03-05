@@ -18,6 +18,7 @@ using zebrafish::logger;
 // -----------------------------------------------------------------------------
 
 void extrude_mesh(const Eigen::MatrixXd &V1, const Eigen::MatrixXi &F1, double thickness, Eigen::MatrixXd &VT, Eigen::MatrixXi &FT, Eigen::MatrixXi &TT) {
+
 	// 1. Create box vertices
 	const int n = V1.rows();
 	double z0 = (V1.cols() < 3 ? 0 : V1.col(2).mean());
@@ -25,7 +26,7 @@ void extrude_mesh(const Eigen::MatrixXd &V1, const Eigen::MatrixXi &F1, double t
 	Eigen::RowVector2d maxV = V1.colwise().maxCoeff().head<2>();
 	Eigen::MatrixXd V2(V1.rows() + 4, 3);
 	V2.topLeftCorner(V1.rows(), V1.cols()) = V1;
-	// V2.col(2).setConstant(z0);  // need 3D now
+    V2.col(2).setConstant(z0);
 	V2.bottomRows(4) <<
 		minV(0), minV(1), z0 + thickness,
 		maxV(0), minV(1), z0 + thickness,
@@ -89,7 +90,8 @@ void extrude_mesh(const Eigen::MatrixXd &V1, const Eigen::MatrixXi &F1, double t
 	// 5. Orient facets and tetrahedralize
 	Eigen::VectorXi C;
 	igl::bfs_orient(F2, F2, C);
-	igl::write_triangle_mesh("/Users/ziyizhang/Projects/tmp/debug2.obj", V2, F2);
+	igl::write_triangle_mesh("/Users/ziyizhang/Projects/tmp/debug_before_tetgen.obj", V2, F2);
+    std::cerr << "/Users/ziyizhang/Projects/tmp/debug_before_tetgen.obj" << std::endl;
 	igl::copyleft::tetgen::tetrahedralize(V2, F2, "Qq1.414", VT, TT, FT);
 	polyfem::orient_closed_surface(VT, FT);
 

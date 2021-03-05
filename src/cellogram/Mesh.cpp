@@ -451,13 +451,13 @@ namespace cellogram {
 	void Mesh::get_background_mesh(double scaling, Eigen::MatrixXd &V, Eigen::MatrixXi &F, Eigen::VectorXd &S, double padding) const {
 		Eigen::MatrixXd BV;
 		Eigen::MatrixXi BF;
-		// V = points.leftCols<2>();
-		V = points;
+		V = points.leftCols<2>();
 		igl::bounding_box(V, padding / scaling, BV, BF);
-		assert(BV.rows() == 8);  // now in 3D
+		assert(BV.rows() == 4);  // still in 2d here
 
-		V.resize(points.rows() + BV.rows(), 3);
-		V << points, BV;
+		V.resize(points.rows() + BV.rows(), 2);
+		V.topRows(points.rows()) = points.leftCols<2>();
+		V.bottomRows(BV.rows()) = BV;
 
 		delaunay_triangulation(V, F);
 		V *= scaling;

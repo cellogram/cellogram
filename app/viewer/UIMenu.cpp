@@ -1306,10 +1306,8 @@ void UIState::draw_analysis_menu() {
 			//				- get_background_mesh():     use "points" in Mesh to retrieve {mesh3d.V, mesh3d.F} and sizing scalar
 			//				- remesh_adaptive_2d():		 use sizing scalar to re-mesh {mesh3d.V, mesh3d.F}
 			//		- extrude_mesh():			 		 update the {mesh3d.V, mesh3d.F} from 3d surface to 3d tetrahedral mesh (inplace)
-			// remesh_3d_adaptive():
-			
+			// remesh_3d_adaptive():                     re-mesh {mesh3D.V, mesh3D.T} with sizing field
 
-			//state.mesh_2d_adaptive();
 			state.mesh_3d_volume();
 			state.remesh_3d_adaptive();
 
@@ -1322,9 +1320,6 @@ void UIState::draw_analysis_menu() {
 
 			viewer_control();
 		});
-		//if (mesh_2d_empty) {
-		//	pop_disabled();
-		//}
 
 		// Arrow buttons
 		ImGui::Spacing();
