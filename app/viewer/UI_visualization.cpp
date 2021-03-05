@@ -82,6 +82,15 @@ void UIState::DrawAxisDots() {
         visual_data().add_label(label_loc_c.row(i), ToStringWithPrecision(loc_c(i, 0)));
     for (int i=0; i<nz; i++)
         visual_data().add_label(label_loc_z.row(i), ToStringWithPrecision(loc_z(i, 2) / imgViewer.visual_z_mult));
+
+    // DEBUG PURPOSE: reference dots
+    // static Eigen::Matrix3d loc = (Eigen::Matrix3d() << 0, 0, 1, imgCols, imgRows, layerPerImg, imgCols-1, imgRows-1, layerPerImg-1).finished();
+    // static Eigen::MatrixXd referencePointColor = [] {
+    //     Eigen::MatrixXd tmp(1, 3);
+    //     tmp << 0.33, 0.83, 0.33;
+    //     return tmp;
+    // } ();
+    // visual_data().add_points(loc, referencePointColor);
 }
 
 

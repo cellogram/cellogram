@@ -90,8 +90,8 @@ void optim::Optim_FixDepth(
                     vec(0) = CI(ii, 0);  // x
                     vec(1) = CI(ii, 1);  // y
                 } else {
-                    vec(0) = (bsp.Get_Nx()-0.5) - CI(ii, 1);  // x
-                    vec(1) = CI(ii, 0) - 0.5;  // y
+                    vec(0) = bsp.Get_Nx() - CI(ii, 1);  // x
+                    vec(1) = CI(ii, 0) - 1;  // y
                 }
                 vec(2) = CI(ii, 3);  // r
                 double res;
@@ -121,8 +121,8 @@ void optim::Optim_FixDepth(
                     CO(ii, 0) = vec(0);     // x
                     CO(ii, 1) = vec(1);     // y
                 } else {
-                    CO(ii, 0) = vec(1) + 0.5;  // x
-                    CO(ii, 1) = (bsp.Get_Nx()-0.5) - vec(0);  // y
+                    CO(ii, 0) = vec(1) + 1;  // x
+                    CO(ii, 1) = bsp.Get_Nx() - vec(0);  // y
                 }
                 CO(ii, 2) = CI(ii, 2);  // z
                 CO(ii, 3) = vec(2);     // r
