@@ -1100,6 +1100,7 @@ ImGui::PushItemWidth(width);
             bool succ = cellogram::WriteTif("/Users/ziyizhang/Projects/tmp/interp_cello.tif", img, 0, img.size()-1);
             logger().info("Saving result to interp_cello.tif. Status = {}", succ);
         }
+        ShowTooltip("DEBUG PURPOSE. Will destroy underlying quadrature method.");
         ImGui::TreePop();
     }
 
@@ -1113,7 +1114,7 @@ ImGui::PushItemWidth(width);
     }
     ImGui::Checkbox("Invert Color", &state.mesh.optimPara.invertColor);
 
-    static int DSnum_round1 = state.img3D.size() / 4;
+    static int DSnum_round1 = state.img3D.size();
     ImGui::InputInt("DSnum round1", &DSnum_round1);
     static double DSgap_round1 = 0.5;
     ImGui::InputDouble("DSgap round1", &DSgap_round1);
@@ -1130,10 +1131,13 @@ ImGui::PushItemWidth(width);
 
 ImGui::PopItemWidth();
 
-    if (ImGui::Button("Depth Search")) {
+    wait_window("wait_DC", "Depth Searching...", ICON_FA_UMBRELLA_BEACH,
+        [&]() {return ImGui::Button("Depth Search", ImVec2(-1.0, 0));},
+        [&]() {
         state.DepthSearch_FirstCall(DSnum_round1, DSgap_round1, DSeps_round1);
         state.DepthSearch_Refine(DSnum_round2, DSgap_round2, DSeps_round2, updateInfo);
-    }
+    });
+
     if (ImGui::TreeNode("Advanced DC")) {
         if (ImGui::Button("Depth Search Refine")) {
             state.DepthSearch_Refine(DSnum_round2, DSgap_round2, DSeps_round2, updateInfo);
@@ -1141,7 +1145,7 @@ ImGui::PopItemWidth();
         ImGui::TreePop();
     }
 
-	if (ImGui::Button("To Next"))
+	if (ImGui::Button("To Next Stage"))
 		phase_4();
 }
 

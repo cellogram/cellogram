@@ -95,12 +95,18 @@ void State::PrepareBsp() {
     const int bsplineDegree = 2;
     // confirm that the z-slice matrix just "look like" the tiff image (when opened by ImageJ)
     // std::cerr << img3D[0] << std::endl;
-    bsp.CalcControlPts(img3D, 0.7, 0.7, 0.7, bsplineDegree);
+
+    if (img3D.size() < 5) {
+        logger().error("Z-stack too thin. Cannot compute control points.");
+    } else {
+        bsp.CalcControlPts(img3D, 0.7, 0.7, 0.7, bsplineDegree);
+        logger().info("   <button> Compute B-spline");
+    }
 }
 
 void State::DepthSearch_FirstCall(int DSnum, double DSgap, double DSeps) {
     using namespace zebrafish;
-    Eigen::MatrixXd markers = mesh.moved;  // input mesh is "moved"
+    Eigen::MatrixXd markers = mesh.detected;  // input mesh is "detected"
     const int N = markers.rows();
     const int z = img3D.size();
     // prepare z
@@ -132,6 +138,8 @@ void State::DepthSearch_FirstCall(int DSnum, double DSgap, double DSeps) {
     //     std::cout << mesh.C_depth_info_vec[i].ToMat() << std::endl
     //               << std::endl;
     // }
+
+    logger().info("Depth search (mesh) done.");
 }
 
 void State::DepthSearch_Refine(int DSnum, double DSgap, double DSeps, bool updateInfo) {
@@ -153,6 +161,8 @@ void State::DepthSearch_Refine(int DSnum, double DSgap, double DSeps, bool updat
         mesh.dsFlag = flags;
         mesh.C_depth_info_vec = depth_info_vec;
     }
+
+    logger().info("Depth search (refine) done. [update flag info] = {}", updateInfo);
 }
 
 ////////////////////////////////////////////////////////////////////////////
