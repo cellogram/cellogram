@@ -1113,9 +1113,9 @@ ImGui::PushItemWidth(width);
     }
     ImGui::Checkbox("Invert Color", &state.mesh.optimPara.invertColor);
 
-    static int DSnum_round1 = state.img3D.size() / 2;
+    static int DSnum_round1 = state.img3D.size() / 4;
     ImGui::InputInt("DSnum round1", &DSnum_round1);
-    static double DSgap_round1 = 1;
+    static double DSgap_round1 = 0.5;
     ImGui::InputDouble("DSgap round1", &DSgap_round1);
     static double DSeps_round1 = 0.1;
     ImGui::InputDouble("DSeps round1", &DSeps_round1, 0.0, 0.0, "%.2e");

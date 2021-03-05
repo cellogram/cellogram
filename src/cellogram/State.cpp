@@ -104,7 +104,7 @@ void State::DepthSearch_FirstCall(int DSnum, double DSgap, double DSeps) {
     const int N = markers.rows();
     const int z = img3D.size();
     // prepare z
-    markers.col(2).setConstant(std::round(z / 4.0));
+    markers.col(2).setConstant(std::round(z / 2.0));
 
     OptimPara_t optimPara_lowPrec;
     optimPara_lowPrec.epsilon = DSeps;  // low precision
