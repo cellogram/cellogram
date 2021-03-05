@@ -91,7 +91,8 @@ public:
 
     // Zebrafish depth functions
     void PrepareBsp();
-    void DepthSearch(int DSnum, double DSgap, double DSeps);
+    void DepthSearch_FirstCall(int DSnum, double DSgap, double DSeps);
+    void DepthSearch_Refine(int DSnum, double DSgap, double DSeps, bool updateInfo);
 
 	std::vector<Region> regions;
 

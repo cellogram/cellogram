@@ -220,7 +220,7 @@ void optim::DepthSelection(
           std::vector<DepthSearchFlag_t> &flag) {
 
     const int N = CI.rows();
-    CO.conservativeResize(N, 4);
+    CO.conservativeResize(N, 4);  // conservative because we want keep the original value if not changed
     flag.clear();
     if (N == 0) return;
     const int M = C_depth_info[0].C.rows();  // depth trials
@@ -279,6 +279,7 @@ void optim::DepthSelection(
             continue;
         }
         // minIdx at end point
+        bool sd_triggered = false;  // because "continue" is commented here
         if (M>0 && (minIdx == 0 || minIdx == M-1)) {
             char warnMsg[200];
             std::sprintf(warnMsg, "> [warning] Abnormal second derivative. Marker index %d at [%.2f, %.2f, %.2f].", i, CI(i, 0), CI(i, 1), CI(i, 2));
@@ -287,7 +288,8 @@ void optim::DepthSelection(
             flag.push_back(SecondDerivative);
 
             // std::cerr << E_raw.transpose() << std::endl;  // DEBUG PURPOSE
-            continue;
+            // continue;
+            sd_triggered = true;
         }
         // in case the smoothing shifts the actual min index
         for (int j=std::max(0, minIdx-1); j<=std::min(M-1, minIdx+1); j++) {
@@ -297,7 +299,7 @@ void optim::DepthSelection(
             }
         }
         // save result to CO
-        flag.push_back(Success);
+        if (!sd_triggered) flag.push_back(Success);
         CO.row(i) << C_depth_info[i].C.row(minIdx);
     }
 }

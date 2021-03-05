@@ -22,7 +22,7 @@ public:
 	Eigen::VectorXi boundary; // list of vertices on the boundary
 
     Eigen::MatrixXd marker_4D;  // detected location with depth corrected
-                                  // four columns x, y, z, r
+                                // four columns x, y, z, r
     std::vector<zebrafish::OptimDepthInfo_t> C_depth_info_vec;
     std::vector<zebrafish::DepthSearchFlag_t> dsFlag;
     zebrafish::OptimPara_t optimPara;  // with high precision

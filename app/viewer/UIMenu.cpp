@@ -1113,17 +1113,32 @@ ImGui::PushItemWidth(width);
     }
     ImGui::Checkbox("Invert Color", &state.mesh.optimPara.invertColor);
 
-    static int DSnum = state.img3D.size() / 2;
-    ImGui::InputInt("DSnum", &DSnum);
-    static double DSgap = 1;
-    ImGui::InputDouble("DSgap", &DSgap);
-    static double DSeps = 0.01;
-    ImGui::InputDouble("DSeps", &DSeps);
+    static int DSnum_round1 = state.img3D.size() / 2;
+    ImGui::InputInt("DSnum round1", &DSnum_round1);
+    static double DSgap_round1 = 1;
+    ImGui::InputDouble("DSgap round1", &DSgap_round1);
+    static double DSeps_round1 = 0.1;
+    ImGui::InputDouble("DSeps round1", &DSeps_round1, 0.0, 0.0, "%.2e");
+    static int DSnum_round2 = 10;
+    ImGui::InputInt("DSnum round2", &DSnum_round2);
+    static double DSgap_round2 = 0.1;
+    ImGui::InputDouble("DSgap round2", &DSgap_round2);
+    static double DSeps_round2 = 1e-4;
+    ImGui::InputDouble("DSeps round2", &DSeps_round2, 0.0, 0.0, "%.2e");
+    static bool updateInfo = false;
+    ImGui::Checkbox("round 2 update info", &updateInfo);
 
 ImGui::PopItemWidth();
 
     if (ImGui::Button("Depth Search")) {
-        state.DepthSearch(DSnum, DSgap, DSeps);
+        state.DepthSearch_FirstCall(DSnum_round1, DSgap_round1, DSeps_round1);
+        state.DepthSearch_Refine(DSnum_round2, DSgap_round2, DSeps_round2, updateInfo);
+    }
+    if (ImGui::TreeNode("Advanced DC")) {
+        if (ImGui::Button("Depth Search Refine")) {
+            state.DepthSearch_Refine(DSnum_round2, DSgap_round2, DSeps_round2, updateInfo);
+        }
+        ImGui::TreePop();
     }
 
 	if (ImGui::Button("To Next"))

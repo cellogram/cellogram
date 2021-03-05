@@ -98,7 +98,7 @@ void State::PrepareBsp() {
     bsp.CalcControlPts(img3D, 0.7, 0.7, 0.7, bsplineDegree);
 }
 
-void State::DepthSearch(int DSnum, double DSgap, double DSeps) {
+void State::DepthSearch_FirstCall(int DSnum, double DSgap, double DSeps) {
     using namespace zebrafish;
     Eigen::MatrixXd markers = mesh.moved;  // input mesh is "moved"
     const int N = markers.rows();
@@ -111,18 +111,20 @@ void State::DepthSearch(int DSnum, double DSgap, double DSeps) {
 
     Eigen::MatrixXd marker_withR_tmp;
     std::vector<DepthSearchFlag_t> flags;
+    std::vector<zebrafish::OptimDepthInfo_t> depth_info_vec;
     // prepare radius
     Eigen::MatrixXd marker_withR(N, 4);
     marker_withR.leftCols(3) = markers;
     marker_withR.col(3).setConstant(mesh.optimPara.defaultRadius);  // initial radius guess
 
     optim::Optim_WithDepth(optimPara_lowPrec, bsp, DSnum, DSgap, marker_withR,
-                           mesh.C_depth_info_vec, mesh.optimPara.invertColor, true);
+                           depth_info_vec, mesh.optimPara.invertColor, true);
     marker_withR_tmp = marker_withR;
-    optim::DepthSelection(optimPara_lowPrec, marker_withR, mesh.C_depth_info_vec, marker_withR_tmp, flags);
+    optim::DepthSelection(optimPara_lowPrec, marker_withR, depth_info_vec, marker_withR_tmp, flags);
 
     mesh.marker_4D = marker_withR_tmp;  // Nx4
     mesh.dsFlag = flags;
+    mesh.C_depth_info_vec = depth_info_vec;
 
     // DEBUG ONLY
     // for (int i = 0; i < N; i++) {
@@ -130,6 +132,27 @@ void State::DepthSearch(int DSnum, double DSgap, double DSeps) {
     //     std::cout << mesh.C_depth_info_vec[i].ToMat() << std::endl
     //               << std::endl;
     // }
+}
+
+void State::DepthSearch_Refine(int DSnum, double DSgap, double DSeps, bool updateInfo) {
+    using namespace zebrafish;
+
+    OptimPara_t optimPara_prec;
+    optimPara_prec.epsilon = DSeps;  // custom precision
+
+    Eigen::MatrixXd marker_4D_tmp;
+    std::vector<DepthSearchFlag_t> flags;
+    std::vector<zebrafish::OptimDepthInfo_t> depth_info_vec;
+
+    optim::Optim_WithDepth(optimPara_prec, bsp, DSnum, DSgap, mesh.marker_4D,
+                           depth_info_vec, mesh.optimPara.invertColor, true);
+    marker_4D_tmp = mesh.marker_4D;
+    optim::DepthSelection(optimPara_prec, marker_4D_tmp, depth_info_vec, mesh.marker_4D, flags);
+
+    if (updateInfo) {
+        mesh.dsFlag = flags;
+        mesh.C_depth_info_vec = depth_info_vec;
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////
