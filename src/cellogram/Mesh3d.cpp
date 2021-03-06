@@ -99,7 +99,21 @@ nlohmann::json compute_analysis(const Eigen::MatrixXd &vertices, const Eigen::Ma
 
     polyfem::PointBasedTensorProblem &problem = *dynamic_cast<polyfem::PointBasedTensorProblem *>(state.problem.get());
 
-    Eigen::MatrixXd disp = (mesh.marker_4D.leftCols(3) - mesh.points) * scaling;
+    // Zebrafish depth information
+    Eigen::MatrixXd marker_3D = mesh.marker_4D.leftCols(3);
+    // try to translate so most points have z=0 (they are background and shouldn't move)
+    marker_3D.col(2).array() -= marker_3D.col(2).mean();
+    double sum_z = 0.0;
+    int cnt_z = 0;
+    for (int i=0; i<marker_3D.rows(); i++) {
+        if (std::fabs(marker_3D(i, 2)) < 0.5) {
+            cnt_z++;
+            sum_z += marker_3D(i, 2);
+        }
+    }
+    marker_3D.col(2).array() -= sum_z / double(cnt_z);
+
+    Eigen::MatrixXd disp = (marker_3D - mesh.points) * scaling;
     Eigen::MatrixXd pts = mesh.points * scaling;
 
     if (export_data) {
