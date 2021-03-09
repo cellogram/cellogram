@@ -16,8 +16,14 @@
 namespace cellogram {
 
 namespace {
+
+void ToPhysicalUnit(Eigen::MatrixXd &mat, double scaling, double zscaling) {
+    mat.leftCols(2) *= scaling;
+    mat.col(2) *= zscaling;
+}
+
 nlohmann::json compute_analysis(const Eigen::MatrixXd &vertices, const Eigen::MatrixXi &faces, const Eigen::MatrixXi &tets, const Mesh &mesh,
-                                float thickness, float E, float nu, const std::string &formulation, double scaling,
+                                float thickness, float E, float nu, const std::string &formulation, double scaling, double zscaling,
                                 Eigen::MatrixXd &vals, Eigen::MatrixXd &traction_forces) {
     //TODO
     //const std::string rbf_function = "gaussian";
@@ -113,8 +119,11 @@ nlohmann::json compute_analysis(const Eigen::MatrixXd &vertices, const Eigen::Ma
     }
     marker_3D.col(2).array() -= sum_z / double(cnt_z);
 
-    Eigen::MatrixXd disp = (marker_3D - mesh.points) * scaling;
-    Eigen::MatrixXd pts = mesh.points * scaling;
+    // pixel -> um
+    Eigen::MatrixXd disp = (marker_3D - mesh.points);
+    Eigen::MatrixXd pts = mesh.points;
+    ToPhysicalUnit(disp, scaling, zscaling);
+    ToPhysicalUnit(pts, scaling, zscaling);
 
     if (export_data) {
         GEO::mesh_save(M, "mesh.mesh");
@@ -241,11 +250,13 @@ nlohmann::json compute_analysis(const Eigen::MatrixXd &vertices, const Eigen::Ma
 }
 } // namespace
 
-void Mesh3d::init_pillars(const Mesh &mesh, float eps, float I, float L, double scaling) {
+void Mesh3d::init_pillars(const Mesh &mesh, float eps, float I, float L, double scaling, double zscaling) {
     clear();
 
     displacement = (mesh.detected - mesh.points) * scaling;
     V = mesh.points * scaling;
+    ToPhysicalUnit(displacement, scaling, zscaling);
+    ToPhysicalUnit(V, scaling, zscaling);
 
     const float bending_force = 3 * eps * I / (L * L * L);
     traction_forces = bending_force * displacement;
@@ -259,7 +270,7 @@ bool Mesh3d::analysed() {
     return traction_forces.size() > 0;
 }
 
-void Mesh3d::init_nano_dots(const Mesh &mesh, float padding_size, const float thickness, float E, float nu, double scaling, const std::string &formulation) {
+void Mesh3d::init_nano_dots(const Mesh &mesh, float padding_size, const float thickness, float E, float nu, double scaling, double zscaling, const std::string &formulation) {
     //Uncomment to used not adaptive tetgen mesher
     // 		clear();
 
@@ -317,7 +328,7 @@ void Mesh3d::init_nano_dots(const Mesh &mesh, float padding_size, const float th
     // 		F = TF;
     // 		T = TT;
 
-    simulation_out = compute_analysis(V, F, T, mesh, thickness, E, nu, formulation, scaling, displacement, traction_forces);
+    simulation_out = compute_analysis(V, F, T, mesh, thickness, E, nu, formulation, scaling, zscaling, displacement, traction_forces);
 }
 
 void Mesh3d::clear() {

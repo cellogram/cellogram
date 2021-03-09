@@ -58,7 +58,8 @@ public:
 	bool relative_threshold;
 	float thickness;
 
-	float scaling; // [um/px]
+    float zscaling; // [um/px] in depth
+	float scaling; // [um/px] in xy
 	float E;
 	float nu;
 

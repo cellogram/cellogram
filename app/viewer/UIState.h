@@ -53,7 +53,7 @@ typedef struct ColorUI_t {
     Eigen::Vector4f background_color;
     
     ColorUI_t() {
-        mesh_vertex_color = Eigen::RowVector3f(92, 214, 218)/255.0;
+        mesh_vertex_color = Eigen::RowVector3f(161, 186, 255)/255.0;
         mesh_fill_color.resize(1, 3);
         mesh_fill_color << 0.8, 0.8, 0.85;
         mesh_line_color = Eigen::RowVector3f(3, 21, 20)/255.0;

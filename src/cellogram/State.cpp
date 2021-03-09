@@ -64,6 +64,7 @@ json default_detection_settings = R"({
 
 json default_analysis_settings = R"({
     "scaling": 0.2,
+    "zscaling": 0.2,
     "E": 13.578,
     "I": 0.5,
     "L": 3.0,
@@ -244,6 +245,7 @@ void State::load_analysis_settings(json args) {
     json settings = default_analysis_settings;
     settings.merge_patch(args);
     scaling = settings["scaling"];
+    zscaling = settings["zscaling"];
     padding_size = settings["padding_size"];
     thickness = settings["thickness"];
     uniform_mesh_size = settings["mesh_size"];
@@ -1243,9 +1245,9 @@ void State::remesh_3d_adaptive() {
 void State::analyze_3d_mesh() {
     auto t1 = std::chrono::system_clock::now();
     if (image_from_pillars) {
-        mesh3d.init_pillars(mesh, eps, I, L, scaling);
+        mesh3d.init_pillars(mesh, eps, I, L, scaling, zscaling);
     } else {
-        mesh3d.init_nano_dots(mesh, padding_size, thickness, E, nu, scaling,
+        mesh3d.init_nano_dots(mesh, padding_size, thickness, E, nu, scaling, zscaling,
                               formulation);
     }
 
