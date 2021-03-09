@@ -1,5 +1,6 @@
 trigger:
 - master
+- Cellogram2
 
 variables:
   initVsShell: 'call "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Enterprise\\Common7\\Tools\\vsdevcmd" -arch=x64'
