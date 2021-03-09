@@ -1047,10 +1047,6 @@ void UIState::draw_depth_menu() {
 
 const float width = ImGui::GetWindowWidth() * 0.5f;
 ImGui::PushItemWidth(width);
-    static double solverTol = 1e-8;
-    if (ImGui::InputDouble("BSP Tol", &solverTol, 0.0, 0.0, "%.2e")) {
-        state.bsp.Set_solverTol(solverTol);
-    }
 
     wait_window("wait_bspline", "Preparing B-spline...", ICON_FA_INFINITY,
         [&]() {return ImGui::Button("Compute Bspline", ImVec2(-1.0, 0));},
@@ -1059,6 +1055,12 @@ ImGui::PushItemWidth(width);
     });
 
     if (ImGui::TreeNode("Advanced BSP")) {
+
+        static double solverTol = 1e-8;
+        if (ImGui::InputDouble("BSP Tol", &solverTol, 0.0, 0.0, "%.2e")) {
+            state.bsp.Set_solverTol(solverTol);
+        }
+        ImGui::Spacing();
 
         const int zN = state.img3D.size();
         const int xN = state.img3D[0].rows();
@@ -1103,7 +1105,7 @@ ImGui::PushItemWidth(width);
             bool succ = cellogram::WriteTif("/Users/ziyizhang/Projects/tmp/interp_cello.tif", img, 0, img.size()-1);
             logger().info("Saving result to interp_cello.tif. Status = {}", succ);
         }
-        ShowTooltip("DEBUG PURPOSE. Will destroy underlying quadrature method.");
+        ShowTooltip("DEBUG PURPOSE. Do not click. Will destroy underlying quadrature method.");
         ImGui::TreePop();
     }
 

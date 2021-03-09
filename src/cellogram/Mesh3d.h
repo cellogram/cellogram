@@ -30,6 +30,8 @@ namespace cellogram {
 		bool load(const nlohmann::json &data);
 		void save_mesh(nlohmann::json &data);
 		void save_traction(nlohmann::json &data);
+
+        static void GetMarker3D(const Eigen::MatrixXd &marker4d, Eigen::MatrixXd &marker3d);
 	};
 
 } // namespace cellogram

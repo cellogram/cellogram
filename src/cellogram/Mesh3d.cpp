@@ -106,18 +106,8 @@ nlohmann::json compute_analysis(const Eigen::MatrixXd &vertices, const Eigen::Ma
     polyfem::PointBasedTensorProblem &problem = *dynamic_cast<polyfem::PointBasedTensorProblem *>(state.problem.get());
 
     // Zebrafish depth information
-    Eigen::MatrixXd marker_3D = mesh.marker_4D.leftCols(3);
-    // try to translate so most points have z=0 (they are background and shouldn't move)
-    marker_3D.col(2).array() -= marker_3D.col(2).mean();
-    double sum_z = 0.0;
-    int cnt_z = 0;
-    for (int i=0; i<marker_3D.rows(); i++) {
-        if (std::fabs(marker_3D(i, 2)) < 0.5) {
-            cnt_z++;
-            sum_z += marker_3D(i, 2);
-        }
-    }
-    marker_3D.col(2).array() -= sum_z / double(cnt_z);
+    Eigen::MatrixXd marker_3D;
+    Mesh3d::GetMarker3D(mesh.marker_4D, marker_3D);
 
     // pixel -> um
     Eigen::MatrixXd disp = (marker_3D - mesh.points);
@@ -369,6 +359,22 @@ void Mesh3d::save_mesh(nlohmann::json &data) {
 void Mesh3d::save_traction(nlohmann::json &data) {
     data["traction_forces"] = json::object();
     write_json_mat(traction_forces, data["traction_forces"]);
+}
+
+void Mesh3d::GetMarker3D(const Eigen::MatrixXd &marker4d, Eigen::MatrixXd &marker3d) {
+
+    marker3d = marker4d.leftCols(3);
+    // try to translate so most points have z=0 (they are background and shouldn't move too much)
+    marker3d.col(2).array() -= marker3d.col(2).mean();
+    double sum_z = 0.0;
+    int cnt_z = 0;
+    for (int i=0; i<marker3d.rows(); i++) {
+        if (std::fabs(marker3d(i, 2)) < 0.5) {
+            cnt_z++;
+            sum_z += marker3d(i, 2);
+        }
+    }
+    marker3d.col(2).array() -= sum_z / double(cnt_z);
 }
 
 } // namespace cellogram

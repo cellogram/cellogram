@@ -23,6 +23,7 @@
 #include <igl/remove_duplicate_vertices.h>
 #include <igl/slice.h>
 #include <igl/write_triangle_mesh.h>
+#include <igl/writeMESH.h>
 #include <tbb/enumerable_thread_specific.h>
 #include <tbb/parallel_for.h>
 #include <tbb/task_scheduler_init.h>
@@ -1094,8 +1095,8 @@ void State::mesh_2d_adaptive() {
     Eigen::MatrixXi F;
     Eigen::VectorXd D, S;
     mesh.get_background_mesh(scaling, V, F, D, padding_size);
-    igl::write_triangle_mesh("/Users/ziyizhang/Projects/tmp/debug_2d_mesh_beforeremesh.obj", V, F);
-    std::cerr << "/Users/ziyizhang/Projects/tmp/debug_2d_mesh_beforeremesh.obj" << std::endl;
+    // igl::write_triangle_mesh("/Users/ziyizhang/Projects/tmp/debug_2d_mesh_beforeremesh.obj", V, F);
+    // std::cerr << "/Users/ziyizhang/Projects/tmp/debug_2d_mesh_beforeremesh.obj" << std::endl;
     propagate_sizing_field(V, F, D, S);
 
     mmg_options.hmin = S.minCoeff();
@@ -1149,9 +1150,8 @@ mesh3d.T = Eigen::MatrixXi(0, 4);
 void State::extrude_2d_mesh() {
     if (mesh3d.V.size() == 0) {
         mesh_2d_adaptive();
-        igl::write_triangle_mesh("/Users/ziyizhang/Projects/tmp/debug_2d_mesh.obj",
-                                 mesh3d.V, mesh3d.F);
-        std::cerr << "/Users/ziyizhang/Projects/tmp/debug_2d_mesh.obj" << std::endl;
+        // igl::write_triangle_mesh("/Users/ziyizhang/Projects/tmp/debug_2d_mesh.obj", mesh3d.V, mesh3d.F);
+        // std::cerr << "/Users/ziyizhang/Projects/tmp/debug_2d_mesh.obj" << std::endl;
     }
 
     double zmin = mesh3d.V.col(2).minCoeff();
@@ -1213,22 +1213,29 @@ void State::remesh_3d_adaptive() {
     // Scalar field to interpolate
     Eigen::MatrixXd V;
     Eigen::MatrixXi F, FP(0, 3);
-    Eigen::VectorXd D, S;
+    Eigen::VectorXd D, S, Sz;
     mesh.get_background_mesh(scaling, V, F, D, padding_size);
     propagate_sizing_field(V, F, D, S);
     double smin = S.minCoeff();
     double smax = S.maxCoeff();
 
-    // Zebrafish FIXME: use the sizing field with depth info
     // Interpolate in 2d, and grade size along Z
     Eigen::MatrixXd VP = mesh3d.V.leftCols<2>();
-    S = interpolate_2d(V, F, S, VP);
+    S = interpolate_2d(V, F, S, VP);  // x, y
+    // Zebrafish: use the sizing field with depth info
+    Eigen::MatrixXd marker_3D;
+    Mesh3d::GetMarker3D(mesh.marker_4D, marker_3D);
+    Sz = marker_3D.col(2).cwiseAbs();
+    Sz = interpolate_2d(mesh.marker_4D.leftCols(2), mesh.triangles, Sz, VP);  // z
+    Sz = Sz.array() - Sz.minCoeff();
+    Sz = Sz.array() / Sz.maxCoeff();
+
     zmin = mesh3d.V.col(2).minCoeff();
     zmax = mesh3d.V.col(2).maxCoeff();
     for (int v = 0; v < mesh3d.V.rows(); ++v) {
         double t =
             (mesh3d.V(v, 2) - zmin) / (zmax - zmin); // 0 on zmin, 1 on zmax
-        S(v) = t * S(v) + (1.0 - t) * smax;
+        S(v) = (Sz(v) * 3 + 1) * t * S(v) + (1.0 - t) * smax;
     }
 
     // Remesh volume mesh
@@ -1236,6 +1243,9 @@ void State::remesh_3d_adaptive() {
     mmg_options.hmax = S.maxCoeff();
     remesh_adaptive_3d(mesh3d.V, mesh3d.T, S, mesh3d.V, mesh3d.F, mesh3d.T,
                        mmg_options);
+
+    // igl::writeMESH("/Users/ziyizhang/Projects/tmp/debug_remeshed_tet.mesh", mesh3d.V, mesh3d.T, mesh3d.F);
+    // std::cerr << "/Users/ziyizhang/Projects/tmp/debug_remeshed_tet.mesh" << std::endl;
 
     auto t2 = std::chrono::system_clock::now();
     std::chrono::duration<double> delta_t = t2 - t1;
