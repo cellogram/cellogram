@@ -77,15 +77,12 @@ jobs:
 
       - name: Build
         run: cd build; make -j2; ccache --show-stats
-      
-      - name: Display structure of downloaded files
-        run: ls -R /
 
       - name: upload
         uses: actions/upload-artifact@v1
         with:
           name: UnixExe
-          path: ../../CellogramViewer
+          path: /home/runner/work/cellogram/cellogram/build/CellogramViewer
 
   ####################
   # Windows
@@ -156,12 +153,9 @@ jobs:
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=x64
           cd build
           ninja -j1
-
-      - name: Display structure of downloaded files
-        run: ls -R /
         
       - name: upload
         uses: actions/upload-artifact@v1
         with:
           name: WindowExe
-          path: CellogramViewer.exe
+          path: D:\a\cellogram\cellogram\build\CellogramViewer.exe
