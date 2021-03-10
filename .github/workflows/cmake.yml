@@ -77,6 +77,9 @@ jobs:
 
       - name: Build
         run: cd build; make -j2; ccache --show-stats
+        uses: actions/upload-artifact@v1
+        with:
+          name: UnixExe
 
   ####################
   # Windows
@@ -139,11 +142,14 @@ jobs:
           $fileContent[162-1] = "// " + $fileContent[162-1]
           $fileContent | Set-Content $filename
           echo "comment out # define WINDOWS"
-          echo $fileContent
+          # echo $fileContent
 
       - name: build
         shell: cmd
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=x64
           cd build
-          ninja -j1
+          ninja -j2
+        uses: actions/upload-artifact@v1
+        with:
+          name: WindowExe
