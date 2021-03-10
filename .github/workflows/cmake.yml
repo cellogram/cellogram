@@ -118,17 +118,7 @@ jobs:
           # Scoop modifies the PATH so we make it available for the next steps of the job
           echo "${env:PATH}" >> ${env:GITHUB_PATH}
 
-      - name: Fix Zlib conflict
-        run: |
-          $file = gci -recurse -filter "zconf.h"
-          echo $file
-          $filename = $file.Fullname
-          $fileContent = Get-Content $filename
-          $fileContent[162-1] = "// " + $fileContent[162-1]
-          $fileContent | Set-Content $filename
-          echo "comment out # define WINDOWS"
-
-      - name: Configure and build
+      - name: Configure
         shell: cmd
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=x64
@@ -139,5 +129,19 @@ jobs:
             -DPOLYFEM_WITH_MISC=ON ^
             -B build ^
             -S .
+
+      - name: Fix Zlib conflict
+        run: |
+          $file = gci -recurse -filter "zconf.h"
+          echo $file
+          $filename = $file.Fullname
+          $fileContent = Get-Content $filename
+          $fileContent[162-1] = "// " + $fileContent[162-1]
+          $fileContent | Set-Content $filename
+          echo "comment out # define WINDOWS"
+
+      - name: build
+        shell: cmd
+        run: |
           cd build
           ninja -j2
