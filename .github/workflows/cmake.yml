@@ -120,7 +120,7 @@ jobs:
 
       - name: Fix Zlib conflict
         run: |
-          sed -i '' '162s/^/\/\//' *zconf.h
+          find . -name "zconf.h" -exec sed -i '' '162s/^/\/\//' {} +
           echo "comment out # define WINDOWS"
 
       - name: Configure and build
