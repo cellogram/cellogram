@@ -77,6 +77,8 @@ jobs:
 
       - name: Build
         run: cd build; make -j2; ccache --show-stats
+
+      - name: upload
         uses: actions/upload-artifact@v1
         with:
           name: UnixExe
@@ -150,6 +152,8 @@ jobs:
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=x64
           cd build
           ninja -j2
+        
+      - name: upload
         uses: actions/upload-artifact@v1
         with:
           name: WindowExe
