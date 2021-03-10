@@ -144,4 +144,4 @@ jobs:
         shell: cmd
         run: |
           cd build
-          ninja -j2
+          ninja -j1
