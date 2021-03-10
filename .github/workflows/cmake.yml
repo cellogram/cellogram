@@ -120,7 +120,7 @@ jobs:
 
       - name: Fix Zlib conflict
         run: |
-          sed -i '' '162s/^/\/\//' D:/a/cellogram/cellogram/3rdparty/polyfem/3rdparty/geogram/src/lib/geogram/third_party/zlib/zconf.h
+          sed -i '' '162s/^/\/\//' *zconf.h
           echo "comment out # define WINDOWS"
 
       - name: Configure and build
