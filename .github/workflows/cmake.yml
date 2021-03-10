@@ -137,8 +137,9 @@ jobs:
           $filename = $file.Fullname
           $fileContent = Get-Content $filename
           $fileContent[162-1] = "// " + $fileContent[162-1]
-          $fileContent | Set-Content $filename
+          # $fileContent | Set-Content $filename
           echo "comment out # define WINDOWS"
+          echo $fileContent
 
       - name: build
         shell: cmd
