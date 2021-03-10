@@ -3,10 +3,9 @@ name: Build
 on:
   push:
     branches:
-      - Cellogram2
   pull_request:
     branches:
-      - Cellogram2
+
 
 env:
   CTEST_OUTPUT_ON_FAILURE: ON
