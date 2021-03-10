@@ -118,6 +118,11 @@ jobs:
           # Scoop modifies the PATH so we make it available for the next steps of the job
           echo "${env:PATH}" >> ${env:GITHUB_PATH}
 
+      - name: Fix Zlib conflict
+        run: |
+          sed -i '' '162s/^/\/\//' D:/a/cellogram/cellogram/3rdparty/polyfem/3rdparty/geogram/src/lib/geogram/third_party/zlib/zconf.h
+          echo "comment out # define WINDOWS"
+
       - name: Configure and build
         shell: cmd
         run: |
@@ -130,4 +135,4 @@ jobs:
             -B build ^
             -S .
           cd build
-          ninja -j1
+          ninja -j2
