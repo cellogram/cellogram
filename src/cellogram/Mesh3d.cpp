@@ -25,7 +25,7 @@ void ToPhysicalUnit(Eigen::MatrixXd &mat, double scaling, double zscaling) {
 
 nlohmann::json compute_analysis(const Eigen::MatrixXd &vertices, const Eigen::MatrixXi &faces, const Eigen::MatrixXi &tets, const Mesh &mesh,
                                 float thickness, float E, float nu, const std::string &formulation, double scaling, double zscaling,
-                                Eigen::MatrixXd &traction_forces, const std::string &save_dir) {
+                                Eigen::MatrixXd &displacememt, Eigen::MatrixXd &traction_forces, const std::string &save_dir) {
     //TODO
     //const std::string rbf_function = "gaussian";
     const std::string rbf_function = "thin-plate";
@@ -153,14 +153,12 @@ nlohmann::json compute_analysis(const Eigen::MatrixXd &vertices, const Eigen::Ma
 
     // zebrafish export
     // output
-    const auto OutputHelper = [&state, &save_dir](const Eigen::MatrixXd &mesh_v, const MatrixXi &mesh_f) {
-        Eigen::MatrixXd displacement_vec;
-        Eigen::MatrixXd traction_forces;
+    const auto OutputHelper = [&state, &save_dir, &displacememt, &traction_forces](const Eigen::MatrixXd &mesh_v, const MatrixXi &mesh_f) {
         Eigen::MatrixXd stress;
         Eigen::MatrixXd mises;
 
-        state.interpolate_boundary_function_at_vertices(mesh_v, mesh_f, state.sol, displacement_vec);
-        state.interpolate_boundary_tensor_function(mesh_v, mesh_f, state.sol, displacement_vec, true, traction_forces, stress, mises);
+        state.interpolate_boundary_function_at_vertices(mesh_v, mesh_f, state.sol, displacememt);
+        state.interpolate_boundary_tensor_function(mesh_v, mesh_f, state.sol, displacememt, true, traction_forces, stress, mises);
 
         // per-triangle data -> per-vertex data by taking average
         const auto ToVertexData = [&mesh_v, &mesh_f](
@@ -206,7 +204,7 @@ nlohmann::json compute_analysis(const Eigen::MatrixXd &vertices, const Eigen::Ma
 
         // write to VTU
         polyfem::VTUWriter VTUwriter;
-        VTUwriter.add_field("displacement", displacement_vec);
+        VTUwriter.add_field("displacement", displacememt);
         VTUwriter.add_field("traction_forces", traction_force_v);
         for (int i = 0; i < 3; ++i) {
             for (int j = 0; j < 3; ++j) {
@@ -224,9 +222,9 @@ nlohmann::json compute_analysis(const Eigen::MatrixXd &vertices, const Eigen::Ma
         }
     };  // OutputHelper lambda function
 
-    OutputHelper(pts, mesh.triangles);
+    OutputHelper(vertices, faces);
     state.save_vtu(save_dir + ".all.vtu", 0);
-    state.save_surface(save_dir + ".surf.vtu");
+    // state.save_surface(save_dir + ".surf.vtu");
 
     if (export_data) {
         std::ofstream out("sol.txt");
@@ -360,7 +358,7 @@ void Mesh3d::init_nano_dots(const Mesh &mesh, float padding_size, const float th
     // 		F = TF;
     // 		T = TT;
 
-    simulation_out = compute_analysis(V, F, T, mesh, thickness, E, nu, formulation, scaling, zscaling, traction_forces, save_dir);
+    simulation_out = compute_analysis(V, F, T, mesh, thickness, E, nu, formulation, scaling, zscaling, displacement, traction_forces, save_dir);
 }
 
 void Mesh3d::clear() {
