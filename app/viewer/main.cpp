@@ -98,9 +98,10 @@ int main(int argc, char *argv[]) {
 
         const int index = args.input.find_last_of(".");
         std::string save_dir = args.input.substr(0, index);
+
         std::cout << save_dir << std::endl;
         StringUtils::cellogram_mkdir(save_dir);
-
+        state.save_dir = save_dir;
         state.load_settings(args.settings);
 #ifdef CELLOGRAM_WITH_PNG
         std::string image_extension = ".png";

@@ -23,7 +23,7 @@ namespace cellogram {
 		bool empty();
 		bool analysed();
 
-		void init_nano_dots(const Mesh &mesh, float padding_size, float thickness, float E, float nu, double  scaling, double zscaling, const std::string &formulation);
+		void init_nano_dots(const Mesh &mesh, float padding_size, float thickness, float E, float nu, double  scaling, double zscaling, const std::string &formulation, const std::string &save_dir);
 		void init_pillars(const Mesh &mesh, float eps, float I, float L, double scaling, double zscaling);
 		void clear();
 

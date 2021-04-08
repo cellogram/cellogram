@@ -1251,9 +1251,9 @@ void UIState::draw_analysis_menu() {
 
 		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.50f);
         ImGui::InputFloat("Z-Scaling", &state.zscaling, 0.01, 0.001, 3);
-		ShowTooltip("Magnification factor of image in z-axis [µm/px]");
+		ShowTooltip("Resolution in z-axis [µm/px]");
 		ImGui::InputFloat("XY-Scaling", &state.scaling, 0.01, 0.001, 3);
-		ShowTooltip("Magnification factor of image in xy-plane [µm/px]");
+		ShowTooltip("Resolution in xy-plane [µm/px]");
 		ImGui::InputFloat("E", &state.E, 0.1, 0.01, 3);
 		ShowTooltip("Young's modulus [kPa]");
 		ImGui::InputFloat("nu", &state.nu, 0.1, 0.01, 3);

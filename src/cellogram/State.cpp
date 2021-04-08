@@ -64,8 +64,8 @@ json default_detection_settings = R"({
 })"_json;
 
 json default_analysis_settings = R"({
-    "scaling": 0.2,
-    "zscaling": 0.2,
+    "scaling": 0.098,
+    "zscaling": 0.5,
     "E": 13.578,
     "I": 0.5,
     "L": 3.0,
@@ -1258,7 +1258,7 @@ void State::analyze_3d_mesh() {
         mesh3d.init_pillars(mesh, eps, I, L, scaling, zscaling);
     } else {
         mesh3d.init_nano_dots(mesh, padding_size, thickness, E, nu, scaling, zscaling,
-                              formulation);
+                              formulation, save_dir);
     }
 
     auto t2 = std::chrono::system_clock::now();

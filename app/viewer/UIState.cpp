@@ -667,6 +667,7 @@ void UIState::load_image(std::string fname) {
 
 	const int index = fname.find_last_of(".");
 	save_dir = fname.substr(0, index);
+    state.save_dir = save_dir;
 	data_available = state.is_data_available(save_dir);
 
 	texture = (state.img.array() * 255 * imgViewer.darkenScale).cast<unsigned char>();

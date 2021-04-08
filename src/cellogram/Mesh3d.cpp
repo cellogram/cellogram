@@ -11,6 +11,7 @@
 #include <polyfem/MeshUtils.hpp>
 #include <polyfem/PointBasedProblem.hpp>
 #include <polyfem/State.hpp>
+#include <polyfem/VTUWriter.hpp>
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace cellogram {
@@ -24,7 +25,7 @@ void ToPhysicalUnit(Eigen::MatrixXd &mat, double scaling, double zscaling) {
 
 nlohmann::json compute_analysis(const Eigen::MatrixXd &vertices, const Eigen::MatrixXi &faces, const Eigen::MatrixXi &tets, const Mesh &mesh,
                                 float thickness, float E, float nu, const std::string &formulation, double scaling, double zscaling,
-                                Eigen::MatrixXd &vals, Eigen::MatrixXd &traction_forces) {
+                                Eigen::MatrixXd &traction_forces, const std::string &save_dir) {
     //TODO
     //const std::string rbf_function = "gaussian";
     const std::string rbf_function = "thin-plate";
@@ -115,44 +116,6 @@ nlohmann::json compute_analysis(const Eigen::MatrixXd &vertices, const Eigen::Ma
     ToPhysicalUnit(disp, scaling, zscaling);
     ToPhysicalUnit(pts, scaling, zscaling);
 
-    if (export_data) {
-        GEO::mesh_save(M, "mesh.mesh");
-        {
-            std::ofstream out("problem.json");
-            out.precision(100);
-            out << j_args.dump(4) << std::endl;
-            out.close();
-        }
-        {
-            std::ofstream out("fun.pts");
-            out.precision(100);
-            out << pts << std::endl;
-            out.close();
-        }
-
-        {
-            std::ofstream out("fun.tri");
-            out.precision(100);
-            out << mesh.triangles << std::endl;
-            out.close();
-        }
-
-        {
-            std::ofstream out("fun.txt");
-            out.precision(100);
-            out << disp << std::endl;
-            out.close();
-        }
-
-        {
-            std::ofstream out("tags.txt");
-
-            for (int i = 0; i < state.mesh->n_faces(); ++i)
-                out << state.mesh->get_boundary_id(i) << std::endl;
-            out.close();
-        }
-    }
-
     //Id = 1, func, mesh, coord =2, means skip z for the interpolation
     Eigen::Matrix<bool, 3, 1> dirichet_dims;
     dirichet_dims(0) = dirichet_dims(1) = true;
@@ -177,14 +140,93 @@ nlohmann::json compute_analysis(const Eigen::MatrixXd &vertices, const Eigen::Ma
     // state.interpolate_boundary_function(vertices, faces, state.sol, true, vals);
     // state.interpolate_boundary_tensor_function(vertices, faces, state.sol, true, traction_forces);
 
-    state.interpolate_boundary_function_at_vertices(vertices, faces, state.sol, vals);
-    Eigen::MatrixXd stresses, mises;
-    state.interpolate_boundary_tensor_function(vertices, faces, state.sol, vals, true, traction_forces, stresses, mises);
+    // zebrafish: this part has been moved to "OutputHelper"
+    // state.interpolate_boundary_function_at_vertices(vertices, faces, state.sol, vals);
+    // Eigen::MatrixXd stresses, mises;
+    // state.interpolate_boundary_tensor_function(vertices, faces, state.sol, vals, true, traction_forces, stresses, mises);
 
     // vals = Eigen::Map<Eigen::MatrixXd>(state.sol.data(), 3, vertices.rows());
     // vals = Eigen::Map<Eigen::MatrixXd>(state.rhs.data(), 3, vertices.rows());
     // vals = vals.transpose().eval();
     // std::cout<<vals<<std::endl;
+
+
+    // zebrafish export
+    // output
+    const auto OutputHelper = [&state, &save_dir](const Eigen::MatrixXd &mesh_v, const MatrixXi &mesh_f) {
+        Eigen::MatrixXd displacement_vec;
+        Eigen::MatrixXd traction_forces;
+        Eigen::MatrixXd stress;
+        Eigen::MatrixXd mises;
+
+        state.interpolate_boundary_function_at_vertices(mesh_v, mesh_f, state.sol, displacement_vec);
+        state.interpolate_boundary_tensor_function(mesh_v, mesh_f, state.sol, displacement_vec, true, traction_forces, stress, mises);
+
+        // per-triangle data -> per-vertex data by taking average
+        const auto ToVertexData = [&mesh_v, &mesh_f](
+                                    const Eigen::MatrixXd &traction_forces_tri,
+                                    const Eigen::MatrixXd &stress_tri,
+                                    const Eigen::MatrixXd &mises_tri,
+                                    Eigen::MatrixXd &traction_forces_ver,
+                                    Eigen::MatrixXd &stress_ver,
+                                    Eigen::MatrixXd &mises_ver) {
+            traction_forces_ver = Eigen::MatrixXd::Zero(mesh_v.rows(), 3);
+            stress_ver = Eigen::MatrixXd::Zero(mesh_v.rows(), 9); // 3x3 matrix
+            mises_ver = Eigen::MatrixXd::Zero(mesh_v.rows(), 1);
+
+            Eigen::VectorXd area, vertex_area(mesh_v.rows());
+            vertex_area.setZero();
+            igl::doublearea(mesh_v, mesh_f, area);
+
+            for (int f = 0; f < mesh_f.rows(); ++f) {
+                for (int d = 0; d < 3; ++d) {
+                    int vid = mesh_f(f, d);
+                    traction_forces_ver.row(vid) += traction_forces_tri.row(f) * area(f);
+                    stress_ver.row(vid) += stress_tri.row(f) * area(f);
+                    mises_ver(vid) += mises_tri(f) * area(f);
+                    vertex_area(vid) += area(f);
+                }
+            }
+
+            for (int d = 0; d < 3; ++d) {
+                traction_forces_ver.col(d).array() /= vertex_area.array();
+            }
+            for (int d = 0; d < 9; ++d) {
+                stress_ver.col(d).array() /= vertex_area.array();
+            }
+            mises_ver.array() /= vertex_area.array();
+        };
+
+        // triangle to vertex
+        Eigen::MatrixXd traction_force_v;
+        Eigen::MatrixXd stress_v;
+        Eigen::MatrixXd mises_v;
+
+        ToVertexData(traction_forces, stress, mises, traction_force_v, stress_v, mises_v);
+
+        // write to VTU
+        polyfem::VTUWriter VTUwriter;
+        VTUwriter.add_field("displacement", displacement_vec);
+        VTUwriter.add_field("traction_forces", traction_force_v);
+        for (int i = 0; i < 3; ++i) {
+            for (int j = 0; j < 3; ++j) {
+                const std::string index = "_" + std::to_string(i) + std::to_string(j);
+                VTUwriter.add_field("stress" + index, stress_v.col(i * 3 + j));
+            }
+        }
+        VTUwriter.add_field("von_mises", mises_v);
+
+        if (VTUwriter.write_mesh(save_dir + ".vtu", mesh_v, mesh_f)) {
+            std::cout << "Result saved to " + save_dir + ".vtu" << std::endl;
+        } else {
+            std::cerr << "Export failed: path not found" << std::endl;
+            std::cerr << save_dir + ".vtu" << std::endl;
+        }
+    };  // OutputHelper lambda function
+
+    OutputHelper(pts, mesh.triangles);
+    state.save_vtu(save_dir + ".all.vtu", 0);
+    state.save_surface(save_dir + ".surf.vtu");
 
     if (export_data) {
         std::ofstream out("sol.txt");
@@ -260,7 +302,7 @@ bool Mesh3d::analysed() {
     return traction_forces.size() > 0;
 }
 
-void Mesh3d::init_nano_dots(const Mesh &mesh, float padding_size, const float thickness, float E, float nu, double scaling, double zscaling, const std::string &formulation) {
+void Mesh3d::init_nano_dots(const Mesh &mesh, float padding_size, const float thickness, float E, float nu, double scaling, double zscaling, const std::string &formulation, const std::string &save_dir) {
     //Uncomment to used not adaptive tetgen mesher
     // 		clear();
 
@@ -318,7 +360,7 @@ void Mesh3d::init_nano_dots(const Mesh &mesh, float padding_size, const float th
     // 		F = TF;
     // 		T = TT;
 
-    simulation_out = compute_analysis(V, F, T, mesh, thickness, E, nu, formulation, scaling, zscaling, displacement, traction_forces);
+    simulation_out = compute_analysis(V, F, T, mesh, thickness, E, nu, formulation, scaling, zscaling, traction_forces, save_dir);
 }
 
 void Mesh3d::clear() {

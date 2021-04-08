@@ -473,7 +473,6 @@ namespace cellogram {
 		{
 			const int global_index = local2global(i);
 			points.row(global_index) = new_points.row(i);
-
 		}
 
 		Eigen::MatrixXi tGlobal = Eigen::MatrixXi(new_triangles.rows(), 3);

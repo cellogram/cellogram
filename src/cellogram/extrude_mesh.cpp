@@ -90,8 +90,8 @@ void extrude_mesh(const Eigen::MatrixXd &V1, const Eigen::MatrixXi &F1, double t
 	// 5. Orient facets and tetrahedralize
 	Eigen::VectorXi C;
 	igl::bfs_orient(F2, F2, C);
-	igl::write_triangle_mesh("/Users/ziyizhang/Projects/tmp/debug_before_tetgen.obj", V2, F2);
-    std::cerr << "/Users/ziyizhang/Projects/tmp/debug_before_tetgen.obj" << std::endl;
+	// igl::write_triangle_mesh("/Users/ziyizhang/Projects/tmp/debug_before_tetgen.obj", V2, F2);
+    // std::cerr << "/Users/ziyizhang/Projects/tmp/debug_before_tetgen.obj" << std::endl;
 	igl::copyleft::tetgen::tetrahedralize(V2, F2, "Qq1.414", VT, TT, FT);
 	polyfem::orient_closed_surface(VT, FT);
 
