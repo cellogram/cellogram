@@ -7,6 +7,7 @@
 #include <igl/copyleft/tetgen/tetrahedralize.h>
 #include <igl/opengl/glfw/Viewer.h>
 #include <igl/writeOBJ.h>
+#include <igl/write_triangle_mesh.h>
 #include <polyfem/Mesh3D.hpp>
 #include <polyfem/MeshUtils.hpp>
 #include <polyfem/PointBasedProblem.hpp>
@@ -23,7 +24,7 @@ void ToPhysicalUnit(Eigen::MatrixXd &mat, double scaling, double zscaling) {
     mat.col(2) *= zscaling;
 }
 
-nlohmann::json compute_analysis(const Eigen::MatrixXd &vertices, const Eigen::MatrixXi &faces, const Eigen::MatrixXi &tets, const Mesh &mesh,
+nlohmann::json compute_analysis(const Eigen::MatrixXd &vertices_, const Eigen::MatrixXi &faces, const Eigen::MatrixXi &tets, const Mesh &mesh,
                                 float thickness, float E, float nu, const std::string &formulation, double scaling, double zscaling,
                                 Eigen::MatrixXd &displacememt, Eigen::MatrixXd &traction_forces, const std::string &save_dir) {
     //TODO
@@ -34,8 +35,13 @@ nlohmann::json compute_analysis(const Eigen::MatrixXd &vertices, const Eigen::Ma
 
     static const bool export_data = false;
     assert(tets.cols() == 4);
-    assert(vertices.cols() == 3);
+    assert(vertices_.cols() == 3);
 
+    Eigen::MatrixXd vertices = vertices_;
+    // ToPhysicalUnit(vertices, scaling, zscaling);
+    // xy already in physical unit
+
+    // create a GEOGRAM tet mesh
     GEO::Mesh M;
     M.vertices.create_vertices((int)vertices.rows());
     for (int i = 0; i < (int)M.vertices.nb(); ++i) {
@@ -44,15 +50,16 @@ nlohmann::json compute_analysis(const Eigen::MatrixXd &vertices, const Eigen::Ma
         p[1] = vertices(i, 1);
         p[2] = vertices(i, 2);
     }
-
     M.cells.create_tets((int)tets.rows());
-
     for (int c = 0; c < (int)M.cells.nb(); ++c) {
         for (int lv = 0; lv < tets.cols(); ++lv) {
             M.cells.set_vertex(c, lv, tets(c, lv));
         }
     }
     M.cells.connect();
+
+    // igl::write_triangle_mesh("/Users/ziyizhang/Projects/tmp/tetmesh.obj", vertices, faces);
+    // std::cerr << "/Users/ziyizhang/Projects/tmp/tetmesh.obj" << std::endl;
 
     if (export_data) {
         GEO::mesh_save(M, "mesh.mesh");
@@ -115,6 +122,13 @@ nlohmann::json compute_analysis(const Eigen::MatrixXd &vertices, const Eigen::Ma
     Eigen::MatrixXd pts = mesh.points;
     ToPhysicalUnit(disp, scaling, zscaling);
     ToPhysicalUnit(pts, scaling, zscaling);
+
+    // igl::write_triangle_mesh("/Users/ziyizhang/Projects/tmp/pts.obj", pts, mesh.triangles);
+    // std::cerr << "/Users/ziyizhang/Projects/tmp/pts.obj" << std::endl;
+    // std::cerr << "disp" << std::endl << disp << std::endl;
+    // std::cerr << "pts" << std::endl << pts << std::endl;
+    // igl::write_triangle_mesh("/Users/ziyizhang/Projects/tmp/marker_3d.obj", marker_3D, mesh.triangles);
+    // igl::write_triangle_mesh("/Users/ziyizhang/Projects/tmp/mesh_points.obj", mesh.points, mesh.triangles);
 
     //Id = 1, func, mesh, coord =2, means skip z for the interpolation
     Eigen::Matrix<bool, 3, 1> dirichet_dims;
