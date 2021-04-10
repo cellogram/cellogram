@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
         std::string settings = "";
         std::string load_data = "";
         int start_phase = 0;
-        int end_phase = 3;
+        int end_phase = 4;
         bool cmd = false;
     } args;
     unsigned int num_threads = std::min(32u, std::max(1u, std::thread::hardware_concurrency() - 1));
@@ -130,15 +130,26 @@ int main(int argc, char *argv[]) {
             state.phase_enumeration = 3;
         }
         if (args.end_phase > 2 && args.start_phase < 4) {
+            std::cout << "Preparing B-spline" << std::endl;
+            state.PrepareBsp();
+            static int DSnum_round1 = state.img3D.size();
+            static double DSgap_round1 = 0.5;
+            static double DSeps_round1 = 0.1;
+            static int DSnum_round2 = 10;
+            static double DSgap_round2 = 0.1;
+            static double DSeps_round2 = 1e-4;
+            static bool updateInfo = false;
+            state.DepthSearch_FirstCall(DSnum_round1, DSgap_round1, DSeps_round1);
+            state.DepthSearch_Refine(DSnum_round2, DSgap_round2, DSeps_round2, updateInfo);
+            state.DepthSearch_AutoFix();
+
             state.phase_enumeration = 4;
         }
         if (args.end_phase > 3 && args.start_phase < 5) {
-            if (!state.image_from_pillars) {
-                std::cout << "Meshing volume" << std::endl;
-                state.mesh_3d_volume();
-                std::cout << "Remeshing adaptively" << std::endl;
-                state.remesh_3d_adaptive();
-            }
+            std::cout << "Meshing volume" << std::endl;
+            state.mesh_3d_volume();
+            std::cout << "Remeshing adaptively" << std::endl;
+            state.remesh_3d_adaptive();
             std::cout << "Running analysis" << std::endl;
             state.analyze_3d_mesh();
             state.phase_enumeration = 5;
