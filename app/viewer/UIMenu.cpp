@@ -1141,6 +1141,10 @@ ImGui::PushItemWidth(width);
             if (ImGui::Button("Depth Search Refine")) {
                 state.DepthSearch_Refine(DSnum_round2, DSgap_round2, DSeps_round2, updateInfo);
             }
+            if (ImGui::Button("Log coordinates")) {
+                std::cerr << "Marker 4D (xyzr):" << std::endl << state.mesh.marker_4D << std::endl << std::endl;
+                std::cerr << "F:" << std::endl << state.mesh.triangles << std::endl;
+            }
             ImGui::TreePop();
         }
 
