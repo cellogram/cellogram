@@ -95,6 +95,7 @@ public:
     void PrepareBsp();
     void DepthSearch_FirstCall(int DSnum, double DSgap, double DSeps);
     void DepthSearch_Refine(int DSnum, double DSgap, double DSeps, bool updateInfo);
+    void DepthSearch_AutoFix();
 
 	std::vector<Region> regions;
 

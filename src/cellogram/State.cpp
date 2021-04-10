@@ -33,6 +33,7 @@
 
 #include <chrono>
 #include <fstream>
+#include <set>
 #include <polyfem/InterpolatedFunction.hpp>
 #include <polyfem/MeshUtils.hpp>
 #include <zebrafish/Logger.hpp>
@@ -165,6 +166,52 @@ void State::DepthSearch_Refine(int DSnum, double DSgap, double DSeps, bool updat
     }
 
     logger().info("Depth search (refine) done. [update flag info] = {}", updateInfo);
+}
+
+double MeanAdjacentDepth(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, const int idx) {
+
+    const auto DistSqDots = [&V, &F](int i, int j) {
+        return (V(i, 0)-V(j, 0)) * (V(i, 0)-V(j, 0)) + (V(i, 1)-V(j, 1)) * (V(i, 1)-V(j, 1));
+    };
+
+    // estimate mean distance
+    double distSq = 0.0;
+    for (int i=0; i<F.rows(); i++) {
+        distSq += DistSqDots(F(i, 0), F(i, 1));
+        distSq += DistSqDots(F(i, 0), F(i, 2));
+        distSq += DistSqDots(F(i, 1), F(i, 2));
+    }
+    distSq /= double(F.rows() * 3);
+
+    // find adjacent verts
+    std::set<int> adjacentVerts;
+    for (int i=0; i<V.rows(); i++) {
+        if (i==idx) continue;
+        if (DistSqDots(i, idx) < distSq * 1.6) adjacentVerts.insert(i);
+    }
+
+    // estimate new depth
+    double depth = 0.0;
+    if (!adjacentVerts.empty()) {
+        for (auto it=adjacentVerts.begin(); it!=adjacentVerts.end(); it++)
+            depth += V(*it, 2);
+        depth /= double(adjacentVerts.size());
+    }
+    return depth;
+}
+
+void State::DepthSearch_AutoFix() {
+
+    const int N = mesh.dsFlag.size();
+    int count = 0;
+    
+    for (int i=0; i<N; i++) {
+        if (mesh.dsFlag[i] != zebrafish::DepthSearchFlag_t::InvalidEnergy) continue;
+        // replace its depth by adjacent markers' mean depth
+        mesh.marker_4D(i, 2) = MeanAdjacentDepth(mesh.marker_4D, mesh.triangles, i);
+        count++;
+    }
+    logger().info("DepthSearch auto fix {} markers", count);
 }
 
 ////////////////////////////////////////////////////////////////////////////

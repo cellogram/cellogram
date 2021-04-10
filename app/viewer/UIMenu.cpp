@@ -1149,6 +1149,7 @@ ImGui::PushItemWidth(width);
             [&]() {
             state.DepthSearch_FirstCall(DSnum_round1, DSgap_round1, DSeps_round1);
             state.DepthSearch_Refine(DSnum_round2, DSgap_round2, DSeps_round2, updateInfo);
+            state.DepthSearch_AutoFix();
         });
     }
 
