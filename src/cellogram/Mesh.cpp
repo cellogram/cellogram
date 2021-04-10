@@ -448,7 +448,7 @@ namespace cellogram {
 		// std::cout << "max:\n" << max << "\n\nmin:\n" << min << std::endl;
 	}
 
-	void Mesh::get_background_mesh(double scaling, Eigen::MatrixXd &V, Eigen::MatrixXi &F, Eigen::VectorXd &S, double padding) const {
+	void Mesh::get_background_mesh(double scaling, double zscaling, Eigen::MatrixXd &V, Eigen::MatrixXi &F, Eigen::VectorXd &S, double padding) const {
 		Eigen::MatrixXd BV;
 		Eigen::MatrixXi BF;
 		V = points.leftCols<2>();
@@ -463,7 +463,13 @@ namespace cellogram {
 		V *= scaling;
 
 		S.resize(V.rows());
-		S.head(points.rows()) = (detected - points).rowwise().norm() * scaling;
+        // zebrafish: consider z-disp here
+        Eigen::MatrixXd marker_3D;
+        Mesh3d::GetMarker3D(marker_4D, marker_3D);
+        Eigen::MatrixXd disp = marker_3D - points;
+        disp.leftCols(2) *= scaling;
+        disp.col(2) *= zscaling;
+		S.head(points.rows()) = disp.rowwise().norm();
 		S.tail(BV.rows()).setZero();
 	}
 

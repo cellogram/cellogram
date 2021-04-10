@@ -1141,7 +1141,7 @@ void State::mesh_2d_adaptive() {
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
     Eigen::VectorXd D, S;
-    mesh.get_background_mesh(scaling, V, F, D, padding_size);
+    mesh.get_background_mesh(scaling, zscaling, V, F, D, padding_size);
     // igl::write_triangle_mesh("/Users/ziyizhang/Projects/tmp/debug_2d_mesh_beforeremesh.obj", V, F);
     // std::cerr << "/Users/ziyizhang/Projects/tmp/debug_2d_mesh_beforeremesh.obj" << std::endl;
     propagate_sizing_field(V, F, D, S);
@@ -1167,7 +1167,7 @@ void State::mesh_2d_adaptive() {
 Eigen::MatrixXd V;
 Eigen::MatrixXi F;
 Eigen::VectorXd S;
-mesh.get_background_mesh(scaling, V, F, S, padding_size);
+mesh.get_background_mesh(scaling, zscaling, V, F, S, padding_size);
 
 // Rescale displacement field
 double vmin = V.minCoeff();
@@ -1261,7 +1261,7 @@ void State::remesh_3d_adaptive() {
     Eigen::MatrixXd V;
     Eigen::MatrixXi F, FP(0, 3);
     Eigen::VectorXd D, S, Sz;
-    mesh.get_background_mesh(scaling, V, F, D, padding_size);
+    mesh.get_background_mesh(scaling, zscaling, V, F, D, padding_size);
     propagate_sizing_field(V, F, D, S);
     double smin = S.minCoeff();
     double smax = S.maxCoeff();
@@ -1270,12 +1270,15 @@ void State::remesh_3d_adaptive() {
     Eigen::MatrixXd VP = mesh3d.V.leftCols<2>();
     S = interpolate_2d(V, F, S, VP);  // x, y
     // Zebrafish: use the sizing field with depth info
+    /*
     Eigen::MatrixXd marker_3D;
     Mesh3d::GetMarker3D(mesh.marker_4D, marker_3D);
     Sz = marker_3D.col(2).cwiseAbs();
     Sz = interpolate_2d(mesh.marker_4D.leftCols(2), mesh.triangles, Sz, VP);  // z
     Sz = Sz.array() - Sz.minCoeff();
     Sz = Sz.array() / Sz.maxCoeff();
+    */
+    Sz = S;  // depth displacement already considered in "get_background_mesh"
 
     zmin = mesh3d.V.col(2).minCoeff();
     zmax = mesh3d.V.col(2).maxCoeff();
