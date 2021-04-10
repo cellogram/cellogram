@@ -8,6 +8,8 @@
 #include <igl/opengl/glfw/Viewer.h>
 #include <igl/writeOBJ.h>
 #include <igl/write_triangle_mesh.h>
+#include <igl/slice.h>
+#include <igl/remove_unreferenced.h>
 #include <polyfem/Mesh3D.hpp>
 #include <polyfem/MeshUtils.hpp>
 #include <polyfem/PointBasedProblem.hpp>
@@ -26,7 +28,7 @@ void ToPhysicalUnit(Eigen::MatrixXd &mat, double scaling, double zscaling) {
 
 nlohmann::json compute_analysis(const Eigen::MatrixXd &vertices_, const Eigen::MatrixXi &faces, const Eigen::MatrixXi &tets, const Mesh &mesh,
                                 float thickness, float E, float nu, const std::string &formulation, double scaling, double zscaling,
-                                Eigen::MatrixXd &displacememt, Eigen::MatrixXd &traction_forces, const std::string &save_dir) {
+                                Eigen::MatrixXd &displacement, Eigen::MatrixXd &traction_forces, const std::string &save_dir) {
     //TODO
     //const std::string rbf_function = "gaussian";
     const std::string rbf_function = "thin-plate";
@@ -167,12 +169,12 @@ nlohmann::json compute_analysis(const Eigen::MatrixXd &vertices_, const Eigen::M
 
     // zebrafish export
     // output
-    const auto OutputHelper = [&state, &save_dir, &displacememt, &traction_forces](const Eigen::MatrixXd &mesh_v, const MatrixXi &mesh_f) {
+    const auto OutputHelper = [&state, &save_dir, &displacement, &traction_forces](const Eigen::MatrixXd &mesh_v, const MatrixXi &mesh_f) {
         Eigen::MatrixXd stress;
         Eigen::MatrixXd mises;
 
-        state.interpolate_boundary_function_at_vertices(mesh_v, mesh_f, state.sol, displacememt);
-        state.interpolate_boundary_tensor_function(mesh_v, mesh_f, state.sol, displacememt, true, traction_forces, stress, mises);
+        state.interpolate_boundary_function_at_vertices(mesh_v, mesh_f, state.sol, displacement);
+        state.interpolate_boundary_tensor_function(mesh_v, mesh_f, state.sol, displacement, true, traction_forces, stress, mises);
 
         // per-triangle data -> per-vertex data by taking average
         const auto ToVertexData = [&mesh_v, &mesh_f](
@@ -216,19 +218,37 @@ nlohmann::json compute_analysis(const Eigen::MatrixXd &vertices_, const Eigen::M
 
         ToVertexData(traction_forces, stress, mises, traction_force_v, stress_v, mises_v);
 
+        // extract the upper surface only
+        const double thres = -1e-9;
+        std::vector<int> vid_upper_vec;
+        for (int i=0; i<mesh_v.rows(); i++)
+            if (mesh_v(i, 2) > thres) vid_upper_vec.push_back(i);
+        std::vector<int> fid_upper_vec;
+        for (int i=0; i<mesh_f.rows(); i++)
+            if (mesh_v(mesh_f(i, 0), 2) > thres && mesh_v(mesh_f(i, 1), 2) > thres && mesh_v(mesh_f(i, 2), 2) > thres) fid_upper_vec.push_back(i);
+        Eigen::VectorXi vid_upper = Eigen::Map<Eigen::VectorXi, Eigen::Unaligned>(vid_upper_vec.data(), vid_upper_vec.size());
+        Eigen::VectorXi fid_upper = Eigen::Map<Eigen::VectorXi, Eigen::Unaligned>(fid_upper_vec.data(), fid_upper_vec.size());
+
         // write to VTU
         polyfem::VTUWriter VTUwriter;
-        VTUwriter.add_field("displacement", displacememt);
-        VTUwriter.add_field("traction_forces", traction_force_v);
+        Eigen::MatrixXd displacement_upper = igl::slice(displacement, vid_upper, 1);
+        VTUwriter.add_field("displacement", displacement_upper);
+        Eigen::MatrixXd traction_force_v_upper = igl::slice(traction_force_v, vid_upper, 1);
+        VTUwriter.add_field("traction_forces", traction_force_v_upper);
+        Eigen::MatrixXd stress_v_upper = igl::slice(stress_v, vid_upper, 1);
         for (int i = 0; i < 3; ++i) {
             for (int j = 0; j < 3; ++j) {
                 const std::string index = "_" + std::to_string(i) + std::to_string(j);
-                VTUwriter.add_field("stress" + index, stress_v.col(i * 3 + j));
+                VTUwriter.add_field("stress" + index, stress_v_upper.col(i * 3 + j));
             }
         }
-        VTUwriter.add_field("von_mises", mises_v);
+        Eigen::MatrixXd mises_v_upper = igl::slice(mises_v, vid_upper, 1);
+        VTUwriter.add_field("von_mises", mises_v_upper);
 
-        if (VTUwriter.write_mesh(save_dir + ".vtu", mesh_v, mesh_f)) {
+        Eigen::MatrixXd NV;
+        Eigen::MatrixXi NF, I;
+        igl::remove_unreferenced(mesh_v, igl::slice(mesh_f, fid_upper, 1), NV, NF, I);
+        if (VTUwriter.write_mesh(save_dir + ".vtu", NV, NF)) {
             std::cout << "Result saved to " + save_dir + ".vtu" << std::endl;
         } else {
             std::cerr << "Export failed: path not found" << std::endl;
