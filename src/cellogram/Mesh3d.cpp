@@ -125,6 +125,8 @@ nlohmann::json compute_analysis(const Eigen::MatrixXd &vertices_, const Eigen::M
     ToPhysicalUnit(disp, scaling, zscaling);
     ToPhysicalUnit(pts, scaling, zscaling);
 
+    double padding_um = mesh.XYpadding;  // already in um
+
     // igl::write_triangle_mesh("/Users/ziyizhang/Projects/tmp/pts.obj", pts, mesh.triangles);
     // std::cerr << "/Users/ziyizhang/Projects/tmp/pts.obj" << std::endl;
     // std::cerr << "disp" << std::endl << disp << std::endl;
@@ -169,11 +171,25 @@ nlohmann::json compute_analysis(const Eigen::MatrixXd &vertices_, const Eigen::M
 
     // zebrafish export
     // output
-    const auto OutputHelper = [&state, &save_dir, &displacement, &traction_forces](const Eigen::MatrixXd &mesh_v, const MatrixXi &mesh_f) {
+    const auto OutputHelper = [&state, &save_dir, &displacement, &traction_forces, &padding_um](const Eigen::MatrixXd &mesh_v, const MatrixXi &mesh_f) {
         Eigen::MatrixXd stress;
         Eigen::MatrixXd mises;
 
         state.interpolate_boundary_function_at_vertices(mesh_v, mesh_f, state.sol, displacement);
+
+        // additional code to fix an issue:
+        // interpolation results sometimes diverges at the padding area (near boundary)
+        double xmin = mesh_v.col(0).minCoeff() + padding_um;
+        double xmax = mesh_v.col(0).maxCoeff() - padding_um;
+        double ymin = mesh_v.col(1).minCoeff() + padding_um;
+        double ymax = mesh_v.col(1).maxCoeff() - padding_um;
+        for (int i=0; i<mesh_v.rows(); i++) {
+            if (mesh_v(i, 0) < xmin || mesh_v(i, 0) > xmax || 
+                mesh_v(i, 1) < ymin || mesh_v(i, 1) > ymax) {
+                    displacement.row(i).setZero();
+                }
+        }
+
         state.interpolate_boundary_tensor_function(mesh_v, mesh_f, state.sol, displacement, true, traction_forces, stress, mises);
 
         // per-triangle data -> per-vertex data by taking average
@@ -255,6 +271,11 @@ nlohmann::json compute_analysis(const Eigen::MatrixXd &vertices_, const Eigen::M
             std::cerr << save_dir + ".vtu" << std::endl;
         }
     };  // OutputHelper lambda function
+
+    // std::cout << "verts" << std::endl;
+    // std::cout << vertices << std::endl;
+    // std::cout << "\nfaces" << std::endl;
+    // std::cout << faces << std::endl;
 
     OutputHelper(vertices, faces);
     state.save_vtu(save_dir + ".all.vtu", 0);

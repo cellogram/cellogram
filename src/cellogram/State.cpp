@@ -705,8 +705,23 @@ void State::detect_vertices() {
         V.conservativeResize(V.rows(), 3);
         V.col(2).setConstant(0);
     }
+    // zebrafish: remove vertices too close to border
+    const int thres = 15;
+    Eigen::MatrixXd VV;
+    VV.resizeLike(V);
+    int N = 0;
+    for (int i=0; i<V.rows(); i++) {
+        if (!(V(i, 0)<thres || V(i, 0)>img.rows()-thres || 
+              V(i, 1)<thres || V(i, 1)>img.cols()-thres)) {
+                VV.row(N) = V.row(i);
+                N++;
+            }
+    }
+    VV.conservativeResize(N, 3);
+    VV.col(2).setZero();
+
     mesh.clear();
-    mesh.detect_vertices(V, params);
+    mesh.detect_vertices(VV, params);
 }
 
 void State::relax_with_lloyd() {
@@ -1142,6 +1157,7 @@ void State::mesh_2d_adaptive() {
     Eigen::MatrixXi F;
     Eigen::VectorXd D, S;
     mesh.get_background_mesh(scaling, zscaling, V, F, D, padding_size);
+    mesh.XYpadding = padding_size;  // store for later use
     // igl::write_triangle_mesh("/Users/ziyizhang/Projects/tmp/debug_2d_mesh_beforeremesh.obj", V, F);
     // std::cerr << "/Users/ziyizhang/Projects/tmp/debug_2d_mesh_beforeremesh.obj" << std::endl;
     propagate_sizing_field(V, F, D, S);

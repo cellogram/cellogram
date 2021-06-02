@@ -27,6 +27,8 @@ public:
     std::vector<zebrafish::DepthSearchFlag_t> dsFlag;
     zebrafish::OptimPara_t optimPara;  // with high precision
 
+    double XYpadding;  // store the XY padding here
+
 	Eigen::MatrixXi triangles; // triangular mesh
 	std::vector<std::vector<int>> adj; // adjacency list of triangular mesh
 	std::vector<std::vector<int>> vertex_to_tri;
