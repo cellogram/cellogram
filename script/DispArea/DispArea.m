@@ -58,6 +58,7 @@ function [area] = DispArea(verts, disp, z_thres, silent)
         quiver3(query(:, 1), query(:, 2), zeros(length(RBF_res), 1), RBF_res(:, 1), RBF_res(:, 2), RBF_res(:, 3))
         scatter3(query_in_area(:, 1), query_in_area(:, 2), zeros(size(query_in_area, 1), 1));
         quiver3(verts(:, 1), verts(:, 2), verts(:, 3), disp(:, 1), disp(:, 2), disp(:, 3))
+        legend("Interpolation", "Disp Area", "Raw")
     end
     area = size(query_in_area, 1);
 end

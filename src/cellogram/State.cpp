@@ -454,6 +454,7 @@ bool State::save(const std::string &path, const bool full_path) {
         json_data["I"] = I;
         json_data["L"] = L;
         json_data["scaling"] = scaling;
+        json_data["zscaling"] = zscaling;
         json_data["gradation"] = mmg_options.hgrad;
         json_data["simulation_output"] = mesh3d.simulation_out;
 
